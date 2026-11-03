@@ -1226,7 +1226,7 @@
             </div>
         </div>
 
-        <!-- تسجيل الدخول -->
+        <!-- تسجيل الدخول (تم تصليح زر جوجل) -->
         <div class="panel" id="auth-panel" style="max-width: 500px; margin: 0 auto 2rem;">
             <h2 id="auth-title" style="color: var(--primary); margin-top: 0; text-align: center;" class="translatable">تسجيل الدخول</h2>
             <form id="auth-form">
@@ -1237,7 +1237,12 @@
                 <span class="toggle-link translatable" id="auth-toggle-mode">ليس لديك حساب؟ أنشئ حساباً جديداً</span>
             </form>
             <div style="text-align: center; margin: 20px 0; color: var(--text-muted);" class="translatable">أو</div>
-            <button type="button" class="btn btn-full" style="background: white; color: #444; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05);" id="btn-google-signin"><span class="translatable">🌐 المتابعة بحساب جوجل</span></button>
+            
+            <!-- تم تفعيل زر جوجل هنا -->
+            <button type="button" class="btn btn-full" style="background: white; color: #444; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; gap: 10px;" id="btn-google-signin">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google Logo" style="width: 20px; height: 20px;">
+                <span class="translatable">🌐 المتابعة بحساب جوجل</span>
+            </button>
         </div>
 
         <!-- لوحات الإدارة -->
@@ -1516,6 +1521,19 @@
                 if(window.currentLang === 'en' && enDict[txt]) el.innerText = enDict[txt];
                 if(window.currentLang === 'ar' && arDict[txt]) el.innerText = arDict[txt];
             });
+            
+            let searchInp = document.getElementById('search-input');
+            if(searchInp) searchInp.placeholder = window.currentLang === 'ar' ? 'ابحث عن منتج...' : 'Search for a product...';
+            
+            let authEmail = document.getElementById('auth-email');
+            if(authEmail) authEmail.placeholder = window.currentLang === 'ar' ? 'البريد الإلكتروني' : 'Email Address';
+            
+            let authPass = document.getElementById('auth-password');
+            if(authPass) authPass.placeholder = window.currentLang === 'ar' ? 'كلمة المرور (6 أحرف على الأقل)' : 'Password (at least 6 chars)';
+            
+            let promoInp = document.getElementById('promo-code-input');
+            if(promoInp) promoInp.placeholder = window.currentLang === 'ar' ? 'أدخل الكود' : 'Enter Code';
+
             window.renderProducts(false);
         };
 
@@ -1751,6 +1769,22 @@
         window.switchFastAccount = function(email, encodedPass) {
             window.closeDropdown(); window.showToast('جاري التبديل للحساب الآخر...', 'info');
             signInWithEmailAndPassword(auth, email, atob(encodedPass)).then(() => { window.showToast('تم التبديل بنجاح', 'success'); window.showPanel('home'); }).catch(() => { window.showToast('انتهت الجلسة، يرجى إدخال الباسورد يدوياً', 'error'); window.showPanel('auth'); });
+        }
+
+        // تم إضافة دالة تسجيل الدخول بجوجل
+        let btnGoogle = document.getElementById('btn-google-signin');
+        if(btnGoogle) {
+            btnGoogle.addEventListener('click', () => {
+                window.showToast(window.currentLang === 'ar' ? 'جاري الاتصال بجوجل...' : 'Connecting to Google...', 'info');
+                signInWithPopup(auth, googleProvider).then((result) => {
+                    const user = result.user;
+                    window.showToast(window.currentLang === 'ar' ? `أهلاً بك يا ${user.displayName}` : `Welcome ${user.displayName}`, 'success');
+                    window.showPanel('home');
+                }).catch((error) => {
+                    console.error(error);
+                    window.showToast(window.currentLang === 'ar' ? 'حدث خطأ أثناء تسجيل الدخول بجوجل' : 'Error signing in with Google', 'error');
+                });
+            });
         }
 
         function injectPixels() {
