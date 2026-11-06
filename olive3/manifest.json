@@ -1,7 +1,11 @@
 {
   "name": "زيت الشجرة المباركة",
   "short_name": "الشجرة المباركة",
+  "description": "متجر زيت الشجرة المباركة للمنتجات الطبيعية",
+  "lang": "ar",
+  "dir": "rtl",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f8f9fa",
   "theme_color": "#3c521e",
@@ -9,12 +13,14 @@
     {
       "src": "1000392409.jpeg",
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/jpeg",
+      "purpose": "any"
     },
     {
       "src": "1000392409.jpeg",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/jpeg",
+      "purpose": "any"
     }
   ]
 }
