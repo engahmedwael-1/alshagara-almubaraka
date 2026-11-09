@@ -197,3 +197,43 @@
         .loyalty-card-page::after { content: '🎁'; position: absolute; font-size: 8rem; opacity: 0.1; right: -20px; bottom: -20px; }
         .loyalty-card-page h2 { margin: 0 0 10px; font-size: 2rem; font-weight: 900; }
         .loyalty-card-page p { margin: 0; font-size: 1rem; opacity: 0.9; }
+        #support-history-container, #admin-chat-messages {
+            height: 350px;
+            max-height: 50vh;
+            overflow-y: auto !important;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-msg-wrapper {
+            margin-bottom: 10px;
+            width: 100%;
+            display: flex;
+        }
+        .chat-msg-customer { justify-content: flex-start; }
+        .chat-msg-admin { justify-content: flex-end; }
+        
+        html[dir="ltr"] .chat-msg-customer { justify-content: flex-end; }
+        html[dir="ltr"] .chat-msg-admin { justify-content: flex-start; }
+        
+        .chat-bubble {
+            padding: 10px 15px;
+            max-width: 85%;
+            word-wrap: break-word;
+            font-size: 0.9rem;
+        }
+        .bubble-customer {
+            background: var(--primary);
+            color: white;
+            border-radius: 15px 15px 5px 15px;
+        }
+        html[dir="ltr"] .bubble-customer { border-radius: 15px 15px 15px 5px; }
+        
+        .bubble-admin {
+            background: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 15px 15px 15px 5px;
+        }
+        html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }

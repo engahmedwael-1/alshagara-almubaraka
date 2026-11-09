@@ -161,8 +161,11 @@
                 <label style="font-weight:bold; color:var(--text-color); display:block; margin-bottom:8px;" class="translatable">اختر الحجم / النوع:</label>
                 <select id="modal-variant-select" onchange="window.updateModalVariantPrice()" style="width: 100%; padding: 10px; border-radius: 8px; border: 2px solid var(--primary); font-weight: bold;"></select>
             </div>
+            
             <h3 id="modal-price" style="color: var(--secondary); display: flex; align-items: center; justify-content: center; gap:10px; margin: 10px 0; font-size:1.5rem;"></h3>
             <p id="modal-stock" style="color: var(--danger); font-weight: bold; font-size: 0.9rem; margin-top: -5px;"></p>
+            <button type="button" class="btn btn-full" id="btn-buy-now" style="background-color: var(--primary); margin-bottom:10px; display:none;" onclick="window.executeBuyNow()"><span class="translatable">🚀 اشتري الآن (دفع سريع)</span></button>
+
             <div id="modal-actions" style="margin-top: 15px; display:none;"></div>
             <div class="trust-badges">
                 <div class="trust-badge"><span class="icon">🌿</span><span class="translatable">طبيعي 100%</span></div>
@@ -247,6 +250,25 @@
                 </div>
             </div>
             <div class="products-grid" id="recently-viewed-full-list"></div>
+        </div>
+
+        
+        <div class="panel" id="loyalty-panel">
+            <div class="loyalty-card-page" style="background: linear-gradient(135deg, var(--secondary), #e0a800); border-radius: 16px; padding: 20px; color: white; text-align: center; box-shadow: 0 8px 20px rgba(197, 155, 39, 0.3); margin-bottom: 20px; position: relative; overflow: hidden;">
+                <h2 class="translatable" style="margin: 0 0 10px; font-size: 2rem; font-weight: 900;">نقاط الولاء 🎁</h2>
+                <p class="translatable" style="margin: 0; font-size: 1rem; opacity: 0.9;">مرحباً بك في برنامج الولاء الخاص بنا!</p>
+                <div style="font-size:3rem; font-weight:900; margin:15px 0;"><span id="loyalty-page-points">0</span></div>
+                <p class="translatable" style="margin: 0; font-size: 1rem; opacity: 0.9;">إجمالي نقاطك الحالية</p>
+                <button type="button" class="btn" style="background:white; color:var(--secondary); width:100%; max-width:250px; margin-top:15px; font-size:1.1rem; display:inline-flex; align-items:center; justify-content:center;" onclick="window.showPanel('cart');"><span class="translatable">استبدل النقاط بخصم الآن!</span></button>
+            </div>
+            <div style="background:var(--input-bg); border:1px solid var(--border-color); border-radius:12px; padding:15px;">
+                <h3 style="color:var(--primary); margin-top:0;" class="translatable">كيف يعمل البرنامج؟ 🤔</h3>
+                <ul style="color:var(--text-color); font-size:0.9rem; line-height:1.8; padding-right:20px;">
+                    <li><span class="translatable">تكسب</span> <strong style="color:var(--secondary);">1 نقطة</strong> <span class="translatable">مقابل كل</span> <strong id="loyalty-earn-text">20</strong> <span class="translatable">جنيه تنفقها في المتجر.</span></li>
+                    <li><span class="translatable">تتم إضافة النقاط إلى حسابك تلقائياً بمجرد استلامك للطلب.</span></li>
+                    <li><span class="translatable">يمكنك استبدال كل</span> <strong style="color:var(--danger);">50 نقطة</strong> <span class="translatable">بخصم فوري قيمته</span> <strong id="loyalty-redeem-text">10</strong> <span class="translatable">جنيه على طلبك القادم.</span></li>
+                </ul>
+            </div>
         </div>
 
         <div class="panel" id="cart-panel">
