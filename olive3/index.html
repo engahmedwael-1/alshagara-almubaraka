@@ -250,6 +250,19 @@
         }
         html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
 
+
+#support-history-container, #admin-chat-messages { height: 400px; max-height: 50vh; overflow-y: auto !important; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 10px; padding: 15px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 15px; }
+.chat-msg-wrapper { margin-bottom: 10px; width: 100%; display: flex; }
+.chat-msg-customer { justify-content: flex-start; }
+.chat-msg-admin { justify-content: flex-end; }
+html[dir="ltr"] .chat-msg-customer { justify-content: flex-end; }
+html[dir="ltr"] .chat-msg-admin { justify-content: flex-start; }
+.chat-bubble { padding: 10px 15px; max-width: 85%; word-wrap: break-word; font-size: 0.9rem; }
+.bubble-customer { background: var(--primary); color: white; border-radius: 15px 15px 5px 15px; }
+html[dir="ltr"] .bubble-customer { border-radius: 15px 15px 15px 5px; }
+.bubble-admin { background: var(--panel-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 15px 15px 15px 5px; }
+html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
+
 </style>
 </head>
 <body>
@@ -269,6 +282,7 @@
         </div>
         <div style="padding: 15px; display: flex; flex-direction: column; gap: 10px; flex: 1;">
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.showPanel('home'); window.closeSidebar();">🏠 <span class="translatable">الرئيسية</span></button>
+            <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.showPanel('support'); window.closeSidebar();">💬 <span class="translatable">خدمة العملاء</span></button>
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.loadAllReviews(); window.closeSidebar();">⭐️ <span class="translatable">آراء العملاء</span></button>
             <div id="sidebar-account-section" style="display:none; margin-top:10px;">
                 <h4 style="margin: 0 0 10px 0; color: var(--primary);" class="translatable">👤 حسابي:</h4>
@@ -391,7 +405,7 @@
     <div id="product-modal" class="modal-overlay">
         <div class="modal-content">
             <button type="button" class="modal-close" onclick="window.closeProductModal()">X</button>
-            <button type="button" class="btn btn-outline" style="position: absolute; top: 15px; right: 15px; border-radius: 20px; padding: 4px 10px; font-size: 0.8rem; color:var(--primary); border-color:var(--primary);" id="btn-share-modal" class="translatable">🔗 مشاركة</button>
+            <button type="button" class="btn btn-outline" style="position: absolute; top: 15px; right: 15px; border-radius: 20px; padding: 4px 10px; font-size: 0.8rem; color:var(--primary); border-color:var(--primary);" id="btn-share-modal" onclick="window.shareProduct()">🔗 <span class="translatable">مشاركة</span></button>
             <div style="background:#fff3cd; color:#856404; padding:5px 10px; border-radius:6px; font-size:0.85rem; font-weight:bold; margin-bottom:10px; display:inline-block; border:1px solid #ffeeba;">👁️ <span class="translatable">يشاهده الآن</span> <span id="live-viewers-count">0</span> <span class="translatable">شخص</span></div>
             <div class="modal-img-container" id="magnifier-container"><img id="modal-img-main" class="modal-img-main" src="" alt="Product"></div>
             <div id="modal-gallery-container" class="modal-gallery"></div>
@@ -643,7 +657,10 @@
             <h2 id="auth-title" style="color: var(--primary); margin-top: 0; text-align: center;" class="translatable">تسجيل الدخول</h2>
             <form id="auth-form">
                 <input type="email" id="auth-email" placeholder="البريد الإلكتروني" required autocomplete="username">
-                <input type="password" id="auth-password" placeholder="كلمة المرور (6 أحرف على الأقل)" minlength="6" required autocomplete="current-password">
+                <div style="position:relative; width:100%;">
+                    <input type="password" id="auth-password" placeholder="كلمة المرور (6 أحرف على الأقل)" minlength="6" required autocomplete="current-password" style="margin-bottom: 1rem; padding-left:40px;">
+                    <span onclick="window.togglePassword()" style="position:absolute; left:15px; top:12px; cursor:pointer; font-size:1.2rem; filter: grayscale(1);">👁️</span>
+                </div>
                 <button type="submit" class="btn btn-full" id="auth-submit-btn"><span class="translatable">دخول</span></button>
                 <span class="forgot-password-link translatable" id="auth-forgot-password">نسيت كلمة المرور؟</span>
                 <span class="toggle-link translatable" id="auth-toggle-mode">ليس لديك حساب؟ أنشئ حساباً جديداً</span>
@@ -1270,7 +1287,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 
         window.saveSettings = async function() { const newAutoReply = document.getElementById('setting-auto-reply') ? document.getElementById('setting-auto-reply').value.trim() : storeSettings.autoReplyMessage; const newWallet = document.getElementById('setting-wallet-number').value.trim(); const newFb = document.getElementById('setting-fb-pixel').value.trim(); const newTt = document.getElementById('setting-tt-pixel').value.trim(); const newCrossSell = document.getElementById('setting-cross-sell') ? document.getElementById('setting-cross-sell').checked : true;
             const lEarn = parseInt(document.getElementById('setting-loyalty-earn').value) || 20;
-            const lRedeem = parseInt(document.getElementById('setting-loyalty-value').value) || 10; await updateDoc(doc(db, 'settings', 'main'), { autoReplyMessage: newAutoReply, walletNumber: newWallet, fbPixelId: newFb, ttPixelId: newTt, enableCrossSell: newCrossSell, loyaltyEarnRate: lEarn, loyaltyRedeemValue: lRedeem }); window.showToast('تم الحفظ بنجاح', 'success'); window.injectPixels(); };
+            const lRedeem = parseInt(document.getElementById('setting-loyalty-value').value) || 10; await updateDoc(doc(db, 'settings', 'main'), { autoReplyMessage: newAutoReply, walletNumber: newWallet, fbPixelId: newFb, ttPixelId: newTt, enableCrossSell: newCrossSell, freeShippingThreshold: (Number(document.getElementById('setting-free-shipping').value) || 1000), loyaltyEarnRate: lEarn, loyaltyRedeemValue: lRedeem }); window.showToast('تم الحفظ بنجاح', 'success'); window.injectPixels(); };
         window.addCategory = async function() { const newCat = document.getElementById('new-category-input').value.trim(); if(newCat && !(storeSettings.categories||[]).includes(newCat)) { let updatedCats = [...(storeSettings.categories||[]), newCat]; await updateDoc(doc(db, 'settings', 'main'), { categories: updatedCats }); document.getElementById('new-category-input').value = ''; window.showToast('تم الإضافة', 'success'); } };
         window.removeCategory = async function(index) { if(confirm('حذف القسم؟')) { let updatedCats = storeSettings.categories.filter((_, i) => i !== index); await updateDoc(doc(db, 'settings', 'main'), { categories: updatedCats }); window.showToast('تم الحذف', 'success'); } };
         window.addPromoCode = async function() { const code = document.getElementById('new-promo-code').value.trim().toUpperCase(), discount = parseInt(document.getElementById('new-promo-discount').value); if(code && discount > 0 && discount <= 100) { await addDoc(collection(db, 'promoCodes'), { code, discount }); document.getElementById('new-promo-code').value = ''; document.getElementById('new-promo-discount').value = ''; window.showToast('تمت الإضافة', 'success'); } };
@@ -1337,24 +1354,26 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             });
         }
 
+        
         window.updateOrderStatus = async function(orderId, newStatus) { 
             await updateDoc(doc(db, 'orders', orderId), { status: newStatus }); 
             window.showToast('تم تحديث الحالة', 'success'); 
-            
             let oData = adminOrdersArray.find(o => o.id === orderId);
-            if(newStatus === 'تم التوصيل ✅' && oData && oData.userId) {
-                let pts = Math.floor(oData.totalAmount / (loyaltyConfig.earnRate || 20)); 
-                try {
-                    await updateDoc(doc(db, 'users', oData.userId), { 
-                        loyaltyPoints: increment(pts),
-                        unreadNotifs: increment(1),
-                        notifications: arrayUnion({title: 'نقاط ولاء جديدة 🎁', message: `مبروك! حصلت على ${pts} نقطة لإتمام طلبك.`, date: new Date().toISOString()})
-                    });
-                } catch(e){}
+            if(newStatus === 'تم التوصيل ✅' && oData && oData.userId && !oData.pointsAdded) {
+                let earnRate = storeSettings.loyaltyEarnRate || 20;
+                let pts = Math.floor(oData.totalAmount / earnRate); 
+                if(pts > 0) {
+                    try {
+                        await updateDoc(doc(db, 'users', oData.userId), { 
+                            loyaltyPoints: increment(pts), unreadNotifs: increment(1),
+                            notifications: arrayUnion({title: 'نقاط ولاء جديدة 🎁', message: `مبروك! حصلت على ${pts} نقطة لإتمام طلبك.`, date: new Date().toISOString()})
+                        });
+                        await updateDoc(doc(db, 'orders', orderId), { pointsAdded: true });
+                    } catch(e){}
+                }
             }
         }
-
-        let adminUsersUnsubscribe = null;
+let adminUsersUnsubscribe = null;
         window.loadAdminUsers = function() {
             if(adminUsersUnsubscribe) adminUsersUnsubscribe();
             adminUsersUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
@@ -1404,16 +1423,29 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             if (user) {
-                let displayTxt = user.displayName || (user.email ? user.email.split('@')[0] : user.phoneNumber);
-                let ud = document.getElementById('user-email-display'); if(ud) ud.textContent = displayTxt; let um = document.getElementById('user-menu-container'); if(um) um.style.display = 'block'; let bs = document.getElementById('btn-show-auth'); if(bs) bs.style.display = 'none'; 
-                let sa = document.getElementById('sidebar-account-section'); if(sa) sa.style.display = 'block'; let ssw = document.getElementById('sidebar-switch-accounts-section'); if(ssw) ssw.style.display = 'block';
-                let co = document.getElementById('nav-customer-orders'); if(co) co.style.display = 'inline-block'; let sp = document.getElementById('nav-support'); if(sp) sp.style.display = 'inline-block'; 
-                window.updateAdminUI(); window.loadCustomerOrders(); 
-                let sm = document.getElementById('support-auth-msg'); if(sm) sm.style.display = 'none'; let sc = document.getElementById('support-content'); if(sc) sc.style.display = 'block'; let lm = document.getElementById('login-to-review-msg'); if(lm) lm.style.display = 'none'; let ar = document.getElementById('add-review-section'); if(ar) ar.style.display = 'block';
-                window.loadCustomerChat(); window.loadUserNotifications();
-                if(SUPER_ADMINS.includes((user.email || '').toLowerCase()) || dynamicAdmins.includes((user.email || '').toLowerCase())) { window.loadAdminChats(); }
                 
-                try { 
+                let displayTxt = user.displayName || (user.email ? user.email.split('@')[0] : user.phoneNumber);
+                let ud = document.getElementById('user-email-display'); if(ud) ud.textContent = displayTxt; 
+                let um = document.getElementById('user-menu-container'); if(um) um.style.display = 'block'; 
+                let bs = document.getElementById('btn-show-auth'); if(bs) bs.style.display = 'none'; 
+                let sa = document.getElementById('sidebar-account-section'); if(sa) sa.style.display = 'block'; 
+                let ssw = document.getElementById('sidebar-switch-accounts-section'); if(ssw) ssw.style.display = 'block';
+                let co = document.getElementById('nav-customer-orders'); if(co) co.style.display = 'inline-block'; 
+                let sp = document.getElementById('nav-support'); if(sp) sp.style.display = 'inline-block'; 
+                
+                // إخفاء رسالة طلب الدخول فوراً
+                let sm = document.getElementById('support-auth-msg'); if(sm) sm.style.display = 'none'; 
+                let sc = document.getElementById('support-content'); if(sc) sc.style.display = 'block'; 
+                let lm = document.getElementById('login-to-review-msg'); if(lm) lm.style.display = 'none'; 
+                let ar = document.getElementById('add-review-section'); if(ar) ar.style.display = 'block';
+
+                window.updateAdminUI(); 
+                window.loadCustomerOrders(); 
+                window.loadCustomerChat(); 
+                window.loadUserNotifications();
+                
+                if(SUPER_ADMINS.includes((user.email || '').toLowerCase()) || dynamicAdmins.includes((user.email || '').toLowerCase())) { window.loadAdminChats(); }
+try { 
                     const userDoc = await getDoc(doc(db, 'users', user.uid)); 
                     if(userDoc.exists()) { 
                         const data = userDoc.data(); 
@@ -1633,15 +1665,94 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 
         window.getStepIndex = function(status) { if(status === 'قيد المراجعة') return 1; if(status === 'تم التجهيز') return 2; if(status === 'تم الشحن') return 3; if(status === 'تم التوصيل ✅' || status === 'تم التوصيل') return 4; return 0; }
 
-        window.loadCustomerOrders = function() { if(!currentUser) return; let filterKey = currentUser.email || currentUser.phoneNumber; if(!filterKey) return; onSnapshot(query(collection(db, 'orders'), where('customerEmail', '==', filterKey)), (snapshot) => { const container = document.getElementById('customer-orders-container'); if(!container) return; let userOrders = []; snapshot.forEach(doc => userOrders.push({id: doc.id, ...doc.data()})); userOrders.sort((a,b) => new Date(b.orderDate) - new Date(a.orderDate)); if(userOrders.length === 0) { let mt = window.currentLang === 'ar' ? 'لم تقم بطلبات بعد.' : 'No orders yet.'; container.innerHTML = `<h3 style="text-align:center; color:var(--text-muted);">${mt}</h3>`; return; } let htmlContent = ''; userOrders.forEach(order => { let itemsHtml = ''; order.items.forEach(item => { itemsHtml += `<li>${item.name} (${item.quantity})</li>`; }); let step = window.getStepIndex(order.status); let trackerHtml = ''; if(order.status !== 'ملغى من العميل ❌' && order.status !== 'تم الرفض ❌' && !order.status.includes('الاسترجاع')) { let t1 = window.currentLang==='ar'?'مراجعة':'Review'; let t2 = window.currentLang==='ar'?'تجهيز':'Prep'; let t3 = window.currentLang==='ar'?'شحن':'Ship'; let t4 = window.currentLang==='ar'?'توصيل':'Delivered'; trackerHtml = `<div class="order-track"><div class="track-step ${step >= 1 ? (step>1?'done':'active') : ''}"><div class="track-dot">1</div>${t1}</div><div class="track-step ${step >= 2 ? (step>2?'done':'active') : ''}"><div class="track-dot">2</div>${t2}</div><div class="track-step ${step >= 3 ? (step>3?'done':'active') : ''}"><div class="track-dot">3</div>${t3}</div><div class="track-step ${step >= 4 ? 'done' : ''}"><div class="track-dot">4</div>${t4}</div></div>`; } else { trackerHtml = `<div style="color:var(--danger); font-weight:bold; text-align:center; padding:10px;">حالة الطلب: ${order.status}</div>`; } let actionBtns = ''; if(order.status === 'قيد المراجعة') { let cTxt = window.currentLang==='ar'?'إلغاء الطلب ❌':'Cancel Order ❌'; actionBtns = `<button type="button" class="btn btn-danger" style="margin-top:10px; width:100%;" onclick="window.cancelOrder('${order.id}')">${cTxt}</button>`; } else if (order.status === 'تم التوصيل ✅' || order.status === 'تم الشحن') { let rTxt = window.currentLang==='ar'?'طلب استرجاع 🔄':'Return Request 🔄'; actionBtns = `<button type="button" class="btn btn-outline" style="margin-top:10px; width:100%; border-color:var(--danger); color:var(--danger);" onclick="window.openReturnModal('${order.id}')">${rTxt}</button>`; } let oId = window.currentLang==='ar'?'رقم الطلب':'Order ID'; let oDt = window.currentLang==='ar'?'التاريخ':'Date'; let oT = window.currentLang==='ar'?'الإجمالي':'Total'; htmlContent += `<div class="admin-msg-card"><h4>${oId}: #${order.id.slice(0,6).toUpperCase()}</h4><p><strong>${oDt}:</strong> ${new Date(order.orderDate).toLocaleString('ar-EG')}</p>${trackerHtml}<p><strong>${oT}:</strong> ${order.totalAmount} ج</p><ul style="color:var(--text-muted);">${itemsHtml}</ul>${actionBtns}</div>`; }); container.innerHTML = htmlContent; }); }
-        window.cancelOrder = async function(orderId) { if(confirm('متأكد من الإلغاء؟')) { await updateDoc(doc(db, 'orders', orderId), { status: 'ملغى من العميل ❌' }); window.showToast('تم الإلغاء.', 'success'); } }
+        
+        window.loadCustomerOrders = function() {
+            if(!currentUser) return; let filterKey = currentUser.email || currentUser.phoneNumber; if(!filterKey) return;
+            onSnapshot(query(collection(db, 'orders'), where('customerEmail', '==', filterKey)), (snapshot) => {
+                const container = document.getElementById('customer-orders-container'); if(!container) return;
+                let userOrders = []; snapshot.forEach(doc => userOrders.push({id: doc.id, ...doc.data()}));
+                userOrders.sort((a,b) => new Date(b.orderDate) - new Date(a.orderDate));
+                if(userOrders.length === 0) { container.innerHTML = `<h3 style="text-align:center; color:var(--text-muted);">لا توجد طلبات بعد.</h3>`; return; }
+                let htmlContent = '';
+                userOrders.forEach(order => {
+                    let itemsHtml = ''; order.items.forEach(item => { itemsHtml += `<li>${item.name} <b style="color:var(--primary);">(${item.quantity})</b></li>`; });
+                    let step = window.getStepIndex(order.status);
+                    let trackerHtml = '';
+                    if(!order.status.includes('❌') && !order.status.includes('الاسترجاع')) {
+                        trackerHtml = `<div class="order-track"><div class="track-step ${step >= 1 ? (step>1?'done':'active') : ''}"><div class="track-dot">1</div>مراجعة</div><div class="track-step ${step >= 2 ? (step>2?'done':'active') : ''}"><div class="track-dot">2</div>تجهيز</div><div class="track-step ${step >= 3 ? (step>3?'done':'active') : ''}"><div class="track-dot">3</div>شحن</div><div class="track-step ${step >= 4 ? 'done' : ''}"><div class="track-dot">4</div>توصيل</div></div>`;
+                    } else { trackerHtml = `<div style="color:var(--danger); font-weight:bold; text-align:center; padding:10px; background:rgba(220,53,69,0.1); border-radius:8px;">حالة الطلب: ${order.status}</div>`; }
+                    
+                    let actionBtns = '';
+                    if(order.status === 'قيد المراجعة') actionBtns = `<button type="button" class="btn btn-danger" style="margin-top:10px; width:100%;" onclick="window.cancelOrder('${order.id}')">إلغاء الطلب ❌</button>`;
+                    else if (order.status === 'تم التوصيل ✅' || order.status === 'تم الشحن') actionBtns = `<button type="button" class="btn btn-outline" style="margin-top:10px; width:100%; border-color:var(--danger); color:var(--danger);" onclick="window.openReturnModal('${order.id}')">طلب استرجاع 🔄</button>`;
+                    
+                    htmlContent += `
+                    <div class="order-card-pro" style="border-right-color: #028090;">
+                        <div class="order-header-pro">
+                            <h4 style="color:#028090;">📦 طلب #${order.id.slice(0,6).toUpperCase()}</h4>
+                            <span style="font-size:0.85rem; color:var(--text-muted); font-weight:bold;">${new Date(order.orderDate).toLocaleDateString('ar-EG')}</span>
+                        </div>
+                        ${trackerHtml}
+                        <div class="order-items-pro" style="margin-top:15px; padding:10px;"><ul style="padding-right:15px; margin:0;">${itemsHtml}</ul></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:1.1rem; font-weight:bold; margin-top:15px;">
+                            <span>الإجمالي:</span><span style="color:var(--secondary); font-size:1.3rem;">${order.totalAmount} ج</span>
+                        </div>
+                        ${actionBtns}
+                    </div>`;
+                });
+                container.innerHTML = htmlContent;
+            });
+        }
+window.cancelOrder = async function(orderId) { if(confirm('متأكد من الإلغاء؟')) { await updateDoc(doc(db, 'orders', orderId), { status: 'ملغى من العميل ❌' }); window.showToast('تم الإلغاء.', 'success'); } }
         
         window.openReturnModal = function(orderId) { let ri = document.getElementById('return-order-id'); if(ri) ri.value = orderId; let rn = document.getElementById('return-notes'); if(rn) rn.value = ''; let rif = document.getElementById('return-image-file'); if(rif) rif.value = ''; let rm = document.getElementById('return-modal'); if(rm) rm.style.display = 'flex'; }
         window.submitReturnRequest = async function() { let orderId = document.getElementById('return-order-id').value; let reason = document.getElementById('return-reason').value; let notes = document.getElementById('return-notes').value; let fileInput = document.getElementById('return-image-file'); if(!fileInput || fileInput.files.length === 0) { window.showToast('يرجى إرفاق صورة توضح المشكلة', 'error'); return; } let btn = document.getElementById('btn-submit-return'); if(btn) btn.disabled = true; let statusLabel = document.getElementById('return-upload-status'); if(statusLabel) statusLabel.style.display = 'block'; let returnImageUrl = null; try { const formData = new FormData(); formData.append('image', fileInput.files[0]); const res = await fetch(`https://api.imgbb.com/1/upload?key=D37b01ec4b27dcce48777a7b229a1fdb`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { returnImageUrl = data.data.url; } else { throw new Error(); } await addDoc(collection(db, 'return_requests'), { orderId: orderId, customerEmail: currentUser.email || currentUser.phoneNumber, reason: reason, notes: notes, imageUrl: returnImageUrl, status: 'قيد المراجعة', date: new Date().toISOString() }); await updateDoc(doc(db, 'orders', orderId), { status: 'طلب استرجاع قيد المراجعة 🔄' }); window.showToast('تم إرسال طلب الاسترجاع بنجاح', 'success'); let rm = document.getElementById('return-modal'); if(rm) rm.style.display = 'none'; } catch(e) { window.showToast('فشل إرسال الطلب', 'error'); } if(btn) btn.disabled = false; if(statusLabel) statusLabel.style.display = 'none'; }
 
         window.filterAdminOrders = function(status) { currentAdminOrderFilter = status; document.querySelectorAll('#admin-orders-panel .filter-btn').forEach(btn => btn.classList.remove('active')); if(event && event.target && event.target.classList) event.target.classList.add('active'); window.renderAdminOrdersUI(); }
-        window.renderAdminOrdersUI = function() { const container = document.getElementById('admin-orders-container'); if(!container) return; if(adminOrdersArray.length === 0) { container.innerHTML = '<h3 style="text-align:center; color:var(--text-muted);">لا توجد طلبات هنا.</h3>'; return; } let filtered = adminOrdersArray.filter(o => currentAdminOrderFilter === 'الكل' || o.status === currentAdminOrderFilter); if(filtered.length === 0) { container.innerHTML = '<h3 style="text-align:center; color:var(--text-muted);">لا توجد طلبات هنا.</h3>'; return; } let htmlContent = ''; filtered.forEach((data) => { let itemsHtml = ''; data.items.forEach(item => { itemsHtml += `<li>${item.name} (${item.quantity})</li>`; }); let receiptHtml = data.receiptUrl ? `<div style="margin-top:10px;"><a href="${data.receiptUrl}" target="_blank" style="display:inline-block; background:#17a2b8; color:white; padding:5px 10px; border-radius:6px; text-decoration:none; font-size:0.9rem;">📄 عرض إيصال الدفع</a></div>` : ''; htmlContent += `<div class="admin-msg-card"><h4>📦 ${data.customerName}</h4><p>📞 ${data.phones.primary}</p><p>📍 ${data.location.governorate} - ${data.location.city}<br>🏠 ${data.location.details}</p><p>💰 ${data.totalAmount} ج <span style="color:#028090; font-size:0.85rem;">(${data.paymentMethod || 'كاش'})</span></p><ul style="font-size:0.95rem;">${itemsHtml}</ul>${receiptHtml}<div style="margin-top: 15px; padding-top: 10px; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;"><select class="status-select" onchange="window.updateOrderStatus('${data.id}', this.value)"><option value="قيد المراجعة" ${data.status === 'قيد المراجعة' ? 'selected' : ''}>قيد المراجعة 🕒</option><option value="تم التجهيز" ${data.status === 'تم التجهيز' ? 'selected' : ''}>تم التجهيز 📦</option><option value="تم الشحن" ${data.status === 'تم الشحن' ? 'selected' : ''}>تم الشحن 🚚</option><option value="تم التوصيل ✅" ${data.status === 'تم التوصيل ✅' ? 'selected' : ''}>تم التوصيل ✅</option><option value="تم الرفض ❌" ${data.status === 'تم الرفض ❌' ? 'selected' : ''}>تم الرفض ❌</option></select><button type="button" class="btn btn-danger" style="padding:6px 12px; font-size:0.85rem;" onclick="window.deleteAdminOrder('${data.id}')">حذف الطلب نهائياً 🗑️</button></div></div>`; }); container.innerHTML = htmlContent; }
-        window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت متأكد من حذف هذا الطلب نهائياً من قاعدة البيانات؟')) { await deleteDoc(doc(db, 'orders', orderId)); window.showToast('تم حذف الطلب بنجاح', 'success'); } };
+        
+        window.renderAdminOrdersUI = function() {
+            const container = document.getElementById('admin-orders-container'); if(!container) return;
+            if(adminOrdersArray.length === 0) { container.innerHTML = '<h3 style="text-align:center; color:var(--text-muted);">لا توجد طلبات هنا.</h3>'; return; }
+            let filtered = adminOrdersArray.filter(o => currentAdminOrderFilter === 'الكل' || o.status === currentAdminOrderFilter);
+            if(filtered.length === 0) { container.innerHTML = '<h3 style="text-align:center; color:var(--text-muted);">لا توجد طلبات هنا.</h3>'; return; }
+            let htmlContent = '';
+            filtered.forEach((data) => {
+                let itemsHtml = ''; data.items.forEach(item => { itemsHtml += `<li>${item.name} <b style="color:var(--secondary);">(${item.quantity})</b></li>`; });
+                let receiptHtml = data.receiptUrl ? `<a href="${data.receiptUrl}" target="_blank" class="btn btn-outline" style="padding:6px 12px; font-size:0.85rem;">📄 إيصال الدفع</a>` : '';
+                let badgeClass = 'status-pending';
+                if(data.status.includes('تجهيز')) badgeClass = 'status-prep'; else if(data.status.includes('شحن')) badgeClass = 'status-shipped'; else if(data.status.includes('توصيل')) badgeClass = 'status-delivered'; else if(data.status.includes('رفض') || data.status.includes('لغى')) badgeClass = 'status-canceled';
+                
+                htmlContent += `
+                <div class="order-card-pro">
+                    <div class="order-header-pro">
+                        <h4>🛒 #${data.id.slice(0,6).toUpperCase()}</h4>
+                        <span class="order-status-badge ${badgeClass}">${data.status}</span>
+                    </div>
+                    <div class="order-details-pro">
+                        <div><span>👤 العميل</span><span>${data.customerName}</span></div>
+                        <div><span>📞 الهاتف</span><span>${data.phones.primary}</span></div>
+                        <div><span>📍 المحافظة</span><span>${data.location.governorate} - ${data.location.city}</span></div>
+                        <div><span>💰 الإجمالي</span><span style="color:var(--secondary); font-size:1.1rem;">${data.totalAmount} ج</span></div>
+                        <div style="grid-column: 1 / -1;"><span>🏠 العنوان التفصيلي</span><span>${data.location.details}</span></div>
+                    </div>
+                    <div class="order-items-pro"><strong>📦 المنتجات:</strong><ul>${itemsHtml}</ul></div>
+                    <div class="order-actions-pro" style="align-items:center; justify-content:space-between;">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <select class="status-select" style="margin:0;" onchange="window.updateOrderStatus('${data.id}', this.value)">
+                                <option value="قيد المراجعة" ${data.status === 'قيد المراجعة' ? 'selected' : ''}>قيد المراجعة 🕒</option>
+                                <option value="تم التجهيز" ${data.status === 'تم التجهيز' ? 'selected' : ''}>تم التجهيز 📦</option>
+                                <option value="تم الشحن" ${data.status === 'تم الشحن' ? 'selected' : ''}>تم الشحن 🚚</option>
+                                <option value="تم التوصيل ✅" ${data.status === 'تم التوصيل ✅' ? 'selected' : ''}>تم التوصيل ✅</option>
+                                <option value="تم الرفض ❌" ${data.status === 'تم الرفض ❌' ? 'selected' : ''}>تم الرفض ❌</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; gap:10px;">${receiptHtml} <button type="button" class="btn btn-danger" style="padding:6px 12px; font-size:0.85rem;" onclick="window.deleteAdminOrder('${data.id}')">حذف 🗑️</button></div>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = htmlContent;
+        }
+window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت متأكد من حذف هذا الطلب نهائياً من قاعدة البيانات؟')) { await deleteDoc(doc(db, 'orders', orderId)); window.showToast('تم حذف الطلب بنجاح', 'success'); } };
 
         window.loadCustomerChat = function() { if(!currentUser) return; let chatId = currentUser.email || currentUser.phoneNumber; if(!chatId) return; if(unsubscribeUserChat) unsubscribeUserChat(); unsubscribeUserChat = onSnapshot(doc(db, 'chats', chatId), (docSnap) => { const container = document.getElementById('support-history-container'); if(!container) return; if(docSnap.exists()) { let data = docSnap.data(); let html = ''; (data.messages || []).forEach(m => { let isCust = m.sender === 'customer'; let alignClass = isCust ? 'chat-msg-customer' : 'chat-msg-admin'; let bubbleClass = isCust ? 'bubble-customer' : 'bubble-admin'; let prefix = isCust ? '' : '<strong style="color:var(--secondary);font-size:0.8rem;">الدعم:</strong><br>'; html += `<div class="chat-msg-wrapper ${alignClass}"><div class="chat-bubble ${bubbleClass}">${prefix}${m.text}</div></div>`; }); container.innerHTML = html; container.scrollTop = container.scrollHeight; } else { let msg = window.currentLang === 'ar' ? 'ابدأ المحادثة الآن وسنرد عليك في أقرب وقت!' : 'Start the conversation now!'; container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">${msg}</p>`; } }); }
         let sf = document.getElementById('support-form'); if(sf) { sf.addEventListener('submit', async (e) => { e.preventDefault(); const msgInput = document.getElementById('support-message'); const txt = msgInput.value.trim(); if(!txt || !currentUser) return; msgInput.value = ''; let chatId = currentUser.email || currentUser.phoneNumber; let dName = currentUser.displayName || chatId.split('@')[0]; let msg = { sender: 'customer', text: txt, timestamp: new Date().toISOString() }; let chatRef = doc(db, 'chats', chatId); let snap = await getDoc(chatRef); if(snap.exists()) { await updateDoc(chatRef, { messages: arrayUnion(msg), lastUpdate: msg.timestamp }); } else { await setDoc(chatRef, { customerName: dName, messages: [msg], lastUpdate: msg.timestamp }); } }); }
@@ -1721,11 +1832,34 @@ window.showUserHistory = function(userId, userName) {
 }
 
 
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        if(window.showToast) window.showToast('✅ تم تحميل النسخة الجديدة بنجاح!', 'success');
-    }, 1500);
-});
+        window.shareProduct = function() {
+            if(!activeProductForReview) return;
+            const product = products.find(p => p.id === activeProductForReview);
+            if(navigator.share) {
+                navigator.share({
+                    title: product.name,
+                    text: `اكتشف هذا المنتج الرائع: ${product.name} بـ ${product.price} ج فقط!`,
+                    url: window.location.href.split('?')[0] + '?product=' + product.id
+                }).catch(e => console.log('Share error:', e));
+            } else {
+                window.showToast('ميزة المشاركة غير مدعومة في متصفحك', 'error');
+            }
+        };
+
+        window.togglePassword = function() {
+            let x = document.getElementById("auth-password");
+            if (x && x.type === "password") { x.type = "text"; } else if(x) { x.type = "password"; }
+        };
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const productId = urlParams.get('product');
+                if(productId && isProductsLoaded) {
+                    window.openProductModal(productId);
+                }
+            }, 1000);
+        });
 
 </script>
 </body>
