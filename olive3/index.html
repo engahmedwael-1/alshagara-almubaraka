@@ -636,7 +636,7 @@ html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
                 <p class="translatable" style="margin: 0; font-size: 1rem; opacity: 0.9;">مرحباً بك في برنامج الولاء الخاص بنا!</p>
                 <div style="font-size:3rem; font-weight:900; margin:15px 0;"><span id="loyalty-page-points">0</span></div>
                 <p class="translatable" style="margin: 0; font-size: 1rem; opacity: 0.9;">إجمالي نقاطك الحالية</p>
-                <button type="button" class="btn" style="background:white; color:var(--secondary); width:100%; max-width:250px; margin-top:15px; font-size:1.1rem; display:inline-flex; align-items:center; justify-content:center;" onclick="window.redeemLoyaltyPoints();"><span class="translatable">استبدل النقاط بخصم الآن!</span></button>
+                <button type="button" class="btn" style="background:white; color:var(--secondary); width:100%; max-width:250px; margin-top:15px; font-size:1.1rem; display:inline-flex; align-items:center; justify-content:center;" onclick="window.showPanel('cart');"><span class="translatable">استبدل النقاط بخصم الآن!</span></button>
             </div>
             <div style="background:var(--input-bg); border:1px solid var(--border-color); border-radius:12px; padding:15px;">
                 <h3 style="color:var(--primary); margin-top:0;" class="translatable">كيف يعمل البرنامج؟ 🤔</h3>
@@ -664,6 +664,7 @@ html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
                     <button type="button" class="btn" style="flex: 1;" onclick="window.applyPromoCodeCart()"><span class="translatable">تفعيل</span></button>
                 </div>
                 <small id="promo-msg-cart" style="display: block; margin-top: 8px; font-weight: bold;"></small>
+                <button type="button" id="btn-cancel-promo" class="btn btn-outline" style="display:none; width:100%; margin-top:10px; border-color:var(--danger); color:var(--danger); padding:8px;" onclick="window.removeDiscount()">إلغاء كود الخصم ✖</button>
             </div>
 
             
@@ -673,7 +674,10 @@ html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
                     <strong class="translatable">لديك نقاط ولاء! 🎁</strong><br>
                     <span style="font-size: 0.9rem; color: var(--text-color);"><span class="translatable">رصيدك:</span> <span id="cart-loyalty-points">0</span> <span class="translatable">نقطة</span></span>
                 </div>
-                <button type="button" class="btn btn-outline" style="padding: 5px 10px; font-size: 0.85rem;" onclick="window.redeemLoyaltyPoints()"><span class="translatable">استبدال بخصم</span></button>
+                <div style="display:flex; gap:5px;" id="loyalty-actions-box">
+                    <button type="button" id="btn-redeem-loyalty" class="btn btn-outline" style="padding: 5px 10px; font-size: 0.85rem;" onclick="window.redeemLoyaltyPoints()"><span class="translatable">استبدل بخصم</span></button>
+                    <button type="button" id="btn-cancel-loyalty" class="btn btn-danger" style="display:none; padding: 5px 10px; font-size: 0.85rem;" onclick="window.removeDiscount()"><span class="translatable">إلغاء ✖</span></button>
+                </div>
             </div>
 
             <div class="invoice-box" style="margin-top:20px;">
@@ -986,6 +990,15 @@ html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
             <button type="button" class="modal-close" onclick="document.getElementById('admin-order-modal').style.display='none'">X</button>
             <h2 style="color:var(--primary); margin-top:0;">📋 تفاصيل الطلب</h2>
             <div id="aom-content" style="font-size: 0.95rem; line-height: 1.6;"></div>
+        </div>
+    </div>
+
+    
+    <div id="customer-order-modal" class="modal-overlay" style="z-index: 5500;">
+        <div class="modal-content" style="max-width: 600px; text-align: right; border: 2px solid var(--primary);">
+            <button type="button" class="modal-close" onclick="document.getElementById('customer-order-modal').style.display='none'">X</button>
+            <h2 style="color:var(--primary); margin-top:0;">📦 تفاصيل طلبي</h2>
+            <div id="com-content" style="font-size: 0.95rem; line-height: 1.6;"></div>
         </div>
     </div>
 
@@ -1425,7 +1438,9 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         window.showPanel = function(panelId) { 
             Object.values(panels).forEach(p => { if(p) { p.classList.remove('active'); p.style.display = ''; } }); 
             document.querySelectorAll('.nav-btn, .bottom-nav-btn').forEach(btn => btn.classList.remove('active')); 
-            if(panels[panelId]) panels[panelId].classList.add('active'); 
+            if(panels[panelId]) panels[panelId].classList.add('active');
+            if(panelId === 'admin-tasks') window.loadAdminTasks();
+ 
             document.querySelectorAll(`.nav-btn[onclick="window.showPanel('${panelId}')"], .bottom-nav-btn[onclick="window.showPanel('${panelId}')"]`).forEach(btn => btn.classList.add('active'));
             
             let hSection = document.getElementById('hero-section'); if(hSection) hSection.style.display = panelId === 'home' ? 'block' : 'none'; 
@@ -1448,13 +1463,15 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         onSnapshot(collection(db, 'promoCodes'), (snapshot) => { promoCodesList = []; let html = ''; snapshot.forEach(doc => { let data = doc.data(); data.id = doc.id; promoCodesList.push(data); html += `<div style="background:var(--input-bg); padding:10px; border:1px solid var(--border-color); border-radius:8px; display:flex; justify-content:space-between; margin-bottom:5px;"><span><strong>${data.code}</strong> (${data.discount}%)</span><button type="button" class="btn-danger" style="border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="window.removePromo('${data.id}')">حذف</button></div>`; }); let listEl = document.getElementById('admin-promos-list'); if(listEl) listEl.innerHTML = html; });
 
         window.applySettingsToUI = function() {
+            if(storeSettings.loyaltyEarnRate) window.loyaltyEarnRateActual = storeSettings.loyaltyEarnRate;
+            if(storeSettings.loyaltyRedeemValue) window.loyaltyRedeemValueActual = storeSettings.loyaltyRedeemValue;
+            let letxt = document.getElementById('loyalty-earn-text'); if(letxt) letxt.textContent = window.loyaltyEarnRateActual;
+            let lrtxt = document.getElementById('loyalty-redeem-text'); if(lrtxt) lrtxt.textContent = window.loyaltyRedeemValueActual;
+            
             if(isCurrentUserAdmin) { let csToggle = document.getElementById('setting-cross-sell'); if(csToggle) csToggle.checked = storeSettings.enableCrossSell;
-                if(storeSettings.loyaltyEarnRate) window.loyaltyEarnRateActual = storeSettings.loyaltyEarnRate;
-                if(storeSettings.loyaltyRedeemValue) window.loyaltyRedeemValueActual = storeSettings.loyaltyRedeemValue;
                 let loyE = document.getElementById('setting-loyalty-earn'); if(loyE && storeSettings.loyaltyEarnRate) loyE.value = storeSettings.loyaltyEarnRate;
                 let loyV = document.getElementById('setting-loyalty-value'); if(loyV && storeSettings.loyaltyRedeemValue) loyV.value = storeSettings.loyaltyRedeemValue;
-                let letxt = document.getElementById('loyalty-earn-text'); if(letxt) letxt.textContent = window.loyaltyEarnRateActual;
-                let lrtxt = document.getElementById('loyalty-redeem-text'); if(lrtxt) lrtxt.textContent = window.loyaltyRedeemValueActual; let autoEl = document.getElementById('setting-auto-reply'); if(autoEl) autoEl.value = storeSettings.autoReplyMessage || ''; let wallEl = document.getElementById('setting-wallet-number'); if(wallEl) wallEl.value = storeSettings.walletNumber || ''; let fbEl = document.getElementById('setting-fb-pixel'); if(fbEl) fbEl.value = storeSettings.fbPixelId || ''; let ttEl = document.getElementById('setting-tt-pixel'); if(ttEl) ttEl.value = storeSettings.ttPixelId || ''; 
+                let autoEl = document.getElementById('setting-auto-reply'); if(autoEl) autoEl.value = storeSettings.autoReplyMessage || ''; let wallEl = document.getElementById('setting-wallet-number'); if(wallEl) wallEl.value = storeSettings.walletNumber || ''; let fbEl = document.getElementById('setting-fb-pixel'); if(fbEl) fbEl.value = storeSettings.fbPixelId || ''; let ttEl = document.getElementById('setting-tt-pixel'); if(ttEl) ttEl.value = storeSettings.ttPixelId || ''; 
                 let fsInp = document.getElementById('setting-free-shipping'); if(fsInp && storeSettings.freeShippingThreshold) fsInp.value = storeSettings.freeShippingThreshold; }
             let chWall = document.getElementById('checkout-wallet-number'); if(chWall) chWall.textContent = storeSettings.walletNumber || '01018631768';
             const floatingContainer = document.getElementById('floating-menu-container'), footerSocialContainer = document.getElementById('footer-social-links'), adminBtnsList = document.getElementById('admin-floating-btns-list');
@@ -1559,11 +1576,26 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                     let desc = [];
                     if(currentDiscountPercent > 0) desc.push(`كوبون (${appliedPromoCode})`);
                     if(window.loyaltyDiscountFixed > 0) desc.push("نقاط الولاء");
-                    dr.innerHTML = `<span class="translatable discount-desc" style="color:var(--danger); font-weight:bold;">خصم (${desc.join(' + ')}): <button onclick="window.removeDiscount()" style="background:none; border:none; color:var(--danger); font-size:1.1rem; cursor:pointer;" title="إلغاء الخصم">✖</button></span><span style="color:var(--danger); font-weight:bold;">-<span class="invoice-discount-val">${discountVal}</span> ج</span>`;
+                    dr.innerHTML = `<span class="translatable discount-desc" style="color:var(--danger); font-weight:bold;">خصم (${desc.join(' + ')}):</span><span style="color:var(--danger); font-weight:bold;">-<span class="invoice-discount-val">${discountVal}</span> ج</span>`;
                 } else {
                     dr.style.display = 'none';
                 }
             });
+            
+            let btnCnlPromo = document.getElementById('btn-cancel-promo');
+            if(btnCnlPromo) btnCnlPromo.style.display = currentDiscountPercent > 0 ? 'block' : 'none';
+            
+            let btnRdmLoyalty = document.getElementById('btn-redeem-loyalty');
+            let btnCnlLoyalty = document.getElementById('btn-cancel-loyalty');
+            if(btnRdmLoyalty && btnCnlLoyalty) {
+                if(window.loyaltyPointsUsedTemp > 0) {
+                    btnRdmLoyalty.style.display = 'none';
+                    btnCnlLoyalty.style.display = 'inline-block';
+                } else {
+                    btnRdmLoyalty.style.display = 'inline-block';
+                    btnCnlLoyalty.style.display = 'none';
+                }
+            }
         }
         
         window.removeDiscount = async function() {
@@ -1689,7 +1721,7 @@ let adminUsersUnsubscribe = null;
             let count = 0;
             
             // Pending Orders
-            let pendingOrders = adminOrdersArray.filter(o => o.status === 'قيد المراجعة');
+            let pendingOrders = adminOrdersArray.filter(o => o.status && o.status.includes('قيد المراجعة') && !o.status.includes('طلب استرجاع'));
             if(pendingOrders.length > 0) {
                 count += pendingOrders.length;
                 tasksHtml += `<div class="admin-msg-card" style="border-right: 4px solid var(--primary); cursor:pointer;" onclick="window.showPanel('admin-orders'); window.filterAdminOrders('قيد المراجعة');">
@@ -1699,7 +1731,7 @@ let adminUsersUnsubscribe = null;
             }
             
             // Pending Returns
-            let pendingReturns = adminReturnsArray.filter(r => r.status === 'قيد المراجعة');
+            let pendingReturns = adminReturnsArray.filter(r => r.status && r.status.includes('قيد المراجعة'));
             if(pendingReturns.length > 0) {
                 count += pendingReturns.length;
                 tasksHtml += `<div class="admin-msg-card" style="border-right: 4px solid #e0a800; cursor:pointer;" onclick="window.showPanel('admin-returns');">
@@ -2045,7 +2077,7 @@ try {
             if(!currentUser) return; let filterKey = currentUser.email || currentUser.phoneNumber; if(!filterKey) return;
             onSnapshot(query(collection(db, 'orders'), where('customerEmail', '==', filterKey)), (snapshot) => {
                 const container = document.getElementById('customer-orders-container'); if(!container) return;
-                let userOrders = []; snapshot.forEach(doc => userOrders.push({id: doc.id, ...doc.data()}));
+                window.customerOrdersArray = []; snapshot.forEach(doc => window.customerOrdersArray.push({id: doc.id, ...doc.data()})); let userOrders = window.customerOrdersArray;
                 userOrders.sort((a,b) => new Date(b.orderDate) - new Date(a.orderDate));
                 if(userOrders.length === 0) { container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;"><span style="font-size:3rem; display:block; margin-bottom:10px;">🛒</span><h3>لا توجد طلبات بعد.</h3></div>`; return; }
                 let htmlContent = '';
@@ -2072,22 +2104,15 @@ try {
                     
                     let dStr = new Date(order.orderDate).toLocaleDateString('ar-EG', { dateStyle: 'long' });
                     
-                    let isActionNeeded = order.status === 'قيد المراجعة' || order.status === 'تم التوصيل ✅' || order.status === 'تم الشحن';
                     htmlContent += `
-                    <div class="admin-msg-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-right:4px solid #028090;">
-                        <div style="flex:1; min-width:250px;">
+                    <div class="admin-msg-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; cursor:pointer; border-right:4px solid #028090;" onclick="window.openCustomerOrderModal('${order.id}')">
+                        <div>
                             <strong style="color:var(--primary); font-size:1.1rem;">📦 طلب #${order.id.slice(0,6).toUpperCase()}</strong><br>
                             <span style="font-size:0.85rem; color:var(--text-muted);">📅 ${dStr}</span><br>
-                            <div style="margin-top:10px;">${trackerHtml}</div>
-                            <div style="margin-top:10px; background:#f8fafc; padding:10px; border-radius:8px; font-size:0.9rem;">
-                                <strong>المنتجات:</strong>
-                                <ul style="margin:5px 0 0 0; padding-right:20px;">${itemsHtml}</ul>
-                            </div>
-                            <strong style="color:var(--secondary); display:block; margin-top:10px; font-size:1.15rem;">الإجمالي: ${order.totalAmount} ج</strong>
+                            <strong style="color:var(--secondary);">${order.totalAmount} ج</strong>
                         </div>
-                        <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end;">
-                            <span class="order-status-badge ${badgeClass}" style="font-size:0.85rem;">${statusIcon} ${order.status}</span>
-                            ${isActionNeeded ? `<div style="margin-top:10px;">${actionBtns}</div>` : ''}
+                        <div>
+                            <span class="order-status-badge ${badgeClass}" style="font-size:0.75rem;">${statusIcon} ${order.status}</span>
                         </div>
                     </div>`;
                 });
@@ -2096,7 +2121,60 @@ try {
         }
 
 
-window.cancelOrder = async function(orderId) { 
+
+        window.openCustomerOrderModal = function(orderId) {
+            if(!window.customerOrdersArray) return;
+            let order = window.customerOrdersArray.find(o => o.id === orderId);
+            if(!order) return;
+            
+            let itemsHtml = ''; order.items.forEach(item => { itemsHtml += `<li>${item.name} <b style="color:var(--primary);">(${item.quantity})</b></li>`; });
+            let step = window.getStepIndex(order.status);
+            let trackerHtml = '';
+            
+            let badgeClass = 'status-pending';
+            let statusIcon = '🕒';
+            if(order.status.includes('تجهيز')) { badgeClass = 'status-prep'; statusIcon = '📦'; }
+            else if(order.status.includes('شحن')) { badgeClass = 'status-shipped'; statusIcon = '🚚'; }
+            else if(order.status.includes('توصيل')) { badgeClass = 'status-delivered'; statusIcon = '✅'; }
+            else if(order.status.includes('رفض') || order.status.includes('لغى')) { badgeClass = 'status-canceled'; statusIcon = '❌'; }
+
+            if(!order.status.includes('❌') && !order.status.includes('الاسترجاع')) {
+                let t1 = window.currentLang==='ar'?'مراجعة':'Review'; let t2 = window.currentLang==='ar'?'تجهيز':'Prep'; let t3 = window.currentLang==='ar'?'شحن':'Ship'; let t4 = window.currentLang==='ar'?'توصيل':'Delivered';
+                trackerHtml = `<div class="order-track" style="margin: 25px 0;"><div class="track-step ${step >= 1 ? (step>1?'done':'active') : ''}"><div class="track-dot">1</div>${t1}</div><div class="track-step ${step >= 2 ? (step>2?'done':'active') : ''}"><div class="track-dot">2</div>${t2}</div><div class="track-step ${step >= 3 ? (step>3?'done':'active') : ''}"><div class="track-dot">3</div>${t3}</div><div class="track-step ${step >= 4 ? 'done' : ''}"><div class="track-dot">4</div>${t4}</div></div>`;
+            }
+            
+            let actionBtns = '';
+            if(order.status === 'قيد المراجعة') actionBtns = `<button type="button" class="btn btn-danger" style="margin-top:10px; width:100%; padding:12px; border-radius:8px;" onclick="window.cancelOrder('${order.id}'); document.getElementById('customer-order-modal').style.display='none';">إلغاء الطلب ❌</button>`;
+            else if (order.status === 'تم التوصيل ✅' || order.status === 'تم الشحن') actionBtns = `<button type="button" class="btn btn-outline" style="margin-top:10px; width:100%; border-color:var(--danger); color:var(--danger); padding:12px; border-radius:8px;" onclick="window.openReturnModal('${order.id}'); document.getElementById('customer-order-modal').style.display='none';">طلب استرجاع 🔄</button>`;
+            
+            let dStr = new Date(order.orderDate).toLocaleDateString('ar-EG', { dateStyle: 'long' });
+            
+            let html = `
+                <div style="background:var(--input-bg); padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border-color);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span style="font-size:0.85rem; color:var(--text-muted);">📅 ${dStr}</span>
+                        <span class="order-status-badge ${badgeClass}" style="font-size:0.75rem;">${statusIcon} ${order.status}</span>
+                    </div>
+                    ${trackerHtml}
+                </div>
+                
+                <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px dashed var(--border-color); margin-bottom:15px;">
+                    <strong style="color:var(--primary); display:block; margin-bottom:10px;">📦 المنتجات المطلوبة:</strong>
+                    <ul style="margin:0; padding-right:20px;">${itemsHtml}</ul>
+                </div>
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#f0fdf4; padding:15px; border-radius:8px; border:1px solid #bbf7d0; margin-bottom:15px;">
+                    <strong style="font-size:1.1rem;">الإجمالي المدفوع:</strong>
+                    <strong style="color:#166534; font-size:1.4rem;">${order.totalAmount} ج</strong>
+                </div>
+                
+                ${actionBtns ? `<div>${actionBtns}</div>` : ''}
+            `;
+            document.getElementById('com-content').innerHTML = html;
+            document.getElementById('customer-order-modal').style.display = 'flex';
+        };
+
+        window.cancelOrder = async function(orderId) { 
     if(confirm('متأكد من الإلغاء؟')) { 
         let orderDoc = await getDoc(doc(db, 'orders', orderId));
         if(orderDoc.exists()) {
