@@ -407,6 +407,7 @@ html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
                     <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color);" onclick="window.showPanel('cart'); window.closeSidebar();">🛒 <span class="translatable">سلة المشتريات</span></button>
                     <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color);" onclick="window.showPanel('customer-orders'); window.closeSidebar();">📦 <span class="translatable">طلباتي</span></button>
                     <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color);" onclick="window.showPanel('wishlist'); window.closeSidebar();">❤️ <span class="translatable">المفضلة</span></button>
+                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color);" onclick="window.showPanel('global-notifications-panel'); window.closeSidebar();">🔔 <span class="translatable">الإشعارات</span></button>
                     <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color);" onclick="window.showPanel('recently-viewed-panel'); window.closeSidebar();">👀 <span class="translatable">سجل المشاهدات</span></button>
                 </div>
             </div>
@@ -474,6 +475,7 @@ html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
                 </div>
             </div>
             
+            <button type="button" class="btn btn-outline" style="padding: 5px 8px; font-size:1.1rem; background:transparent; border:none;" onclick="window.showPanel('global-notifications-panel')">🔔</button>
             <button type="button" class="btn btn-outline" style="padding: 5px 8px; font-size:1.1rem; background:transparent; border:none;" onclick="window.toggleLanguage()" id="lang-btn">🌐 EN</button>
             <button type="button" class="btn btn-outline" style="padding: 5px 8px; font-size:1.1rem; background:transparent; border:none;" onclick="window.toggleDarkMode()">🌓</button>
             <button type="button" class="btn btn-outline" style="padding: 5px 12px; font-size:0.9rem; background:white; color:var(--primary);" id="btn-show-auth" onclick="window.showPanel('auth')"><span class="translatable">تسجيل الدخول</span></button>
@@ -489,6 +491,7 @@ html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
                     <button type="button" class="dropdown-item" onclick="window.showPanel('loyalty'); window.closeDropdown()">🎁 <span class="translatable">نقاط الولاء</span></button>
                     <button type="button" class="dropdown-item" onclick="window.showPanel('customer-orders'); window.closeDropdown()">📦 <span class="translatable">طلباتي</span></button>
                     <button type="button" class="dropdown-item" onclick="window.showPanel('wishlist'); window.closeDropdown()">❤️ <span class="translatable">المفضلة</span></button>
+                    <button type="button" class="dropdown-item" onclick="window.showPanel('global-notifications-panel'); window.closeDropdown()">🔔 <span class="translatable">الإشعارات</span></button>
                     <button type="button" class="dropdown-item" onclick="window.showPanel('recently-viewed-panel'); window.closeDropdown()">👀 <span class="translatable">سجل المشاهدات</span></button>
                     <button type="button" class="dropdown-item" onclick="window.loadAllReviews(); window.closeDropdown()">⭐️ <span class="translatable">آراء العملاء</span></button>
                     <hr style="margin:5px 0; border-top:1px solid var(--border-color);">
@@ -739,6 +742,14 @@ html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
                 </div>
                 <button type="button" class="btn btn-outline" onclick="window.showPanel('cart')" style="width: 100%; margin-top: 15px; color: var(--text-color); border-color: var(--border-color);"><span class="translatable">العودة للسلة</span></button>
             </form>
+        </div>
+
+        
+        <div class="panel" id="global-notifications-panel">
+            <h2 style="color: var(--primary); margin-top: 0;" class="translatable">🔔 الإشعارات</h2>
+            <div id="full-notifications-container">
+                <h3 style="text-align: center; color: var(--text-muted);" class="translatable">جاري التحميل...</h3>
+            </div>
         </div>
 
         <div class="panel" id="customer-orders-panel">
@@ -1087,6 +1098,8 @@ const ROLES_MASTER_PIN = "147258", ROLES_NATIONAL_ID = "31003141301958";
                             html += `<div class="notification-item"><strong>${n.title}</strong><span>${n.message}</span><span class="notification-time">${d}</span></div>`;
                         });
                         if(notifList) notifList.innerHTML = html;
+                        let fullCont = document.getElementById('full-notifications-container');
+                        if(fullCont) fullCont.innerHTML = html;
                         if(notifBadge) { notifBadge.textContent = unreadCount; notifBadge.style.display = unreadCount > 0 ? 'flex' : 'none'; }
                         let btnN = document.getElementById('btn-notifications'); if(btnN) btnN.style.display = 'block';
                     }
@@ -1160,7 +1173,20 @@ const ROLES_MASTER_PIN = "147258", ROLES_NATIONAL_ID = "31003141301958";
 
         const deliveryData = { "القاهرة": { shippingCost: 90, cities: ["مدينة نصر", "المعادي", "مصر الجديدة", "شبرا", "التجمع الخامس", "عين شمس", "حلوان", "المطرية", "المرج", "وسط البلد", "الزمالك", "الرحاب", "الشروق", "مدينتي", "العباسية", "دار السلام"] }, "الجيزة": { shippingCost: 90, cities: ["الدقي", "المهندسين", "الهرم", "فيصل", "6 أكتوبر", "الشيخ زايد", "العجوزة", "البدرشين", "الصف", "الحوامدية", "العياط", "أوسيم", "كرداسة", "الوراق", "إمبابة"] }, "الشرقية": { shippingCost: 90, cities: ["الزقازيق", "فاقوس", "بلبيس", "منيا القمح", "أبو حماد", "العاشر من رمضان", "ههيا", "أبو كبير", "ديرب نجم", "الحسينية", "مشتول السوق", "أولاد صقر", "الإبراهيمية", "القرين", "القنايات"] }, "الإسكندرية": { shippingCost: 90, cities: ["سيدي جابر", "سموحة", "محرم بك", "العجمي", "المنتزه", "ميامي", "العامرية", "برج العرب", "سيدي بشر", "المندرة", "كليوباترا", "لوران", "كامب شيزار"] }, "القليوبية": { shippingCost: 90, cities: ["بنها", "شبرا الخيمة", "قليوب", "طوخ", "الخانكة", "القناطر الخيرية", "شبين القناطر", "العبور", "الخصوص", "قها"] }, "الدقهلية": { shippingCost: 90, cities: ["المنصورة", "ميت غمر", "السنبلاوين", "دكرنس", "بلقاس", "شربين", "طلخا", "منية النصر", "نبروه", "أجا", "الجمالية", "المطرية", "تمي الأمديد", "ميت سلسيل"] }, "البحيرة": { shippingCost: 90, cities: ["دمنهور", "كفر الدوار", "إيتاي البارود", "أبو حمص", "كوم حمادة", "رشيد", "حوش عيسى", "المحمودية", "إدكو", "الدلنجات", "شبراخيت", "الرحمانية", "النوبارية", "وادي النطرون"] }, "الغربية": { shippingCost: 90, cities: ["طنطا", "المحلة الكبرى", "زفتى", "كفر الزيات", "سمنود", "بسيون", "قطور", "السنطة"] }, "المنوفية": { shippingCost: 90, cities: ["شبين الكوم", "منوف", "أشمون", "قويسنا", "بركة السبع", "تلا", "الشهداء", "السادات", "سرس الليان"] }, "كفر الشيخ": { shippingCost: 90, cities: ["كفر الشيخ", "دسوق", "فوه", "مطوبس", "بيلا", "الحامول", "سيدي سالم", "بلطيم", "قلين", "الرياض", "سيدي غازي", "مسير"] }, "دمياط": { shippingCost: 90, cities: ["دمياط", "رأس البر", "فارسكور", "الزرقا", "كفر سعد", "عزبة البرج", "السرو", "ميت أبو غالب", "الروضة"] }, "بورسعيد": { shippingCost: 90, cities: ["حي الشرق", "حي العرب", "حي المناخ", "حي الضواحي", "بورفؤاد", "حي الزهور", "حي الجنوب"] }, "الإسماعيلية": { shippingCost: 90, cities: ["الإسماعيلية", "فايد", "القنطرة شرق", "القنطرة غرب", "التل الكبير", "أبو صوير", "القصاصين"] }, "السويس": { shippingCost: 90, cities: ["السويس", "الأربعين", "عتاقة", "فيصل", "الجناين"] }, "شمال سيناء": { shippingCost: 100, cities: ["العريش", "الشيخ زويد", "رفح", "بئر العبد", "نخل", "الحسنة"] }, "جنوب سيناء": { shippingCost: 100, cities: ["شرم الشيخ", "طور سيناء", "دهب", "نويبع", "طابا", "رأس سدر", "سانت كاترين", "أبو رديس", "أبو زنيمة"] }, "الفيوم": { shippingCost: 90, cities: ["الفيوم", "سنورس", "إطسا", "طامية", "يوسف الصديق", "أبشواي"] }, "بني سويف": { shippingCost: 90, cities: ["بني سويف", "الواسطى", "ناصر", "إهناسيا", "ببا", "سمسطا", "الفشن"] }, "المنيا": { shippingCost: 90, cities: ["المنيا", "ملوي", "مغاغة", "بني مزار", "سمالوط", "أبو قرقاص", "مطاي", "دير مواس", "العدوة"] }, "أسيوط": { shippingCost: 90, cities: ["أسيوط", "ديروط", "القوصية", "أبنوب", "منفلوط", "أبو تيج", "الغنايم", "البداري", "ساحل سليم", "صدفا", "الفتح"] }, "سوهاج": { shippingCost: 90, cities: ["سوهاج", "طما", "طهطا", "المراغة", "أخميم", "جرجا", "المنشأة", "دار السلام", "البلينا", "جهينة", "ساقلتة", "العسيرات"] }, "قنا": { shippingCost: 90, cities: ["قنا", "نجع حمادي", "دشنا", "قوص", "أبو تشت", "فرشوط", "فاو", "نقادة", "الوقف", "قفط"] }, "الأقصر": { shippingCost: 90, cities: ["الأقصر", "إسنا", "أرمنت", "البياضية", "القرنة", "الطود", "الزينية"] }, "أسوان": { shippingCost: 100, cities: ["أسوان", "إدفو", "كوم أمبو", "نصر النوبة", "دراو", "أبو سمبل", "كلابشة", "الرديسية", "البصيلية", "السباعية"] }, "البحر الأحمر": { shippingCost: 100, cities: ["الغردقة", "سفاجا", "القصير", "مرسى علم", "رأس غارب", "حلايب", "شلاتين"] }, "الوادي الجديد": { shippingCost: 100, cities: ["الخارجة", "الداخلة", "الفرافرة", "باريس", "بلاط"] }, "مطروح": { shippingCost: 100, cities: ["مرسى مطروح", "العلمين", "الحمام", "الضبعة", "سيوة", "النجيلة", "براني", "السلوم"] } };
 
-        let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = false, isProductsLoaded = false, currentCategoryFilter = 'الكل', searchQuery = '', activeProductForReview = null, activeVariantForCart = null;
+        
+        function parseVariants(vStr) {
+            if(!vStr) return [];
+            let arr = [];
+            let parts = vStr.split(',');
+            parts.forEach(p => {
+                let kv = p.split('-');
+                if(kv.length === 2) {
+                    arr.push({ name: kv[0].trim(), price: Number(kv[1].trim()) });
+                }
+            });
+            return arr;
+        }
+let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = false, isProductsLoaded = false, currentCategoryFilter = 'الكل', searchQuery = '', activeProductForReview = null, activeVariantForCart = null;
         let adminOrdersArray = [], adminReturnsArray = [], currentAdminOrderFilter = 'الكل';
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
         let savedForLater = JSON.parse(localStorage.getItem('savedForLater')) || [];
@@ -1317,7 +1343,7 @@ const ROLES_MASTER_PIN = "147258", ROLES_NATIONAL_ID = "31003141301958";
 
         window.showToast = function(message, type = 'info') { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type}`; let icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️'); toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`; container.appendChild(toast); setTimeout(() => toast.classList.add('show'), 10); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000); };
 
-        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel') };
+        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'global-notifications-panel': document.getElementById('global-notifications-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel') };
         let checkoutMap = null, userMarker = null;
 
         window.openSidebar = function() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('show'); }
@@ -1462,11 +1488,25 @@ const ROLES_MASTER_PIN = "147258", ROLES_NATIONAL_ID = "31003141301958";
             let discountVal = Math.round(currentSubtotal * (currentDiscountPercent / 100)) + window.loyaltyDiscountFixed; 
             let dEl = document.getElementById('invoice-discount'); if(dEl) dEl.textContent = discountVal; 
             
+            let targetAmount = (storeSettings && storeSettings.freeShippingThreshold) ? storeSettings.freeShippingThreshold : 1000;
             let finalShipping = currentShippingCost;
-            if(currentSubtotal >= 1000) finalShipping = 0;
+            if(currentSubtotal >= targetAmount) finalShipping = 0;
             let shEl = document.getElementById('invoice-shipping'); if(shEl) shEl.textContent = finalShipping; 
-            let finalTot = (currentSubtotal - discountVal) + finalShipping;
+            
+            let dr = document.getElementById('discount-row');
+            if(discountVal > 0) {
+                if(dr) {
+                    dr.style.display = 'flex';
+                    let desc = [];
+                    if(currentDiscountPercent > 0) desc.push(`كوبون (${appliedPromoCode})`);
+                    if(window.loyaltyDiscountFixed > 0) desc.push("نقاط الولاء");
+                    dr.innerHTML = `<span class="translatable">خصم (${desc.join(' + ')}):</span><span>-<span id="invoice-discount">${discountVal}</span> ج</span>`;
+                }
+            } else {
+                if(dr) dr.style.display = 'none';
+            }
 
+            let finalTot = (currentSubtotal - discountVal) + finalShipping;
             if(finalTot < 0) finalTot = 0;
             let tEl = document.getElementById('invoice-total'); if(tEl) tEl.textContent = finalTot; 
         }
@@ -1813,6 +1853,39 @@ try {
                 document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false); window.showPanel('customer-orders');
             } catch (error) { console.error("Order Process Error: ", error); window.showToast('حدث خطأ في الاتصال بقاعدة البيانات. حاول مجدداً.', 'error'); document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false); }
         }
+
+        
+        window.sendGlobalNotification = async function() {
+            let msgInput = document.getElementById('admin-notif-msg');
+            let msg = msgInput ? msgInput.value.trim() : "";
+            if(!msg) { window.showToast('اكتب الإشعار أولاً', 'error'); return; }
+            try {
+                let notifObj = {
+                    title: 'إشعار من الإدارة 📢',
+                    message: msg,
+                    date: new Date().toISOString()
+                };
+                await addDoc(collection(db, 'global_notifications'), notifObj);
+                
+                // Add to all users
+                const { getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                const usersSnap = await getDocs(collection(db, 'users'));
+                usersSnap.forEach(async (uDoc) => {
+                    try {
+                        await updateDoc(doc(db, 'users', uDoc.id), {
+                            unreadNotifs: increment(1),
+                            notifications: arrayUnion(notifObj)
+                        });
+                    } catch(e){}
+                });
+                
+                if(msgInput) msgInput.value = '';
+                window.showToast('تم إرسال الإشعار للجميع!', 'success');
+            } catch(e) {
+                console.error(e);
+                window.showToast('فشل إرسال الإشعار', 'error');
+            }
+        };
 
         window.exportOrdersCSV = function() { if(adminOrdersArray.length === 0) { window.showToast('لا توجد طلبات لتصديرها', 'error'); return; } let csv = "رقم الطلب,تاريخ الطلب,اسم العميل,رقم الهاتف,المحافظة,المدينة,العنوان,المنتجات,طريقة الدفع,الاجمالي,حالة الطلب\n"; adminOrdersArray.forEach(o => { let dateStr = new Date(o.orderDate).toLocaleString('ar-EG').replace(/,/g, ''); let cleanName = String(o.customerName).replace(/,/g, ' '); let cleanGov = String(o.location.governorate).replace(/,/g, ''); let cleanCity = String(o.location.city).replace(/,/g, ''); let cleanAddress = String(o.location.details).replace(/,/g, ' ').replace(/\n/g, ' '); let itemsStr = o.items.map(i => `${i.name} (${i.quantity})`).join(' | ').replace(/,/g, ''); let pMethod = o.paymentMethod || 'كاش'; csv += `"${o.id}","${dateStr}","${cleanName}","${o.phones.primary}","${cleanGov}","${cleanCity}","${cleanAddress}","${itemsStr}","${pMethod}","${o.totalAmount}","${o.status}"\n`; }); const blob = new Blob(["\uFEFF"+csv], {type: 'text/csv;charset=utf-8;'}); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `orders_${new Date().toISOString().slice(0,10)}.csv`; link.click(); window.showToast('تم تحميل الملف بنجاح!', 'success'); }
 
