@@ -1376,7 +1376,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
 
         window.showToast = function(message, type = 'info') { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type}`; let icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️'); toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`; container.appendChild(toast); setTimeout(() => toast.classList.add('show'), 10); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000); };
 
-        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'global-notifications-panel': document.getElementById('global-notifications-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel') };
+        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-tasks': document.getElementById('admin-tasks-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'global-notifications-panel': document.getElementById('global-notifications-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel') };
         let checkoutMap = null, userMarker = null;
 
         window.openSidebar = function() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('show'); }
@@ -1559,13 +1559,37 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                     let desc = [];
                     if(currentDiscountPercent > 0) desc.push(`كوبون (${appliedPromoCode})`);
                     if(window.loyaltyDiscountFixed > 0) desc.push("نقاط الولاء");
-                    dr.innerHTML = `<span class="translatable discount-desc" style="color:var(--danger); font-weight:bold;">خصم (${desc.join(' + ')}):</span><span style="color:var(--danger); font-weight:bold;">-<span class="invoice-discount-val">${discountVal}</span> ج</span>`;
+                    dr.innerHTML = `<span class="translatable discount-desc" style="color:var(--danger); font-weight:bold;">خصم (${desc.join(' + ')}): <button onclick="window.removeDiscount()" style="background:none; border:none; color:var(--danger); font-size:1.1rem; cursor:pointer;" title="إلغاء الخصم">✖</button></span><span style="color:var(--danger); font-weight:bold;">-<span class="invoice-discount-val">${discountVal}</span> ج</span>`;
                 } else {
                     dr.style.display = 'none';
                 }
             });
         }
-        window.toEngDigits = function(str) { const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩']; return str.split('').map(c => ar.indexOf(c) !== -1 ? ar.indexOf(c) : c).join(''); }
+        
+        window.removeDiscount = async function() {
+            if(window.loyaltyPointsUsedTemp > 0 && currentUser) {
+                try {
+                    await updateDoc(doc(db, 'users', currentUser.uid), {
+                        loyaltyPoints: increment(window.loyaltyPointsUsedTemp),
+                        unreadNotifs: increment(1),
+                        notifications: arrayUnion({title: 'إلغاء الخصم 🔄', message: `تم استرجاع ${window.loyaltyPointsUsedTemp} نقطة لإلغائك الخصم من السلة.`, date: new Date().toISOString()})
+                    });
+                    window.showToast('تم إلغاء الخصم واسترجاع النقاط', 'info');
+                } catch(e) {}
+            } else if (currentDiscountPercent > 0) {
+                window.showToast('تم إلغاء الكوبون', 'info');
+            }
+            window.loyaltyDiscountFixed = 0;
+            window.loyaltyPointsUsedTemp = 0;
+            currentDiscountPercent = 0;
+            appliedPromoCode = "";
+            let pInput1 = document.getElementById('promo-code-input-cart'); if(pInput1) pInput1.value = '';
+            let pInput2 = document.getElementById('promo-code-input'); if(pInput2) pInput2.value = '';
+            let pMsg1 = document.getElementById('promo-msg-cart'); if(pMsg1) pMsg1.textContent = '';
+            let pMsg2 = document.getElementById('promo-msg'); if(pMsg2) pMsg2.textContent = '';
+            window.updateInvoiceUI();
+        };
+window.toEngDigits = function(str) { const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩']; return str.split('').map(c => ar.indexOf(c) !== -1 ? ar.indexOf(c) : c).join(''); }
         
         let ulrBtn = document.getElementById('btn-unlock-roles'); if(ulrBtn) { ulrBtn.addEventListener('click', () => { if (window.toEngDigits(document.getElementById('roles-pin').value.trim()) === ROLES_MASTER_PIN) { document.getElementById('roles-auth-section').style.display = 'none'; document.getElementById('roles-content-section').style.display = 'block'; document.getElementById('roles-pin').value = ''; window.showToast('تم الفتح', 'success'); } else { window.showToast("رمز خاطئ!", 'error'); } }); }
         let fprBtn = document.getElementById('btn-forgot-roles-pin'); if(fprBtn) { fprBtn.addEventListener('click', () => { let nid = prompt("الرقم القومي:"); if (nid && window.toEngDigits(nid.trim()) === ROLES_NATIONAL_ID) window.showToast(`الرمز هو: ${ROLES_MASTER_PIN}`, 'success'); }); }
@@ -1607,8 +1631,16 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             await updateDoc(doc(db, 'orders', orderId), { status: newStatus }); 
             window.showToast('تم تحديث الحالة', 'success'); 
             let oData = adminOrdersArray.find(o => o.id === orderId);
+            if(oData && oData.userId) {
+                try {
+                    await updateDoc(doc(db, 'users', oData.userId), {
+                        unreadNotifs: increment(1),
+                        notifications: arrayUnion({title: 'تحديث حالة الطلب 📦', message: `تم تحديث حالة طلبك #${orderId.slice(0,6).toUpperCase()} إلى: ${newStatus}`, date: new Date().toISOString()})
+                    });
+                } catch(e) {}
+            }
             if(newStatus === 'تم التوصيل ✅' && oData && oData.userId && !oData.pointsAdded) {
-                let earnRate = storeSettings.loyaltyEarnRate || 20;
+                let earnRate = window.loyaltyEarnRateActual || 20;
                 let pts = Math.floor((oData.totalAmount - (oData.shippingCost || 0)) / earnRate); 
                 if(pts > 0) {
                     try {
@@ -1926,6 +1958,27 @@ try {
                 
                 selectedItems.forEach(item => { const prod = products.find(p => p.id === item.id); if(prod && prod.stock !== undefined && prod.stock !== "") { updateDoc(doc(db, 'products', item.id), { stock: increment(-item.quantity) }).catch(e=>{}); } });
 
+                try {
+                    let orderNotif = {
+                        title: 'طلب جديد 🛒',
+                        message: `طلب جديد من ${name} بقيمة ${finalTotal} ج`,
+                        date: new Date().toISOString(),
+                        orderId: orderPayload.id || ''
+                    };
+                    SUPER_ADMINS.forEach(async (adminEmail) => {
+                        let qSnap = await getDocs(query(collection(db, 'users'), where('email', '==', adminEmail)));
+                        qSnap.forEach(async (uDoc) => {
+                            await updateDoc(doc(db, 'users', uDoc.id), { unreadNotifs: increment(1), notifications: arrayUnion(orderNotif) });
+                        });
+                    });
+                    dynamicAdmins.forEach(async (adminEmail) => {
+                        let qSnap = await getDocs(query(collection(db, 'users'), where('email', '==', adminEmail)));
+                        qSnap.forEach(async (uDoc) => {
+                            await updateDoc(doc(db, 'users', uDoc.id), { unreadNotifs: increment(1), notifications: arrayUnion(orderNotif) });
+                        });
+                    });
+                } catch(e) {}
+
                 if (method === 'عبر واتساب') { 
                     let msg = `*طلب جديد* 🌿\n\n👤 ${name}\n📞 ${phone1}\n📍 ${gov} - ${city}\n🗺️ الخريطة: ${mapAddress}\n🏠 التفاصيل: ${addressDetails}\n💳 الدفع: ${payMethod}\n🔗 ${mapLink}\n`; 
                     if(receiptUrl) msg += `\n🧾 *إيصال التحويل:* ${receiptUrl}\n`; 
@@ -2019,21 +2072,23 @@ try {
                     
                     let dStr = new Date(order.orderDate).toLocaleDateString('ar-EG', { dateStyle: 'long' });
                     
+                    let isActionNeeded = order.status === 'قيد المراجعة' || order.status === 'تم التوصيل ✅' || order.status === 'تم الشحن';
                     htmlContent += `
-                    <div class="order-card-pro" style="border-right-color: #028090;">
-                        <div class="order-header-pro">
-                            <h4 style="color:#028090;">📦 طلب #${order.id.slice(0,6).toUpperCase()}</h4>
-                            <span class="order-status-badge ${badgeClass}">${statusIcon} ${order.status}</span>
+                    <div class="admin-msg-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-right:4px solid #028090;">
+                        <div style="flex:1; min-width:250px;">
+                            <strong style="color:var(--primary); font-size:1.1rem;">📦 طلب #${order.id.slice(0,6).toUpperCase()}</strong><br>
+                            <span style="font-size:0.85rem; color:var(--text-muted);">📅 ${dStr}</span><br>
+                            <div style="margin-top:10px;">${trackerHtml}</div>
+                            <div style="margin-top:10px; background:#f8fafc; padding:10px; border-radius:8px; font-size:0.9rem;">
+                                <strong>المنتجات:</strong>
+                                <ul style="margin:5px 0 0 0; padding-right:20px;">${itemsHtml}</ul>
+                            </div>
+                            <strong style="color:var(--secondary); display:block; margin-top:10px; font-size:1.15rem;">الإجمالي: ${order.totalAmount} ج</strong>
                         </div>
-                        <div style="font-size:0.9rem; color:#64748b; margin-bottom:10px;">📅 تاريخ الطلب: <strong>${dStr}</strong></div>
-                        ${trackerHtml}
-                        <div class="order-items-pro" style="margin-top:15px; padding:15px; background:#f8fafc; border:1px solid #e2e8f0;">
-                            <ul style="padding-right:15px; margin:0;">${itemsHtml}</ul>
+                        <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end;">
+                            <span class="order-status-badge ${badgeClass}" style="font-size:0.85rem;">${statusIcon} ${order.status}</span>
+                            ${isActionNeeded ? `<div style="margin-top:10px;">${actionBtns}</div>` : ''}
                         </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding: 15px; background:#f0fdf4; border-radius:8px; border:1px solid #bbf7d0; font-size:1.1rem; font-weight:bold; margin-top:15px;">
-                            <span>الإجمالي المدفوع:</span><span style="color:#166534; font-size:1.3rem;">${order.totalAmount} ج</span>
-                        </div>
-                        ${actionBtns}
                     </div>`;
                 });
                 container.innerHTML = htmlContent;
