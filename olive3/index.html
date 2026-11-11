@@ -464,18 +464,12 @@ html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
             </h1>
         </div>
         <div class="header-actions">
-            <!-- الإشعارات -->
-            <button type="button" class="notification-bell" id="btn-notifications" onclick="window.toggleNotifications(event)" style="display:none;">
-                🔔<span class="notification-badge" id="notif-badge">0</span>
+            <!-- الإشعارات الأساسية -->
+            <button type="button" class="notification-bell" id="btn-notifications-main" onclick="window.showPanel('global-notifications-panel')" style="display:none; position:relative;">
+                🔔<span class="notification-badge" id="notif-badge-main" style="top:-5px; right:-5px;">0</span>
             </button>
-            <div id="notifications-dropdown" class="notifications-dropdown">
-                <div style="padding:10px; text-align:center; font-weight:bold; border-bottom:1px solid var(--border-color); color:var(--primary);" class="translatable">الإشعارات 🔔</div>
-                <div id="notifications-list">
-                    <div style="padding:15px; text-align:center; color:var(--text-muted); font-size:0.85rem;" class="translatable">لا توجد إشعارات جديدة.</div>
-                </div>
-            </div>
             
-            <button type="button" class="btn btn-outline" style="padding: 5px 8px; font-size:1.1rem; background:transparent; border:none;" onclick="window.showPanel('global-notifications-panel')">🔔</button>
+            
             <button type="button" class="btn btn-outline" style="padding: 5px 8px; font-size:1.1rem; background:transparent; border:none;" onclick="window.toggleLanguage()" id="lang-btn">🌐 EN</button>
             <button type="button" class="btn btn-outline" style="padding: 5px 8px; font-size:1.1rem; background:transparent; border:none;" onclick="window.toggleDarkMode()">🌓</button>
             <button type="button" class="btn btn-outline" style="padding: 5px 12px; font-size:0.9rem; background:white; color:var(--primary);" id="btn-show-auth" onclick="window.showPanel('auth')"><span class="translatable">تسجيل الدخول</span></button>
@@ -653,6 +647,16 @@ html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
                 <div class="free-shipping-progress"><div class="free-shipping-bar" id="free-shipping-bar"></div></div>
             </div>
             <div id="cart-items-container"></div>
+
+            <div style="background: var(--input-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed var(--border-color);" id="promo-section-cart">
+                <label style="font-weight: bold; color: var(--primary);" class="translatable">هل لديك كود خصم؟ 🎁</label>
+                <div class="form-row" style="margin-top: 10px;">
+                    <input type="text" id="promo-code-input-cart" placeholder="أدخل الكود" autocomplete="off" style="margin-bottom:0; flex: 2;">
+                    <button type="button" class="btn" style="flex: 1;" onclick="window.applyPromoCodeCart()"><span class="translatable">تفعيل</span></button>
+                </div>
+                <small id="promo-msg-cart" style="display: block; margin-top: 8px; font-weight: bold;"></small>
+            </div>
+
             
             <!-- قسم نقاط الولاء -->
             <div id="loyalty-section" class="loyalty-section" style="display: none;">
@@ -1014,10 +1018,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app); const googleProvider = new GoogleAuthProvider();
         const SUPER_ADMINS = ["aw734622@gmail.com", "mhmwdaltahrahmdwayl@gmail.com"];
         let dynamicAdmins = [], dynamicAdminsList = [];
-        let loyaltyConfig = { earnRate: 20, redeemValue: 10 };
+        window.loyaltyEarnRateActual = 20; window.loyaltyRedeemValueActual = 10;
 const ROLES_MASTER_PIN = "147258", ROLES_NATIONAL_ID = "31003141301958";
         
-        window.loyaltyDiscountFixed = 0; // متغير لخصم نقاط الولاء
+        window.loyaltyDiscountFixed = 0; window.loyaltyPointsUsedTemp = 0; // متغير لخصم نقاط الولاء
 
         // دالة الميكروفون
         window.startVoiceTyping = function(inputId, btnElement) {
@@ -1087,8 +1091,8 @@ const ROLES_MASTER_PIN = "147258", ROLES_NATIONAL_ID = "31003141301958";
                     let ls = document.getElementById('loyalty-section'); if(ls) ls.style.display = loyalty >= 50 ? 'flex' : 'none'; // تفعيل الاستبدال لو 50 نقطة فأكثر
                     
                     // تحديث واجهة الإشعارات
-                    let notifList = document.getElementById('notifications-list');
-                    let notifBadge = document.getElementById('notif-badge');
+                    let fullCont = document.getElementById('full-notifications-container');
+                    let notifBadge = document.getElementById('notif-badge-main');
                     let unreadCount = data.unreadNotifs || 0;
                     if(notifs.length > 0) {
                         notifs.sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -1097,11 +1101,11 @@ const ROLES_MASTER_PIN = "147258", ROLES_NATIONAL_ID = "31003141301958";
                             let d = new Date(n.date).toLocaleString('ar-EG');
                             html += `<div class="notification-item"><strong>${n.title}</strong><span>${n.message}</span><span class="notification-time">${d}</span></div>`;
                         });
-                        if(notifList) notifList.innerHTML = html;
+                        
                         let fullCont = document.getElementById('full-notifications-container');
                         if(fullCont) fullCont.innerHTML = html;
                         if(notifBadge) { notifBadge.textContent = unreadCount; notifBadge.style.display = unreadCount > 0 ? 'flex' : 'none'; }
-                        let btnN = document.getElementById('btn-notifications'); if(btnN) btnN.style.display = 'block';
+                        let btnN = document.getElementById('btn-notifications-main'); if(btnN) btnN.style.display = 'block';
                     }
                 }
             });
@@ -1113,14 +1117,14 @@ const ROLES_MASTER_PIN = "147258", ROLES_NATIONAL_ID = "31003141301958";
                     if(d.exists()) {
                         let pts = d.data().loyaltyPoints || 0;
                         if(pts >= 50) {
-                            let discountAmount = Math.floor(pts / 50) * (loyaltyConfig.redeemValue || 10); // كل 50 نقطة = 10 جنيه خصم
+                            let discountAmount = Math.floor(pts / 50) * window.loyaltyRedeemValueActual; // كل 50 نقطة = 10 جنيه خصم
                             let usedPts = Math.floor(pts / 50) * 50;
                             updateDoc(doc(db, 'users', currentUser.uid), {
                                 loyaltyPoints: increment(-usedPts),
                                 unreadNotifs: increment(1),
                                 notifications: arrayUnion({title: 'استبدال نقاط 🎁', message: `تم خصم ${usedPts} نقطة بنجاح، وتحويلها لخصم ${discountAmount} جنيه في سلتك الحالية.`, date: new Date().toISOString()})
                             }).then(() => {
-                                window.loyaltyDiscountFixed = discountAmount;
+                                window.loyaltyDiscountFixed = discountAmount; window.loyaltyPointsUsedTemp = usedPts;
                                 window.updateInvoiceUI();
                                 document.getElementById('discount-row').style.display = 'flex';
                                 window.showToast(`تم استبدال ${usedPts} نقطة بخصم ${discountAmount} جنيه!`, 'success');
@@ -1416,12 +1420,12 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
 
         window.applySettingsToUI = function() {
             if(isCurrentUserAdmin) { let csToggle = document.getElementById('setting-cross-sell'); if(csToggle) csToggle.checked = storeSettings.enableCrossSell;
-                if(storeSettings.loyaltyEarnRate) loyaltyConfig.earnRate = storeSettings.loyaltyEarnRate;
-                if(storeSettings.loyaltyRedeemValue) loyaltyConfig.redeemValue = storeSettings.loyaltyRedeemValue;
+                if(storeSettings.loyaltyEarnRate) window.loyaltyEarnRateActual = storeSettings.loyaltyEarnRate;
+                if(storeSettings.loyaltyRedeemValue) window.loyaltyRedeemValueActual = storeSettings.loyaltyRedeemValue;
                 let loyE = document.getElementById('setting-loyalty-earn'); if(loyE && storeSettings.loyaltyEarnRate) loyE.value = storeSettings.loyaltyEarnRate;
                 let loyV = document.getElementById('setting-loyalty-value'); if(loyV && storeSettings.loyaltyRedeemValue) loyV.value = storeSettings.loyaltyRedeemValue;
-                let letxt = document.getElementById('loyalty-earn-text'); if(letxt) letxt.textContent = loyaltyConfig.earnRate;
-                let lrtxt = document.getElementById('loyalty-redeem-text'); if(lrtxt) lrtxt.textContent = loyaltyConfig.redeemValue; let autoEl = document.getElementById('setting-auto-reply'); if(autoEl) autoEl.value = storeSettings.autoReplyMessage || ''; let wallEl = document.getElementById('setting-wallet-number'); if(wallEl) wallEl.value = storeSettings.walletNumber || ''; let fbEl = document.getElementById('setting-fb-pixel'); if(fbEl) fbEl.value = storeSettings.fbPixelId || ''; let ttEl = document.getElementById('setting-tt-pixel'); if(ttEl) ttEl.value = storeSettings.ttPixelId || ''; 
+                let letxt = document.getElementById('loyalty-earn-text'); if(letxt) letxt.textContent = window.loyaltyEarnRateActual;
+                let lrtxt = document.getElementById('loyalty-redeem-text'); if(lrtxt) lrtxt.textContent = window.loyaltyRedeemValueActual; let autoEl = document.getElementById('setting-auto-reply'); if(autoEl) autoEl.value = storeSettings.autoReplyMessage || ''; let wallEl = document.getElementById('setting-wallet-number'); if(wallEl) wallEl.value = storeSettings.walletNumber || ''; let fbEl = document.getElementById('setting-fb-pixel'); if(fbEl) fbEl.value = storeSettings.fbPixelId || ''; let ttEl = document.getElementById('setting-tt-pixel'); if(ttEl) ttEl.value = storeSettings.ttPixelId || ''; 
                 let fsInp = document.getElementById('setting-free-shipping'); if(fsInp && storeSettings.freeShippingThreshold) fsInp.value = storeSettings.freeShippingThreshold; }
             let chWall = document.getElementById('checkout-wallet-number'); if(chWall) chWall.textContent = storeSettings.walletNumber || '01018631768';
             const floatingContainer = document.getElementById('floating-menu-container'), footerSocialContainer = document.getElementById('footer-social-links'), adminBtnsList = document.getElementById('admin-floating-btns-list');
@@ -1471,11 +1475,35 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         window.removeCategory = async function(index) { if(confirm('حذف القسم؟')) { let updatedCats = storeSettings.categories.filter((_, i) => i !== index); await updateDoc(doc(db, 'settings', 'main'), { categories: updatedCats }); window.showToast('تم الحذف', 'success'); } };
         window.addPromoCode = async function() { const code = document.getElementById('new-promo-code').value.trim().toUpperCase(), discount = parseInt(document.getElementById('new-promo-discount').value); if(code && discount > 0 && discount <= 100) { await addDoc(collection(db, 'promoCodes'), { code, discount }); document.getElementById('new-promo-code').value = ''; document.getElementById('new-promo-discount').value = ''; window.showToast('تمت الإضافة', 'success'); } };
         window.removePromo = async function(id) { if(confirm('حذف الكوبون؟')) { await deleteDoc(doc(db, 'promoCodes', id)); window.showToast('تم الحذف', 'success'); } };
-        window.applyPromoCode = function() { 
-            const inputCode = document.getElementById('promo-code-input').value.trim().toUpperCase(), promo = promoCodesList.find(p => p.code === inputCode); 
-            if(promo) { currentDiscountPercent = promo.discount; appliedPromoCode = promo.code; let pMsg = document.getElementById('promo-msg'); if(pMsg) { pMsg.textContent = `✅ تم تفعيل خصم ${promo.discount}%`; pMsg.style.color = '#2a9d8f'; } let dRow = document.getElementById('discount-row'); if(dRow) dRow.style.display = 'flex'; window.updateInvoiceUI(); window.showToast('تم التفعيل', 'success'); } 
-            else { currentDiscountPercent = 0; appliedPromoCode = ""; let pMsg = document.getElementById('promo-msg'); if(pMsg) { pMsg.textContent = `❌ كود غير صالح`; pMsg.style.color = 'var(--danger)'; } let dRow = document.getElementById('discount-row'); if(dRow) dRow.style.display = 'none'; window.updateInvoiceUI(); } 
+        
+        window.applyPromoCodeCart = function() {
+            let inputCode = document.getElementById('promo-code-input-cart').value.trim().toUpperCase();
+            window.executePromoLogic(inputCode, 'cart');
         };
+        window.applyPromoCode = function() {
+            let inputCode = document.getElementById('promo-code-input').value.trim().toUpperCase();
+            window.executePromoLogic(inputCode, 'checkout');
+        };
+        
+        window.executePromoLogic = function(inputCode, source) {
+            let promo = promoCodesList.find(p => p.code === inputCode);
+            if(promo) { 
+                currentDiscountPercent = promo.discount; appliedPromoCode = promo.code; 
+                let pMsg1 = document.getElementById('promo-msg-cart'); if(pMsg1) { pMsg1.textContent = `✅ تم تفعيل خصم ${promo.discount}%`; pMsg1.style.color = '#2a9d8f'; } 
+                let pMsg2 = document.getElementById('promo-msg'); if(pMsg2) { pMsg2.textContent = `✅ تم تفعيل خصم ${promo.discount}%`; pMsg2.style.color = '#2a9d8f'; } 
+                
+                let pInput1 = document.getElementById('promo-code-input-cart'); if(pInput1) pInput1.value = promo.code;
+                let pInput2 = document.getElementById('promo-code-input'); if(pInput2) pInput2.value = promo.code;
+                
+                window.updateInvoiceUI(); window.showToast('تم التفعيل', 'success'); 
+            } else { 
+                currentDiscountPercent = 0; appliedPromoCode = ""; 
+                let pMsg1 = document.getElementById('promo-msg-cart'); if(pMsg1) { pMsg1.textContent = `❌ كود غير صالح`; pMsg1.style.color = 'var(--danger)'; } 
+                let pMsg2 = document.getElementById('promo-msg'); if(pMsg2) { pMsg2.textContent = `❌ كود غير صالح`; pMsg2.style.color = 'var(--danger)'; } 
+                window.updateInvoiceUI(); 
+            }
+        };
+
 
         const govSelect = document.getElementById('order-gov'), citySelect = document.getElementById('order-city');
         if(govSelect && citySelect) {
@@ -1554,7 +1582,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             let oData = adminOrdersArray.find(o => o.id === orderId);
             if(newStatus === 'تم التوصيل ✅' && oData && oData.userId && !oData.pointsAdded) {
                 let earnRate = storeSettings.loyaltyEarnRate || 20;
-                let pts = Math.floor(oData.totalAmount / earnRate); 
+                let pts = Math.floor((oData.totalAmount - (oData.shippingCost || 0)) / earnRate); 
                 if(pts > 0) {
                     try {
                         await updateDoc(doc(db, 'users', oData.userId), { 
@@ -1824,7 +1852,7 @@ try {
 
                 document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true); let waBtnInfo = storeSettings.floatingButtons ? storeSettings.floatingButtons.find(b => b.icon === '📱' || b.link.includes('wa.me')) : null; let pureWa = waBtnInfo ? waBtnInfo.link.split('/').pop() : "201018631768"; if(pureWa && !pureWa.startsWith('20') && pureWa.length === 10) pureWa = '20' + pureWa; let custEmail = currentUser ? (currentUser.email || currentUser.phoneNumber) : "غير مسجل";
                 
-                let orderPayload = { userId: currentUser ? currentUser.uid : "", customerEmail: custEmail || "", customerName: name || "", phones: { primary: phone1 || "", secondary: phone2 || "" }, location: { governorate: gov || "", city: city || "", mapAddress: mapAddress || "", details: addressDetails || "", lat: lat || 0, lng: lng || 0, mapLink: mapLink || "" }, items: selectedItems, subtotal: currentSubtotal || 0, discount: discountVal || 0, promoCode: appliedPromoCode || "", shippingCost: currentShippingCost || 0, totalAmount: finalTotal || 0, orderMethod: method || "", paymentMethod: payMethod || "", receiptUrl: receiptUrl || "", status: "قيد المراجعة", orderDate: new Date().toISOString() };
+                let orderPayload = { usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0, userId: currentUser ? currentUser.uid : "", customerEmail: custEmail || "", customerName: name || "", phones: { primary: phone1 || "", secondary: phone2 || "" }, location: { governorate: gov || "", city: city || "", mapAddress: mapAddress || "", details: addressDetails || "", lat: lat || 0, lng: lng || 0, mapLink: mapLink || "" }, items: selectedItems, subtotal: currentSubtotal || 0, discount: discountVal || 0, promoCode: appliedPromoCode || "", shippingCost: currentShippingCost || 0, totalAmount: finalTotal || 0, orderMethod: method || "", paymentMethod: payMethod || "", receiptUrl: receiptUrl || "", status: "قيد المراجعة", orderDate: new Date().toISOString() };
                 await addDoc(collection(db, 'orders'), orderPayload);
                 if(currentUser) { await setDoc(doc(db, 'users', currentUser.uid), { name: name||"", phone1: phone1||"", phone2: phone2||"", gov: gov||"", city: city||"", address: addressDetails||"" }, { merge: true }); }
                 window.trackEvent('Purchase', { value: finalTotal, currency: 'EGP', content_type: 'product_group' });
@@ -1844,7 +1872,7 @@ try {
                 
                 cart = cart.filter(item => item.selected === false);
                 localStorage.setItem('cart', JSON.stringify(cart)); localStorage.removeItem('cart_last_updated'); 
-                window.loyaltyDiscountFixed = 0; 
+                window.loyaltyDiscountFixed = 0; window.loyaltyPointsUsedTemp = 0; 
                 window.updateCartUI(); 
                 
                 let pci = document.getElementById('promo-code-input'); if(pci) pci.value = ''; currentDiscountPercent = 0; appliedPromoCode = ''; 
@@ -1945,7 +1973,27 @@ try {
             });
         }
 
-window.cancelOrder = async function(orderId) { if(confirm('متأكد من الإلغاء؟')) { await updateDoc(doc(db, 'orders', orderId), { status: 'ملغى من العميل ❌' }); window.showToast('تم الإلغاء.', 'success'); } }
+
+window.cancelOrder = async function(orderId) { 
+    if(confirm('متأكد من الإلغاء؟')) { 
+        let orderDoc = await getDoc(doc(db, 'orders', orderId));
+        if(orderDoc.exists()) {
+            let oData = orderDoc.data();
+            await updateDoc(doc(db, 'orders', orderId), { status: 'ملغى من العميل ❌' }); 
+            
+            // Restore loyalty points if they were used
+            if(oData.usedLoyaltyPoints && oData.userId) {
+                await updateDoc(doc(db, 'users', oData.userId), {
+                    loyaltyPoints: increment(oData.usedLoyaltyPoints),
+                    unreadNotifs: increment(1),
+                    notifications: arrayUnion({title: 'استرجاع نقاط 🔄', message: `تم استرجاع ${oData.usedLoyaltyPoints} نقطة لإلغائك الطلب.`, date: new Date().toISOString()})
+                });
+            }
+        }
+        window.showToast('تم الإلغاء.', 'success'); 
+    } 
+}
+
         
         window.openReturnModal = function(orderId) { let ri = document.getElementById('return-order-id'); if(ri) ri.value = orderId; let rn = document.getElementById('return-notes'); if(rn) rn.value = ''; let rif = document.getElementById('return-image-file'); if(rif) rif.value = ''; let rm = document.getElementById('return-modal'); if(rm) rm.style.display = 'flex'; }
         window.submitReturnRequest = async function() { let orderId = document.getElementById('return-order-id').value; let reason = document.getElementById('return-reason').value; let notes = document.getElementById('return-notes').value; let fileInput = document.getElementById('return-image-file'); if(!fileInput || fileInput.files.length === 0) { window.showToast('يرجى إرفاق صورة توضح المشكلة', 'error'); return; } let btn = document.getElementById('btn-submit-return'); if(btn) btn.disabled = true; let statusLabel = document.getElementById('return-upload-status'); if(statusLabel) statusLabel.style.display = 'block'; let returnImageUrl = null; try { const formData = new FormData(); formData.append('image', fileInput.files[0]); const res = await fetch(`https://api.imgbb.com/1/upload?key=D37b01ec4b27dcce48777a7b229a1fdb`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { returnImageUrl = data.data.url; } else { throw new Error(); } await addDoc(collection(db, 'return_requests'), { orderId: orderId, customerEmail: currentUser.email || currentUser.phoneNumber, reason: reason, notes: notes, imageUrl: returnImageUrl, status: 'قيد المراجعة', date: new Date().toISOString() }); await updateDoc(doc(db, 'orders', orderId), { status: 'طلب استرجاع قيد المراجعة 🔄' }); window.showToast('تم إرسال طلب الاسترجاع بنجاح', 'success'); let rm = document.getElementById('return-modal'); if(rm) rm.style.display = 'none'; } catch(e) { window.showToast('فشل إرسال الطلب', 'error'); } if(btn) btn.disabled = false; if(statusLabel) statusLabel.style.display = 'none'; }
