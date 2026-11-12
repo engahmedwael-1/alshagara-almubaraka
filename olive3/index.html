@@ -140,7 +140,14 @@
         .modal-gallery { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
         .modal-gallery img { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; opacity: 0.7; transition: 0.3s; }
         .modal-gallery img.active { border-color: var(--secondary); opacity: 1; transform: scale(1.05); }
-        .sticky-cart-bar { position: absolute; bottom: 0; left: 0; width: 100%; background: var(--panel-bg); padding: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; box-sizing: border-box; z-index: 20;}
+        
+        .sticky-cart-bar { position: sticky; bottom: -20px; left: 0; width: calc(100% + 40px); margin-left: -20px; background: var(--panel-bg); padding: 12px 20px; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; border-top: 2px solid var(--border-color); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; box-sizing: border-box; z-index: 1000; margin-top: 20px;}
+        /* Overrides for mobile to keep it glued to bottom of screen if modal is full height */
+        @media (max-width: 480px) {
+            .modal-content { padding-bottom: 80px !important; }
+            .sticky-cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; margin-left: 0; border-radius: 0; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+        }
+
         .trust-badges { display: flex; justify-content: center; gap: 10px; margin: 15px 0; background: var(--input-bg); padding: 10px; border-radius: 12px; border: 1px dashed var(--border-color); flex-wrap: wrap; }
         .trust-badge { display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; color: var(--text-muted); gap: 4px; }
         
@@ -1713,20 +1720,23 @@ let adminUsersUnsubscribe = null;
         }
 
         
+        
         window.loadAdminTasks = function() {
             if(!isCurrentUserAdmin) return;
             let tasksContainer = document.getElementById('admin-tasks-container');
             let badge = document.getElementById('tasks-badge');
+            if(!tasksContainer) return;
+            
             let tasksHtml = '';
             let count = 0;
             
             // Pending Orders
-            let pendingOrders = adminOrdersArray.filter(o => o.status && o.status.includes('قيد المراجعة') && !o.status.includes('طلب استرجاع'));
+            let pendingOrders = adminOrdersArray.filter(o => o.status && o.status.includes('قيد المراجعة') && !o.status.includes('استرجاع'));
             if(pendingOrders.length > 0) {
                 count += pendingOrders.length;
                 tasksHtml += `<div class="admin-msg-card" style="border-right: 4px solid var(--primary); cursor:pointer;" onclick="window.showPanel('admin-orders'); window.filterAdminOrders('قيد المراجعة');">
-                    <h4 style="margin:0 0 5px 0;">📦 يوجد ${pendingOrders.length} طلبات جديدة بانتظار المراجعة!</h4>
-                    <button class="btn btn-outline" style="padding:4px 10px; font-size:0.8rem; margin-top:5px;">عرض الطلبات</button>
+                    <h4 style="margin:0 0 5px 0; color:var(--primary);">📦 يوجد ${pendingOrders.length} طلبات جديدة بانتظار المراجعة!</h4>
+                    <button class="btn btn-outline" style="padding:6px 12px; font-size:0.85rem; margin-top:5px; border-radius:6px;">عرض الطلبات</button>
                 </div>`;
             }
             
@@ -1735,13 +1745,13 @@ let adminUsersUnsubscribe = null;
             if(pendingReturns.length > 0) {
                 count += pendingReturns.length;
                 tasksHtml += `<div class="admin-msg-card" style="border-right: 4px solid #e0a800; cursor:pointer;" onclick="window.showPanel('admin-returns');">
-                    <h4 style="margin:0 0 5px 0;">🔄 يوجد ${pendingReturns.length} طلبات استرجاع بانتظار المراجعة!</h4>
-                    <button class="btn btn-outline" style="padding:4px 10px; font-size:0.8rem; margin-top:5px; border-color:#e0a800; color:#e0a800;">عرض طلبات الاسترجاع</button>
+                    <h4 style="margin:0 0 5px 0; color:#e0a800;">🔄 يوجد ${pendingReturns.length} طلبات استرجاع بانتظار المراجعة!</h4>
+                    <button class="btn btn-outline" style="padding:6px 12px; font-size:0.85rem; margin-top:5px; border-color:#e0a800; color:#e0a800; border-radius:6px;">عرض طلبات الاسترجاع</button>
                 </div>`;
             }
             
             if(tasksHtml === '') {
-                tasksContainer.innerHTML = '<h3 style="text-align: center; color: var(--text-muted); margin-top:40px;">لا توجد مهام جديدة حالياً. كل شيء على ما يرام! 🎉</h3>';
+                tasksContainer.innerHTML = '<div style="text-align: center; padding:40px; color: var(--text-muted);"><span style="font-size:3rem; display:block; margin-bottom:15px;">🎉</span><h3>لا توجد مهام جديدة حالياً. كل شيء على ما يرام!</h3></div>';
             } else {
                 tasksContainer.innerHTML = tasksHtml;
             }
@@ -1904,7 +1914,10 @@ try {
 
             let md = document.getElementById('modal-desc'); if(md) md.textContent = product.description || '';
             let avgRating = 5; let reviewsHtml = '';
-            if(product.reviews && product.reviews.length > 0) { let total = 0; product.reviews.forEach(r => { total += r.rating; let revImgHtml = r.imageUrl ? `<br><img src="${r.imageUrl}" class="review-img" onclick="window.open('${r.imageUrl}', '_blank')">` : ''; reviewsHtml += `<div class="review-box"><strong style="color:var(--primary);">${r.userName}</strong><br>${'⭐'.repeat(r.rating)}<br><span style="color:var(--text-color); font-size:0.95rem;">${r.comment}</span>${revImgHtml}</div>`; }); avgRating = (total / product.reviews.length).toFixed(1); } else { let noR = window.currentLang === 'ar' ? 'كن أول من يقيّم المنتج!' : 'Be the first to review!'; reviewsHtml = `<p style="color:var(--text-muted); text-align:center;">${noR}</p>`; }
+            if(product.reviews && product.reviews.length > 0) { let total = 0; product.reviews.forEach(r => { total += r.rating; let revImgHtml = r.imageUrl ? `<br><img src="${r.imageUrl}" class="review-img" onclick="window.open('${r.imageUrl}', '_blank')">` : ''; 
+                let delBtn = (currentUser && isCurrentUserAdmin) ? `<button onclick="window.deleteReview('${product.id}', ${product.reviews.indexOf(r)})" style="float:left; background:transparent; border:none; color:var(--danger); font-size:1.2rem; cursor:pointer;" title="حذف التقييم">🗑️</button>` : '';
+                reviewsHtml += `<div class="review-box">${delBtn}<strong style="color:var(--primary);">${r.userName}</strong><br>${'⭐'.repeat(r.rating)}<br><span style="color:var(--text-color); font-size:0.95rem;">${r.comment}</span>${revImgHtml}</div>`;
+ }); avgRating = (total / product.reviews.length).toFixed(1); } else { let noR = window.currentLang === 'ar' ? 'كن أول من يقيّم المنتج!' : 'Be the first to review!'; reviewsHtml = `<p style="color:var(--text-muted); text-align:center;">${noR}</p>`; }
             
             let mra = document.getElementById('modal-rating-avg'); if(mra) mra.innerHTML = `⭐ ${avgRating} / 5.0`; let mrl = document.getElementById('modal-reviews-list'); if(mrl) mrl.innerHTML = reviewsHtml;
             
@@ -1940,6 +1953,20 @@ try {
         window.executeAddToCart = function(event, id, name) { if(event) event.stopPropagation(); let p = products.find(x => x.id === id); if(!p) return; let priceToUse = p.price; let finalName = name; let variantSuffix = ""; let img = (p.images && p.images.length > 0) ? p.images[0] : (p.imageUrl || 'https://via.placeholder.com/300'); if(activeVariantForCart) { priceToUse = activeVariantForCart.price; finalName = `${name} (${activeVariantForCart.name})`; variantSuffix = activeVariantForCart.name; } window.addToCart(id, finalName, priceToUse, img, variantSuffix); window.closeProductModal(); }
         window.closeProductModal = function() { let pm = document.getElementById('product-modal'); if(pm) pm.style.display = 'none'; activeProductForReview = null; activeVariantForCart = null; }
 
+        
+        window.deleteReview = async function(productId, reviewIndex) {
+            if(!confirm('هل أنت متأكد من حذف هذا التقييم؟')) return;
+            let product = products.find(p => p.id === productId);
+            if(product && product.reviews) {
+                product.reviews.splice(reviewIndex, 1);
+                try {
+                    await updateDoc(doc(db, 'products', productId), { reviews: product.reviews });
+                    window.showToast('تم حذف التقييم', 'success');
+                    window.openProductModal(productId); // refresh
+                } catch(e) { window.showToast('حدث خطأ', 'error'); }
+            }
+        };
+
         window.submitReview = async function() { 
             if(!currentUser) { window.showToast(window.currentLang === 'ar' ? 'سجل الدخول لتقييم المنتج' : 'Login to review', "error"); return; } 
             if(!activeProductForReview) return; 
@@ -1952,12 +1979,35 @@ try {
             try { await updateDoc(doc(db, 'products', activeProductForReview), { reviews: currentReviews }); window.showToast(window.currentLang === 'ar' ? 'شكراً لتقييمك!' : 'Thank you!', "success"); document.getElementById('review-text').value = ''; document.getElementById('review-image-file').value = ''; window.closeProductModal(); } catch(e) { window.showToast("خطأ", "error"); } submitBtn.disabled = false;
         }
 
+        
+        window.generateFakeReviews = function(productName) {
+            const names = ["أحمد محمود", "كريم سعيد", "محمود علي", "فاطمة حسن", "منى جمال", "طارق يوسف", "محمد عمر"];
+            const comments = [
+                `منتج ممتاز جداً، بنصح الكل يشتريه (${productName})`,
+                `جودة عالية وسعر مناسب، شكراً ليكم!`,
+                `أفضل ${productName} جربته، طعم وريحة خيال.`,
+                `تغليف ممتاز وتوصيل سريع، برافو متجر زيت الشجرة المباركة`,
+                `بصراحة شيء يفتح النفس، أكيد هطلب تاني.`
+            ];
+            let reviews = [];
+            let count = Math.floor(Math.random() * 3) + 2; // 2 to 4 reviews
+            for(let i=0; i<count; i++) {
+                reviews.push({
+                    userName: names[Math.floor(Math.random() * names.length)],
+                    rating: 5,
+                    comment: comments[Math.floor(Math.random() * comments.length)],
+                    date: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toISOString()
+                });
+            }
+            return reviews;
+        };
+
         window.deleteProduct = async function(id) { if(confirm('حذف المنتج نهائياً؟')) { await deleteDoc(doc(db, 'products', id)); window.showToast('تم الحذف', 'success'); } }
         window.editProduct = function(id) { const product = products.find(p => p.id === id); if(!product) return; document.getElementById('edit-product-id').value = product.id; document.getElementById('product-name').value = product.name; document.getElementById('product-price').value = product.price; document.getElementById('product-old-price').value = product.oldPrice || ''; document.getElementById('product-category').value = product.category || 'أخرى'; document.getElementById('product-stock').value = product.stock !== undefined ? product.stock : ''; document.getElementById('product-desc').value = product.description || ''; let vStr = ""; if(product.variantsData) { vStr = product.variantsData.map(v => `${v.name}-${v.price}`).join(', '); } document.getElementById('product-variants').value = vStr; document.getElementById('edit-product-old-image').value = (product.images && product.images.length > 0) ? JSON.stringify(product.images) : (product.imageUrl || ''); document.getElementById('product-image-url').value = ''; let pvu = document.getElementById('product-video-url'); if(pvu) pvu.value = product.videoUrl || ''; document.getElementById('admin-product-title').innerHTML = '✏️ تعديل المنتج'; document.getElementById('btn-submit-product').textContent = 'تحديث'; document.getElementById('btn-cancel-edit').style.display = 'block'; window.showPanel('admin'); window.scrollTo(0,0); }
         window.cancelEditProduct = function() { document.getElementById('add-product-form').reset(); document.getElementById('edit-product-id').value = ''; document.getElementById('edit-product-old-image').value = ''; document.getElementById('admin-product-title').innerHTML = '🛒 إضافة منتج جديد'; document.getElementById('btn-submit-product').textContent = 'حفظ'; document.getElementById('btn-cancel-edit').style.display = 'none'; }
 
         let addPForm = document.getElementById('add-product-form');
-        if(addPForm) { addPForm.addEventListener('submit', async (e) => { e.preventDefault(); const btnSubmit = document.getElementById('btn-submit-product'); const statusLabel = document.getElementById('upload-status'); btnSubmit.disabled = true; const id = document.getElementById('edit-product-id').value; const name = document.getElementById('product-name').value; const price = Number(document.getElementById('product-price').value); const oldPrice = document.getElementById('product-old-price').value; const category = document.getElementById('product-category').value; const description = document.getElementById('product-desc').value; const stockVal = document.getElementById('product-stock').value; const vString = document.getElementById('product-variants').value.trim(); const variantsData = parseVariants(vString); let stock = stockVal === "" ? "" : Number(stockVal); let finalImages = []; let oldImgData = document.getElementById('edit-product-old-image').value; if(oldImgData) { try { finalImages = JSON.parse(oldImgData); } catch(err) { finalImages = [oldImgData]; } } const fileInput = document.getElementById('product-image-file'); const urlInput = document.getElementById('product-image-url').value.trim(); let videoUrl = ""; let pvu = document.getElementById('product-video-url'); if(pvu) videoUrl = pvu.value.trim(); try { if(fileInput.files.length > 0) { if(statusLabel) {statusLabel.style.display = 'block'; statusLabel.textContent = `⏳ جاري الرفع`;} const imgbbKey = "D37b01ec4b27dcce48777a7b229a1fdb"; let newUploads = []; let limit = Math.min(fileInput.files.length, 4); for(let i=0; i<limit; i++) { const formData = new FormData(); formData.append('image', fileInput.files[i]); const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { newUploads.push(data.data.url); } } if(newUploads.length > 0) finalImages = newUploads; } else if (urlInput) { finalImages = [urlInput]; } else if (finalImages.length === 0) { window.showToast('اختر صورة أو ضع رابط', 'error'); btnSubmit.disabled = false; return; } let productPayload = { createdAt: new Date().toISOString(), name, price, oldPrice, category, stock, description, images: finalImages, variantsData, imageUrl: finalImages[0] }; if(videoUrl) productPayload.videoUrl = videoUrl; if(id) { await updateDoc(doc(db, 'products', id), productPayload); window.showToast('تم التحديث!', 'success'); } else { productPayload.reviews = []; await addDoc(collection(db, 'products'), productPayload); window.showToast('تم الإضافة!', 'success'); } window.cancelEditProduct(); } catch(err) { if(statusLabel) statusLabel.style.display = 'none'; window.showToast('فشل الرفع', 'error'); } btnSubmit.disabled = false; if(statusLabel) statusLabel.style.display = 'none'; }); }
+        if(addPForm) { addPForm.addEventListener('submit', async (e) => { e.preventDefault(); const btnSubmit = document.getElementById('btn-submit-product'); const statusLabel = document.getElementById('upload-status'); btnSubmit.disabled = true; const id = document.getElementById('edit-product-id').value; const name = document.getElementById('product-name').value; const price = Number(document.getElementById('product-price').value); const oldPrice = document.getElementById('product-old-price').value; const category = document.getElementById('product-category').value; const description = document.getElementById('product-desc').value; const stockVal = document.getElementById('product-stock').value; const vString = document.getElementById('product-variants').value.trim(); const variantsData = parseVariants(vString); let stock = stockVal === "" ? "" : Number(stockVal); let finalImages = []; let oldImgData = document.getElementById('edit-product-old-image').value; if(oldImgData) { try { finalImages = JSON.parse(oldImgData); } catch(err) { finalImages = [oldImgData]; } } const fileInput = document.getElementById('product-image-file'); const urlInput = document.getElementById('product-image-url').value.trim(); let videoUrl = ""; let pvu = document.getElementById('product-video-url'); if(pvu) videoUrl = pvu.value.trim(); try { if(fileInput.files.length > 0) { if(statusLabel) {statusLabel.style.display = 'block'; statusLabel.textContent = `⏳ جاري الرفع`;} const imgbbKey = "D37b01ec4b27dcce48777a7b229a1fdb"; let newUploads = []; let limit = Math.min(fileInput.files.length, 4); for(let i=0; i<limit; i++) { const formData = new FormData(); formData.append('image', fileInput.files[i]); const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { newUploads.push(data.data.url); } } if(newUploads.length > 0) finalImages = newUploads; } else if (urlInput) { finalImages = [urlInput]; } else if (finalImages.length === 0) { window.showToast('اختر صورة أو ضع رابط', 'error'); btnSubmit.disabled = false; return; } let productPayload = { createdAt: new Date().toISOString(), name, price, oldPrice, category, stock, description, images: finalImages, variantsData, imageUrl: finalImages[0] }; if(videoUrl) productPayload.videoUrl = videoUrl; if(id) { await updateDoc(doc(db, 'products', id), productPayload); window.showToast('تم التحديث!', 'success'); } else { productPayload.reviews = window.generateFakeReviews(name); await addDoc(collection(db, 'products'), productPayload); window.showToast('تم الإضافة!', 'success'); } window.cancelEditProduct(); } catch(err) { if(statusLabel) statusLabel.style.display = 'none'; window.showToast('فشل الرفع', 'error'); } btnSubmit.disabled = false; if(statusLabel) statusLabel.style.display = 'none'; }); }
 
         window.addToCart = function(id, name, price, imageUrl, variantSuffix = "") { try { let product = products.find(p => p.id === id); let cartItemId = variantSuffix ? `${id}_${variantSuffix}` : id; let existingItem = cart.find(item => item.cartItemId === cartItemId); if(product && product.stock !== undefined && product.stock !== "") { let currentQtyInCart = existingItem ? existingItem.quantity : 0; if(currentQtyInCart >= Number(product.stock)) { window.showToast(`الكمية المتاحة في المخزن (${product.stock}) فقط!`, 'error'); return; } } if (existingItem) { existingItem.quantity += 1; } else { cart.push({ id: id, cartItemId: cartItemId, name: name, price: Number(price), imageUrl: imageUrl, quantity: 1, variant: variantSuffix, selected: true }); } localStorage.setItem('cart', JSON.stringify(cart)); localStorage.setItem('cart_last_updated', new Date().getTime()); window.updateCartUI(); window.showToast('تمت الإضافة للسلة', 'success'); } catch(e) { console.error(e); } }
         window.updateQuantity = function(cartItemId, change) { try { let itemIndex = cart.findIndex(item => item.cartItemId === cartItemId); if(itemIndex > -1) { let product = products.find(p => p.id === cart[itemIndex].id); let newQty = cart[itemIndex].quantity + change; if(change > 0 && product && product.stock !== undefined && product.stock !== "") { if(newQty > Number(product.stock)) { window.showToast(`الكمية المتاحة (${product.stock}) فقط!`, 'error'); return; } } cart[itemIndex].quantity = newQty; if(cart[itemIndex].quantity <= 0) cart.splice(itemIndex, 1); localStorage.setItem('cart', JSON.stringify(cart)); localStorage.setItem('cart_last_updated', new Date().getTime()); window.updateCartUI(); } } catch(e) { console.error(e); } }
@@ -2064,6 +2114,16 @@ try {
             } catch(e) {
                 console.error(e);
                 window.showToast('فشل إرسال الإشعار', 'error');
+            }
+        };
+
+        
+        window.deleteGlobalNotification = async function(docId) {
+            if(confirm('حذف الإشعار من السجل؟')) {
+                try {
+                    await deleteDoc(doc(db, 'global_notifications', docId));
+                    window.showToast('تم الحذف', 'success');
+                } catch(e) {}
             }
         };
 
