@@ -6,6 +6,35 @@
     <title>زيت الشجرة المباركة</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3c521e">
+
+    <meta name="description" content="زيت الشجرة المباركة - أفضل زيت زيتون سيناوي بكر ممتاز، منتجات طبيعية 100% من قلب سيناء وتوصيل لجميع المحافظات.">
+    <meta name="keywords" content="زيت زيتون, زيت سيناوي, زيت بكر ممتاز, الشجرة المباركة, منتجات طبيعية, زيت زيتون أصلي">
+    <meta name="author" content="زيت الشجرة المباركة">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="زيت الشجرة المباركة | منتجات طبيعية 100%">
+    <meta property="og:description" content="أفضل زيت زيتون سيناوي بكر ممتاز، منتجات طبيعية 100% من قلب سيناء وتوصيل لجميع المحافظات.">
+    <meta property="og:image" content="https://olive-oile-store.firebaseapp.com/1000392409.jpeg">
+    
+    <!-- Structured Data (JSON-LD) for Google -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Store",
+      "name": "زيت الشجرة المباركة",
+      "image": "https://olive-oile-store.firebaseapp.com/1000392409.jpeg",
+      "description": "متجر متخصص في بيع زيت الزيتون السيناوي البكر الممتاز والمنتجات الطبيعية 100%.",
+      "telephone": "01018631768",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "شمال سيناء",
+        "addressCountry": "EG"
+      },
+      "priceRange": "$$"
+    }
+    </script>
+
     <link rel="apple-touch-icon" href="1000392409.jpeg">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -515,7 +544,7 @@ html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
 
     <nav class="main-nav" id="smart-nav">
         <!-- أزرار الإدارة فقط -->
-        <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(23,162,184,0.2); border-color: #17a2b8; color: #17a2b8;" onclick="window.showPanel('admin-tasks')">الشغل 💼 <span id="tasks-badge" style="background:red;color:white;border-radius:50%;padding:2px 6px;font-size:0.7rem;position:absolute;top:-5px;right:-5px;display:none;">0</span></button>
+        
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(255,193,7,0.2); border-color: #ffc107; color: #d39e00;" onclick="window.showPanel('admin-dashboard')">الإحصائيات 📊</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(220,53,69,0.2); border-color: #dc3545;" onclick="window.showPanel('admin-orders')">الطلبات 📦</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(0,123,255,0.2); border-color: #007bff;" onclick="window.showPanel('admin-messages')">الرسائل 📩</button>
@@ -824,12 +853,7 @@ html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
         </div>
 
         
-        <div class="panel" id="admin-tasks-panel">
-            <h2 style="color: #17a2b8; margin-top: 0;">💼 مهام العمل (طلبات ورسائل جديدة)</h2>
-            <div id="admin-tasks-container">
-                <h3 style="text-align: center; color: var(--text-muted);">لا توجد مهام جديدة حالياً.</h3>
-            </div>
-        </div>
+        
 
         <div class="panel" id="admin-dashboard-panel">
             <h2 style="color: var(--secondary); margin-top: 0;">📊 الإحصائيات (للإدارة)</h2>
@@ -1405,7 +1429,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
 
         window.showToast = function(message, type = 'info') { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type}`; let icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️'); toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`; container.appendChild(toast); setTimeout(() => toast.classList.add('show'), 10); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000); };
 
-        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-tasks': document.getElementById('admin-tasks-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'global-notifications-panel': document.getElementById('global-notifications-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel') };
+        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'global-notifications-panel': document.getElementById('global-notifications-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel') };
         let checkoutMap = null, userMarker = null;
 
         window.openSidebar = function() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('show'); }
@@ -1455,7 +1479,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             Object.values(panels).forEach(p => { if(p) { p.classList.remove('active'); p.style.display = ''; } }); 
             document.querySelectorAll('.nav-btn, .bottom-nav-btn').forEach(btn => btn.classList.remove('active')); 
             if(panels[panelId]) panels[panelId].classList.add('active');
-            if(panelId === 'admin-tasks') window.loadAdminTasks();
+            
  
             document.querySelectorAll(`.nav-btn[onclick="window.showPanel('${panelId}')"], .bottom-nav-btn[onclick="window.showPanel('${panelId}')"]`).forEach(btn => btn.classList.add('active'));
             
@@ -1492,7 +1516,13 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             let chWall = document.getElementById('checkout-wallet-number'); if(chWall) chWall.textContent = storeSettings.walletNumber || '01018631768';
             const floatingContainer = document.getElementById('floating-menu-container'), footerSocialContainer = document.getElementById('footer-social-links'), adminBtnsList = document.getElementById('admin-floating-btns-list');
             if(floatingContainer) floatingContainer.innerHTML = ''; if(footerSocialContainer) footerSocialContainer.innerHTML = ''; if(adminBtnsList) adminBtnsList.innerHTML = '';
-            (storeSettings.floatingButtons||[]).forEach((btn, index) => {
+            
+            let currentBtns = storeSettings.floatingButtons || [];
+            if(!currentBtns.find(b => b.link === '#support')) {
+                currentBtns.unshift({ id: 'btn_support', icon: '💬', link: '#support', color: '#007bff', isSystem: true, title: 'خدمة العملاء' });
+            }
+            currentBtns.forEach((btn, index) => {
+
                 if(btn.link === '#support') { if(floatingContainer) floatingContainer.innerHTML += `<button type="button" class="float-btn" style="background-color: ${btn.color};" title="${btn.title}" onclick="window.showPanel('support')">${btn.icon}</button>`; } else { if(floatingContainer) floatingContainer.innerHTML += `<a href="${btn.link}" target="_blank" class="float-btn" style="background-color: ${btn.color};" title="${btn.title}">${btn.icon}</a>`; if(footerSocialContainer) footerSocialContainer.innerHTML += `<div>${btn.icon} <a href="${btn.link}" target="_blank" style="color:#ddd; text-decoration:none;">${btn.title}</a></div>`; }
                 if(btn.isSystem) { if(adminBtnsList) adminBtnsList.innerHTML += `<div style="background:var(--input-bg); padding:10px; border:1px solid var(--border-color); border-radius:8px; margin-bottom:5px;">${btn.icon} <strong>${btn.title}</strong> (أساسي)</div>`; } else { if(adminBtnsList) adminBtnsList.innerHTML += `<div style="background:var(--input-bg); padding:10px; border:1px solid var(--border-color); border-radius:8px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:5px;"><span>${btn.icon} <strong>${btn.title}</strong></span><input type="url" value="${btn.link}" id="edit-float-link-${index}" style="flex:1; padding:5px; margin:0; min-width:150px;"><button type="button" class="btn-info" style="border:none; padding:5px 10px; border-radius:4px;" onclick="window.updateFloatingBtn(${index})">تحديث</button><button type="button" class="btn-danger" style="border:none; padding:5px 10px; border-radius:4px;" onclick="window.removeFloatingBtn(${index})">حذف</button></div>`; }
             });
@@ -1654,7 +1684,7 @@ window.toEngDigits = function(str) { const ar = ['٠','١','٢','٣','٤','٥','
                     let d = docSnap.data(); adminReturnsArray.push({id: docSnap.id, ...d}); let imgHtml = d.imageUrl ? `<a href="${d.imageUrl}" target="_blank" style="display:inline-block; margin-top:10px; padding:5px 10px; background:#17a2b8; color:white; text-decoration:none; border-radius:6px; font-size:0.85rem;">📸 عرض صورة المشكلة</a>` : ''; let actionBtn = d.status === 'قيد المراجعة' ? `<button type="button" class="btn btn-full" style="background:#28a745; margin-top:10px;" onclick="window.approveReturn('${docSnap.id}', '${d.orderId}')">الموافقة وإرسال مندوب ✅</button>` : `<div style="margin-top:10px; font-weight:bold; color:var(--primary); text-align:center;">تم الموافقة على الطلب</div>`;
                     html += `<div class="admin-msg-card" style="border-left:4px solid var(--danger);"><h4>رقم الطلب الأصلي: #${d.orderId.slice(0,6).toUpperCase()}</h4><p><strong>العميل:</strong> ${d.customerEmail}</p><p><strong>السبب:</strong> ${d.reason}</p><p style="color:var(--text-muted);"><strong>الملاحظات:</strong> ${d.notes}</p><p><strong>التاريخ:</strong> ${new Date(d.date).toLocaleString('ar-EG')}</p>${imgHtml}${actionBtn}</div>`;
                 });
-                if(container) container.innerHTML = html || '<h3 style="text-align: center; color: var(--text-muted);">لا توجد طلبات استرجاع حالياً.</h3>'; window.loadAdminTasks();
+                if(container) container.innerHTML = html || '<h3 style="text-align: center; color: var(--text-muted);">لا توجد طلبات استرجاع حالياً.</h3>'; 
             });
         }
 
@@ -1669,7 +1699,7 @@ window.toEngDigits = function(str) { const ar = ['٠','١','٢','٣','٤','٥','
                     let d = docSnap.data(); adminOrdersArray.push({id: docSnap.id, ...d}); 
                     if(d.status !== "تم الرفض" && d.status !== "ملغى من العميل ❌" && d.status !== "تم الرفض ❌") { let orderDate = new Date(d.orderDate); if(orderDate >= revResetDate) { totalGlobalRevenue += Number(d.totalAmount); } if(orderDate >= ordResetDate) { totalGlobalOrders++; } } 
                 }); 
-                window.renderAdminOrdersUI(); window.loadAdminTasks(); 
+                window.renderAdminOrdersUI();  
                 let so = document.getElementById('stat-orders'); if(so) so.textContent = totalGlobalOrders; let sr = document.getElementById('stat-revenue'); if(sr) sr.textContent = totalGlobalRevenue.toLocaleString() + ' ج'; 
             });
         }
@@ -1731,46 +1761,7 @@ let adminUsersUnsubscribe = null;
         
         
         
-        window.loadAdminTasks = function() {
-            if(!isCurrentUserAdmin) return;
-            let tasksContainer = document.getElementById('admin-tasks-container');
-            let badge = document.getElementById('tasks-badge');
-            if(!tasksContainer) return;
-            
-            let tasksHtml = '';
-            let count = 0;
-            
-            let pendingOrders = adminOrdersArray.filter(o => o.status && o.status.includes('قيد المراجعة') && !o.status.includes('استرجاع'));
-            if(pendingOrders.length > 0) {
-                count += pendingOrders.length;
-                tasksHtml += `<div class="admin-msg-card" style="border-right: 4px solid var(--primary); cursor:pointer;" onclick="window.showPanel('admin-orders'); window.filterAdminOrders('قيد المراجعة');">
-                    <h4 style="margin:0 0 5px 0; color:var(--primary);">📦 يوجد ${pendingOrders.length} طلبات جديدة بانتظار المراجعة!</h4>
-                    <button class="btn btn-outline" style="padding:6px 12px; font-size:0.85rem; margin-top:5px; border-radius:6px;">عرض الطلبات</button>
-                </div>`;
-            }
-            
-            let pendingReturns = adminReturnsArray.filter(r => r.status && r.status.includes('قيد المراجعة'));
-            if(pendingReturns.length > 0) {
-                count += pendingReturns.length;
-                tasksHtml += `<div class="admin-msg-card" style="border-right: 4px solid #e0a800; cursor:pointer;" onclick="window.showPanel('admin-returns');">
-                    <h4 style="margin:0 0 5px 0; color:#e0a800;">🔄 يوجد ${pendingReturns.length} طلبات استرجاع بانتظار المراجعة!</h4>
-                    <button class="btn btn-outline" style="padding:6px 12px; font-size:0.85rem; margin-top:5px; border-color:#e0a800; color:#e0a800; border-radius:6px;">عرض طلبات الاسترجاع</button>
-                </div>`;
-            }
-
-            // We also have chats. If we track unread chats we can add them here.
-            
-            if(tasksHtml === '') {
-                tasksContainer.innerHTML = '<div style="text-align: center; padding:40px; color: var(--text-muted);"><span style="font-size:3rem; display:block; margin-bottom:15px;">🎉</span><h3>لا توجد مهام جديدة حالياً. كل شيء على ما يرام!</h3></div>';
-            } else {
-                tasksContainer.innerHTML = tasksHtml;
-            }
-            
-            if(badge) {
-                badge.textContent = count;
-                badge.style.display = count > 0 ? 'inline-block' : 'none';
-            }
-        };
+        
 
         window.updateAdminUI = function() { 
             if (currentUser) { 
@@ -2281,7 +2272,7 @@ try {
         window.openReturnModal = function(orderId) { let ri = document.getElementById('return-order-id'); if(ri) ri.value = orderId; let rn = document.getElementById('return-notes'); if(rn) rn.value = ''; let rif = document.getElementById('return-image-file'); if(rif) rif.value = ''; let rm = document.getElementById('return-modal'); if(rm) rm.style.display = 'flex'; }
         window.submitReturnRequest = async function() { let orderId = document.getElementById('return-order-id').value; let reason = document.getElementById('return-reason').value; let notes = document.getElementById('return-notes').value; let fileInput = document.getElementById('return-image-file'); if(!fileInput || fileInput.files.length === 0) { window.showToast('يرجى إرفاق صورة توضح المشكلة', 'error'); return; } let btn = document.getElementById('btn-submit-return'); if(btn) btn.disabled = true; let statusLabel = document.getElementById('return-upload-status'); if(statusLabel) statusLabel.style.display = 'block'; let returnImageUrl = null; try { const formData = new FormData(); formData.append('image', fileInput.files[0]); const res = await fetch(`https://api.imgbb.com/1/upload?key=D37b01ec4b27dcce48777a7b229a1fdb`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { returnImageUrl = data.data.url; } else { throw new Error(); } await addDoc(collection(db, 'return_requests'), { orderId: orderId, customerEmail: currentUser.email || currentUser.phoneNumber, reason: reason, notes: notes, imageUrl: returnImageUrl, status: 'قيد المراجعة', date: new Date().toISOString() }); await updateDoc(doc(db, 'orders', orderId), { status: 'طلب استرجاع قيد المراجعة 🔄' }); window.showToast('تم إرسال طلب الاسترجاع بنجاح', 'success'); let rm = document.getElementById('return-modal'); if(rm) rm.style.display = 'none'; } catch(e) { window.showToast('فشل إرسال الطلب', 'error'); } if(btn) btn.disabled = false; if(statusLabel) statusLabel.style.display = 'none'; }
 
-        window.filterAdminOrders = function(status) { currentAdminOrderFilter = status; document.querySelectorAll('#admin-orders-panel .filter-btn').forEach(btn => btn.classList.remove('active')); if(event && event.target && event.target.classList) event.target.classList.add('active'); window.renderAdminOrdersUI(); window.loadAdminTasks(); }
+        window.filterAdminOrders = function(status) { currentAdminOrderFilter = status; document.querySelectorAll('#admin-orders-panel .filter-btn').forEach(btn => btn.classList.remove('active')); if(event && event.target && event.target.classList) event.target.classList.add('active'); window.renderAdminOrdersUI();  }
         
         
         
