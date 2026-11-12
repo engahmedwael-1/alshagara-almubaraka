@@ -908,6 +908,15 @@ html[dir="ltr"] .bubble-admin { border-radius: 15px 15px 5px 15px; }
                     <select id="product-category" required style="margin-bottom: 1rem; width: 100%; padding: 0.9rem; border-radius: 8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-color);"></select>
                     <input type="number" id="product-stock" placeholder="الكمية المتاحة (فارغ = لا نهائي)">
                 </div>
+                <div style="background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px dashed var(--border-color); margin-bottom: 15px;">
+                    <label style="font-weight: bold; color: var(--primary); display:block; margin-bottom:10px;">💬 التقييمات التلقائية للمنتج:</label>
+                    <select id="product-fake-reviews-count" style="margin-bottom: 0; width: 100%; padding: 0.9rem; border-radius: 8px; border:1px solid var(--border-color); font-weight:bold;">
+                        <option value="0">بدون تعليقات مبدئية</option>
+                        <option value="2">إضافة 2 تعليق إيجابي ⭐️</option>
+                        <option value="5" selected>إضافة 5 تعليقات إيجابية ⭐️</option>
+                        <option value="10">إضافة 10 تعليقات إيجابية ⭐️</option>
+                    </select>
+                </div>
                 <textarea id="product-desc" placeholder="وصف وتفاصيل المنتج..." rows="3" required></textarea>
                 <div style="background: var(--input-bg); padding: 20px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 20px;">
                     <label style="font-weight: bold; color: var(--primary); display:block; margin-bottom:15px; font-size: 1.1rem;">🖼️ صور وفيديو المنتج:</label>
@@ -1251,7 +1260,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         let savedAccounts = JSON.parse(localStorage.getItem('zait_saved_accounts')) || [];
         let currentRenderedProducts = 8; const productsPerPage = 8;
         
-        let storeSettings = { walletNumber: "01018631768", fbPixelId: "", ttPixelId: "", categories: ["زيت زيتون"], autoReplyMessage: "أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.", floatingButtons: [{ id: 'btn_wa', icon: '📱', link: 'https://wa.me/201018631768', color: '#25D366', isSystem: false, title: 'واتساب' }], revenueResetDate: "2000-01-01T00:00:00.000Z", ordersResetDate: "2000-01-01T00:00:00.000Z", enableCrossSell: true };
+        let storeSettings = { walletNumber: "01018631768", fbPixelId: "", ttPixelId: "", categories: ["زيت زيتون"], autoReplyMessage: "أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.", floatingButtons: [{ id: 'btn_support', icon: '💬', link: '#support', color: '#007bff', isSystem: true, title: 'خدمة العملاء' }, { id: 'btn_wa', icon: '📱', link: 'https://wa.me/201018631768', color: '#25D366', isSystem: false, title: 'واتساب' }], revenueResetDate: "2000-01-01T00:00:00.000Z", ordersResetDate: "2000-01-01T00:00:00.000Z", enableCrossSell: true };
 
         window.syncCartToCloud = async function() {
             if(currentUser) {
@@ -1721,6 +1730,7 @@ let adminUsersUnsubscribe = null;
 
         
         
+        
         window.loadAdminTasks = function() {
             if(!isCurrentUserAdmin) return;
             let tasksContainer = document.getElementById('admin-tasks-container');
@@ -1730,7 +1740,6 @@ let adminUsersUnsubscribe = null;
             let tasksHtml = '';
             let count = 0;
             
-            // Pending Orders
             let pendingOrders = adminOrdersArray.filter(o => o.status && o.status.includes('قيد المراجعة') && !o.status.includes('استرجاع'));
             if(pendingOrders.length > 0) {
                 count += pendingOrders.length;
@@ -1740,7 +1749,6 @@ let adminUsersUnsubscribe = null;
                 </div>`;
             }
             
-            // Pending Returns
             let pendingReturns = adminReturnsArray.filter(r => r.status && r.status.includes('قيد المراجعة'));
             if(pendingReturns.length > 0) {
                 count += pendingReturns.length;
@@ -1749,6 +1757,8 @@ let adminUsersUnsubscribe = null;
                     <button class="btn btn-outline" style="padding:6px 12px; font-size:0.85rem; margin-top:5px; border-color:#e0a800; color:#e0a800; border-radius:6px;">عرض طلبات الاسترجاع</button>
                 </div>`;
             }
+
+            // We also have chats. If we track unread chats we can add them here.
             
             if(tasksHtml === '') {
                 tasksContainer.innerHTML = '<div style="text-align: center; padding:40px; color: var(--text-muted);"><span style="font-size:3rem; display:block; margin-bottom:15px;">🎉</span><h3>لا توجد مهام جديدة حالياً. كل شيء على ما يرام!</h3></div>';
@@ -1980,23 +1990,30 @@ try {
         }
 
         
-        window.generateFakeReviews = function(productName) {
-            const names = ["أحمد محمود", "كريم سعيد", "محمود علي", "فاطمة حسن", "منى جمال", "طارق يوسف", "محمد عمر"];
+        window.generateFakeReviews = function(productName, count) {
+            if(count <= 0) return [];
+            const names = ["أحمد محمود", "كريم سعيد", "محمود علي", "فاطمة حسن", "منى جمال", "طارق يوسف", "محمد عمر", "مصطفى كمال", "هبة عبد الرحمن", "سمر فوزي", "خالد عبدالله"];
             const comments = [
                 `منتج ممتاز جداً، بنصح الكل يشتريه (${productName})`,
                 `جودة عالية وسعر مناسب، شكراً ليكم!`,
                 `أفضل ${productName} جربته، طعم وريحة خيال.`,
-                `تغليف ممتاز وتوصيل سريع، برافو متجر زيت الشجرة المباركة`,
-                `بصراحة شيء يفتح النفس، أكيد هطلب تاني.`
+                `تغليف ممتاز وتوصيل سريع، برافو متجر زيت الشجرة المباركة 👏`,
+                `بصراحة شيء يفتح النفس، أكيد هطلب تاني.`,
+                `من أفضل المتاجر اللي اتعاملت معاها، والمنتج جودته وهمية!`,
+                `تسلم إيديكم بجد، الطعم أصلي 100% 😍`,
+                `تجربة شراء ممتازة، والمنتج مطابق للوصف بالظبط.`,
+                `سعر ممتاز مقارنة بالجودة العالية دي، هعتمدكم دايماً.`,
+                `وصل في ميعاده ومغلف كويس جداً، شكراً لاهتمامكم بالتفاصيل.`
             ];
             let reviews = [];
-            let count = Math.floor(Math.random() * 3) + 2; // 2 to 4 reviews
             for(let i=0; i<count; i++) {
+                let rDate = new Date();
+                rDate.setDate(rDate.getDate() - Math.floor(Math.random() * 30)); // random date within last 30 days
                 reviews.push({
                     userName: names[Math.floor(Math.random() * names.length)],
                     rating: 5,
                     comment: comments[Math.floor(Math.random() * comments.length)],
-                    date: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toISOString()
+                    date: rDate.toISOString()
                 });
             }
             return reviews;
@@ -2007,7 +2024,13 @@ try {
         window.cancelEditProduct = function() { document.getElementById('add-product-form').reset(); document.getElementById('edit-product-id').value = ''; document.getElementById('edit-product-old-image').value = ''; document.getElementById('admin-product-title').innerHTML = '🛒 إضافة منتج جديد'; document.getElementById('btn-submit-product').textContent = 'حفظ'; document.getElementById('btn-cancel-edit').style.display = 'none'; }
 
         let addPForm = document.getElementById('add-product-form');
-        if(addPForm) { addPForm.addEventListener('submit', async (e) => { e.preventDefault(); const btnSubmit = document.getElementById('btn-submit-product'); const statusLabel = document.getElementById('upload-status'); btnSubmit.disabled = true; const id = document.getElementById('edit-product-id').value; const name = document.getElementById('product-name').value; const price = Number(document.getElementById('product-price').value); const oldPrice = document.getElementById('product-old-price').value; const category = document.getElementById('product-category').value; const description = document.getElementById('product-desc').value; const stockVal = document.getElementById('product-stock').value; const vString = document.getElementById('product-variants').value.trim(); const variantsData = parseVariants(vString); let stock = stockVal === "" ? "" : Number(stockVal); let finalImages = []; let oldImgData = document.getElementById('edit-product-old-image').value; if(oldImgData) { try { finalImages = JSON.parse(oldImgData); } catch(err) { finalImages = [oldImgData]; } } const fileInput = document.getElementById('product-image-file'); const urlInput = document.getElementById('product-image-url').value.trim(); let videoUrl = ""; let pvu = document.getElementById('product-video-url'); if(pvu) videoUrl = pvu.value.trim(); try { if(fileInput.files.length > 0) { if(statusLabel) {statusLabel.style.display = 'block'; statusLabel.textContent = `⏳ جاري الرفع`;} const imgbbKey = "D37b01ec4b27dcce48777a7b229a1fdb"; let newUploads = []; let limit = Math.min(fileInput.files.length, 4); for(let i=0; i<limit; i++) { const formData = new FormData(); formData.append('image', fileInput.files[i]); const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { newUploads.push(data.data.url); } } if(newUploads.length > 0) finalImages = newUploads; } else if (urlInput) { finalImages = [urlInput]; } else if (finalImages.length === 0) { window.showToast('اختر صورة أو ضع رابط', 'error'); btnSubmit.disabled = false; return; } let productPayload = { createdAt: new Date().toISOString(), name, price, oldPrice, category, stock, description, images: finalImages, variantsData, imageUrl: finalImages[0] }; if(videoUrl) productPayload.videoUrl = videoUrl; if(id) { await updateDoc(doc(db, 'products', id), productPayload); window.showToast('تم التحديث!', 'success'); } else { productPayload.reviews = window.generateFakeReviews(name); await addDoc(collection(db, 'products'), productPayload); window.showToast('تم الإضافة!', 'success'); } window.cancelEditProduct(); } catch(err) { if(statusLabel) statusLabel.style.display = 'none'; window.showToast('فشل الرفع', 'error'); } btnSubmit.disabled = false; if(statusLabel) statusLabel.style.display = 'none'; }); }
+        if(addPForm) { addPForm.addEventListener('submit', async (e) => { e.preventDefault(); const btnSubmit = document.getElementById('btn-submit-product'); const statusLabel = document.getElementById('upload-status'); btnSubmit.disabled = true; const id = document.getElementById('edit-product-id').value; const name = document.getElementById('product-name').value; const price = Number(document.getElementById('product-price').value); const oldPrice = document.getElementById('product-old-price').value; const category = document.getElementById('product-category').value; const description = document.getElementById('product-desc').value; const stockVal = document.getElementById('product-stock').value; const vString = document.getElementById('product-variants').value.trim(); const variantsData = parseVariants(vString); let stock = stockVal === "" ? "" : Number(stockVal); let finalImages = []; let oldImgData = document.getElementById('edit-product-old-image').value; if(oldImgData) { try { finalImages = JSON.parse(oldImgData); } catch(err) { finalImages = [oldImgData]; } } const fileInput = document.getElementById('product-image-file'); const urlInput = document.getElementById('product-image-url').value.trim(); let videoUrl = ""; let pvu = document.getElementById('product-video-url'); if(pvu) videoUrl = pvu.value.trim(); try { if(fileInput.files.length > 0) { if(statusLabel) {statusLabel.style.display = 'block'; statusLabel.textContent = `⏳ جاري الرفع`;} const imgbbKey = "D37b01ec4b27dcce48777a7b229a1fdb"; let newUploads = []; let limit = Math.min(fileInput.files.length, 4); for(let i=0; i<limit; i++) { const formData = new FormData(); formData.append('image', fileInput.files[i]); const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { newUploads.push(data.data.url); } } if(newUploads.length > 0) finalImages = newUploads; } else if (urlInput) { finalImages = [urlInput]; } else if (finalImages.length === 0) { window.showToast('اختر صورة أو ضع رابط', 'error'); btnSubmit.disabled = false; return; } let productPayload = { createdAt: new Date().toISOString(), name, price, oldPrice, category, stock, description, images: finalImages, variantsData, imageUrl: finalImages[0] }; if(videoUrl) productPayload.videoUrl = videoUrl; if(id) { await updateDoc(doc(db, 'products', id), productPayload); window.showToast('تم التحديث!', 'success'); } else { 
+                let fcEl = document.getElementById('product-fake-reviews-count');
+                let fCount = fcEl ? parseInt(fcEl.value) : 5;
+                productPayload.reviews = window.generateFakeReviews(name, fCount); 
+                await addDoc(collection(db, 'products'), productPayload); 
+                window.showToast('تم الإضافة!', 'success');
+ } window.cancelEditProduct(); } catch(err) { if(statusLabel) statusLabel.style.display = 'none'; window.showToast('فشل الرفع', 'error'); } btnSubmit.disabled = false; if(statusLabel) statusLabel.style.display = 'none'; }); }
 
         window.addToCart = function(id, name, price, imageUrl, variantSuffix = "") { try { let product = products.find(p => p.id === id); let cartItemId = variantSuffix ? `${id}_${variantSuffix}` : id; let existingItem = cart.find(item => item.cartItemId === cartItemId); if(product && product.stock !== undefined && product.stock !== "") { let currentQtyInCart = existingItem ? existingItem.quantity : 0; if(currentQtyInCart >= Number(product.stock)) { window.showToast(`الكمية المتاحة في المخزن (${product.stock}) فقط!`, 'error'); return; } } if (existingItem) { existingItem.quantity += 1; } else { cart.push({ id: id, cartItemId: cartItemId, name: name, price: Number(price), imageUrl: imageUrl, quantity: 1, variant: variantSuffix, selected: true }); } localStorage.setItem('cart', JSON.stringify(cart)); localStorage.setItem('cart_last_updated', new Date().getTime()); window.updateCartUI(); window.showToast('تمت الإضافة للسلة', 'success'); } catch(e) { console.error(e); } }
         window.updateQuantity = function(cartItemId, change) { try { let itemIndex = cart.findIndex(item => item.cartItemId === cartItemId); if(itemIndex > -1) { let product = products.find(p => p.id === cart[itemIndex].id); let newQty = cart[itemIndex].quantity + change; if(change > 0 && product && product.stock !== undefined && product.stock !== "") { if(newQty > Number(product.stock)) { window.showToast(`الكمية المتاحة (${product.stock}) فقط!`, 'error'); return; } } cart[itemIndex].quantity = newQty; if(cart[itemIndex].quantity <= 0) cart.splice(itemIndex, 1); localStorage.setItem('cart', JSON.stringify(cart)); localStorage.setItem('cart_last_updated', new Date().getTime()); window.updateCartUI(); } } catch(e) { console.error(e); } }
