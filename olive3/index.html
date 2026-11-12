@@ -238,6 +238,7 @@
     <div class="container">
         
         <div class="panel active" id="home-panel">
+            <div id="visual-scroll-bar" class="visual-scroll-bar" style="display:none;"></div>
             <div class="limited-offer-banner"><span class="translatable">🔥 عرض خاص لفترة محدودة!</span><span class="timer" id="offer-timer">72:00:00</span></div>
             <div style="background:var(--input-bg); padding:15px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:20px;">
                 <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
@@ -619,6 +620,19 @@
                     <div class="form-row" style="margin-top: 10px;"><select id="new-floating-icon" style="flex:1;"><option value="📱">📱 واتساب</option><option value="🌐">🌐 فيسبوك</option><option value="💬">💬 دردشة</option><option value="📞">📞 اتصال</option><option value="🛒">🛒 متجر</option></select><input type="url" id="new-floating-link" placeholder="الرابط (https://...)" style="flex:2;"><button type="button" class="btn" onclick="window.addFloatingButton()" style="flex:1;">إضافة زر</button></div>
                     <div id="admin-floating-btns-list" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
+                
+                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <label style="font-weight: bold; color: var(--primary);">🌟 شريط العرض المصور (الرئيسية):</label>
+                    <div class="form-row" style="margin-top: 10px;">
+                        <select id="setting-visual-bar-mode" style="flex:2;">
+                            <option value="categories">عرض الأقسام 📂</option>
+                            <option value="products">عرض المنتجات 🛍️</option>
+                            <option value="none">إخفاء الشريط 🚫</option>
+                        </select>
+                        <button type="button" class="btn" onclick="window.saveSettings()" style="flex:1; background: #028090;">حفظ</button>
+                    </div>
+                </div>
+
                 <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
                     <label style="font-weight: bold; color: var(--primary);">إدارة الأقسام:</label>
                     <div class="form-row" style="margin-top: 10px;"><input type="text" id="new-category-input" placeholder="اسم القسم الجديد"><button type="button" class="btn" onclick="window.addCategory()" style="width: 30%;">إضافة قسم</button></div>

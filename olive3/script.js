@@ -209,7 +209,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         let savedAccounts = JSON.parse(localStorage.getItem('zait_saved_accounts')) || [];
         let currentRenderedProducts = 8; const productsPerPage = 8;
         
-        let storeSettings = { walletNumber: "01018631768", fbPixelId: "", ttPixelId: "", categories: ["زيت زيتون"], autoReplyMessage: "أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.", floatingButtons: [{ id: 'btn_support', icon: '💬', link: '#support', color: '#007bff', isSystem: true, title: 'خدمة العملاء' }, { id: 'btn_wa', icon: '📱', link: 'https://wa.me/201018631768', color: '#25D366', isSystem: false, title: 'واتساب' }], revenueResetDate: "2000-01-01T00:00:00.000Z", ordersResetDate: "2000-01-01T00:00:00.000Z", enableCrossSell: true };
+        let storeSettings = { walletNumber: "01018631768", fbPixelId: "", ttPixelId: "", categories: ["زيت زيتون"], autoReplyMessage: "أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.", floatingButtons: [{ id: 'btn_support', icon: '💬', link: '#support', color: '#007bff', isSystem: true, title: 'خدمة العملاء' }, { id: 'btn_wa', icon: '📱', link: 'https://wa.me/201018631768', color: '#25D366', isSystem: false, title: 'واتساب' }], revenueResetDate: "2000-01-01T00:00:00.000Z", ordersResetDate: "2000-01-01T00:00:00.000Z", enableCrossSell: true, visualBarMode: 'categories' };
 
         window.syncCartToCloud = async function() {
             if(currentUser) {
@@ -349,7 +349,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             let authEmail = document.getElementById('auth-email'); if(authEmail) authEmail.placeholder = window.currentLang === 'ar' ? 'البريد الإلكتروني' : 'Email Address';
             let authPass = document.getElementById('auth-password'); if(authPass) authPass.placeholder = window.currentLang === 'ar' ? 'كلمة المرور (6 أحرف على الأقل)' : 'Password (at least 6 chars)';
             let promoInp = document.getElementById('promo-code-input'); if(promoInp) promoInp.placeholder = window.currentLang === 'ar' ? 'أدخل الكود' : 'Enter Code';
-            window.renderProducts(false); window.updateCartUI();
+            window.renderProducts(false); window.renderVisualBar(); window.updateCartUI();
         };
 
         window.showToast = function(message, type = 'info') { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type}`; let icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️'); toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`; container.appendChild(toast); setTimeout(() => toast.classList.add('show'), 10); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000); };
@@ -377,7 +377,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         window.initMagnifier = function() { const container = document.getElementById('magnifier-container'); const img = document.getElementById('modal-img-main'); if(!container || !img) return; container.addEventListener('mousemove', function(e) { const {left, top, width, height} = container.getBoundingClientRect(); const x = (e.clientX - left) / width * 100; const y = (e.clientY - top) / height * 100; img.style.transformOrigin = `${x}% ${y}%`; img.style.transform = 'scale(2)'; }); container.addEventListener('mouseleave', function() { img.style.transformOrigin = 'center center'; img.style.transform = 'scale(1)'; }); }
 
         let lastScrollY = window.scrollY;
-        window.addEventListener('scroll', () => { const nav = document.getElementById('smart-nav'); if(nav) { if (window.scrollY > lastScrollY && window.scrollY > 100) nav.classList.add('hidden'); else nav.classList.remove('hidden'); } lastScrollY = window.scrollY; let homePanel = document.getElementById('home-panel'); if (homePanel && homePanel.classList.contains('active')) { if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) { let totalFiltered = window.getFilteredProductsCount(); if(currentRenderedProducts < totalFiltered) { let indicator = document.getElementById('loading-more-indicator'); if(indicator) indicator.style.display = 'block'; setTimeout(() => { currentRenderedProducts += productsPerPage; window.renderProducts(false); if(indicator) indicator.style.display = 'none'; }, 500); } } } });
+        window.addEventListener('scroll', () => { const nav = document.getElementById('smart-nav'); if(nav) { if (window.scrollY > lastScrollY && window.scrollY > 100) nav.classList.add('hidden'); else nav.classList.remove('hidden'); } lastScrollY = window.scrollY; let homePanel = document.getElementById('home-panel'); if (homePanel && homePanel.classList.contains('active')) { if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) { let totalFiltered = window.getFilteredProductsCount(); if(currentRenderedProducts < totalFiltered) { let indicator = document.getElementById('loading-more-indicator'); if(indicator) indicator.style.display = 'block'; setTimeout(() => { currentRenderedProducts += productsPerPage; window.renderProducts(false); window.renderVisualBar(); if(indicator) indicator.style.display = 'none'; }, 500); } } } });
 
         window.updateOfferTimer = function() { let endTime = localStorage.getItem('offer_end_time'); let now = new Date().getTime(); if(!endTime || now > endTime) { endTime = now + (72 * 60 * 60 * 1000); localStorage.setItem('offer_end_time', endTime); } setInterval(() => { now = new Date().getTime(); let distance = endTime - now; if(distance < 0) { endTime = now + (72 * 60 * 60 * 1000); localStorage.setItem('offer_end_time', endTime); distance = endTime - now; } let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)); let seconds = Math.floor((distance % (1000 * 60)) / 1000); let tStr = (hours < 10 ? "0"+hours : hours) + ":" + (minutes < 10 ? "0"+minutes : minutes) + ":" + (seconds < 10 ? "0"+seconds : seconds); let timerEl = document.getElementById('offer-timer'); if(timerEl) timerEl.innerText = tStr; }, 1000); }
         window.updateOfferTimer();
@@ -436,6 +436,8 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             if(isCurrentUserAdmin) { let csToggle = document.getElementById('setting-cross-sell'); if(csToggle) csToggle.checked = storeSettings.enableCrossSell;
                 let loyE = document.getElementById('setting-loyalty-earn'); if(loyE && storeSettings.loyaltyEarnRate) loyE.value = storeSettings.loyaltyEarnRate;
                 let loyV = document.getElementById('setting-loyalty-value'); if(loyV && storeSettings.loyaltyRedeemValue) loyV.value = storeSettings.loyaltyRedeemValue;
+                let vMode = document.getElementById('setting-visual-bar-mode'); if(vMode) vMode.value = storeSettings.visualBarMode || 'categories';
+
                 let autoEl = document.getElementById('setting-auto-reply'); if(autoEl) autoEl.value = storeSettings.autoReplyMessage || ''; let wallEl = document.getElementById('setting-wallet-number'); if(wallEl) wallEl.value = storeSettings.walletNumber || ''; let fbEl = document.getElementById('setting-fb-pixel'); if(fbEl) fbEl.value = storeSettings.fbPixelId || ''; let ttEl = document.getElementById('setting-tt-pixel'); if(ttEl) ttEl.value = storeSettings.ttPixelId || ''; 
                 let fsInp = document.getElementById('setting-free-shipping'); if(fsInp && storeSettings.freeShippingThreshold) fsInp.value = storeSettings.freeShippingThreshold; }
             let chWall = document.getElementById('checkout-wallet-number'); if(chWall) chWall.textContent = storeSettings.walletNumber || '01018631768';
@@ -456,7 +458,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                 filterHtml += `<button type="button" class="filter-btn ${currentCategoryFilter === cat ? 'active' : ''}" onclick="window.filterProducts('${cat}')">${cat}</button>`; selectHtml += `<option value="${cat}">${cat}</option>`; adminListHtml += `<div style="background:var(--input-bg); padding:5px 10px; border:1px solid var(--border-color); border-radius:20px; display:flex; align-items:center; gap:8px;">${cat} <button type="button" class="btn-danger" style="border:none; border-radius:50%; width:20px; height:20px; font-size:10px; cursor:pointer;" onclick="window.removeCategory(${index})">X</button></div>`; sidebarCatsHtml += `<button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.filterProducts('${cat}'); window.closeSidebar(); window.showPanel('home');">📂 ${cat}</button>`;
             });
             let cfc = document.getElementById('category-filters-container'); if(cfc) cfc.innerHTML = filterHtml; let pc = document.getElementById('product-category'); if(pc) pc.innerHTML = selectHtml; let acl = document.getElementById('admin-categories-list'); if(acl) acl.innerHTML = adminListHtml; let scl = document.getElementById('sidebar-categories-list'); if(scl) scl.innerHTML = sidebarCatsHtml;
-            window.renderProducts(false);
+            window.renderProducts(false); window.renderVisualBar();
         }
 
         window.saveSettings = async function() { 
@@ -465,6 +467,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             const newFb = document.getElementById('setting-fb-pixel') ? document.getElementById('setting-fb-pixel').value.trim() : storeSettings.fbPixelId; 
             const newTt = document.getElementById('setting-tt-pixel') ? document.getElementById('setting-tt-pixel').value.trim() : storeSettings.ttPixelId; 
             const newCrossSell = document.getElementById('setting-cross-sell') ? document.getElementById('setting-cross-sell').checked : true;
+            const newVMode = document.getElementById('setting-visual-bar-mode') ? document.getElementById('setting-visual-bar-mode').value : 'categories';
             
             const earnEl = document.getElementById('setting-loyalty-earn'); const lEarn = earnEl ? (parseInt(earnEl.value) || 20) : 20;
             const redeemEl = document.getElementById('setting-loyalty-value'); const lRedeem = redeemEl ? (parseInt(redeemEl.value) || 10) : 10;
@@ -479,7 +482,8 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                     enableCrossSell: newCrossSell, 
                     freeShippingThreshold: fsThresh, 
                     loyaltyEarnRate: lEarn, 
-                    loyaltyRedeemValue: lRedeem 
+                    loyaltyRedeemValue: lRedeem, 
+                    visualBarMode: newVMode
                 }); 
                 window.showToast('تم الحفظ بنجاح', 'success'); 
                 window.injectPixels(); 
@@ -713,7 +717,7 @@ let adminUsersUnsubscribe = null;
             } else { 
                 isCurrentUserAdmin = false; document.querySelectorAll('.admin-tab').forEach(tab => tab.style.display = 'none'); 
                 if(adminOrdersUnsubscribe) { adminOrdersUnsubscribe(); adminOrdersUnsubscribe = null; } if(adminReturnsUnsubscribe) { adminReturnsUnsubscribe(); adminReturnsUnsubscribe = null; } if(adminUsersUnsubscribe) { adminUsersUnsubscribe(); adminUsersUnsubscribe = null; }
-            } window.applySettingsToUI(); window.renderProducts(false); 
+            } window.applySettingsToUI(); window.renderProducts(false); window.renderVisualBar(); 
         }
         
         onSnapshot(collection(db, 'admins'), (snapshot) => { dynamicAdmins = []; dynamicAdminsList = []; snapshot.forEach(doc => { dynamicAdmins.push(doc.data().email.toLowerCase()); dynamicAdminsList.push({ id: doc.id, email: doc.data().email.toLowerCase() }); }); window.updateAdminUI(); window.renderAdminsList(); });
@@ -781,9 +785,9 @@ try {
         window.applyAdvancedFilters = function() { currentRenderedProducts = productsPerPage; window.renderProducts(); };
         window.filterProducts = function(category) { currentCategoryFilter = category; document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active')); if(event && event.target && event.target.classList) event.target.classList.add('active'); currentRenderedProducts = productsPerPage; window.renderProducts(); }
         
-        onSnapshot(collection(db, 'products'), (snapshot) => { products = []; snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() })); products.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)); isProductsLoaded = true; window.renderProducts(false); if(document.getElementById('wishlist-panel') && document.getElementById('wishlist-panel').classList.contains('active')) window.renderWishlist(); });
+        onSnapshot(collection(db, 'products'), (snapshot) => { products = []; snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() })); products.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)); isProductsLoaded = true; window.renderProducts(false); window.renderVisualBar(); if(document.getElementById('wishlist-panel') && document.getElementById('wishlist-panel').classList.contains('active')) window.renderWishlist(); });
 
-        window.toggleWishlist = function(event, id) { event.stopPropagation(); const index = wishlist.indexOf(id); if(index > -1) { wishlist.splice(index, 1); window.showToast('تم الحذف من المفضلة'); } else { wishlist.push(id); window.showToast('تمت الإضافة للمفضلة ❤️', 'success'); } localStorage.setItem('wishlist', JSON.stringify(wishlist)); window.renderProducts(false); if(document.getElementById('wishlist-panel') && document.getElementById('wishlist-panel').classList.contains('active')) window.renderWishlist(); }
+        window.toggleWishlist = function(event, id) { event.stopPropagation(); const index = wishlist.indexOf(id); if(index > -1) { wishlist.splice(index, 1); window.showToast('تم الحذف من المفضلة'); } else { wishlist.push(id); window.showToast('تمت الإضافة للمفضلة ❤️', 'success'); } localStorage.setItem('wishlist', JSON.stringify(wishlist)); window.renderProducts(false); window.renderVisualBar(); if(document.getElementById('wishlist-panel') && document.getElementById('wishlist-panel').classList.contains('active')) window.renderWishlist(); }
 
         window.getFilteredProductsCount = function() { let minP = document.getElementById('min-price'); let minPrice = minP ? (Number(minP.value) || 0) : 0; let maxP = document.getElementById('max-price'); let maxPrice = maxP ? (Number(maxP.value) || Infinity) : Infinity; if(maxPrice === 0) maxPrice = Infinity; let filteredProducts = products.filter(p => { let inCategory = (currentCategoryFilter === 'الكل' || (p.category || 'أخرى') === currentCategoryFilter); let inSearch = window.fuzzyMatch(p.name, searchQuery); let inPrice = p.price >= minPrice && p.price <= maxPrice; return inCategory && inSearch && inPrice; }); return filteredProducts.length; }
 
@@ -1426,3 +1430,35 @@ window.showUserHistory = function(userId, userName) {
                 if(pm) pm.style.display = 'none';
             }
         });
+
+
+        window.renderVisualBar = function() {
+            let container = document.getElementById('visual-scroll-bar');
+            if(!container) return;
+            let mode = storeSettings.visualBarMode || 'categories';
+            if(mode === 'none' || !isProductsLoaded) { container.style.display = 'none'; return; }
+            
+            let html = '';
+            if(mode === 'categories') {
+                let cats = storeSettings.categories || [];
+                cats.forEach(cat => {
+                    let catProduct = products.find(p => p.category === cat && p.images && p.images.length > 0) || products.find(p => p.category === cat && p.imageUrl);
+                    let img = catProduct ? (catProduct.images ? catProduct.images[0] : catProduct.imageUrl) : '1000392409.jpeg';
+                    html += `<div class="visual-item" onclick="window.showPanel('home'); window.filterProducts('${cat}')">
+                        <img loading="lazy" src="${img}" alt="${cat}" onerror="this.src='1000392409.jpeg'">
+                        <span>${cat}</span>
+                    </div>`;
+                });
+            } else if (mode === 'products') {
+                let displayProducts = products.slice(0, 10);
+                displayProducts.forEach(p => {
+                    let img = (p.images && p.images.length > 0) ? p.images[0] : (p.imageUrl || '1000392409.jpeg');
+                    html += `<div class="visual-item" onclick="window.openProductModal('${p.id}')">
+                        <img loading="lazy" src="${img}" alt="${window.escapeHTML(p.name)}" onerror="this.src='1000392409.jpeg'">
+                        <span>${window.escapeHTML(p.name)}</span>
+                    </div>`;
+                });
+            }
+            container.innerHTML = html;
+            container.style.display = html ? 'flex' : 'none';
+        };
