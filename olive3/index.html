@@ -449,6 +449,44 @@
             </div>
         </div>
 
+        
+        <div class="panel" id="profile-panel">
+            <h2 style="color: var(--primary); margin-top: 0;" class="translatable">👤 حسابي الشخصي</h2>
+            <div id="profile-auth-msg" style="color: var(--danger); text-align: center; font-weight: bold; display:none;" class="translatable">يرجى تسجيل الدخول لعرض حسابك.<br><br><button type="button" class="btn" onclick="window.showPanel('auth')">تسجيل الدخول</button></div>
+            <div id="profile-content" style="display:none;">
+                <div style="background:var(--input-bg); padding:20px; border-radius:12px; border:1px solid var(--border-color); text-align:center; margin-bottom:20px;">
+                    <img id="profile-avatar" src="1000392409.jpeg" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid var(--secondary); margin-bottom:10px;">
+                    <h3 id="profile-name-display" style="margin:0; color:var(--primary);">عميل</h3>
+                    <p id="profile-email-display" style="color:var(--text-muted); font-size:0.9rem; margin:5px 0 0;"></p>
+                </div>
+                
+                <div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <div class="dash-card" style="cursor:pointer;" onclick="window.showPanel('loyalty')">
+                        <h3 style="font-size:1rem; margin-bottom:5px;">🎁 نقاطي</h3>
+                        <div class="stat" id="profile-points" style="font-size:1.2rem; color:var(--secondary);">0</div>
+                    </div>
+                    <div class="dash-card" style="cursor:pointer;" onclick="window.showPanel('customer-orders')">
+                        <h3 style="font-size:1rem; margin-bottom:5px;">📦 طلباتي</h3>
+                        <div class="stat" id="profile-orders-count" style="font-size:1.2rem; color:var(--primary);">0</div>
+                    </div>
+                </div>
+
+                <form id="profile-form" style="background:var(--input-bg); padding:15px; border-radius:12px; border:1px solid var(--border-color); margin-top:20px;">
+                    <h4 style="color:var(--primary); margin-top:0;" class="translatable">تحديث بياناتي وعنواني:</h4>
+                    <input type="text" id="prof-name" placeholder="الاسم بالكامل" required>
+                    <input type="tel" id="prof-phone1" placeholder="رقم الهاتف الأساسي" required>
+                    <div class="form-row">
+                        <select id="prof-gov" required><option value="" disabled selected>المحافظة...</option></select>
+                        <select id="prof-city" required disabled><option value="" disabled selected>المدينة...</option></select>
+                    </div>
+                    <textarea id="prof-address" placeholder="العنوان التفصيلي (شارع، عمارة، شقة)" rows="2"></textarea>
+                    <button type="button" class="btn btn-full" style="background:var(--primary);" onclick="window.saveProfileData()"><span class="translatable">حفظ التعديلات</span></button>
+                </form>
+                
+                <button type="button" class="btn btn-danger" style="width:100%; margin-top:20px;" onclick="window.logoutUser()">🚪 تسجيل الخروج</button>
+            </div>
+        </div>
+
         <div class="panel" id="auth-panel" style="max-width: 500px; margin: 0 auto 2rem;">
             <h2 id="auth-title" style="color: var(--primary); margin-top: 0; text-align: center;" class="translatable">تسجيل الدخول</h2>
             <form id="auth-form">
@@ -686,7 +724,7 @@
             <span class="icon">❤️</span>
             <span class="translatable">المفضلة</span>
         </button>
-        <button class="bottom-nav-btn" onclick="window.openSidebar()">
+        <button class="bottom-nav-btn" onclick="window.showProfilePanel()">
             <span class="icon">👤</span>
             <span class="translatable">حسابي</span>
         </button>

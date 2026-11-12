@@ -354,7 +354,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
 
         window.showToast = function(message, type = 'info') { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type}`; let icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️'); toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`; container.appendChild(toast); setTimeout(() => toast.classList.add('show'), 10); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000); };
 
-        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'global-notifications-panel': document.getElementById('global-notifications-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel') };
+        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'global-notifications-panel': document.getElementById('global-notifications-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel'), 'profile': document.getElementById('profile-panel') };
         let checkoutMap = null, userMarker = null;
 
         window.openSidebar = function() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('show'); }
@@ -525,6 +525,103 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             }
         };
 
+
+        
+        window.showProfilePanel = function() {
+            window.showPanel('profile');
+            if(currentUser) {
+                document.getElementById('profile-auth-msg').style.display = 'none';
+                document.getElementById('profile-content').style.display = 'block';
+                
+                document.getElementById('profile-name-display').innerText = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'عميل');
+                document.getElementById('profile-email-display').innerText = currentUser.email || currentUser.phoneNumber || '';
+                
+                if (window.customerOrdersArray) {
+                    document.getElementById('profile-orders-count').innerText = window.customerOrdersArray.length;
+                }
+                
+                getDoc(doc(db, 'users', currentUser.uid)).then(d => {
+                    if(d.exists()) {
+                        let data = d.data();
+                        document.getElementById('profile-points').innerText = data.loyaltyPoints || 0;
+                        document.getElementById('prof-name').value = data.name || currentUser.displayName || '';
+                        document.getElementById('prof-phone1').value = data.phone1 || currentUser.phoneNumber || '';
+                        document.getElementById('prof-address').value = data.address || '';
+                        
+                        let pGov = document.getElementById('prof-gov');
+                        let pCity = document.getElementById('prof-city');
+                        if (data.gov && pGov) {
+                            pGov.value = data.gov;
+                            pGov.dispatchEvent(new Event('change'));
+                            setTimeout(() => { if(pCity && data.city) pCity.value = data.city; }, 100);
+                        }
+                    }
+                });
+            } else {
+                document.getElementById('profile-auth-msg').style.display = 'block';
+                document.getElementById('profile-content').style.display = 'none';
+            }
+        };
+        
+        window.saveProfileData = async function() {
+            if(!currentUser) return;
+            const name = document.getElementById('prof-name').value;
+            const phone1 = document.getElementById('prof-phone1').value;
+            const gov = document.getElementById('prof-gov').value;
+            const city = document.getElementById('prof-city').value;
+            const address = document.getElementById('prof-address').value;
+            
+            try {
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    name: name,
+                    phone1: phone1,
+                    gov: gov,
+                    city: city,
+                    address: address
+                }, { merge: true });
+                window.showToast('تم حفظ البيانات بنجاح', 'success');
+                document.getElementById('profile-name-display').innerText = name;
+            } catch(e) {
+                window.showToast('حدث خطأ أثناء الحفظ', 'error');
+            }
+        };
+
+        const profGovSelect = document.getElementById('prof-gov'), profCitySelect = document.getElementById('prof-city');
+        if(profGovSelect && profCitySelect) {
+            profGovSelect.innerHTML = '<option value="" disabled selected>اختر المحافظة...</option>'; 
+            for (let gov in deliveryData) { 
+                let option = document.createElement('option'); 
+                option.value = gov; 
+                option.textContent = gov; 
+                profGovSelect.appendChild(option); 
+            }
+            profGovSelect.addEventListener('change', function() { 
+                const data = deliveryData[this.value]; 
+                let citiesHtml = '<option value="" disabled selected>اختر المركز/المدينة...</option>'; 
+                data.cities.forEach(city => { citiesHtml += `<option value="${city}">${city}</option>`; }); 
+                citiesHtml += `<option value="مدينة أخرى">أخرى (تُكتب بالعنوان التفصيلي)</option>`; 
+                profCitySelect.innerHTML = citiesHtml; 
+                profCitySelect.disabled = false; 
+            });
+        }
+        
+        let visualScrollInterval;
+        window.startVisualAutoScroll = function() {
+            let bar = document.getElementById('visual-scroll-bar');
+            if(!bar) return;
+            clearInterval(visualScrollInterval);
+            visualScrollInterval = setInterval(() => {
+                if(bar.matches(':hover') || bar.matches(':active') || bar.matches(':focus-within')) return;
+                let prev = bar.scrollLeft;
+                if(document.documentElement.dir === 'rtl' || window.currentLang === 'ar') {
+                    bar.scrollLeft -= 1;
+                    if (bar.scrollLeft === prev) { bar.scrollLeft = bar.scrollWidth; }
+                } else {
+                    bar.scrollLeft += 1;
+                    if (bar.scrollLeft === prev) { bar.scrollLeft = 0; }
+                }
+            }, 30);
+        };
 
         const govSelect = document.getElementById('order-gov'), citySelect = document.getElementById('order-city');
         if(govSelect && citySelect) {
@@ -1461,4 +1558,5 @@ window.showUserHistory = function(userId, userName) {
             }
             container.innerHTML = html;
             container.style.display = html ? 'flex' : 'none';
+            window.startVisualAutoScroll();
         };
