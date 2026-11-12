@@ -209,7 +209,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         let savedAccounts = JSON.parse(localStorage.getItem('zait_saved_accounts')) || [];
         let currentRenderedProducts = 8; const productsPerPage = 8;
         
-        let storeSettings = { walletNumber: "01018631768", fbPixelId: "", ttPixelId: "", categories: ["زيت زيتون"], autoReplyMessage: "أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.", floatingButtons: [{ id: 'btn_support', icon: '💬', link: '#support', color: '#007bff', isSystem: true, title: 'خدمة العملاء' }, { id: 'btn_wa', icon: '📱', link: 'https://wa.me/201018631768', color: '#25D366', isSystem: false, title: 'واتساب' }], revenueResetDate: "2000-01-01T00:00:00.000Z", ordersResetDate: "2000-01-01T00:00:00.000Z", enableCrossSell: true, visualBarMode: 'categories', enableInstaPay: true };
+        let storeSettings = { walletNumber: "01018631768", fbPixelId: "", ttPixelId: "", categories: ["زيت زيتون"], autoReplyMessage: "أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.", floatingButtons: [{ id: 'btn_support', icon: '💬', link: '#support', color: '#007bff', isSystem: true, title: 'خدمة العملاء' }, { id: 'btn_wa', icon: '📱', link: 'https://wa.me/201018631768', color: '#25D366', isSystem: false, title: 'واتساب' }], revenueResetDate: "2000-01-01T00:00:00.000Z", ordersResetDate: "2000-01-01T00:00:00.000Z", enableCrossSell: true, visualBarMode: 'categories' };
 
         window.syncCartToCloud = async function() {
             if(currentUser) {
@@ -421,7 +421,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
 
         window.logoutUser = function() { signOut(auth).then(() => { window.closeDropdown(); window.showToast('تم تسجيل الخروج بنجاح', 'info'); window.showPanel('auth'); }); };
         
-        window.goToCheckout = function() { let selectedItems = cart.filter(item => item.selected !== false); if (selectedItems.length === 0) { window.showToast(window.currentLang === 'ar' ? 'قم بتحديد منتج واحد على الأقل للمتابعة!' : 'Select at least one item to proceed!', 'error'); return; } if (currentUser) { window.showPanel('checkout'); } else { window.showToast("يرجى تسجيل الدخول أولاً.", 'error'); window.showPanel('auth'); } };
+        window.goToCheckout = function() { let selectedItems = cart.filter(item => item.selected !== false); if (selectedItems.length === 0) { window.showToast(window.currentLang === 'ar' ? 'قم بتحديد منتج واحد على الأقل للمتابعة!' : 'Select at least one item to proceed!', 'error'); return; } window.showPanel('checkout'); };
 
         onSnapshot(doc(db, 'settings', 'main'), (docSnap) => { if (docSnap.exists()) { const data = docSnap.data(); storeSettings = { ...storeSettings, ...data }; if(!storeSettings.walletNumber) storeSettings.walletNumber = "01018631768"; if(storeSettings.enableCrossSell === undefined) storeSettings.enableCrossSell = true; } else { setDoc(doc(db, 'settings', 'main'), storeSettings); } window.applySettingsToUI(); injectPixels(); if(isCurrentUserAdmin) {window.loadAdminOrders(); window.loadAdminUsers();} });
         onSnapshot(doc(db, 'settings', 'stats'), (docSnap) => { let sEl = document.getElementById('stat-visits'); if(docSnap.exists() && isCurrentUserAdmin && sEl) { sEl.textContent = docSnap.data().visits || 0; } });
@@ -434,7 +434,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             let lrtxt = document.getElementById('loyalty-redeem-text'); if(lrtxt) lrtxt.textContent = window.loyaltyRedeemValueActual;
             
             if(isCurrentUserAdmin) { let csToggle = document.getElementById('setting-cross-sell'); if(csToggle) csToggle.checked = storeSettings.enableCrossSell;
-                let instaToggle = document.getElementById('setting-instapay-btn'); if(instaToggle) instaToggle.checked = storeSettings.enableInstaPay !== false;
+                
                 let loyE = document.getElementById('setting-loyalty-earn'); if(loyE && storeSettings.loyaltyEarnRate) loyE.value = storeSettings.loyaltyEarnRate;
                 let loyV = document.getElementById('setting-loyalty-value'); if(loyV && storeSettings.loyaltyRedeemValue) loyV.value = storeSettings.loyaltyRedeemValue;
                 let vMode = document.getElementById('setting-visual-bar-mode'); if(vMode) vMode.value = storeSettings.visualBarMode || 'categories';
@@ -442,7 +442,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                 let autoEl = document.getElementById('setting-auto-reply'); if(autoEl) autoEl.value = storeSettings.autoReplyMessage || ''; let wallEl = document.getElementById('setting-wallet-number'); if(wallEl) wallEl.value = storeSettings.walletNumber || ''; let fbEl = document.getElementById('setting-fb-pixel'); if(fbEl) fbEl.value = storeSettings.fbPixelId || ''; let ttEl = document.getElementById('setting-tt-pixel'); if(ttEl) ttEl.value = storeSettings.ttPixelId || ''; 
                 let fsInp = document.getElementById('setting-free-shipping'); if(fsInp && storeSettings.freeShippingThreshold) fsInp.value = storeSettings.freeShippingThreshold; }
             let chWall = document.getElementById('checkout-wallet-number'); if(chWall) chWall.textContent = storeSettings.walletNumber || '01018631768';
-            let instaCont = document.getElementById('instapay-btn-container'); if(instaCont) instaCont.style.display = storeSettings.enableInstaPay !== false ? 'block' : 'none';
+            
             const floatingContainer = document.getElementById('floating-menu-container'), footerSocialContainer = document.getElementById('footer-social-links'), adminBtnsList = document.getElementById('admin-floating-btns-list');
             if(floatingContainer) floatingContainer.innerHTML = ''; if(footerSocialContainer) footerSocialContainer.innerHTML = ''; if(adminBtnsList) adminBtnsList.innerHTML = '';
             
@@ -469,7 +469,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             const newFb = document.getElementById('setting-fb-pixel') ? document.getElementById('setting-fb-pixel').value.trim() : storeSettings.fbPixelId; 
             const newTt = document.getElementById('setting-tt-pixel') ? document.getElementById('setting-tt-pixel').value.trim() : storeSettings.ttPixelId; 
             const newCrossSell = document.getElementById('setting-cross-sell') ? document.getElementById('setting-cross-sell').checked : true;
-            const newInsta = document.getElementById('setting-instapay-btn') ? document.getElementById('setting-instapay-btn').checked : true;
+            
             const newVMode = document.getElementById('setting-visual-bar-mode') ? document.getElementById('setting-visual-bar-mode').value : 'categories';
             
             const earnEl = document.getElementById('setting-loyalty-earn'); const lEarn = earnEl ? (parseInt(earnEl.value) || 20) : 20;
@@ -482,7 +482,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                     walletNumber: newWallet, 
                     fbPixelId: newFb, 
                     ttPixelId: newTt, 
-                    enableCrossSell: newCrossSell, enableInstaPay: newInsta, 
+                    enableCrossSell: newCrossSell, 
                     freeShippingThreshold: fsThresh, 
                     loyaltyEarnRate: lEarn, 
                     loyaltyRedeemValue: lRedeem, 
@@ -996,6 +996,12 @@ try {
             let sab = document.getElementById('sticky-action-btn'); if(sab) sab.innerHTML = `<button type="button" class="btn" style="padding: 8px 15px; font-size:1rem;" ${addBtnState}>${addTxt}</button>`;
             
             window.trackEvent('ViewContent', { content_name: product.name, content_category: product.category, value: product.price, currency: 'EGP' });
+            
+            let waBtnContainer = document.getElementById('modal-wa-btn-container');
+            if (waBtnContainer) {
+                waBtnContainer.innerHTML = `<button type="button" class="btn btn-outline" style="width:100%; border-color:#25D366; color:#25D366; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="window.askProductWa('${product.id}')">💬 ${window.currentLang === 'ar' ? 'استفسار عن المنتج' : 'Inquire on WhatsApp'}</button>`;
+            }
+
             let btnBuyNow = document.getElementById('btn-buy-now'); if(btnBuyNow) btnBuyNow.style.display = 'block'; let pm = document.getElementById('product-modal'); if(pm) pm.style.display = 'flex';
         }
 
@@ -1422,7 +1428,9 @@ try {
                         </select>
                     </div>
                     ${receiptHtml}
+                    <button type="button" class="btn btn-outline" style="border-color:#17a2b8; color:#17a2b8; padding:10px 15px; border-radius:8px; font-size:0.9rem;" onclick="window.printOrder('${data.id}')">🖨️ طباعة الفاتورة</button>
                     <button type="button" class="btn btn-danger" style="padding:10px 15px; border-radius:8px; font-size:0.9rem;" onclick="window.deleteAdminOrder('${data.id}'); document.getElementById('admin-order-modal').style.display='none';">حذف الطلب 🗑️</button>
+
                 </div>
             `;
             document.getElementById('aom-content').innerHTML = html;
@@ -1582,53 +1590,84 @@ window.showUserHistory = function(userId, userName) {
         };
 
 
-        window.payWithInstaPay = function() {
-            let num = storeSettings.walletNumber || "01018631768";
-            let fallbackUrl = "https://play.google.com/store/apps/details?id=com.cbe.instapay"; // Fallback URL
-            
-            // Try modern clipboard API first
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(num).then(() => {
-                    executeInstaPayLaunch(fallbackUrl);
-                }).catch(err => { fallbackCopy(num, fallbackUrl); });
-            } else {
-                fallbackCopy(num, fallbackUrl);
-            }
-        };
+        ;
         
-        function fallbackCopy(text, fallbackUrl) {
-            let textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed"; document.body.appendChild(textArea);
-            textArea.focus(); textArea.select();
-            try {
-                document.execCommand('copy');
-                executeInstaPayLaunch(fallbackUrl);
-            } catch (err) {
+         catch (err) {
                 window.showToast('فشل النسخ التلقائي، يرجى نسخ الرقم يدوياً.', 'error');
             }
             document.body.removeChild(textArea);
         }
 
-        function executeInstaPayLaunch(fallbackUrl) {
-            window.showToast(window.currentLang === 'ar' ? 'تم نسخ الرقم! جاري فتح إنستاباي...' : 'Number copied! Opening InstaPay...', 'success');
-            setTimeout(() => {
-                // Try deep link
-                window.location.href = "intent://#Intent;scheme=instapay;package=com.cbe.instapay;end";
-                
-                // Fallback timeout in case intent fails (app not installed)
-                setTimeout(function() {
-                    if (document.hidden) return; // App opened successfully
-                    window.showToast('تطبيق إنستاباي غير مثبت على جهازك.', 'error');
-                }, 2500);
+        , 2500);
             }, 1000);
         }
 
 
-        if ('serviceWorker' in navigator) {
-          window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js').then(reg => {
-              console.log('SW registered successfully');
-            }).catch(err => console.log('SW registration failed', err));
-          });
-        }
+        
+
+
+        window.askProductWa = function(id) {
+            let p = products.find(x => x.id === id);
+            if(!p) return;
+            let waBtnInfo = storeSettings.floatingButtons ? storeSettings.floatingButtons.find(b => b.icon === '📱' || b.link.includes('wa.me')) : null;
+            let pureWa = waBtnInfo ? waBtnInfo.link.split('/').pop() : "201018631768";
+            if(pureWa && !pureWa.startsWith('20') && pureWa.length === 10) pureWa = '20' + pureWa;
+            let msg = window.currentLang === 'ar' 
+                ? `مرحباً، أستفسر عن المنتج: *${p.name}*` + (p.price ? `\nوالذي سعره: ${p.price} ج` : '')
+                : `Hello, I'm inquiring about: *${p.name}*` + (p.price ? `\nPrice: ${p.price} EGP` : '');
+            window.open(`https://wa.me/${pureWa}?text=${encodeURIComponent(msg)}`, '_blank');
+        };
+
+
+        window.printOrder = function(id) {
+            let data = adminOrdersArray.find(o => o.id === id);
+            if(!data) return;
+            let itemsHtml = data.items.map(i => `<tr><td style="padding:8px; border:1px solid #ddd;">${i.name}</td><td style="padding:8px; border:1px solid #ddd;">${i.quantity}</td><td style="padding:8px; border:1px solid #ddd;">${i.price * i.quantity} ج</td></tr>`).join('');
+            
+            let printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html dir="rtl" lang="ar">
+                <head>
+                    <title>فاتورة طلب #${data.id.slice(0,6).toUpperCase()}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+                        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; text-align:right; }
+                        th, td { border: 1px solid #ddd; padding: 10px; text-align: right; }
+                        th { background-color: #f8f9fa; }
+                        .total { font-weight: bold; font-size: 1.2rem; margin-top: 20px; text-align: left; background:#f0fdf4; padding:10px; border-radius:8px; border:1px solid #bbf7d0;}
+                        @media print { button { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h2>زيت الشجرة المباركة</h2>
+                        <p>فاتورة طلب إلكتروني #${data.id.slice(0,6).toUpperCase()}</p>
+                        <p>تاريخ الطلب: ${new Date(data.orderDate).toLocaleString('ar-EG')}</p>
+                    </div>
+                    <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #eee;">
+                        <p><strong>اسم العميل:</strong> ${data.customerName}</p>
+                        <p><strong>رقم الهاتف:</strong> ${data.phones.primary} ${data.phones.secondary !== 'لا يوجد' ? ' / ' + data.phones.secondary : ''}</p>
+                        <p><strong>المحافظة والمدينة:</strong> ${data.location.governorate} - ${data.location.city}</p>
+                        <p><strong>العنوان التفصيلي:</strong> ${data.location.details}</p>
+                        <p><strong>طريقة الدفع:</strong> ${data.paymentMethod}</p>
+                    </div>
+                    <table>
+                        <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر الإجمالي</th></tr></thead>
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
+                    <div style="margin-top:10px;">
+                        <p><strong>قيمة المنتجات:</strong> ${data.subtotal} ج</p>
+                        <p><strong>الخصم:</strong> ${data.discount} ج</p>
+                        <p><strong>مصاريف الشحن:</strong> ${data.shippingCost} ج</p>
+                    </div>
+                    <div class="total">الإجمالي النهائي المطلوب: ${data.totalAmount} ج</div>
+                    
+                    <div style="margin-top:30px; text-align:center;">
+                        <button onclick="window.print()" style="padding:10px 20px; font-size:1.1rem; background:#3c521e; color:white; border:none; border-radius:8px; cursor:pointer;">🖨️ طباعة الفاتورة الآن</button>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        };

@@ -4,11 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>زيت الشجرة المباركة</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="الشجرة المباركة">
-    <meta name="theme-color" content="#3c521e">
+        <meta name="theme-color" content="#3c521e">
 
     <meta name="description" content="زيت الشجرة المباركة - أفضل زيت زيتون سيناوي بكر ممتاز، منتجات طبيعية 100% من قلب سيناء وتوصيل لجميع المحافظات.">
     <meta name="keywords" content="زيت زيتون, زيت سيناوي, زيت بكر ممتاز, الشجرة المباركة, منتجات طبيعية, زيت زيتون أصلي">
@@ -195,6 +191,8 @@
             
             <h3 id="modal-price" style="color: var(--secondary); display: flex; align-items: center; justify-content: center; gap:10px; margin: 10px 0; font-size:1.5rem;"></h3>
             <p id="modal-stock" style="color: var(--danger); font-weight: bold; font-size: 0.9rem; margin-top: -5px;"></p>
+            <div id="modal-wa-btn-container" style="margin-bottom: 10px; width: 100%;"></div>
+
             <button type="button" class="btn btn-full" id="btn-buy-now" style="background-color: var(--primary); margin-bottom:10px; display:none;" onclick="window.executeBuyNow()"><span class="translatable">🚀 اشتري الآن (دفع سريع)</span></button>
 
             <div id="modal-actions" style="margin-top: 15px; display:none;"></div>
@@ -397,11 +395,7 @@
                         <strong style="color: #028090;">برجاء تحويل إجمالي المبلغ على الرقم / الحساب التالي:</strong><br>
                         <span id="checkout-wallet-number" style="font-size: 1.4rem; font-weight: bold; color: var(--danger); display: block; margin: 8px 0; letter-spacing: 1px;">01018631768</span>
                         
-                        <div id="instapay-btn-container" style="margin-top: 15px; display:none;">
-                            <button type="button" class="btn" style="width:100%; margin-bottom:10px; background:#6f42c1; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="window.payWithInstaPay()">
-                                🟣 <span class="translatable">الدفع السريع بـ InstaPay</span>
-                            </button>
-                        </div>
+                        
 
                         <div style="margin-top: 15px; background: var(--panel-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:var(--primary);">📸 أرفق صورة إيصال التحويل (سكرين شوت):</label>
@@ -649,13 +643,6 @@
                     </div>
                 </div>
                 
-                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: var(--primary); display:flex; align-items:center; gap:10px;">
-                        <input type="checkbox" id="setting-instapay-btn" style="width:20px; height:20px; margin:0;" onchange="window.saveSettings()">
-                        <span class="translatable">تفعيل زر الدفع السريع بـ InstaPay 🟣</span>
-                    </label>
-                </div>
-
                 <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
                     <label style="font-weight: bold; color: var(--primary); display:flex; align-items:center; gap:10px;">
                         <input type="checkbox" id="setting-cross-sell" style="width:20px; height:20px; margin:0;" onchange="window.saveSettings()">
