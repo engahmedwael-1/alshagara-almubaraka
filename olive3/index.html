@@ -1098,8 +1098,23 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         const SUPER_ADMINS = ["aw734622@gmail.com", "mhmwdaltahrahmdwayl@gmail.com"];
         let dynamicAdmins = [], dynamicAdminsList = [];
         window.loyaltyEarnRateActual = 20; window.loyaltyRedeemValueActual = 10;
-const ROLES_MASTER_PIN = "147258", ROLES_NATIONAL_ID = "31003141301958";
+
         
+        
+        window.hashString = async function(str) {
+            const buffer = new TextEncoder().encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        };
+        
+        window.escapeHTML = function(str) {
+            if(!str) return "";
+            return String(str).replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
+        };
+
         window.loyaltyDiscountFixed = 0; window.loyaltyPointsUsedTemp = 0; // متغير لخصم نقاط الولاء
 
         // دالة الميكروفون
@@ -1236,7 +1251,7 @@ const ROLES_MASTER_PIN = "147258", ROLES_NATIONAL_ID = "31003141301958";
             allReviews.forEach(r => {
                 let d = new Date(r.date).toLocaleDateString('ar-EG');
                 let revImgHtml = r.imageUrl ? `<img src="${r.imageUrl}" class="review-img" onclick="window.open('${r.imageUrl}', '_blank')">` : '';
-                html += `<div class="review-box"><strong style="color:var(--primary);">${r.userName}</strong> <span style="font-size:0.8rem; color:var(--text-muted);">(${d})</span><br><span style="font-size:0.85rem; color:var(--secondary);">${r.productName}</span><br>${'⭐'.repeat(r.rating || 5)}<br><span style="color:var(--text-color); font-size:0.95rem;">${r.comment}</span><br>${revImgHtml}</div>`;
+                html += `<div class="review-box"><strong style="color:var(--primary);">${window.escapeHTML(r.userName)}</strong> <span style="font-size:0.8rem; color:var(--text-muted);">(${d})</span><br><span style="font-size:0.85rem; color:var(--secondary);">${r.productName}</span><br>${'⭐'.repeat(r.rating || 5)}<br><span style="color:var(--text-color); font-size:0.95rem;">${window.escapeHTML(r.comment)}</span><br>${revImgHtml}</div>`;
             });
             container.innerHTML = html;
         }
@@ -1657,7 +1672,22 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             } else if (currentDiscountPercent > 0) {
                 window.showToast('تم إلغاء الكوبون', 'info');
             }
-            window.loyaltyDiscountFixed = 0;
+            
+        window.hashString = async function(str) {
+            const buffer = new TextEncoder().encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        };
+        
+        window.escapeHTML = function(str) {
+            if(!str) return "";
+            return String(str).replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
+        };
+
+        window.loyaltyDiscountFixed = 0;
             window.loyaltyPointsUsedTemp = 0;
             currentDiscountPercent = 0;
             appliedPromoCode = "";
@@ -1669,12 +1699,12 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         };
 window.toEngDigits = function(str) { const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩']; return str.split('').map(c => ar.indexOf(c) !== -1 ? ar.indexOf(c) : c).join(''); }
         
-        let ulrBtn = document.getElementById('btn-unlock-roles'); if(ulrBtn) { ulrBtn.addEventListener('click', () => { if (window.toEngDigits(document.getElementById('roles-pin').value.trim()) === ROLES_MASTER_PIN) { document.getElementById('roles-auth-section').style.display = 'none'; document.getElementById('roles-content-section').style.display = 'block'; document.getElementById('roles-pin').value = ''; window.showToast('تم الفتح', 'success'); } else { window.showToast("رمز خاطئ!", 'error'); } }); }
-        let fprBtn = document.getElementById('btn-forgot-roles-pin'); if(fprBtn) { fprBtn.addEventListener('click', () => { let nid = prompt("الرقم القومي:"); if (nid && window.toEngDigits(nid.trim()) === ROLES_NATIONAL_ID) window.showToast(`الرمز هو: ${ROLES_MASTER_PIN}`, 'success'); }); }
+        let ulrBtn = document.getElementById('btn-unlock-roles'); if(ulrBtn) { ulrBtn.addEventListener('click', async () => { let pin = window.toEngDigits(document.getElementById('roles-pin').value.trim()); let hashed = await window.hashString(pin); if (hashed === "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92") { document.getElementById('roles-auth-section').style.display = 'none'; document.getElementById('roles-content-section').style.display = 'block'; document.getElementById('roles-pin').value = ''; window.showToast('تم الفتح', 'success'); } else { window.showToast("رمز خاطئ!", 'error'); } }); }
+        let fprBtn = document.getElementById('btn-forgot-roles-pin'); if(fprBtn) { fprBtn.addEventListener('click', async () => { let nid = prompt("الرقم القومي:"); if (nid) { let hashedNid = await window.hashString(window.toEngDigits(nid.trim())); if (hashedNid === "e4e2a87a8b49dbb050f16e91f1816f1c4e7faef14f2e0e98031d2af40b490f05") { document.getElementById('roles-auth-section').style.display = 'none'; document.getElementById('roles-content-section').style.display = 'block'; window.showToast('تم الدخول بنجاح', 'success'); } else { window.showToast('رقم قومي خاطئ', 'error'); } } }); }
         let lrBtn = document.getElementById('btn-lock-roles'); if(lrBtn) { lrBtn.addEventListener('click', () => { document.getElementById('roles-content-section').style.display = 'none'; document.getElementById('roles-auth-section').style.display = 'block'; }); }
 
-        window.resetAdminRevenue = async function() { let pin = prompt("أدخل رمز الأمان للمؤسس لتصفير الأرباح فقط 🔄:"); if (pin && window.toEngDigits(pin.trim()) === ROLES_MASTER_PIN) { try { let newResetDate = new Date().toISOString(); await setDoc(doc(db, 'settings', 'main'), { revenueResetDate: newResetDate }, { merge: true }); window.showToast('تم تصفير الأرباح بنجاح', 'success'); window.loadAdminOrders(); } catch(e) { window.showToast('حدث خطأ أثناء التصفير', 'error'); } } else if(pin !== null) { window.showToast('رمز الأمان غير صحيح!', 'error'); } };
-        window.resetAdminOrdersCount = async function() { let pin = prompt("أدخل رمز الأمان للمؤسس لتصفير الطلبات فقط 🔄:"); if (pin && window.toEngDigits(pin.trim()) === ROLES_MASTER_PIN) { try { let newResetDate = new Date().toISOString(); await setDoc(doc(db, 'settings', 'main'), { ordersResetDate: newResetDate }, { merge: true }); window.showToast('تم تصفير الطلبات بنجاح', 'success'); window.loadAdminOrders(); } catch(e) { window.showToast('حدث خطأ أثناء التصفير', 'error'); } } else if(pin !== null) { window.showToast('رمز الأمان غير صحيح!', 'error'); } };
+        window.resetAdminRevenue = async function() { let pin = prompt("أدخل رمز الأمان للمؤسس لتصفير الأرباح فقط 🔄:"); if (pin) { let hashed = await window.hashString(window.toEngDigits(pin.trim())); if (hashed === "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92") { try { let newResetDate = new Date().toISOString(); await setDoc(doc(db, 'settings', 'main'), { revenueResetDate: newResetDate }, { merge: true }); window.showToast('تم تصفير الأرباح بنجاح', 'success'); window.loadAdminOrders(); } catch(e) { window.showToast('حدث خطأ أثناء التصفير', 'error'); } } else { window.showToast('رمز الأمان غير صحيح!', 'error'); } } };
+        window.resetAdminOrdersCount = async function() { let pin = prompt("أدخل رمز الأمان للمؤسس لتصفير الطلبات فقط 🔄:"); if (pin) { let hashed = await window.hashString(window.toEngDigits(pin.trim())); if (hashed === "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92") { try { let newResetDate = new Date().toISOString(); await setDoc(doc(db, 'settings', 'main'), { ordersResetDate: newResetDate }, { merge: true }); window.showToast('تم تصفير الطلبات بنجاح', 'success'); window.loadAdminOrders(); } catch(e) { window.showToast('حدث خطأ أثناء التصفير', 'error'); } } else { window.showToast('رمز الأمان غير صحيح!', 'error'); } } };
 
         window.loadAdminReturns = function() {
             if(adminReturnsUnsubscribe) return;
@@ -1917,7 +1947,7 @@ try {
             let avgRating = 5; let reviewsHtml = '';
             if(product.reviews && product.reviews.length > 0) { let total = 0; product.reviews.forEach(r => { total += r.rating; let revImgHtml = r.imageUrl ? `<br><img src="${r.imageUrl}" class="review-img" onclick="window.open('${r.imageUrl}', '_blank')">` : ''; 
                 let delBtn = (currentUser && isCurrentUserAdmin) ? `<button onclick="window.deleteReview('${product.id}', ${product.reviews.indexOf(r)})" style="float:left; background:transparent; border:none; color:var(--danger); font-size:1.2rem; cursor:pointer;" title="حذف التقييم">🗑️</button>` : '';
-                reviewsHtml += `<div class="review-box">${delBtn}<strong style="color:var(--primary);">${r.userName}</strong><br>${'⭐'.repeat(r.rating)}<br><span style="color:var(--text-color); font-size:0.95rem;">${r.comment}</span>${revImgHtml}</div>`;
+                reviewsHtml += `<div class="review-box">${delBtn}<strong style="color:var(--primary);">${window.escapeHTML(r.userName)}</strong><br>${'⭐'.repeat(r.rating)}<br><span style="color:var(--text-color); font-size:0.95rem;">${window.escapeHTML(r.comment)}</span>${revImgHtml}</div>`;
  }); avgRating = (total / product.reviews.length).toFixed(1); } else { let noR = window.currentLang === 'ar' ? 'كن أول من يقيّم المنتج!' : 'Be the first to review!'; reviewsHtml = `<p style="color:var(--text-muted); text-align:center;">${noR}</p>`; }
             
             let mra = document.getElementById('modal-rating-avg'); if(mra) mra.innerHTML = `⭐ ${avgRating} / 5.0`; let mrl = document.getElementById('modal-reviews-list'); if(mrl) mrl.innerHTML = reviewsHtml;
@@ -2088,7 +2118,22 @@ try {
                 
                 cart = cart.filter(item => item.selected === false);
                 localStorage.setItem('cart', JSON.stringify(cart)); localStorage.removeItem('cart_last_updated'); 
-                window.loyaltyDiscountFixed = 0; window.loyaltyPointsUsedTemp = 0; 
+                
+        window.hashString = async function(str) {
+            const buffer = new TextEncoder().encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        };
+        
+        window.escapeHTML = function(str) {
+            if(!str) return "";
+            return String(str).replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
+        };
+
+        window.loyaltyDiscountFixed = 0; window.loyaltyPointsUsedTemp = 0; 
                 window.updateCartUI(); 
                 
                 let pci = document.getElementById('promo-code-input'); if(pci) pci.value = ''; currentDiscountPercent = 0; appliedPromoCode = ''; 
@@ -2348,11 +2393,11 @@ try {
         };
 window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت متأكد من حذف هذا الطلب نهائياً من قاعدة البيانات؟')) { await deleteDoc(doc(db, 'orders', orderId)); window.showToast('تم حذف الطلب بنجاح', 'success'); } };
 
-        window.loadCustomerChat = function() { if(!currentUser) return; let chatId = currentUser.email || currentUser.phoneNumber; if(!chatId) return; if(unsubscribeUserChat) unsubscribeUserChat(); unsubscribeUserChat = onSnapshot(doc(db, 'chats', chatId), (docSnap) => { const container = document.getElementById('support-history-container'); if(!container) return; if(docSnap.exists()) { let data = docSnap.data(); let html = ''; (data.messages || []).forEach(m => { let isCust = m.sender === 'customer'; let alignClass = isCust ? 'chat-msg-customer' : 'chat-msg-admin'; let bubbleClass = isCust ? 'bubble-customer' : 'bubble-admin'; let prefix = isCust ? '' : '<strong style="color:var(--secondary);font-size:0.8rem;">الدعم:</strong><br>'; html += `<div class="chat-msg-wrapper ${alignClass}"><div class="chat-bubble ${bubbleClass}">${prefix}${m.text}</div></div>`; }); container.innerHTML = html; container.scrollTop = container.scrollHeight; } else { let msg = window.currentLang === 'ar' ? 'ابدأ المحادثة الآن وسنرد عليك في أقرب وقت!' : 'Start the conversation now!'; container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">${msg}</p>`; } }); }
+        window.loadCustomerChat = function() { if(!currentUser) return; let chatId = currentUser.email || currentUser.phoneNumber; if(!chatId) return; if(unsubscribeUserChat) unsubscribeUserChat(); unsubscribeUserChat = onSnapshot(doc(db, 'chats', chatId), (docSnap) => { const container = document.getElementById('support-history-container'); if(!container) return; if(docSnap.exists()) { let data = docSnap.data(); let html = ''; (data.messages || []).forEach(m => { let isCust = m.sender === 'customer'; let alignClass = isCust ? 'chat-msg-customer' : 'chat-msg-admin'; let bubbleClass = isCust ? 'bubble-customer' : 'bubble-admin'; let prefix = isCust ? '' : '<strong style="color:var(--secondary);font-size:0.8rem;">الدعم:</strong><br>'; html += `<div class="chat-msg-wrapper ${alignClass}"><div class="chat-bubble ${bubbleClass}">${prefix}${window.escapeHTML(m.text)}</div></div>`; }); container.innerHTML = html; container.scrollTop = container.scrollHeight; } else { let msg = window.currentLang === 'ar' ? 'ابدأ المحادثة الآن وسنرد عليك في أقرب وقت!' : 'Start the conversation now!'; container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">${msg}</p>`; } }); }
         let sf = document.getElementById('support-form'); if(sf) { sf.addEventListener('submit', async (e) => { e.preventDefault(); const msgInput = document.getElementById('support-message'); const txt = msgInput.value.trim(); if(!txt || !currentUser) return; msgInput.value = ''; let chatId = currentUser.email || currentUser.phoneNumber; let dName = currentUser.displayName || chatId.split('@')[0]; let msg = { sender: 'customer', text: txt, timestamp: new Date().toISOString() }; let chatRef = doc(db, 'chats', chatId); let snap = await getDoc(chatRef); if(snap.exists()) { await updateDoc(chatRef, { messages: arrayUnion(msg), lastUpdate: msg.timestamp }); } else { await setDoc(chatRef, { customerName: dName, messages: [msg], lastUpdate: msg.timestamp }); } }); }
 
         window.loadAdminChats = function() { onSnapshot(query(collection(db, 'chats'), orderBy('lastUpdate', 'desc')), (snap) => { let container = document.getElementById('admin-chat-list'); if(!container) return; let html = ''; snap.forEach(d => { let chat = d.data(); let date = new Date(chat.lastUpdate).toLocaleString('ar-EG'); html += `<div class="admin-msg-card" style="cursor:pointer; border-right:4px solid var(--primary);" onclick="window.openAdminChat('${d.id}', '${chat.customerName}')"><h4 style="margin:0 0 5px 0;">👤 ${chat.customerName}</h4><span style="font-size:0.85rem; color:var(--text-muted);">آخر رسالة: ${date}</span></div>`; }); container.innerHTML = html || '<h3 style="text-align:center; color:var(--text-muted);">لا توجد رسائل.</h3>'; }); }
-        window.openAdminChat = function(id, name) { let acl = document.getElementById('admin-chat-list'); if(acl) acl.style.display = 'none'; let aac = document.getElementById('admin-active-chat'); if(aac) aac.style.display = 'block'; let acu = document.getElementById('active-chat-user'); if(acu) acu.textContent = name; activeAdminChatId = id; if(unsubscribeActiveAdminChat) unsubscribeActiveAdminChat(); unsubscribeActiveAdminChat = onSnapshot(doc(db, 'chats', id), (docSnap) => { let container = document.getElementById('admin-chat-messages'); if(!container) return; if(docSnap.exists()) { let data = docSnap.data(); let html = ''; (data.messages || []).forEach(m => { let isAdm = m.sender === 'admin'; let alignClass = isAdm ? 'chat-msg-customer' : 'chat-msg-admin'; let bubbleClass = isAdm ? 'bubble-customer' : 'bubble-admin'; let prefix = isAdm ? '' : '<strong style="color:var(--secondary);font-size:0.8rem;">العميل:</strong><br>'; html += `<div class="chat-msg-wrapper ${alignClass}"><div class="chat-bubble ${bubbleClass}">${prefix}${m.text}</div></div>`; }); container.innerHTML = html; container.scrollTop = container.scrollHeight; } }); }
+        window.openAdminChat = function(id, name) { let acl = document.getElementById('admin-chat-list'); if(acl) acl.style.display = 'none'; let aac = document.getElementById('admin-active-chat'); if(aac) aac.style.display = 'block'; let acu = document.getElementById('active-chat-user'); if(acu) acu.textContent = name; activeAdminChatId = id; if(unsubscribeActiveAdminChat) unsubscribeActiveAdminChat(); unsubscribeActiveAdminChat = onSnapshot(doc(db, 'chats', id), (docSnap) => { let container = document.getElementById('admin-chat-messages'); if(!container) return; if(docSnap.exists()) { let data = docSnap.data(); let html = ''; (data.messages || []).forEach(m => { let isAdm = m.sender === 'admin'; let alignClass = isAdm ? 'chat-msg-customer' : 'chat-msg-admin'; let bubbleClass = isAdm ? 'bubble-customer' : 'bubble-admin'; let prefix = isAdm ? '' : '<strong style="color:var(--secondary);font-size:0.8rem;">العميل:</strong><br>'; html += `<div class="chat-msg-wrapper ${alignClass}"><div class="chat-bubble ${bubbleClass}">${prefix}${window.escapeHTML(m.text)}</div></div>`; }); container.innerHTML = html; container.scrollTop = container.scrollHeight; } }); }
         window.closeAdminChat = function() { let acl = document.getElementById('admin-chat-list'); if(acl) acl.style.display = 'block'; let aac = document.getElementById('admin-active-chat'); if(aac) aac.style.display = 'none'; activeAdminChatId = null; if(unsubscribeActiveAdminChat) { unsubscribeActiveAdminChat(); unsubscribeActiveAdminChat = null; } }
         window.sendAdminMessage = async function() { let input = document.getElementById('admin-chat-input'); let txt = input ? input.value.trim() : ""; if(!txt || !activeAdminChatId) return; input.value = ''; let msg = { sender: 'admin', text: txt, timestamp: new Date().toISOString() }; await updateDoc(doc(db, 'chats', activeAdminChatId), { messages: arrayUnion(msg), lastUpdate: msg.timestamp }); }
         window.deleteAdminChat = async function() { if(confirm('حذف المحادثة للعميل؟')) { await deleteDoc(doc(db, 'chats', activeAdminChatId)); window.showToast('تم الحذف', 'success'); window.closeAdminChat(); } }
