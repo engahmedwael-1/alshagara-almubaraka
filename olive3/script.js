@@ -52,7 +52,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             matches.forEach(p => {
                 let img = (p.images && p.images.length > 0) ? p.images[0] : (p.imageUrl || 'https://via.placeholder.com/40');
                 html += `<div class="live-search-item" onclick="document.getElementById('search-input').value=''; document.getElementById('live-search-results').style.display='none'; window.openProductModal('${p.id}')">
-                    <img src="${img}" class="live-search-img">
+                    <img loading="lazy" src="${img}" class="live-search-img">
                     <div class="live-search-info">
                         <span class="live-search-title">${p.name}</span>
                         <span class="live-search-price">${p.price} ج</span>
@@ -160,7 +160,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             let html = '';
             allReviews.forEach(r => {
                 let d = new Date(r.date).toLocaleDateString('ar-EG');
-                let revImgHtml = r.imageUrl ? `<img src="${r.imageUrl}" class="review-img" onclick="window.open('${r.imageUrl}', '_blank')">` : '';
+                let revImgHtml = r.imageUrl ? `<img loading="lazy" src="${r.imageUrl}" class="review-img" onclick="window.open('${r.imageUrl}', '_blank')">` : '';
                 html += `<div class="review-box"><strong style="color:var(--primary);">${window.escapeHTML(r.userName)}</strong> <span style="font-size:0.8rem; color:var(--text-muted);">(${d})</span><br><span style="font-size:0.85rem; color:var(--secondary);">${r.productName}</span><br>${'⭐'.repeat(r.rating || 5)}<br><span style="color:var(--text-color); font-size:0.95rem;">${window.escapeHTML(r.comment)}</span><br>${revImgHtml}</div>`;
             });
             container.innerHTML = html;
@@ -261,7 +261,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                 htmlContent += `<div class="cart-item" style="opacity: ${isChecked ? '1' : '0.6'}">
                     <input type="checkbox" class="cart-item-checkbox" ${checkAttr} onchange="window.toggleCartItemSelection('${item.cartItemId}', this.checked)">
                     <div class="cart-item-info">
-                        <img src="${item.imageUrl}">
+                        <img loading="lazy" src="${item.imageUrl}">
                         <div><strong style="display:block; color:var(--primary); font-size:1.05rem;">${item.name}</strong>
                         <span style="color:var(--text-muted); font-size:0.9rem;">السعر: ${item.price} ج</span>
                         <br><button type="button" class="save-for-later-btn" onclick="window.saveForLater('${item.cartItemId}')"><span class="translatable">حفظ لوقت لاحق</span></button>
@@ -293,7 +293,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                     savedForLater.forEach(item => {
                         sflHtml += `<div class="saved-item-box">
                             <div style="display:flex; align-items:center; gap:10px;">
-                                <img src="${item.imageUrl}" style="width:50px; height:50px; border-radius:6px; object-fit:cover;">
+                                <img loading="lazy" src="${item.imageUrl}" style="width:50px; height:50px; border-radius:6px; object-fit:cover;">
                                 <div><strong style="color:var(--primary); font-size:0.95rem;">${item.name}</strong><br><span style="color:var(--secondary); font-weight:bold;">${item.price} ج</span></div>
                             </div>
                             <button type="button" class="btn btn-outline" style="padding:6px 12px; font-size:0.85rem;" onclick="window.moveToCart('${item.cartItemId}')"><span class="translatable">نقل إلى السلة</span></button>
@@ -372,7 +372,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         window.addRecentlyViewed = function(product) { let recent = JSON.parse(localStorage.getItem('zait_recently_viewed_history')) || []; let today = new Date().toISOString().split('T')[0]; recent = recent.filter(r => r.id !== product.id); recent.unshift({ id: product.id, name: product.name, price: product.price, image: (product.images && product.images.length > 0) ? product.images[0] : (product.imageUrl || ''), viewDate: today }); if(recent.length > 30) recent.pop(); localStorage.setItem('zait_recently_viewed_history', JSON.stringify(recent)); window.renderRecentlyViewedFull(); }
         window.filterRecentlyViewed = function() { let filterDate = document.getElementById('recent-date-filter').value; window.renderRecentlyViewedFull(filterDate); }
         window.clearRecentFilter = function() { let input = document.getElementById('recent-date-filter'); if(input) input.value = ''; window.renderRecentlyViewedFull(); }
-        window.renderRecentlyViewedFull = function(filterDate = null) { let recent = JSON.parse(localStorage.getItem('zait_recently_viewed_history')) || []; let container = document.getElementById('recently-viewed-full-list'); if(!container) return; if(filterDate) { recent = recent.filter(r => r.viewDate === filterDate); } if(recent.length > 0) { let html = ''; recent.forEach(r => { let d = new Date(r.viewDate).toLocaleDateString('ar-EG'); let viewTxt = window.currentLang === 'ar' ? 'عرض مجدداً' : 'View Again'; html += `<div class="product-card" onclick="window.openProductModal('${r.id}')"><span class="category-badge" style="background:var(--secondary);">${d}</span><img src="${r.image}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'"><div style="padding: 0 10px;"><h3>${r.name}</h3><div class="price">${r.price} ج</div><button type="button" class="btn btn-full" style="padding: 8px; font-size:1rem;">${viewTxt}</button></div></div>`; }); container.innerHTML = html; } else { let msg = window.currentLang === 'ar' ? `لم يتم العثور على مشاهدات ${filterDate ? 'في هذا اليوم' : 'بعد'}.` : `No views found ${filterDate ? 'on this day' : 'yet'}.`; container.innerHTML = `<h3 style="text-align: center; grid-column: 1 / -1; color: var(--text-muted);">${msg}</h3>`; } }
+        window.renderRecentlyViewedFull = function(filterDate = null) { let recent = JSON.parse(localStorage.getItem('zait_recently_viewed_history')) || []; let container = document.getElementById('recently-viewed-full-list'); if(!container) return; if(filterDate) { recent = recent.filter(r => r.viewDate === filterDate); } if(recent.length > 0) { let html = ''; recent.forEach(r => { let d = new Date(r.viewDate).toLocaleDateString('ar-EG'); let viewTxt = window.currentLang === 'ar' ? 'عرض مجدداً' : 'View Again'; html += `<div class="product-card" onclick="window.openProductModal('${r.id}')"><span class="category-badge" style="background:var(--secondary);">${d}</span><img loading="lazy" src="${r.image}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'"><div style="padding: 0 10px;"><h3>${r.name}</h3><div class="price">${r.price} ج</div><button type="button" class="btn btn-full" style="padding: 8px; font-size:1rem;">${viewTxt}</button></div></div>`; }); container.innerHTML = html; } else { let msg = window.currentLang === 'ar' ? `لم يتم العثور على مشاهدات ${filterDate ? 'في هذا اليوم' : 'بعد'}.` : `No views found ${filterDate ? 'on this day' : 'yet'}.`; container.innerHTML = `<h3 style="text-align: center; grid-column: 1 / -1; color: var(--text-muted);">${msg}</h3>`; } }
 
         window.initMagnifier = function() { const container = document.getElementById('magnifier-container'); const img = document.getElementById('modal-img-main'); if(!container || !img) return; container.addEventListener('mousemove', function(e) { const {left, top, width, height} = container.getBoundingClientRect(); const x = (e.clientX - left) / width * 100; const y = (e.clientY - top) / height * 100; img.style.transformOrigin = `${x}% ${y}%`; img.style.transform = 'scale(2)'; }); container.addEventListener('mouseleave', function() { img.style.transformOrigin = 'center center'; img.style.transform = 'scale(1)'; }); }
 
@@ -609,12 +609,12 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         };
 window.toEngDigits = function(str) { const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩']; return str.split('').map(c => ar.indexOf(c) !== -1 ? ar.indexOf(c) : c).join(''); }
         
-        let ulrBtn = document.getElementById('btn-unlock-roles'); if(ulrBtn) { ulrBtn.addEventListener('click', async () => { let pin = window.toEngDigits(document.getElementById('roles-pin').value.trim()); let hashed = await window.hashString(pin); if (hashed === "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92") { document.getElementById('roles-auth-section').style.display = 'none'; document.getElementById('roles-content-section').style.display = 'block'; document.getElementById('roles-pin').value = ''; window.showToast('تم الفتح', 'success'); } else { window.showToast("رمز خاطئ!", 'error'); } }); }
-        let fprBtn = document.getElementById('btn-forgot-roles-pin'); if(fprBtn) { fprBtn.addEventListener('click', async () => { let nid = prompt("الرقم القومي:"); if (nid) { let hashedNid = await window.hashString(window.toEngDigits(nid.trim())); if (hashedNid === "e4e2a87a8b49dbb050f16e91f1816f1c4e7faef14f2e0e98031d2af40b490f05") { document.getElementById('roles-auth-section').style.display = 'none'; document.getElementById('roles-content-section').style.display = 'block'; window.showToast('تم الدخول بنجاح', 'success'); } else { window.showToast('رقم قومي خاطئ', 'error'); } } }); }
+        let ulrBtn = document.getElementById('btn-unlock-roles'); if(ulrBtn) { ulrBtn.addEventListener('click', async () => { let pin = window.toEngDigits(document.getElementById('roles-pin').value.trim()); let hashed = await window.hashString(pin); if (hashed === "7a2ec40ff8a1247c532309355f798a779e00acff579c63eec3636ffb2902c1ac") { document.getElementById('roles-auth-section').style.display = 'none'; document.getElementById('roles-content-section').style.display = 'block'; document.getElementById('roles-pin').value = ''; window.showToast('تم الفتح', 'success'); } else { window.showToast("رمز خاطئ!", 'error'); } }); }
+        let fprBtn = document.getElementById('btn-forgot-roles-pin'); if(fprBtn) { fprBtn.addEventListener('click', async () => { let nid = prompt("الرقم القومي:"); if (nid) { let hashedNid = await window.hashString(window.toEngDigits(nid.trim())); if (hashedNid === "2d622f2c91074a475800b09968b837412b3a12f26519ca815feb9b0b1ad9a715") { document.getElementById('roles-auth-section').style.display = 'none'; document.getElementById('roles-content-section').style.display = 'block'; window.showToast('تم الدخول بنجاح', 'success'); } else { window.showToast('رقم قومي خاطئ', 'error'); } } }); }
         let lrBtn = document.getElementById('btn-lock-roles'); if(lrBtn) { lrBtn.addEventListener('click', () => { document.getElementById('roles-content-section').style.display = 'none'; document.getElementById('roles-auth-section').style.display = 'block'; }); }
 
-        window.resetAdminRevenue = async function() { let pin = prompt("أدخل رمز الأمان للمؤسس لتصفير الأرباح فقط 🔄:"); if (pin) { let hashed = await window.hashString(window.toEngDigits(pin.trim())); if (hashed === "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92") { try { let newResetDate = new Date().toISOString(); await setDoc(doc(db, 'settings', 'main'), { revenueResetDate: newResetDate }, { merge: true }); window.showToast('تم تصفير الأرباح بنجاح', 'success'); window.loadAdminOrders(); } catch(e) { window.showToast('حدث خطأ أثناء التصفير', 'error'); } } else { window.showToast('رمز الأمان غير صحيح!', 'error'); } } };
-        window.resetAdminOrdersCount = async function() { let pin = prompt("أدخل رمز الأمان للمؤسس لتصفير الطلبات فقط 🔄:"); if (pin) { let hashed = await window.hashString(window.toEngDigits(pin.trim())); if (hashed === "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92") { try { let newResetDate = new Date().toISOString(); await setDoc(doc(db, 'settings', 'main'), { ordersResetDate: newResetDate }, { merge: true }); window.showToast('تم تصفير الطلبات بنجاح', 'success'); window.loadAdminOrders(); } catch(e) { window.showToast('حدث خطأ أثناء التصفير', 'error'); } } else { window.showToast('رمز الأمان غير صحيح!', 'error'); } } };
+        window.resetAdminRevenue = async function() { let pin = prompt("أدخل رمز الأمان للمؤسس لتصفير الأرباح فقط 🔄:"); if (pin) { let hashed = await window.hashString(window.toEngDigits(pin.trim())); if (hashed === "7a2ec40ff8a1247c532309355f798a779e00acff579c63eec3636ffb2902c1ac") { try { let newResetDate = new Date().toISOString(); await setDoc(doc(db, 'settings', 'main'), { revenueResetDate: newResetDate }, { merge: true }); window.showToast('تم تصفير الأرباح بنجاح', 'success'); window.loadAdminOrders(); } catch(e) { window.showToast('حدث خطأ أثناء التصفير', 'error'); } } else { window.showToast('رمز الأمان غير صحيح!', 'error'); } } };
+        window.resetAdminOrdersCount = async function() { let pin = prompt("أدخل رمز الأمان للمؤسس لتصفير الطلبات فقط 🔄:"); if (pin) { let hashed = await window.hashString(window.toEngDigits(pin.trim())); if (hashed === "7a2ec40ff8a1247c532309355f798a779e00acff579c63eec3636ffb2902c1ac") { try { let newResetDate = new Date().toISOString(); await setDoc(doc(db, 'settings', 'main'), { ordersResetDate: newResetDate }, { merge: true }); window.showToast('تم تصفير الطلبات بنجاح', 'success'); window.loadAdminOrders(); } catch(e) { window.showToast('حدث خطأ أثناء التصفير', 'error'); } } else { window.showToast('رمز الأمان غير صحيح!', 'error'); } } };
 
         window.loadAdminReturns = function() {
             if(adminReturnsUnsubscribe) return;
@@ -810,7 +810,7 @@ try {
                 let addBtnState = (product.stock !== undefined && product.stock !== "" && Number(product.stock) <= 0) ? `disabled style="background:var(--border-color); cursor:not-allowed;"` : `onclick="window.executeAddToCart(event, '${product.id}', '${safeName}');"`;
                 let primaryImage = (product.images && product.images.length > 0) ? product.images[0] : (product.imageUrl || 'https://via.placeholder.com/300');
                 let videoIcon = product.videoUrl ? `<div style="position:absolute; bottom:50px; right:10px; background:rgba(0,0,0,0.7); padding:5px; border-radius:50%; color:white; font-size:0.8rem; z-index:2;">▶️</div>` : '';
-                htmlContent += `<div class="product-card" onclick="window.openProductModal('${product.id}')">${discountBadge}${wishBtnHtml}<span class="category-badge">${categoryLabel}</span><div style="position:relative;"><img src="${primaryImage}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'">${videoIcon}</div><div style="padding: 0 10px;"><h3>${product.name}</h3><div class="rating-stars">⭐ ${avgRating}</div>${priceHtml}${stockBadge}<button type="button" class="btn btn-full" style="padding: 8px; font-size:1rem;" ${addBtnState}>${vArr.length > 0 ? selTxt : addTxt}</button></div>${adminBtns}</div>`;
+                htmlContent += `<div class="product-card" onclick="window.openProductModal('${product.id}')">${discountBadge}${wishBtnHtml}<span class="category-badge">${categoryLabel}</span><div style="position:relative;"><img loading="lazy" src="${primaryImage}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'">${videoIcon}</div><div style="padding: 0 10px;"><h3>${product.name}</h3><div class="rating-stars">⭐ ${avgRating}</div>${priceHtml}${stockBadge}<button type="button" class="btn btn-full" style="padding: 8px; font-size:1rem;" ${addBtnState}>${vArr.length > 0 ? selTxt : addTxt}</button></div>${adminBtns}</div>`;
             }); 
             container.innerHTML = htmlContent; if(scrollToTop) window.scrollTo(0,0);
         }
@@ -823,18 +823,24 @@ try {
                 let isWished = 'active'; let wishBtnHtml = `<button type="button" class="wishlist-btn ${isWished}" onclick="window.toggleWishlist(event, '${product.id}')">❤</button>`;
                 let primaryImage = (product.images && product.images.length > 0) ? product.images[0] : (product.imageUrl || 'https://via.placeholder.com/300');
                 let detTxt = window.currentLang === 'ar' ? 'عرض التفاصيل' : 'View Details';
-                htmlContent += `<div class="product-card" onclick="window.openProductModal('${product.id}')">${wishBtnHtml}<img src="${primaryImage}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'"><div style="padding: 0 10px;"><h3>${product.name}</h3><div class="price">${product.price} ج</div><button type="button" class="btn btn-full" style="padding: 8px; font-size:1rem;">${detTxt}</button></div></div>`;
+                htmlContent += `<div class="product-card" onclick="window.openProductModal('${product.id}')">${wishBtnHtml}<img loading="lazy" src="${primaryImage}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'"><div style="padding: 0 10px;"><h3>${product.name}</h3><div class="price">${product.price} ج</div><button type="button" class="btn btn-full" style="padding: 8px; font-size:1rem;">${detTxt}</button></div></div>`;
             }); container.innerHTML = htmlContent;
         }
 
         window.openProductModal = function(id) {
-            const product = products.find(p => p.id === id); if(!product) return; activeProductForReview = product.id; 
+            const product = products.find(p => p.id === id); if(!product) return; activeProductForReview = product.id;
+            let safeSlug = product.name.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9؀-ۿ-]/g, '');
+            let newUrl = '?item=' + encodeURIComponent(safeSlug) + '&id=' + id;
+            if (window.location.search !== newUrl) {
+                window.history.pushState({productId: id}, '', newUrl);
+            }
+ 
             let safeName = product.name.replace(/'/g, "\\'"); window.addRecentlyViewed(product);
             
             let imgs = product.images && product.images.length > 0 ? product.images : (product.imageUrl ? [product.imageUrl] : []);
             let mim = document.getElementById('modal-img-main'); if(mim) mim.src = imgs[0] || 'https://via.placeholder.com/300';
             let galleryHtml = ''; if(product.videoUrl) { galleryHtml += `<div style="width:50px; height:50px; background:#000; color:white; display:flex; align-items:center; justify-content:center; border-radius:8px; cursor:pointer; opacity:0.8; font-size:1.5rem;" onclick="window.open('${product.videoUrl}', '_blank')">▶️</div>`; }
-            if(imgs.length > 1) { imgs.forEach((url, i) => { galleryHtml += `<img src="${url}" class="${i===0?'active':''}" onclick="window.changeMainImg('${url}', this)">`; }); }
+            if(imgs.length > 1) { imgs.forEach((url, i) => { galleryHtml += `<img loading="lazy" src="${url}" class="${i===0?'active':''}" onclick="window.changeMainImg('${url}', this)">`; }); }
             let mgc = document.getElementById('modal-gallery-container'); if(mgc) mgc.innerHTML = galleryHtml;
             
             let viewersCount = Math.floor(Math.random() * (80 - 20 + 1)) + 20; let viewersEl = document.getElementById('live-viewers-count'); if(viewersEl) viewersEl.innerText = viewersCount;
@@ -855,7 +861,7 @@ try {
 
             let md = document.getElementById('modal-desc'); if(md) md.textContent = product.description || '';
             let avgRating = 5; let reviewsHtml = '';
-            if(product.reviews && product.reviews.length > 0) { let total = 0; product.reviews.forEach(r => { total += r.rating; let revImgHtml = r.imageUrl ? `<br><img src="${r.imageUrl}" class="review-img" onclick="window.open('${r.imageUrl}', '_blank')">` : ''; 
+            if(product.reviews && product.reviews.length > 0) { let total = 0; product.reviews.forEach(r => { total += r.rating; let revImgHtml = r.imageUrl ? `<br><img loading="lazy" src="${r.imageUrl}" class="review-img" onclick="window.open('${r.imageUrl}', '_blank')">` : ''; 
                 let delBtn = (currentUser && isCurrentUserAdmin) ? `<button onclick="window.deleteReview('${product.id}', ${product.reviews.indexOf(r)})" style="float:left; background:transparent; border:none; color:var(--danger); font-size:1.2rem; cursor:pointer;" title="حذف التقييم">🗑️</button>` : '';
                 reviewsHtml += `<div class="review-box">${delBtn}<strong style="color:var(--primary);">${window.escapeHTML(r.userName)}</strong><br>${'⭐'.repeat(r.rating)}<br><span style="color:var(--text-color); font-size:0.95rem;">${window.escapeHTML(r.comment)}</span>${revImgHtml}</div>`;
  }); avgRating = (total / product.reviews.length).toFixed(1); } else { let noR = window.currentLang === 'ar' ? 'كن أول من يقيّم المنتج!' : 'Be the first to review!'; reviewsHtml = `<p style="color:var(--text-muted); text-align:center;">${noR}</p>`; }
@@ -872,7 +878,7 @@ try {
                     related.forEach(r => {
                         let rImg = (r.images && r.images.length > 0) ? r.images[0] : (r.imageUrl || 'https://via.placeholder.com/150');
                         csHtml += `<div style="min-width:120px; max-width:120px; background:var(--input-bg); border:1px solid var(--border-color); border-radius:8px; padding:8px; cursor:pointer;" onclick="window.openProductModal('${r.id}')">
-                            <img src="${rImg}" style="width:100%; height:80px; object-fit:cover; border-radius:6px;">
+                            <img loading="lazy" src="${rImg}" style="width:100%; height:80px; object-fit:cover; border-radius:6px;">
                             <div style="font-size:0.8rem; font-weight:bold; color:var(--primary); margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.name}</div>
                             <div style="font-size:0.9rem; color:var(--secondary); font-weight:bold;">${r.price} ج</div>
                         </div>`;
@@ -892,7 +898,7 @@ try {
         window.changeMainImg = function(url, el) { let mim = document.getElementById('modal-img-main'); if(mim) mim.src = url; document.querySelectorAll('.modal-gallery img').forEach(img => img.classList.remove('active')); if(el && el.classList) el.classList.add('active'); }
         window.updateModalVariantPrice = function() { if(!activeProductForReview) return; const product = products.find(p => p.id === activeProductForReview); let ms = document.getElementById('modal-variant-select'); let idx = ms ? ms.value : 0; if(!product || !product.variantsData || !product.variantsData[idx]) return; let selectedVar = product.variantsData[idx]; activeVariantForCart = selectedVar; let mp = document.getElementById('modal-price'); if(mp) mp.innerHTML = `<span>${selectedVar.price} ج</span>`; let spr = document.getElementById('sticky-price'); if(spr) spr.innerHTML = `${selectedVar.price} ج`; }
         window.executeAddToCart = function(event, id, name) { if(event) event.stopPropagation(); let p = products.find(x => x.id === id); if(!p) return; let priceToUse = p.price; let finalName = name; let variantSuffix = ""; let img = (p.images && p.images.length > 0) ? p.images[0] : (p.imageUrl || 'https://via.placeholder.com/300'); if(activeVariantForCart) { priceToUse = activeVariantForCart.price; finalName = `${name} (${activeVariantForCart.name})`; variantSuffix = activeVariantForCart.name; } window.addToCart(id, finalName, priceToUse, img, variantSuffix); window.closeProductModal(); }
-        window.closeProductModal = function() { let pm = document.getElementById('product-modal'); if(pm) pm.style.display = 'none'; activeProductForReview = null; activeVariantForCart = null; }
+        window.closeProductModal = function() { let pm = document.getElementById('product-modal'); if(pm) pm.style.display = 'none'; activeProductForReview = null; window.history.pushState(null, '', window.location.pathname); activeVariantForCart = null; }
 
         
         window.deleteReview = async function(productId, reviewIndex) {
@@ -1388,7 +1394,7 @@ window.showUserHistory = function(userId, userName) {
                 navigator.share({
                     title: product.name,
                     text: `اكتشف هذا المنتج الرائع: ${product.name} بـ ${product.price} ج فقط!`,
-                    url: window.location.href.split('?')[0] + '?product=' + product.id
+                    url: window.location.href
                 }).catch(e => console.log('Share error:', e));
             } else {
                 window.showToast('ميزة المشاركة غير مدعومة في متصفحك', 'error');
@@ -1403,10 +1409,20 @@ window.showUserHistory = function(userId, userName) {
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const urlParams = new URLSearchParams(window.location.search);
-                const productId = urlParams.get('product');
+                const productId = urlParams.get('id') || urlParams.get('product');
                 if(productId && isProductsLoaded) {
                     window.openProductModal(productId);
                 }
             }, 1000);
         });
 
+
+
+        window.addEventListener('popstate', (event) => {
+            if (event.state && event.state.productId) {
+                window.openProductModal(event.state.productId);
+            } else {
+                let pm = document.getElementById('product-modal'); 
+                if(pm) pm.style.display = 'none';
+            }
+        });
