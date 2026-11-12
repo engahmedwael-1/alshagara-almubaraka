@@ -1080,6 +1080,13 @@ try {
                 if (!lat || !lng || lat == 0) { let mw = document.getElementById('map-warning'); if(mw) mw.style.display = 'block'; let mm = document.getElementById('map'); if(mm) window.scrollTo({ top: mm.offsetTop - 100, behavior: 'smooth' }); window.showToast('حدد موقعك على الخريطة', 'error'); return; }
                 const nameEl = document.getElementById('order-name'); const phone1El = document.getElementById('order-phone1'); const phone2El = document.getElementById('order-phone2'); const govEl = document.getElementById('order-gov'); const cityEl = document.getElementById('order-city'); const mapAddrEl = document.getElementById('order-map-address'); const addrEl = document.getElementById('order-address'); const payEl = document.getElementById('order-payment-method');
                 const name = nameEl ? nameEl.value : "عميل"; const phone1 = phone1El ? phone1El.value : ""; const phone2 = phone2El ? phone2El.value : "لا يوجد"; const gov = govEl ? govEl.value : ""; const city = cityEl ? cityEl.value : ""; const mapAddress = mapAddrEl ? mapAddrEl.value : ""; const addressDetails = addrEl ? addrEl.value : ""; const payMethod = payEl ? payEl.value : "كاش";
+                let todayStr = new Date().toDateString();
+                let ordersToday = parseInt(localStorage.getItem('zait_orders_today_' + todayStr) || '0');
+                if (ordersToday >= 3 && !isCurrentUserAdmin) {
+                    window.showToast(window.currentLang === 'ar' ? 'لقد وصلت للحد الأقصى من الطلبات اليوم. حاول غداً.' : 'Daily limit reached. Try tomorrow.', 'error');
+                    return;
+                }
+
                 
                 let discountVal = Math.round(currentSubtotal * (currentDiscountPercent / 100)) + window.loyaltyDiscountFixed; 
                 let finalTotal = (currentSubtotal - discountVal) + currentShippingCost; 
@@ -1134,7 +1141,9 @@ try {
                 }
                 
                 cart = cart.filter(item => item.selected === false);
-                localStorage.setItem('cart', JSON.stringify(cart)); localStorage.removeItem('cart_last_updated'); 
+                localStorage.setItem('cart', JSON.stringify(cart)); localStorage.removeItem('cart_last_updated');
+                localStorage.setItem('zait_orders_today_' + todayStr, ordersToday + 1);
+ 
                 
         window.hashString = async function(str) {
             const buffer = new TextEncoder().encode(str);
@@ -1560,3 +1569,25 @@ window.showUserHistory = function(userId, userName) {
             container.style.display = html ? 'flex' : 'none';
             window.startVisualAutoScroll();
         };
+
+
+        window.payWithInstaPay = function() {
+            let num = storeSettings.walletNumber || "01018631768";
+            navigator.clipboard.writeText(num).then(() => {
+                window.showToast(window.currentLang === 'ar' ? 'تم نسخ الرقم! جاري فتح إنستاباي...' : 'Number copied! Opening InstaPay...', 'success');
+                setTimeout(() => {
+                    window.location.href = "instapay://";
+                }, 1500);
+            }).catch(err => {
+                window.showToast(window.currentLang === 'ar' ? 'حدث خطأ في النسخ، انسخ الرقم يدوياً' : 'Error copying, please copy manually', 'error');
+            });
+        };
+
+
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').then(reg => {
+              console.log('SW registered successfully');
+            }).catch(err => console.log('SW registration failed', err));
+          });
+        }
