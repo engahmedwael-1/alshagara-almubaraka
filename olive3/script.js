@@ -209,7 +209,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         let savedAccounts = JSON.parse(localStorage.getItem('zait_saved_accounts')) || [];
         let currentRenderedProducts = 8; const productsPerPage = 8;
         
-        let storeSettings = { walletNumber: "01018631768", fbPixelId: "", ttPixelId: "", categories: ["زيت زيتون"], autoReplyMessage: "أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.", floatingButtons: [{ id: 'btn_support', icon: '💬', link: '#support', color: '#007bff', isSystem: true, title: 'خدمة العملاء' }, { id: 'btn_wa', icon: '📱', link: 'https://wa.me/201018631768', color: '#25D366', isSystem: false, title: 'واتساب' }], revenueResetDate: "2000-01-01T00:00:00.000Z", ordersResetDate: "2000-01-01T00:00:00.000Z", enableCrossSell: true, visualBarMode: 'categories' };
+        let storeSettings = { walletNumber: "01018631768", fbPixelId: "", ttPixelId: "", categories: ["زيت زيتون"], autoReplyMessage: "أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.", floatingButtons: [{ id: 'btn_support', icon: '💬', link: '#support', color: '#007bff', isSystem: true, title: 'خدمة العملاء' }, { id: 'btn_wa', icon: '📱', link: 'https://wa.me/201018631768', color: '#25D366', isSystem: false, title: 'واتساب' }], revenueResetDate: "2000-01-01T00:00:00.000Z", ordersResetDate: "2000-01-01T00:00:00.000Z", enableCrossSell: true, visualBarMode: 'categories', enableInstaPay: true };
 
         window.syncCartToCloud = async function() {
             if(currentUser) {
@@ -434,6 +434,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             let lrtxt = document.getElementById('loyalty-redeem-text'); if(lrtxt) lrtxt.textContent = window.loyaltyRedeemValueActual;
             
             if(isCurrentUserAdmin) { let csToggle = document.getElementById('setting-cross-sell'); if(csToggle) csToggle.checked = storeSettings.enableCrossSell;
+                let instaToggle = document.getElementById('setting-instapay-btn'); if(instaToggle) instaToggle.checked = storeSettings.enableInstaPay !== false;
                 
                 let loyE = document.getElementById('setting-loyalty-earn'); if(loyE && storeSettings.loyaltyEarnRate) loyE.value = storeSettings.loyaltyEarnRate;
                 let loyV = document.getElementById('setting-loyalty-value'); if(loyV && storeSettings.loyaltyRedeemValue) loyV.value = storeSettings.loyaltyRedeemValue;
@@ -442,6 +443,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                 let autoEl = document.getElementById('setting-auto-reply'); if(autoEl) autoEl.value = storeSettings.autoReplyMessage || ''; let wallEl = document.getElementById('setting-wallet-number'); if(wallEl) wallEl.value = storeSettings.walletNumber || ''; let fbEl = document.getElementById('setting-fb-pixel'); if(fbEl) fbEl.value = storeSettings.fbPixelId || ''; let ttEl = document.getElementById('setting-tt-pixel'); if(ttEl) ttEl.value = storeSettings.ttPixelId || ''; 
                 let fsInp = document.getElementById('setting-free-shipping'); if(fsInp && storeSettings.freeShippingThreshold) fsInp.value = storeSettings.freeShippingThreshold; }
             let chWall = document.getElementById('checkout-wallet-number'); if(chWall) chWall.textContent = storeSettings.walletNumber || '01018631768';
+            let instaCont = document.getElementById('instapay-btn-container'); if(instaCont) instaCont.style.display = storeSettings.enableInstaPay !== false ? 'block' : 'none';
             
             const floatingContainer = document.getElementById('floating-menu-container'), footerSocialContainer = document.getElementById('footer-social-links'), adminBtnsList = document.getElementById('admin-floating-btns-list');
             if(floatingContainer) floatingContainer.innerHTML = ''; if(footerSocialContainer) footerSocialContainer.innerHTML = ''; if(adminBtnsList) adminBtnsList.innerHTML = '';
@@ -469,6 +471,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             const newFb = document.getElementById('setting-fb-pixel') ? document.getElementById('setting-fb-pixel').value.trim() : storeSettings.fbPixelId; 
             const newTt = document.getElementById('setting-tt-pixel') ? document.getElementById('setting-tt-pixel').value.trim() : storeSettings.ttPixelId; 
             const newCrossSell = document.getElementById('setting-cross-sell') ? document.getElementById('setting-cross-sell').checked : true;
+            const newInsta = document.getElementById('setting-instapay-btn') ? document.getElementById('setting-instapay-btn').checked : true;
             
             const newVMode = document.getElementById('setting-visual-bar-mode') ? document.getElementById('setting-visual-bar-mode').value : 'categories';
             
@@ -482,7 +485,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                     walletNumber: newWallet, 
                     fbPixelId: newFb, 
                     ttPixelId: newTt, 
-                    enableCrossSell: newCrossSell, 
+                    enableCrossSell: newCrossSell, enableInstaPay: newInsta, 
                     freeShippingThreshold: fsThresh, 
                     loyaltyEarnRate: lEarn, 
                     loyaltyRedeemValue: lRedeem, 
@@ -1670,4 +1673,53 @@ window.showUserHistory = function(userId, userName) {
                 </html>
             `);
             printWindow.document.close();
+        };
+
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const installBtn = document.getElementById('install-app-btn');
+            if (installBtn) installBtn.style.display = 'block';
+        });
+
+        window.installPWA = async function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('install-app-btn').style.display = 'none';
+                }
+                deferredPrompt = null;
+            } else {
+                window.showToast('التثبيت غير متاح حالياً. تأكد من فتح الموقع عبر متصفح كروم.', 'info');
+            }
+        };
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
+        }
+
+
+        window.payWithInstaPay = function(e) {
+            e.preventDefault();
+            let num = storeSettings.walletNumber || "01018631768";
+            
+            // 1. Copy the number
+            let textArea = document.createElement("textarea");
+            textArea.value = num;
+            textArea.style.position = "fixed"; document.body.appendChild(textArea);
+            textArea.focus(); textArea.select();
+            try { document.execCommand('copy'); } catch (err) {}
+            document.body.removeChild(textArea);
+            
+            window.showToast('تم نسخ الرقم! جاري فتح إنستاباي...', 'success');
+            
+            // 2. Open App directly using custom scheme
+            setTimeout(() => {
+                window.location.href = "instapay://";
+            }, 800);
         };
