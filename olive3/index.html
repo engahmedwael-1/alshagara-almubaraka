@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>زيت الشجرة المباركة</title>
     <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="الشجرة المباركة">
     <meta name="theme-color" content="#3c521e">
 
     <meta name="description" content="زيت الشجرة المباركة - أفضل زيت زيتون سيناوي بكر ممتاز، منتجات طبيعية 100% من قلب سيناء وتوصيل لجميع المحافظات.">
@@ -394,7 +397,7 @@
                         <strong style="color: #028090;">برجاء تحويل إجمالي المبلغ على الرقم / الحساب التالي:</strong><br>
                         <span id="checkout-wallet-number" style="font-size: 1.4rem; font-weight: bold; color: var(--danger); display: block; margin: 8px 0; letter-spacing: 1px;">01018631768</span>
                         
-                        <div style="margin-top: 15px;">
+                        <div id="instapay-btn-container" style="margin-top: 15px; display:none;">
                             <button type="button" class="btn" style="width:100%; margin-bottom:10px; background:#6f42c1; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="window.payWithInstaPay()">
                                 🟣 <span class="translatable">الدفع السريع بـ InstaPay</span>
                             </button>
@@ -645,6 +648,14 @@
                         <button type="button" class="btn" onclick="window.saveSettings()" style="width: 30%; background: #028090;">حفظ</button>
                     </div>
                 </div>
+                
+                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <label style="font-weight: bold; color: var(--primary); display:flex; align-items:center; gap:10px;">
+                        <input type="checkbox" id="setting-instapay-btn" style="width:20px; height:20px; margin:0;" onchange="window.saveSettings()">
+                        <span class="translatable">تفعيل زر الدفع السريع بـ InstaPay 🟣</span>
+                    </label>
+                </div>
+
                 <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
                     <label style="font-weight: bold; color: var(--primary); display:flex; align-items:center; gap:10px;">
                         <input type="checkbox" id="setting-cross-sell" style="width:20px; height:20px; margin:0;" onchange="window.saveSettings()">
