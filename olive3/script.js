@@ -467,6 +467,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             const newWallet = document.getElementById('setting-wallet-number') ? document.getElementById('setting-wallet-number').value.trim() : storeSettings.walletNumber; 
             const newFb = document.getElementById('setting-fb-pixel') ? document.getElementById('setting-fb-pixel').value.trim() : storeSettings.fbPixelId; 
             const newTt = document.getElementById('setting-tt-pixel') ? document.getElementById('setting-tt-pixel').value.trim() : storeSettings.ttPixelId; 
+            const newAutoReply = document.getElementById('setting-auto-reply') ? document.getElementById('setting-auto-reply').value.trim() : storeSettings.autoReplyMessage;
             const newCrossSell = document.getElementById('setting-cross-sell') ? document.getElementById('setting-cross-sell').checked : true;
             const newVMode = document.getElementById('setting-visual-bar-mode') ? document.getElementById('setting-visual-bar-mode').value : 'categories';
             
@@ -480,7 +481,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                     walletNumber: newWallet, 
                     fbPixelId: newFb, 
                     ttPixelId: newTt, 
-                    enableCrossSell: newCrossSell, 
+                    autoReplyMessage: newAutoReply, enableCrossSell: newCrossSell, 
                     freeShippingThreshold: fsThresh, 
                     loyaltyEarnRate: lEarn, 
                     loyaltyRedeemValue: lRedeem, 
@@ -916,7 +917,6 @@ try {
                 htmlContent += `<div class="product-card" onclick="window.openProductModal('${product.id}')">${discountBadge}${wishBtnHtml}<span class="category-badge">${categoryLabel}</span><div style="position:relative;"><img loading="lazy" src="${primaryImage}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'">${videoIcon}</div><div style="padding: 0 10px;"><h3>${product.name}</h3><div class="rating-stars">⭐ ${avgRating}</div>${priceHtml}${stockBadge}<button type="button" class="btn btn-full" style="padding: 8px; font-size:1rem;" ${addBtnState}>${vArr.length > 0 ? selTxt : addTxt}</button></div>${adminBtns}</div>`;
             }); 
             container.innerHTML = htmlContent; if(scrollToTop) window.scrollTo(0,0);
-            if(isCurrentUserAdmin) window.renderLowStockAlerts();
         }
 
         window.renderWishlist = function() {
@@ -1441,7 +1441,7 @@ window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت مت
                     await updateDoc(chatRef, { messages: arrayUnion(msg), lastUpdate: msg.timestamp }); 
                 } else { 
                     let initialMsgs = [msg];
-                    let arMsg = storeSettings.autoReplyMessage || "أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.";
+                    let arMsg = storeSettings.autoReplyMessage || 'أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.';
                     if(arMsg && arMsg.trim() !== '') {
                         initialMsgs.push({ sender: 'admin', text: arMsg, timestamp: new Date(Date.now() + 1000).toISOString() });
                     }
@@ -1675,7 +1675,6 @@ window.showUserHistory = function(userId, userName) {
                 if(!container) return;
                 let abandonedHtml = '';
                 let count = 0;
-                
                 let usersList = [];
                 snapshot.forEach(doc => usersList.push({id: doc.id, ...doc.data()}));
                 usersList.sort((a,b) => new Date(b.lastLogin || 0) - new Date(a.lastLogin || 0));
