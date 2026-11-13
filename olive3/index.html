@@ -113,6 +113,7 @@
         </div>
     </div>
 
+    <div id="top-announcement-bar" class="top-announcement-bar" style="display:none;"></div>
     <header>
         <div style="display: flex; align-items: center; gap: 10px;">
             <button type="button" onclick="window.openSidebar()" style="background: transparent; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 0;">☰</button>
@@ -191,6 +192,7 @@
             
             <h3 id="modal-price" style="color: var(--secondary); display: flex; align-items: center; justify-content: center; gap:10px; margin: 10px 0; font-size:1.5rem;"></h3>
             <p id="modal-stock" style="color: var(--danger); font-weight: bold; font-size: 0.9rem; margin-top: -5px;"></p>
+            <div id="modal-bundle-banner" class="bundle-offer-banner" style="display:none;"></div>
             <div id="modal-wa-btn-container" style="margin-bottom: 10px; width: 100%;"></div>
             <button type="button" class="btn btn-full" id="btn-buy-now" style="background-color: var(--primary); margin-bottom:10px; display:none;" onclick="window.executeBuyNow()"><span class="translatable">🚀 اشتري الآن (دفع سريع)</span></button>
 
@@ -239,7 +241,7 @@
         
         <div class="panel active" id="home-panel">
             <div id="visual-scroll-bar" class="visual-scroll-bar" style="display:none;"></div>
-            <div class="limited-offer-banner"><span class="translatable">🔥 عرض خاص لفترة محدودة!</span><span class="timer" id="offer-timer">72:00:00</span></div>
+            <div class="limited-offer-banner" id="home-limited-offer-banner"><span id="home-offer-banner-text" class="translatable">🔥 عرض خاص لفترة محدودة!</span><span class="timer" id="offer-timer">72:00:00</span></div>
             <div style="background:var(--input-bg); padding:15px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:20px;">
                 <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
                     <!-- قسم البحث الحي -->
@@ -307,6 +309,7 @@
                 <div class="shipping-msg" id="free-shipping-msg"><span class="translatable">أضف منتجات بقيمة</span> <strong>0 ج</strong> <span class="translatable">لتحصل على شحن مجاني! 🚚</span></div>
                 <div class="free-shipping-progress"><div class="free-shipping-bar" id="free-shipping-bar"></div></div>
             </div>
+            <div id="cart-bundle-banner" class="bundle-offer-banner" style="display:none;"></div>
             <div id="cart-items-container"></div>
 
             <div style="background: var(--input-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed var(--border-color);" id="promo-section-cart">
@@ -436,6 +439,7 @@
             </div>
             <div id="support-auth-msg" style="color: var(--danger); text-align: center; font-weight: bold; margin-bottom: 15px;" class="translatable">يرجى تسجيل الدخول أولاً.<br><br><button type="button" class="btn" onclick="window.showPanel('auth')">تسجيل الدخول الآن</button></div>
             <div id="support-content" style="display: none;">
+                <div id="support-working-hours-banner" class="working-hours-banner" style="display:none;"></div>
                 <div id="support-history-container" style="height: 350px; overflow-y: auto; margin-bottom: 20px; padding: 10px; border: 1px solid var(--border-color); border-radius: var(--border-radius); background: var(--input-bg);"></div>
                 <form id="support-form" style="display: flex; gap: 10px; position:relative; align-items:center;">
                     <div style="flex:1; display:flex; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; overflow:hidden; position:relative;">
@@ -630,15 +634,112 @@
             <h2 style="color: #028090; margin-top: 0;">⚙️ الإعدادات (محمية)</h2>
             <div id="roles-auth-section"><div class="form-row"><input type="password" id="roles-pin" placeholder="رمز الأمان للمؤسس" style="margin-bottom:0;" autocomplete="new-password"><button type="button" class="btn" id="btn-unlock-roles" style="background-color: #028090; width: 30%;">فتح 🔓</button></div></div>
             <div id="roles-content-section" style="display: none;">
-                <p style="color: #2a9d8f; margin-bottom: 20px; font-weight: bold; text-align: center;">✅ تم فتح قفل الإعدادات بنجاح!</p>
+                <p style="color: #2a9d8f; margin-bottom: 20px; font-weight: bold; text-align: center;">✅ تم فتح قفل الإعدادات بنجاح! يمكنك تشغيل أو إيقاف أي عنصر والتحكم فيه:</p>
+
+                <!-- 1. الشريط الإعلاني أعلى الموقع -->
                 <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: var(--primary);">🤖 الرد الآلي لخدمة العملاء:</label>
-                    <textarea id="setting-auto-reply" rows="3" style="width:100%; margin-top:10px; padding:10px; border-radius:8px;" placeholder="اكتب رسالة الرد التلقائي هنا..."></textarea>
+                    <div class="admin-toggle-header">
+                        <label><input type="checkbox" id="setting-enable-topbar" onchange="window.saveSettings()"> 📢 تفعيل الشريط الإعلاني أعلى الموقع</label>
+                    </div>
+                    <input type="text" id="setting-topbar-text" placeholder="اكتب نص الإعلان أو العرض أعلى الموقع..." style="margin-bottom:10px;">
+                    <div class="form-row" style="align-items:center;">
+                        <span style="font-size:0.85rem;">لون الشريط:</span>
+                        <select id="setting-topbar-bg" style="margin-bottom:0; flex:1;">
+                            <option value="#c59b27">ذهبي (لون الهوية)</option>
+                            <option value="#3c521e">أخضر زيتوني داكن</option>
+                            <option value="#e63946">أحمر (للعروض القوية)</option>
+                            <option value="#028090">أزرق بترولي</option>
+                        </select>
+                        <button type="button" class="btn" onclick="window.saveSettings()" style="background: #028090; width:30%;">حفظ</button>
+                    </div>
+                </div>
+
+                <!-- 2. التحكم في أسعار الشحن للمحافظات -->
+                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <div class="admin-toggle-header">
+                        <label><input type="checkbox" id="setting-enable-custom-shipping" onchange="window.saveSettings()"> 🚚 تفعيل التحكم المخصص في أسعار شحن المحافظات</label>
+                    </div>
+                    <div class="form-row" style="align-items:center; margin-bottom:10px;">
+                        <div style="flex:1;">
+                            <span style="font-size:0.8rem; display:block; margin-bottom:4px;">شحن المحافظات العادية (ج):</span>
+                            <input type="number" id="setting-shipping-default" placeholder="مثال: 90" style="margin-bottom:0;">
+                        </div>
+                        <div style="flex:1;">
+                            <span style="font-size:0.8rem; display:block; margin-bottom:4px;">شحن المحافظات البعيدة/الحدودية (ج):</span>
+                            <input type="number" id="setting-shipping-remote" placeholder="مثال: 100" style="margin-bottom:0;">
+                        </div>
+                    </div>
+                    <button type="button" class="btn" onclick="window.saveSettings()" style="width:100%; background:#028090; margin-bottom:12px; padding:8px;">حفظ أسعار الشحن العامة</button>
+                    
+                    <div style="border-top:1px dashed var(--border-color); padding-top:10px;">
+                        <span style="font-size:0.85rem; font-weight:bold; color:var(--primary); display:block; margin-bottom:8px;">📍 تخصيص سعر شحن لمحافظة معينة (استثناء):</span>
+                        <div class="form-row" style="align-items:center;">
+                            <select id="setting-custom-gov-select" style="margin-bottom:0; flex:1.5;"></select>
+                            <input type="number" id="setting-custom-gov-price" placeholder="السعر (ج)" style="margin-bottom:0; flex:1;">
+                            <button type="button" class="btn" onclick="window.setCustomGovShipping()" style="flex:1; padding:8px;">تحديد</button>
+                        </div>
+                        <div id="admin-custom-gov-shipping-list" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+                    </div>
+                </div>
+
+                <!-- 3. الشحن المجاني -->
+                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <div class="admin-toggle-header">
+                        <label><input type="checkbox" id="setting-enable-free-shipping" onchange="window.saveSettings()"> 🎉 تفعيل ميزة وشريط الشحن المجاني</label>
+                    </div>
+                    <div class="form-row" style="margin-top: 10px; align-items:center;">
+                        <span style="font-size:0.85rem;">يبدأ الشحن المجاني من طلب قيمته:</span>
+                        <input type="number" id="setting-free-shipping" placeholder="مثال: 1000" style="margin-bottom:0; flex:1;">
+                        <button type="button" class="btn" onclick="window.saveSettings()" style="width: 30%; background: #028090;">حفظ</button>
+                    </div>
+                </div>
+
+                <!-- 4. عروض الباقات وخصم الكميات -->
+                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <div class="admin-toggle-header">
+                        <label><input type="checkbox" id="setting-enable-bundles" onchange="window.saveSettings()"> 🔥 تفعيل عروض الباقات (خصم الكميات التلقائي)</label>
+                    </div>
+                    <div class="form-row" style="align-items:center; margin-bottom:10px;">
+                        <div style="flex:1;">
+                            <span style="font-size:0.8rem; display:block; margin-bottom:4px;">الحد الأدنى لعدد القطع:</span>
+                            <input type="number" id="setting-bundle-min-qty" placeholder="مثال: 2" style="margin-bottom:0;">
+                        </div>
+                        <div style="flex:1;">
+                            <span style="font-size:0.8rem; display:block; margin-bottom:4px;">نسبة الخصم التلقائي (%):</span>
+                            <input type="number" id="setting-bundle-discount" placeholder="مثال: 10" style="margin-bottom:0;">
+                        </div>
+                    </div>
+                    <input type="text" id="setting-bundle-text" placeholder="نص عرض الباقة (مثال: 🔥 اشترِ قطعتين أو أكثر واحصل على خصم 10% فوراً!)" style="margin-bottom:10px;">
+                    <button type="button" class="btn" onclick="window.saveSettings()" style="width: 100%; background: #028090;">حفظ إعدادات الباقات</button>
+                </div>
+
+                <!-- 5. الرد الآلي لخدمة العملاء -->
+                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <div class="admin-toggle-header">
+                        <label><input type="checkbox" id="setting-enable-auto-reply" onchange="window.saveSettings()"> 🤖 تفعيل الرد الآلي لخدمة العملاء</label>
+                    </div>
+                    <textarea id="setting-auto-reply" rows="3" style="width:100%; margin-top:5px; padding:10px; border-radius:8px;" placeholder="اكتب رسالة الرد التلقائي هنا..."></textarea>
                     <button type="button" class="btn" onclick="window.saveSettings()" style="width: 100%; background: #028090; margin-top:10px;">حفظ الرد الآلي</button>
                 </div>
 
-                <div style="background: var(--input-bg); padding: 12px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 12px;">
-                    <label style="font-weight: bold; color: var(--primary); display:block; margin-bottom:10px; font-size:0.9rem;">🎁 إعدادات نقاط الولاء:</label>
+                <!-- 6. مواعيد العمل الرسمية في الشات -->
+                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <div class="admin-toggle-header">
+                        <label><input type="checkbox" id="setting-enable-working-hours" onchange="window.saveSettings()"> 🕒 تفعيل إظهار مواعيد العمل في خدمة العملاء</label>
+                    </div>
+                    <input type="text" id="setting-working-hours-text" placeholder="مثال: ⏰ مواعيد العمل الرسمية: يومياً من 10 صباحاً حتى 11 مساءً" style="margin-bottom:10px;">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; margin-bottom:10px; cursor:pointer;">
+                        <input type="checkbox" id="setting-append-hours-autoreply" style="width:18px; height:18px; margin:0;" onchange="window.saveSettings()">
+                        <span>إرفاق مواعيد العمل تلقائياً في نهاية رسالة الرد الآلي</span>
+                    </label>
+                    <button type="button" class="btn" onclick="window.saveSettings()" style="width: 100%; background: #028090;">حفظ مواعيد العمل</button>
+                </div>
+
+                <!-- 7. إعدادات نقاط الولاء -->
+                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <div class="admin-toggle-header">
+                        <label><input type="checkbox" id="setting-enable-loyalty" onchange="window.saveSettings()"> 🎁 تفعيل برنامج نقاط الولاء</label>
+                    </div>
                     <div class="form-row" style="align-items: center; margin-bottom: 8px;">
                         <span style="font-size:0.85rem;">العميل يكسب <strong style="color:var(--secondary);">1 نقطة</strong> مقابل كل:</span>
                         <input type="number" id="setting-loyalty-earn" placeholder="مثال: 20" style="margin-bottom:0; min-width:60px; flex:0.5; padding:6px;">
@@ -651,40 +752,32 @@
                     </div>
                     <button type="button" class="btn" onclick="window.saveSettings()" style="width: 100%; margin-top: 10px; background: #028090; padding:0.6rem;">حفظ إعدادات الولاء</button>
                 </div>
-                
+
+                <!-- 8. التحكم في البانرات والإشعارات والبيع المتقاطع -->
                 <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: var(--primary);">🚚 الشحن المجاني:</label>
-                    <div class="form-row" style="margin-top: 10px; align-items:center;">
-                        <span style="font-size:0.85rem;">يبدأ من طلب قيمته:</span>
-                        <input type="number" id="setting-free-shipping" placeholder="مثال: 1000" style="margin-bottom:0; flex:1;">
-                        <button type="button" class="btn" onclick="window.saveSettings()" style="width: 30%; background: #028090;">حفظ</button>
+                    <div class="admin-toggle-header">
+                        <label><input type="checkbox" id="setting-enable-offer-banner" onchange="window.saveSettings()"> ⏳ تفعيل بانر العرض المؤقت والعداد التنازلي بالرئيسية</label>
                     </div>
-                </div>
-                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: var(--primary); display:flex; align-items:center; gap:10px;">
-                        <input type="checkbox" id="setting-cross-sell" style="width:20px; height:20px; margin:0;" onchange="window.saveSettings()">
-                        <span class="translatable">تفعيل البيع المتقاطع (المنتجات المقترحة للعميل) 🛍️</span>
+                    <div class="form-row" style="align-items:center; margin-bottom:12px;">
+                        <input type="text" id="setting-offer-banner-text" placeholder="نص البانر (مثال: 🔥 عرض خاص لفترة محدودة!)" style="margin-bottom:0; flex:2;">
+                        <button type="button" class="btn" onclick="window.saveSettings()" style="flex:1; background:#028090;">حفظ</button>
+                    </div>
+                    <hr style="border:0; border-top:1px dashed var(--border-color); margin:12px 0;">
+                    <label style="font-weight: bold; color: var(--primary); display:flex; align-items:center; gap:10px; margin-bottom:12px; cursor:pointer;">
+                        <input type="checkbox" id="setting-enable-social-proof" style="width:20px; height:20px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                        <span>🔔 تفعيل إشعارات المشتريات المنبثقة (اشترى محمد من القاهرة...)</span>
+                    </label>
+                    <label style="font-weight: bold; color: var(--primary); display:flex; align-items:center; gap:10px; cursor:pointer;">
+                        <input type="checkbox" id="setting-cross-sell" style="width:20px; height:20px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                        <span class="translatable">🛍️ تفعيل البيع المتقاطع (المنتجات المقترحة للعميل)</span>
                     </label>
                 </div>
-                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: var(--primary);">📈 تتبع (Pixels):</label>
-                    <div class="form-row"><input type="text" id="setting-fb-pixel" placeholder="Facebook Pixel"><input type="text" id="setting-tt-pixel" placeholder="TikTok Pixel"></div>
-                    <button type="button" class="btn" onclick="window.saveSettings()" style="width: 100%; margin-top: 10px; background: #028090;">حفظ</button>
-                </div>
-                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: var(--primary);">💳 رقم المحافظ:</label>
-                    <div class="form-row"><input type="text" id="setting-wallet-number" placeholder="الرقم أو الحساب..." style="background: var(--panel-bg);"><button type="button" class="btn" onclick="window.saveSettings()" style="width: 30%; background: #028090;">حفظ</button></div>
-                </div>
-                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: var(--primary);">أزرار التواصل:</label>
-                    <div class="form-row" style="margin-top: 10px;"><select id="new-floating-icon" style="flex:1;"><option value="📱">📱 واتساب</option><option value="🌐">🌐 فيسبوك</option><option value="💬">💬 دردشة</option><option value="📞">📞 اتصال</option><option value="🛒">🛒 متجر</option></select><input type="url" id="new-floating-link" placeholder="الرابط (https://...)" style="flex:2;"><button type="button" class="btn" onclick="window.addFloatingButton()" style="flex:1;">إضافة زر</button></div>
-                    <div id="admin-floating-btns-list" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;"></div>
-                </div>
-                
+
+                <!-- 9. شريط العرض المصور -->
                 <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
                     <label style="font-weight: bold; color: var(--primary);">🌟 شريط العرض المصور (الرئيسية):</label>
                     <div class="form-row" style="margin-top: 10px;">
-                        <select id="setting-visual-bar-mode" style="flex:2;">
+                        <select id="setting-visual-bar-mode" style="flex:2; margin-bottom:0;">
                             <option value="categories">عرض الأقسام 📂</option>
                             <option value="products">عرض المنتجات 🛍️</option>
                             <option value="none">إخفاء الشريط 🚫</option>
@@ -693,18 +786,43 @@
                     </div>
                 </div>
 
+                <!-- 10. تتبع Pixels -->
                 <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: var(--primary);">إدارة الأقسام:</label>
-                    <div class="form-row" style="margin-top: 10px;"><input type="text" id="new-category-input" placeholder="اسم القسم الجديد"><button type="button" class="btn" onclick="window.addCategory()" style="width: 30%;">إضافة قسم</button></div>
+                    <label style="font-weight: bold; color: var(--primary);">📈 تتبع الإعلانات (Pixels):</label>
+                    <div class="form-row" style="margin-top:10px;"><input type="text" id="setting-fb-pixel" placeholder="Facebook Pixel"><input type="text" id="setting-tt-pixel" placeholder="TikTok Pixel"></div>
+                    <button type="button" class="btn" onclick="window.saveSettings()" style="width: 100%; background: #028090;">حفظ البيكسل</button>
+                </div>
+
+                <!-- 11. رقم المحافظ -->
+                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <label style="font-weight: bold; color: var(--primary);">💳 رقم المحافظ الإلكترونية وإنستاباي:</label>
+                    <div class="form-row" style="margin-top:10px;"><input type="text" id="setting-wallet-number" placeholder="الرقم أو الحساب..." style="background: var(--panel-bg); margin-bottom:0;"><button type="button" class="btn" onclick="window.saveSettings()" style="width: 30%; background: #028090;">حفظ</button></div>
+                </div>
+
+                <!-- 12. أزرار التواصل العائمة -->
+                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <label style="font-weight: bold; color: var(--primary);">💬 أزرار التواصل العائمة:</label>
+                    <div class="form-row" style="margin-top: 10px;"><select id="new-floating-icon" style="flex:1; margin-bottom:0;"><option value="📱">📱 واتساب</option><option value="🌐">🌐 فيسبوك</option><option value="💬">💬 دردشة</option><option value="📞">📞 اتصال</option><option value="🛒">🛒 متجر</option></select><input type="url" id="new-floating-link" placeholder="الرابط (https://...)" style="flex:2; margin-bottom:0;"><button type="button" class="btn" onclick="window.addFloatingButton()" style="flex:1;">إضافة زر</button></div>
+                    <div id="admin-floating-btns-list" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;"></div>
+                </div>
+
+                <!-- 13. إدارة الأقسام -->
+                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <label style="font-weight: bold; color: var(--primary);">📂 إدارة الأقسام:</label>
+                    <div class="form-row" style="margin-top: 10px;"><input type="text" id="new-category-input" placeholder="اسم القسم الجديد" style="margin-bottom:0;"><button type="button" class="btn" onclick="window.addCategory()" style="width: 30%;">إضافة قسم</button></div>
                     <div id="admin-categories-list" style="margin-top: 15px; display: flex; gap: 8px; flex-wrap: wrap;"></div>
                 </div>
+
+                <!-- 14. إدارة الكوبونات -->
                 <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: var(--primary);">إدارة الكوبونات 🎁:</label>
-                    <div class="form-row" style="margin-top: 10px;"><input type="text" id="new-promo-code" placeholder="الكود" autocomplete="off"><input type="number" id="new-promo-discount" placeholder="الخصم (%)" style="max-width: 120px;"><button type="button" class="btn" onclick="window.addPromoCode()" style="width: 30%;">إضافة كوبون</button></div>
+                    <label style="font-weight: bold; color: var(--primary);">🎁 إدارة الكوبونات:</label>
+                    <div class="form-row" style="margin-top: 10px;"><input type="text" id="new-promo-code" placeholder="الكود" autocomplete="off" style="margin-bottom:0;"><input type="number" id="new-promo-discount" placeholder="الخصم (%)" style="max-width: 120px; margin-bottom:0;"><button type="button" class="btn" onclick="window.addPromoCode()" style="width: 30%;">إضافة كوبون</button></div>
                     <div id="admin-promos-list" style="margin-top: 15px;"></div>
                 </div>
+
+                <!-- 15. إضافة مديرين جدد -->
                 <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color);">
-                    <label style="font-weight: bold; color: var(--primary);">إضافة مديرين جدد:</label>
+                    <label style="font-weight: bold; color: var(--primary);">👥 إضافة مديرين جدد:</label>
                     <form id="add-admin-form" style="margin-top: 10px;"><div class="form-row"><input type="email" id="new-admin-email" placeholder="بريد المدير" required style="margin-bottom:0;"><button type="submit" class="btn btn-danger" style="width: 30%;">إضافة مدير</button></div></form>
                     <div id="admins-list-container" style="margin-top: 15px;"></div>
                 </div>
@@ -713,7 +831,6 @@
         </div>
     </div>
 
-    
     <div id="admin-order-modal" class="modal-overlay" style="z-index: 5500;">
         <div class="modal-content" style="max-width: 600px; text-align: right; border: 2px solid var(--primary);">
             <button type="button" class="modal-close" onclick="document.getElementById('admin-order-modal').style.display='none'">X</button>

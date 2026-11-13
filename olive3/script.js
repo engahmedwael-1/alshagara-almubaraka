@@ -1087,8 +1087,13 @@ try {
                 const nameEl = document.getElementById('order-name'); const phone1El = document.getElementById('order-phone1'); const phone2El = document.getElementById('order-phone2'); const govEl = document.getElementById('order-gov'); const cityEl = document.getElementById('order-city'); const mapAddrEl = document.getElementById('order-map-address'); const addrEl = document.getElementById('order-address'); const payEl = document.getElementById('order-payment-method');
                 const name = nameEl ? nameEl.value : "عميل"; const phone1 = phone1El ? phone1El.value : ""; const phone2 = phone2El ? phone2El.value : "لا يوجد"; const gov = govEl ? govEl.value : ""; const city = cityEl ? cityEl.value : ""; const mapAddress = mapAddrEl ? mapAddrEl.value : ""; const addressDetails = addrEl ? addrEl.value : ""; const payMethod = payEl ? payEl.value : "كاش";
                 
-                let discountVal = Math.round(currentSubtotal * (currentDiscountPercent / 100)) + window.loyaltyDiscountFixed; 
-                let finalTotal = (currentSubtotal - discountVal) + currentShippingCost; 
+                let bundleDiscVal = window.getBundleDiscountAmount ? window.getBundleDiscountAmount() : 0;
+                let discountVal = Math.round(currentSubtotal * (currentDiscountPercent / 100)) + bundleDiscVal + window.loyaltyDiscountFixed;
+                let enableFreeShip = storeSettings.enableFreeShipping !== false;
+                let targetAmount = (storeSettings && storeSettings.freeShippingThreshold) ? Number(storeSettings.freeShippingThreshold) : 1000;
+                if (gov && window.getShippingCostForGov) currentShippingCost = window.getShippingCostForGov(gov);
+                let finalShippingCost = (enableFreeShip && currentSubtotal >= targetAmount) ? 0 : currentShippingCost;
+                let finalTotal = (currentSubtotal - discountVal) + finalShippingCost; 
                 if(finalTotal < 0) finalTotal = 0; 
                 const mapLink = `https://www.google.com/maps?q=${lat},${lng}`; 
                 let receiptUrl = "";
@@ -1100,7 +1105,7 @@ try {
 
                 document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true); let waBtnInfo = storeSettings.floatingButtons ? storeSettings.floatingButtons.find(b => b.icon === '📱' || b.link.includes('wa.me')) : null; let pureWa = waBtnInfo ? waBtnInfo.link.split('/').pop() : "201018631768"; if(pureWa && !pureWa.startsWith('20') && pureWa.length === 10) pureWa = '20' + pureWa; let custEmail = currentUser ? (currentUser.email || currentUser.phoneNumber) : "غير مسجل";
                 
-                let orderPayload = { usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0, userId: currentUser ? currentUser.uid : "", customerEmail: custEmail || "", customerName: name || "", phones: { primary: phone1 || "", secondary: phone2 || "" }, location: { governorate: gov || "", city: city || "", mapAddress: mapAddress || "", details: addressDetails || "", lat: lat || 0, lng: lng || 0, mapLink: mapLink || "" }, items: selectedItems, subtotal: currentSubtotal || 0, discount: discountVal || 0, promoCode: appliedPromoCode || "", shippingCost: currentShippingCost || 0, totalAmount: finalTotal || 0, orderMethod: method || "", paymentMethod: payMethod || "", receiptUrl: receiptUrl || "", status: "قيد المراجعة", orderDate: new Date().toISOString() };
+                let orderPayload = { usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0, userId: currentUser ? currentUser.uid : "", customerEmail: custEmail || "", customerName: name || "", phones: { primary: phone1 || "", secondary: phone2 || "" }, location: { governorate: gov || "", city: city || "", mapAddress: mapAddress || "", details: addressDetails || "", lat: lat || 0, lng: lng || 0, mapLink: mapLink || "" }, items: selectedItems, subtotal: currentSubtotal || 0, discount: discountVal || 0, promoCode: appliedPromoCode || "", shippingCost: finalShippingCost || 0, totalAmount: finalTotal || 0, orderMethod: method || "", paymentMethod: payMethod || "", receiptUrl: receiptUrl || "", status: "قيد المراجعة", orderDate: new Date().toISOString() };
                 await addDoc(collection(db, 'orders'), orderPayload);
                 if(currentUser) { await setDoc(doc(db, 'users', currentUser.uid), { name: name||"", phone1: phone1||"", phone2: phone2||"", gov: gov||"", city: city||"", address: addressDetails||"" }, { merge: true }); }
                 window.trackEvent('Purchase', { value: finalTotal, currency: 'EGP', content_type: 'product_group' });
@@ -1447,7 +1452,10 @@ window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت مت
                     let existingMsgs = (snap.exists() && Array.isArray(snap.data().messages)) ? snap.data().messages : [];
                     let isAdminReplied = snap.exists() && snap.data().adminReplied === true;
 
-                    if (isAdminReplied) {
+                    if (storeSettings.appendHoursToAutoReply && storeSettings.workingHoursText) {
+                        replyObj.text = arMsg + "\n\n" + storeSettings.workingHoursText;
+                    }
+                    if (isAdminReplied || storeSettings.enableAutoReply === false) {
                         existingMsgs.push(msg);
                         await setDoc(chatRef, {
                             customerName: dName,
@@ -1761,4 +1769,324 @@ window.showUserHistory = function(userId, userName) {
             });
             html += '</ul>';
             container.innerHTML = html;
+        };
+
+
+        // --- المرحلة الأولى: التحكم الشامل في كافة العناصر وتفعيل/إيقاف كل ميزة ---
+        const REMOTE_GOVS = ["شمال سيناء", "جنوب سيناء", "أسوان", "البحر الأحمر", "الوادي الجديد", "مطروح"];
+
+        window.getShippingCostForGov = function(gov) {
+            if (!gov || !deliveryData[gov]) return 0;
+            if (storeSettings.enableCustomShipping) {
+                if (storeSettings.customGovShipping && storeSettings.customGovShipping[gov] !== undefined && storeSettings.customGovShipping[gov] !== "") {
+                    return Number(storeSettings.customGovShipping[gov]);
+                }
+                if (REMOTE_GOVS.includes(gov)) {
+                    return storeSettings.remoteShippingCost !== undefined ? Number(storeSettings.remoteShippingCost) : 100;
+                }
+                return storeSettings.defaultShippingCost !== undefined ? Number(storeSettings.defaultShippingCost) : 90;
+            }
+            return deliveryData[gov].shippingCost;
+        };
+
+        window.getSelectedCartQty = function() {
+            let qty = 0;
+            cart.forEach(item => { if (item.selected !== false) qty += Number(item.quantity || 1); });
+            return qty;
+        };
+
+        window.getBundleDiscountAmount = function() {
+            if (!storeSettings.enableBundles) return 0;
+            let minQty = Number(storeSettings.bundleMinQty) || 2;
+            let discPct = Number(storeSettings.bundleDiscountPercent) || 10;
+            if (window.getSelectedCartQty() >= minQty && discPct > 0) {
+                return Math.round(currentSubtotal * (discPct / 100));
+            }
+            return 0;
+        };
+
+        if (govSelect) {
+            govSelect.addEventListener('change', function() {
+                currentShippingCost = window.getShippingCostForGov(this.value);
+                window.updateInvoiceUI();
+            });
+        }
+
+        window.updateInvoiceUI = function() {
+            let promoDiscVal = Math.round(currentSubtotal * (currentDiscountPercent / 100));
+            let bundleDiscVal = window.getBundleDiscountAmount();
+            let discountVal = promoDiscVal + bundleDiscVal + window.loyaltyDiscountFixed;
+
+            let enableFreeShip = storeSettings.enableFreeShipping !== false;
+            let targetAmount = (storeSettings && storeSettings.freeShippingThreshold) ? Number(storeSettings.freeShippingThreshold) : 1000;
+            let selectedGov = govSelect && govSelect.value ? govSelect.value : "";
+            if (selectedGov) currentShippingCost = window.getShippingCostForGov(selectedGov);
+
+            let finalShipping = currentShippingCost;
+            if (enableFreeShip && currentSubtotal >= targetAmount) finalShipping = 0;
+
+            let finalTot = (currentSubtotal - discountVal) + finalShipping;
+            if (finalTot < 0) finalTot = 0;
+
+            document.querySelectorAll('#invoice-subtotal, .invoice-subtotal-val').forEach(el => el.textContent = currentSubtotal);
+            document.querySelectorAll('#invoice-discount, .invoice-discount-val').forEach(el => el.textContent = discountVal);
+            document.querySelectorAll('#invoice-shipping, .invoice-shipping-val').forEach(el => el.textContent = finalShipping);
+            document.querySelectorAll('#invoice-total, .invoice-total-val, #cart-total').forEach(el => el.textContent = finalTot);
+
+            document.querySelectorAll('#discount-row, .discount-row-val').forEach(dr => {
+                if (discountVal > 0) {
+                    dr.style.display = 'flex';
+                    let desc = [];
+                    if (currentDiscountPercent > 0) desc.push(`كوبون ${appliedPromoCode}`);
+                    if (bundleDiscVal > 0) desc.push(`عرض الباقات ${storeSettings.bundleDiscountPercent || 10}%`);
+                    if (window.loyaltyDiscountFixed > 0) desc.push("نقاط الولاء");
+                    dr.innerHTML = `<span class="translatable discount-desc" style="color:var(--danger); font-weight:bold;">خصم (${desc.join(' + ')}):</span><span style="color:var(--danger); font-weight:bold;">-<span class="invoice-discount-val">${discountVal}</span> ج</span>`;
+                } else {
+                    dr.style.display = 'none';
+                }
+            });
+
+            let btnCnlPromo = document.getElementById('btn-cancel-promo');
+            if(btnCnlPromo) btnCnlPromo.style.display = currentDiscountPercent > 0 ? 'block' : 'none';
+            
+            let btnRdmLoyalty = document.getElementById('btn-redeem-loyalty');
+            let btnCnlLoyalty = document.getElementById('btn-cancel-loyalty');
+            if(btnRdmLoyalty && btnCnlLoyalty) {
+                if(window.loyaltyPointsUsedTemp > 0) {
+                    btnRdmLoyalty.style.display = 'none';
+                    btnCnlLoyalty.style.display = 'inline-block';
+                } else {
+                    btnRdmLoyalty.style.display = 'inline-block';
+                    btnCnlLoyalty.style.display = 'none';
+                }
+            }
+
+            let freeShippingBox = document.getElementById('free-shipping-box');
+            if (freeShippingBox) {
+                freeShippingBox.style.display = enableFreeShip ? 'block' : 'none';
+            }
+
+            let cartBundleBanner = document.getElementById('cart-bundle-banner');
+            if (cartBundleBanner) {
+                if (storeSettings.enableBundles) {
+                    let minQ = Number(storeSettings.bundleMinQty) || 2;
+                    let dPct = Number(storeSettings.bundleDiscountPercent) || 10;
+                    let curQ = window.getSelectedCartQty();
+                    cartBundleBanner.style.display = 'block';
+                    if (curQ >= minQ) {
+                        cartBundleBanner.innerHTML = `🎉 تم تفعيل خصم الباقات الفوري (${dPct}%) لأن سلتك تحتوي على ${curQ} قطع!`;
+                    } else {
+                        cartBundleBanner.innerHTML = storeSettings.bundlePromoText || `🔥 عرض الباقات: اشترِ ${minQ} قطع أو أكثر واحصل على خصم فوري ${dPct}%! (متبقي ${minQ - curQ} قطعة)`;
+                    }
+                } else {
+                    cartBundleBanner.style.display = 'none';
+                }
+            }
+        };
+
+        window.setCustomGovShipping = async function() {
+            let gSel = document.getElementById('setting-custom-gov-select');
+            let gPrice = document.getElementById('setting-custom-gov-price');
+            if (!gSel || !gSel.value || !gPrice || gPrice.value === '') {
+                window.showToast('اختر المحافظة واكتب السعر أولاً', 'error');
+                return;
+            }
+            let customMap = { ...(storeSettings.customGovShipping || {}) };
+            customMap[gSel.value] = Number(gPrice.value);
+            await updateDoc(doc(db, 'settings', 'main'), { customGovShipping: customMap, enableCustomShipping: true });
+            gPrice.value = '';
+            window.showToast(`تم تخصيص شحن ${gSel.value} بـ ${customMap[gSel.value]} ج`, 'success');
+        };
+
+        window.removeCustomGovShipping = async function(govName) {
+            let customMap = { ...(storeSettings.customGovShipping || {}) };
+            delete customMap[govName];
+            await updateDoc(doc(db, 'settings', 'main'), { customGovShipping: customMap });
+            window.showToast(`تم إلغاء تخصيص ${govName}`, 'info');
+        };
+
+        window.addFloatingButton = async function() {
+            let icon = document.getElementById('new-floating-icon').value;
+            let link = document.getElementById('new-floating-link').value.trim();
+            if (!link) { window.showToast('أدخل الرابط أولاً', 'error'); return; }
+            let btns = [...(storeSettings.floatingButtons || [])];
+            let color = icon === '📱' ? '#25D366' : (icon === '🌐' ? '#1877F2' : '#c59b27');
+            let title = icon === '📱' ? 'واتساب' : (icon === '🌐' ? 'فيسبوك' : 'تواصل معنا');
+            btns.push({ id: 'btn_' + Date.now(), icon, link, color, isSystem: false, title });
+            await updateDoc(doc(db, 'settings', 'main'), { floatingButtons: btns });
+            document.getElementById('new-floating-link').value = '';
+            window.showToast('تمت إضافة الزر بنجاح', 'success');
+        };
+
+        window.updateFloatingBtn = async function(index) {
+            let inp = document.getElementById(`edit-float-link-${index}`);
+            if (!inp) return;
+            let btns = [...(storeSettings.floatingButtons || [])];
+            if (btns[index]) {
+                btns[index].link = inp.value.trim();
+                await updateDoc(doc(db, 'settings', 'main'), { floatingButtons: btns });
+                window.showToast('تم تحديث الرابط', 'success');
+            }
+        };
+
+        window.removeFloatingBtn = async function(index) {
+            let btns = (storeSettings.floatingButtons || []).filter((_, i) => i !== index);
+            await updateDoc(doc(db, 'settings', 'main'), { floatingButtons: btns });
+            window.showToast('تم حذف الزر', 'info');
+        };
+
+        const origApplySettings = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            origApplySettings();
+
+            let cGovSel = document.getElementById('setting-custom-gov-select');
+            if (cGovSel && cGovSel.options.length === 0) {
+                let gHtml = '<option value="" disabled selected>اختر المحافظة...</option>';
+                for (let g in deliveryData) gHtml += `<option value="${g}">${g}</option>`;
+                cGovSel.innerHTML = gHtml;
+            }
+
+            let cGovList = document.getElementById('admin-custom-gov-shipping-list');
+            if (cGovList) {
+                let map = storeSettings.customGovShipping || {};
+                let bHtml = '';
+                for (let g in map) {
+                    bHtml += `<div style="background:var(--panel-bg); padding:4px 10px; border:1px solid var(--border-color); border-radius:15px; font-size:0.8rem; display:flex; align-items:center; gap:6px;"><strong>${g}:</strong> ${map[g]} ج <button type="button" class="btn-danger" style="border:none; border-radius:50%; width:18px; height:18px; font-size:10px; cursor:pointer;" onclick="window.removeCustomGovShipping('${g}')">✖</button></div>`;
+                }
+                cGovList.innerHTML = bHtml;
+            }
+
+            if (isCurrentUserAdmin) {
+                let setCheck = (id, val, def = true) => { let el = document.getElementById(id); if (el) el.checked = val !== undefined ? Boolean(val) : def; };
+                let setVal = (id, val, def = '') => { let el = document.getElementById(id); if (el) el.value = val !== undefined ? val : def; };
+
+                setCheck('setting-enable-topbar', storeSettings.enableTopBar, false);
+                setVal('setting-topbar-text', storeSettings.topBarText, '🌿 شحن سريع لجميع المحافظات | زيت زيتون سيناوي بكر ممتاز عصره أولى على البارد 100% 🌿');
+                setVal('setting-topbar-bg', storeSettings.topBarBg, '#c59b27');
+
+                setCheck('setting-enable-custom-shipping', storeSettings.enableCustomShipping, true);
+                setVal('setting-shipping-default', storeSettings.defaultShippingCost, 90);
+                setVal('setting-shipping-remote', storeSettings.remoteShippingCost, 100);
+
+                setCheck('setting-enable-free-shipping', storeSettings.enableFreeShipping, true);
+
+                setCheck('setting-enable-bundles', storeSettings.enableBundles, false);
+                setVal('setting-bundle-min-qty', storeSettings.bundleMinQty, 2);
+                setVal('setting-bundle-discount', storeSettings.bundleDiscountPercent, 10);
+                setVal('setting-bundle-text', storeSettings.bundlePromoText, '🔥 عرض الباقات: اشترِ قطعتين أو أكثر واحصل على خصم فوري 10%!');
+
+                setCheck('setting-enable-auto-reply', storeSettings.enableAutoReply, true);
+                setCheck('setting-enable-working-hours', storeSettings.enableWorkingHours, true);
+                setVal('setting-working-hours-text', storeSettings.workingHoursText, '⏰ مواعيد العمل الرسمية لخدمة العملاء: يومياً من 10 صباحاً حتى 11 مساءً');
+                setCheck('setting-append-hours-autoreply', storeSettings.appendHoursToAutoReply, false);
+
+                setCheck('setting-enable-loyalty', storeSettings.enableLoyalty, true);
+                setCheck('setting-enable-offer-banner', storeSettings.enableOfferBanner, true);
+                setVal('setting-offer-banner-text', storeSettings.offerBannerText, '🔥 عرض خاص لفترة محدودة!');
+                setCheck('setting-enable-social-proof', storeSettings.enableSocialProof, true);
+            }
+
+            let topBar = document.getElementById('top-announcement-bar');
+            if (topBar) {
+                if (storeSettings.enableTopBar && storeSettings.topBarText) {
+                    topBar.style.display = 'block';
+                    topBar.style.backgroundColor = storeSettings.topBarBg || '#c59b27';
+                    topBar.textContent = storeSettings.topBarText;
+                } else {
+                    topBar.style.display = 'none';
+                }
+            }
+
+            let whBanner = document.getElementById('support-working-hours-banner');
+            if (whBanner) {
+                if (storeSettings.enableWorkingHours !== false && storeSettings.workingHoursText) {
+                    whBanner.style.display = 'block';
+                    whBanner.textContent = storeSettings.workingHoursText;
+                } else {
+                    whBanner.style.display = 'none';
+                }
+            }
+
+            let modalBundle = document.getElementById('modal-bundle-banner');
+            if (modalBundle) {
+                if (storeSettings.enableBundles) {
+                    modalBundle.style.display = 'block';
+                    let minQ = Number(storeSettings.bundleMinQty) || 2;
+                    let dPct = Number(storeSettings.bundleDiscountPercent) || 10;
+                    modalBundle.textContent = storeSettings.bundlePromoText || `🔥 عرض الباقات: اشترِ ${minQ} قطع أو أكثر واحصل على خصم فوري ${dPct}%!`;
+                } else {
+                    modalBundle.style.display = 'none';
+                }
+            }
+
+            let offerBannerEl = document.getElementById('home-limited-offer-banner');
+            let offerTextEl = document.getElementById('home-offer-banner-text');
+            if (offerBannerEl) {
+                offerBannerEl.style.display = storeSettings.enableOfferBanner !== false ? 'flex' : 'none';
+                if (offerTextEl && storeSettings.offerBannerText) offerTextEl.textContent = storeSettings.offerBannerText;
+            }
+
+            let loySec = document.getElementById('loyalty-section');
+            if (loySec && storeSettings.enableLoyalty === false) loySec.style.display = 'none';
+
+            window.updateInvoiceUI();
+        };
+
+        window.saveSettings = async function() {
+            const getCheck = (id, def = true) => { let el = document.getElementById(id); return el ? el.checked : def; };
+            const getVal = (id, def = '') => { let el = document.getElementById(id); return el ? el.value.trim() : def; };
+
+            let payload = {
+                enableTopBar: getCheck('setting-enable-topbar', false),
+                topBarText: getVal('setting-topbar-text', storeSettings.topBarText || ''),
+                topBarBg: getVal('setting-topbar-bg', storeSettings.topBarBg || '#c59b27'),
+
+                enableCustomShipping: getCheck('setting-enable-custom-shipping', true),
+                defaultShippingCost: Number(getVal('setting-shipping-default', 90)) || 90,
+                remoteShippingCost: Number(getVal('setting-shipping-remote', 100)) || 100,
+
+                enableFreeShipping: getCheck('setting-enable-free-shipping', true),
+                freeShippingThreshold: Number(getVal('setting-free-shipping', 1000)) || 1000,
+
+                enableBundles: getCheck('setting-enable-bundles', false),
+                bundleMinQty: Number(getVal('setting-bundle-min-qty', 2)) || 2,
+                bundleDiscountPercent: Number(getVal('setting-bundle-discount', 10)) || 10,
+                bundlePromoText: getVal('setting-bundle-text', '🔥 عرض الباقات: اشترِ قطعتين أو أكثر واحصل على خصم فوري 10%!'),
+
+                enableAutoReply: getCheck('setting-enable-auto-reply', true),
+                autoReplyMessage: getVal('setting-auto-reply', storeSettings.autoReplyMessage || ''),
+
+                enableWorkingHours: getCheck('setting-enable-working-hours', true),
+                workingHoursText: getVal('setting-working-hours-text', '⏰ مواعيد العمل الرسمية لخدمة العملاء: يومياً من 10 صباحاً حتى 11 مساءً'),
+                appendHoursToAutoReply: getCheck('setting-append-hours-autoreply', false),
+
+                enableLoyalty: getCheck('setting-enable-loyalty', true),
+                loyaltyEarnRate: parseInt(getVal('setting-loyalty-earn', 20)) || 20,
+                loyaltyRedeemValue: parseInt(getVal('setting-loyalty-value', 10)) || 10,
+
+                enableOfferBanner: getCheck('setting-enable-offer-banner', true),
+                offerBannerText: getVal('setting-offer-banner-text', '🔥 عرض خاص لفترة محدودة!'),
+                enableSocialProof: getCheck('setting-enable-social-proof', true),
+                enableCrossSell: getCheck('setting-cross-sell', true),
+
+                visualBarMode: getVal('setting-visual-bar-mode', 'categories'),
+                walletNumber: getVal('setting-wallet-number', '01018631768'),
+                fbPixelId: getVal('setting-fb-pixel', ''),
+                ttPixelId: getVal('setting-tt-pixel', '')
+            };
+
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), payload);
+                window.showToast('تم حفظ الإعدادات وتحديث المتجر بنجاح ✅', 'success');
+                injectPixels();
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء الحفظ', 'error');
+                console.error(e);
+            }
+        };
+
+        const origSocialProof = window.showRandomSocialProof;
+        window.showRandomSocialProof = function() {
+            if (storeSettings.enableSocialProof === false) return;
+            origSocialProof();
         };
