@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>زيت الشجرة المباركة</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="الشجرة المباركة">
-        <meta name="theme-color" content="#3c521e">
+    <meta name="theme-color" content="#3c521e">
 
     <meta name="description" content="زيت الشجرة المباركة - أفضل زيت زيتون سيناوي بكر ممتاز، منتجات طبيعية 100% من قلب سيناء وتوصيل لجميع المحافظات.">
     <meta name="keywords" content="زيت زيتون, زيت سيناوي, زيت بكر ممتاز, الشجرة المباركة, منتجات طبيعية, زيت زيتون أصلي">
@@ -60,9 +57,6 @@
         </div>
         <div style="padding: 15px; display: flex; flex-direction: column; gap: 10px; flex: 1;">
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.showPanel('home'); window.closeSidebar();">🏠 <span class="translatable">الرئيسية</span></button>
-
-            <button type="button" class="btn btn-outline" id="install-app-btn" style="width: 100%; border-color: #28a745; color: #28a745; text-align: right; display: none;" onclick="window.installPWA(); window.closeSidebar();">📲 <span class="translatable">تثبيت التطبيق</span></button>
-            <button type="button" class="btn btn-outline" style="display:none;" <span class="translatable">الرئيسية</span></button>
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.showPanel('support'); window.closeSidebar();">💬 <span class="translatable">خدمة العملاء</span></button>
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.loadAllReviews(); window.closeSidebar();">⭐️ <span class="translatable">آراء العملاء</span></button>
             <div id="sidebar-account-section" style="display:none; margin-top:10px;">
@@ -199,7 +193,6 @@
             <h3 id="modal-price" style="color: var(--secondary); display: flex; align-items: center; justify-content: center; gap:10px; margin: 10px 0; font-size:1.5rem;"></h3>
             <p id="modal-stock" style="color: var(--danger); font-weight: bold; font-size: 0.9rem; margin-top: -5px;"></p>
             <div id="modal-wa-btn-container" style="margin-bottom: 10px; width: 100%;"></div>
-
             <button type="button" class="btn btn-full" id="btn-buy-now" style="background-color: var(--primary); margin-bottom:10px; display:none;" onclick="window.executeBuyNow()"><span class="translatable">🚀 اشتري الآن (دفع سريع)</span></button>
 
             <div id="modal-actions" style="margin-top: 15px; display:none;"></div>
@@ -401,16 +394,6 @@
                     <div id="wallet-info" style="display: none; background: rgba(2, 128, 144, 0.1); border: 1px solid #bce8f1; padding: 15px; border-radius: 8px; margin-top: 10px; font-size: 0.95rem;">
                         <strong style="color: #028090;">برجاء تحويل إجمالي المبلغ على الرقم / الحساب التالي:</strong><br>
                         <span id="checkout-wallet-number" style="font-size: 1.4rem; font-weight: bold; color: var(--danger); display: block; margin: 8px 0; letter-spacing: 1px;">01018631768</span>
-                        <div id="instapay-btn-container" style="margin-top: 15px; display:none;">
-                            <a href="#" id="instapay-link" class="btn" style="width:100%; margin-bottom:10px; background:#6f42c1; display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; color:white;" onclick="window.payWithInstaPay(event)">
-                                🟣 <span class="translatable">الدفع السريع بـ InstaPay</span>
-                            </a>
-                            <p style="font-size:0.75rem; color:var(--text-muted); text-align:center; margin-top:-5px;">سيتم نسخ الرقم وفتح التطبيق تلقائياً</p>
-                        </div>
-
-                        
-                        
-
                         <div style="margin-top: 15px; background: var(--panel-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:var(--primary);">📸 أرفق صورة إيصال التحويل (سكرين شوت):</label>
                             <input type="file" id="order-receipt-file" accept="image/*" style="border: none; padding: 0; background: transparent; width: 100%;">
@@ -529,6 +512,18 @@
 
         <div class="panel" id="admin-dashboard-panel">
             <h2 style="color: var(--secondary); margin-top: 0;">📊 الإحصائيات (للإدارة)</h2>
+            
+            <div class="dashboard-grid" style="grid-template-columns: 1fr; margin-top:20px;">
+                <div class="dash-card" style="border-top-color: var(--danger); text-align:right;">
+                    <h3 style="color:var(--danger); margin-top:0;">⚠️ تنبيهات المخزون (أقل من 5 قطع)</h3>
+                    <div id="admin-low-stock-list">جاري التحميل...</div>
+                </div>
+                <div class="dash-card" style="border-top-color: #028090; text-align:right;">
+                    <h3 style="color:#028090; margin-top:0;">🛒 السلال المتروكة (عملاء لم يكملوا الدفع)</h3>
+                    <div id="admin-abandoned-carts-list">جاري التحميل...</div>
+                </div>
+            </div>
+
             <div class="dashboard-grid">
                 <div class="dash-card"><h3>👥 الزيارات</h3><div class="stat" id="stat-visits">0</div></div>
                 <div class="dash-card"><h3>📦 الطلبات</h3><div class="stat" id="stat-orders">0</div></div>
@@ -633,6 +628,13 @@
             <div id="roles-content-section" style="display: none;">
                 <p style="color: #2a9d8f; margin-bottom: 20px; font-weight: bold; text-align: center;">✅ تم فتح قفل الإعدادات بنجاح!</p>
 
+                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <label style="font-weight: bold; color: var(--primary);">🤖 الرد الآلي لخدمة العملاء:</label>
+                    <textarea id="setting-auto-reply" rows="3" style="margin-top:10px;" placeholder="رسالة الترحيب التلقائية..."></textarea>
+                    <button type="button" class="btn" onclick="window.saveSettings()" style="width: 100%; background: #028090; margin-top:10px;">حفظ الرد الآلي</button>
+                </div>
+
+
                 <div style="background: var(--input-bg); padding: 12px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 12px;">
                     <label style="font-weight: bold; color: var(--primary); display:block; margin-bottom:10px; font-size:0.9rem;">🎁 إعدادات نقاط الولاء:</label>
                     <div class="form-row" style="align-items: center; margin-bottom: 8px;">
@@ -656,15 +658,6 @@
                         <button type="button" class="btn" onclick="window.saveSettings()" style="width: 30%; background: #028090;">حفظ</button>
                     </div>
                 </div>
-                
-                
-                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: var(--primary); display:flex; align-items:center; gap:10px;">
-                        <input type="checkbox" id="setting-instapay-btn" style="width:20px; height:20px; margin:0;">
-                        <span class="translatable">تفعيل زر الدفع بـ InstaPay 🟣</span>
-                    </label>
-                </div>
-
                 <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
                     <label style="font-weight: bold; color: var(--primary); display:flex; align-items:center; gap:10px;">
                         <input type="checkbox" id="setting-cross-sell" style="width:20px; height:20px; margin:0;" onchange="window.saveSettings()">
