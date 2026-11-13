@@ -517,8 +517,11 @@
                     <div id="admin-low-stock-list">جاري التحميل...</div>
                 </div>
                 <div class="dash-card" style="border-top-color: #028090; text-align:right;">
-                    <h3 style="color:#028090; margin-top:0;">🛒 السلال المتروكة (عملاء لم يكملوا الدفع)</h3>
-                    <div id="admin-abandoned-carts-list">جاري التحميل...</div>
+                    <div onclick="window.toggleAbandonedCartsList()" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                        <h3 style="color:#028090; margin:0;">🛒 السلال المتروكة (عملاء لم يكملوا الدفع) <span id="abandoned-carts-count-badge" style="background:#028090; color:white; padding:2px 8px; border-radius:12px; font-size:0.8rem; margin-right:5px;">0</span></h3>
+                        <span id="abandoned-carts-arrow" style="font-size:1.2rem; color:#028090; font-weight:bold; transition:transform 0.3s ease;">▼</span>
+                    </div>
+                    <div id="admin-abandoned-carts-list" style="display:none; margin-top:15px; border-top:1px solid var(--border-color); padding-top:15px;">جاري التحميل...</div>
                 </div>
             </div>
 

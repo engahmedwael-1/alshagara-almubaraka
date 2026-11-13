@@ -1428,26 +1428,40 @@ window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت مت
                 const txt = msgInput.value.trim();
                 if(!txt || !currentUser) return;
                 msgInput.value = '';
-                let chatId = currentUser.email || currentUser.phoneNumber;
-                let dName = currentUser.displayName || chatId.split('@')[0];
-                let msg = { sender: 'customer', text: txt, timestamp: new Date().toISOString() };
-                let chatRef = doc(db, 'chats', chatId);
-                let snap = await getDoc(chatRef);
-                let arMsg = (storeSettings.autoReplyMessage || 'أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.').trim();
-                if(snap.exists()) {
-                    let existingMsgs = snap.data().messages || [];
-                    let recentlyAutoReplied = existingMsgs.slice(-3).some(m => m.sender === 'admin' && m.text === arMsg);
-                    await updateDoc(chatRef, { messages: arrayUnion(msg), lastUpdate: msg.timestamp });
-                    if(arMsg && !recentlyAutoReplied) {
-                        let replyObj = { sender: 'admin', text: arMsg, timestamp: new Date(Date.now() + 1000).toISOString() };
-                        await updateDoc(chatRef, { messages: arrayUnion(replyObj), lastUpdate: replyObj.timestamp });
-                    }
-                } else {
-                    let initialMsgs = [msg];
-                    if(arMsg) {
-                        initialMsgs.push({ sender: 'admin', text: arMsg, timestamp: new Date(Date.now() + 1000).toISOString() });
-                    }
-                    await setDoc(chatRef, { customerName: dName, messages: initialMsgs, lastUpdate: msg.timestamp });
+                
+                let chatId = currentUser.email || currentUser.phoneNumber || currentUser.uid;
+                let dName = currentUser.displayName || (chatId.includes('@') ? chatId.split('@')[0] : chatId);
+                let nowIso = new Date().toISOString();
+                let replyIso = new Date(Date.now() + 1000).toISOString();
+                
+                let arMsg = (storeSettings.autoReplyMessage && storeSettings.autoReplyMessage.trim() !== '') 
+                    ? storeSettings.autoReplyMessage.trim() 
+                    : 'تم إرسال رسالتك بنجاح ✅ وبمجرد توفر موظف خدمة العملاء سيتم الرد عليك في أسرع وقت.';
+
+                let msg = { sender: 'customer', text: txt, timestamp: nowIso };
+                let replyObj = { sender: 'admin', text: arMsg, timestamp: replyIso };
+
+                const container = document.getElementById('support-history-container');
+                if(container) {
+                    if(container.querySelector('p')) container.innerHTML = '';
+                    container.innerHTML += `<div class="chat-msg-wrapper chat-msg-customer"><div class="chat-bubble bubble-customer">${window.escapeHTML(msg.text)}</div></div>`;
+                    container.innerHTML += `<div class="chat-msg-wrapper chat-msg-admin"><div class="chat-bubble bubble-admin"><strong style="color:var(--secondary);font-size:0.8rem;">الدعم:</strong><br>${window.escapeHTML(replyObj.text)}</div></div>`;
+                    container.scrollTop = container.scrollHeight;
+                }
+                window.showToast('تم إرسال رسالتك بنجاح 💬', 'success');
+
+                try {
+                    let chatRef = doc(db, 'chats', chatId);
+                    let snap = await getDoc(chatRef);
+                    let existingMsgs = (snap.exists() && Array.isArray(snap.data().messages)) ? snap.data().messages : [];
+                    existingMsgs.push(msg, replyObj);
+                    await setDoc(chatRef, { 
+                        customerName: dName, 
+                        messages: existingMsgs, 
+                        lastUpdate: replyIso 
+                    }, { merge: true });
+                } catch(err) {
+                    console.error("Chat error:", err);
                 }
             });
         }
@@ -1668,11 +1682,25 @@ window.showUserHistory = function(userId, userName) {
         };
 
 
+        window.toggleAbandonedCartsList = function() {
+            let listEl = document.getElementById('admin-abandoned-carts-list');
+            let arrowEl = document.getElementById('abandoned-carts-arrow');
+            if(!listEl) return;
+            if(listEl.style.display === 'none') {
+                listEl.style.display = 'block';
+                if(arrowEl) arrowEl.style.transform = 'rotate(180deg)';
+            } else {
+                listEl.style.display = 'none';
+                if(arrowEl) arrowEl.style.transform = 'rotate(0deg)';
+            }
+        };
+
         window.adminAbandonedCartsUnsubscribe = null;
         window.loadAdminAbandonedCarts = function() {
             if(window.adminAbandonedCartsUnsubscribe) window.adminAbandonedCartsUnsubscribe();
             window.adminAbandonedCartsUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
                 let container = document.getElementById('admin-abandoned-carts-list');
+                let badge = document.getElementById('abandoned-carts-count-badge');
                 if(!container) return;
                 let abandonedHtml = '';
                 let count = 0;
@@ -1704,6 +1732,7 @@ window.showUserHistory = function(userId, userName) {
                         count++;
                     }
                 });
+                if(badge) badge.textContent = count;
                 container.innerHTML = count === 0 
                     ? '<p style="color:var(--text-muted); font-size:0.9rem;">لا توجد سلال متروكة حالياً.</p>' 
                     : abandonedHtml;
