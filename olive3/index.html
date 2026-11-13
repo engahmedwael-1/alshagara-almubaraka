@@ -568,7 +568,10 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
                     <button type="button" class="btn btn-outline" onclick="window.closeAdminChat()" style="color:#007bff; border-color:#007bff; padding:5px 10px;">🔙 رجوع</button>
                     <strong id="active-chat-user" style="color:var(--primary); font-size:1.1rem;">عميل</strong>
-                    <button type="button" class="btn btn-danger" onclick="window.deleteAdminChat()" style="padding:5px 10px;">حذف 🗑️</button>
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="btn btn-outline" onclick="window.endAdminChat()" style="padding:5px 10px; border-color:#007bff; color:#007bff;">إنهاء 🛑</button>
+                        <button type="button" class="btn btn-danger" onclick="window.deleteAdminChat()" style="padding:5px 10px;">حذف 🗑️</button>
+                    </div>
                 </div>
                 <div id="admin-chat-messages" style="height: 350px; overflow-y: auto; margin-bottom: 15px; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column;"></div>
                 <div style="display:flex; gap:10px; align-items:center;">

@@ -1419,7 +1419,7 @@ try {
         };
 window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت متأكد من حذف هذا الطلب نهائياً من قاعدة البيانات؟')) { await deleteDoc(doc(db, 'orders', orderId)); window.showToast('تم حذف الطلب بنجاح', 'success'); } };
 
-        window.loadCustomerChat = function() { if(!currentUser) return; let chatId = currentUser.email || currentUser.phoneNumber; if(!chatId) return; if(unsubscribeUserChat) unsubscribeUserChat(); unsubscribeUserChat = onSnapshot(doc(db, 'chats', chatId), (docSnap) => { const container = document.getElementById('support-history-container'); if(!container) return; if(docSnap.exists()) { let data = docSnap.data(); let html = ''; (data.messages || []).forEach(m => { let isCust = m.sender === 'customer'; let alignClass = isCust ? 'chat-msg-customer' : 'chat-msg-admin'; let bubbleClass = isCust ? 'bubble-customer' : 'bubble-admin'; let prefix = isCust ? '' : '<strong style="color:var(--secondary);font-size:0.8rem;">الدعم:</strong><br>'; html += `<div class="chat-msg-wrapper ${alignClass}"><div class="chat-bubble ${bubbleClass}">${prefix}${window.escapeHTML(m.text)}</div></div>`; }); container.innerHTML = html; container.scrollTop = container.scrollHeight; } else { let msg = window.currentLang === 'ar' ? 'ابدأ المحادثة الآن وسنرد عليك في أقرب وقت!' : 'Start the conversation now!'; container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">${msg}</p>`; } }); }
+        window.loadCustomerChat = function() { if(!currentUser) return; let chatId = currentUser.email || currentUser.phoneNumber || currentUser.uid; if(!chatId) return; if(unsubscribeUserChat) unsubscribeUserChat(); unsubscribeUserChat = onSnapshot(doc(db, 'chats', chatId), (docSnap) => { const container = document.getElementById('support-history-container'); if(!container) return; if(docSnap.exists()) { let data = docSnap.data(); let html = ''; (data.messages || []).forEach(m => { let isCust = m.sender === 'customer'; let alignClass = isCust ? 'chat-msg-customer' : 'chat-msg-admin'; let bubbleClass = isCust ? 'bubble-customer' : 'bubble-admin'; let prefix = isCust ? '' : '<strong style="color:var(--secondary);font-size:0.8rem;">الدعم:</strong><br>'; html += `<div class="chat-msg-wrapper ${alignClass}"><div class="chat-bubble ${bubbleClass}">${prefix}${window.escapeHTML(m.text)}</div></div>`; }); container.innerHTML = html; container.scrollTop = container.scrollHeight; } else { let msg = window.currentLang === 'ar' ? 'ابدأ المحادثة الآن وسنرد عليك في أقرب وقت!' : 'Start the conversation now!'; container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">${msg}</p>`; } }); }
         let sf = document.getElementById('support-form');
         if(sf) {
             sf.addEventListener('submit', async (e) => {
@@ -1439,27 +1439,31 @@ window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت مت
                     : 'تم إرسال رسالتك بنجاح ✅ وبمجرد توفر موظف خدمة العملاء سيتم الرد عليك في أسرع وقت.';
 
                 let msg = { sender: 'customer', text: txt, timestamp: nowIso };
-                let replyObj = { sender: 'admin', text: arMsg, timestamp: replyIso };
-
-                const container = document.getElementById('support-history-container');
-                if(container) {
-                    if(container.querySelector('p')) container.innerHTML = '';
-                    container.innerHTML += `<div class="chat-msg-wrapper chat-msg-customer"><div class="chat-bubble bubble-customer">${window.escapeHTML(msg.text)}</div></div>`;
-                    container.innerHTML += `<div class="chat-msg-wrapper chat-msg-admin"><div class="chat-bubble bubble-admin"><strong style="color:var(--secondary);font-size:0.8rem;">الدعم:</strong><br>${window.escapeHTML(replyObj.text)}</div></div>`;
-                    container.scrollTop = container.scrollHeight;
-                }
-                window.showToast('تم إرسال رسالتك بنجاح 💬', 'success');
+                let replyObj = { sender: 'admin', text: arMsg, timestamp: replyIso, isAutoReply: true };
 
                 try {
                     let chatRef = doc(db, 'chats', chatId);
                     let snap = await getDoc(chatRef);
                     let existingMsgs = (snap.exists() && Array.isArray(snap.data().messages)) ? snap.data().messages : [];
-                    existingMsgs.push(msg, replyObj);
-                    await setDoc(chatRef, { 
-                        customerName: dName, 
-                        messages: existingMsgs, 
-                        lastUpdate: replyIso 
-                    }, { merge: true });
+                    let isAdminReplied = snap.exists() && snap.data().adminReplied === true;
+
+                    if (isAdminReplied) {
+                        existingMsgs.push(msg);
+                        await setDoc(chatRef, {
+                            customerName: dName,
+                            messages: existingMsgs,
+                            lastUpdate: nowIso
+                        }, { merge: true });
+                    } else {
+                        existingMsgs.push(msg, replyObj);
+                        await setDoc(chatRef, {
+                            customerName: dName,
+                            messages: existingMsgs,
+                            lastUpdate: replyIso,
+                            adminReplied: false
+                        }, { merge: true });
+                    }
+                    window.showToast('تم إرسال رسالتك بنجاح 💬', 'success');
                 } catch(err) {
                     console.error("Chat error:", err);
                 }
@@ -1469,10 +1473,11 @@ window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت مت
         window.loadAdminChats = function() { onSnapshot(query(collection(db, 'chats'), orderBy('lastUpdate', 'desc')), (snap) => { let container = document.getElementById('admin-chat-list'); if(!container) return; let html = ''; snap.forEach(d => { let chat = d.data(); let date = new Date(chat.lastUpdate).toLocaleString('ar-EG'); html += `<div class="admin-msg-card" style="cursor:pointer; border-right:4px solid var(--primary);" onclick="window.openAdminChat('${d.id}', '${chat.customerName}')"><h4 style="margin:0 0 5px 0;">👤 ${chat.customerName}</h4><span style="font-size:0.85rem; color:var(--text-muted);">آخر رسالة: ${date}</span></div>`; }); container.innerHTML = html || '<h3 style="text-align:center; color:var(--text-muted);">لا توجد رسائل.</h3>'; }); }
         window.openAdminChat = function(id, name) { let acl = document.getElementById('admin-chat-list'); if(acl) acl.style.display = 'none'; let aac = document.getElementById('admin-active-chat'); if(aac) aac.style.display = 'block'; let acu = document.getElementById('active-chat-user'); if(acu) acu.textContent = name; activeAdminChatId = id; if(unsubscribeActiveAdminChat) unsubscribeActiveAdminChat(); unsubscribeActiveAdminChat = onSnapshot(doc(db, 'chats', id), (docSnap) => { let container = document.getElementById('admin-chat-messages'); if(!container) return; if(docSnap.exists()) { let data = docSnap.data(); let html = ''; (data.messages || []).forEach(m => { let isAdm = m.sender === 'admin'; let alignClass = isAdm ? 'chat-msg-customer' : 'chat-msg-admin'; let bubbleClass = isAdm ? 'bubble-customer' : 'bubble-admin'; let prefix = isAdm ? '' : '<strong style="color:var(--secondary);font-size:0.8rem;">العميل:</strong><br>'; html += `<div class="chat-msg-wrapper ${alignClass}"><div class="chat-bubble ${bubbleClass}">${prefix}${window.escapeHTML(m.text)}</div></div>`; }); container.innerHTML = html; container.scrollTop = container.scrollHeight; } }); }
         window.closeAdminChat = function() { let acl = document.getElementById('admin-chat-list'); if(acl) acl.style.display = 'block'; let aac = document.getElementById('admin-active-chat'); if(aac) aac.style.display = 'none'; activeAdminChatId = null; if(unsubscribeActiveAdminChat) { unsubscribeActiveAdminChat(); unsubscribeActiveAdminChat = null; } }
-        window.sendAdminMessage = async function() { let input = document.getElementById('admin-chat-input'); let txt = input ? input.value.trim() : ""; if(!txt || !activeAdminChatId) return; input.value = ''; let msg = { sender: 'admin', text: txt, timestamp: new Date().toISOString() }; await updateDoc(doc(db, 'chats', activeAdminChatId), { messages: arrayUnion(msg), lastUpdate: msg.timestamp }); }
+        window.sendAdminMessage = async function() { let input = document.getElementById('admin-chat-input'); let txt = input ? input.value.trim() : ""; if(!txt || !activeAdminChatId) return; input.value = ''; let msg = { sender: 'admin', text: txt, timestamp: new Date().toISOString(), isAutoReply: false }; await updateDoc(doc(db, 'chats', activeAdminChatId), { messages: arrayUnion(msg), lastUpdate: msg.timestamp, adminReplied: true }); }
+        window.endAdminChat = async function() { if(activeAdminChatId && confirm('إنهاء المحادثة الحالية؟ (سيعود الرد الآلي للعمل إذا أرسل العميل رسالة جديدة)')) { let msg = { sender: 'admin', text: '--- تم إنهاء المحادثة من خدمة العملاء ---', timestamp: new Date().toISOString() }; await updateDoc(doc(db, 'chats', activeAdminChatId), { messages: arrayUnion(msg), lastUpdate: msg.timestamp, adminReplied: false }); window.showToast('تم إنهاء المحادثة', 'info'); } }
         window.deleteAdminChat = async function() { if(confirm('حذف المحادثة للعميل؟')) { await deleteDoc(doc(db, 'chats', activeAdminChatId)); window.showToast('تم الحذف', 'success'); window.closeAdminChat(); } }
-        window.endChat = async function() { if(confirm('إنهاء المحادثة؟')) { let chatId = currentUser.email || currentUser.phoneNumber; let msg = { sender: 'customer', text: '--- تم إنهاء المحادثة من العميل ---', timestamp: new Date().toISOString() }; await updateDoc(doc(db, 'chats', chatId), { messages: arrayUnion(msg), lastUpdate: msg.timestamp }); window.showToast('تم إنهاء المحادثة', 'info'); } }
-        window.deleteChat = async function() { if(confirm('مسح سجلك؟')) { let chatId = currentUser.email || currentUser.phoneNumber; await deleteDoc(doc(db, 'chats', chatId)); window.showToast('تم المسح', 'success'); } }
+        window.endChat = async function() { if(confirm('إنهاء المحادثة؟')) { let chatId = currentUser.email || currentUser.phoneNumber || currentUser.uid; let msg = { sender: 'customer', text: '--- تم إنهاء المحادثة من العميل ---', timestamp: new Date().toISOString() }; await updateDoc(doc(db, 'chats', chatId), { messages: arrayUnion(msg), lastUpdate: msg.timestamp, adminReplied: false }); window.showToast('تم إنهاء المحادثة', 'info'); } }
+        window.deleteChat = async function() { if(confirm('مسح سجلك؟')) { let chatId = currentUser.email || currentUser.phoneNumber || currentUser.uid; await deleteDoc(doc(db, 'chats', chatId)); window.showToast('تم المسح', 'success'); } }
 
 window.executeBuyNow = function() {
     let id = activeProductForReview;
