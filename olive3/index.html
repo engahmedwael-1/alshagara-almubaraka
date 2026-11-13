@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>زيت الشجرة المباركة</title>
-    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3c521e">
 
     <meta name="description" content="زيت الشجرة المباركة - أفضل زيت زيتون سيناوي بكر ممتاز، منتجات طبيعية 100% من قلب سيناء وتوصيل لجميع المحافظات.">
@@ -512,14 +511,13 @@
 
         <div class="panel" id="admin-dashboard-panel">
             <h2 style="color: var(--secondary); margin-top: 0;">📊 الإحصائيات (للإدارة)</h2>
-            
             <div class="dashboard-grid" style="grid-template-columns: 1fr; margin-top:20px;">
                 <div class="dash-card" style="border-top-color: var(--danger); text-align:right;">
                     <h3 style="color:var(--danger); margin-top:0;">⚠️ تنبيهات المخزون (أقل من 5 قطع)</h3>
                     <div id="admin-low-stock-list">جاري التحميل...</div>
                 </div>
                 <div class="dash-card" style="border-top-color: #028090; text-align:right;">
-                    <h3 style="color:#028090; margin-top:0;">🛒 السلال المتروكة</h3>
+                    <h3 style="color:#028090; margin-top:0;">🛒 السلال المتروكة (عملاء لم يكملوا الدفع)</h3>
                     <div id="admin-abandoned-carts-list">جاري التحميل...</div>
                 </div>
             </div>
@@ -627,13 +625,11 @@
             <div id="roles-auth-section"><div class="form-row"><input type="password" id="roles-pin" placeholder="رمز الأمان للمؤسس" style="margin-bottom:0;" autocomplete="new-password"><button type="button" class="btn" id="btn-unlock-roles" style="background-color: #028090; width: 30%;">فتح 🔓</button></div></div>
             <div id="roles-content-section" style="display: none;">
                 <p style="color: #2a9d8f; margin-bottom: 20px; font-weight: bold; text-align: center;">✅ تم فتح قفل الإعدادات بنجاح!</p>
-
                 <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
                     <label style="font-weight: bold; color: var(--primary);">🤖 الرد الآلي لخدمة العملاء:</label>
-                    <textarea id="setting-auto-reply" rows="3" style="width:100%; margin-top:10px; padding:10px; border-radius:8px;" placeholder="اكتب الرد التلقائي هنا..."></textarea>
+                    <textarea id="setting-auto-reply" rows="3" style="width:100%; margin-top:10px; padding:10px; border-radius:8px;" placeholder="اكتب رسالة الرد التلقائي هنا..."></textarea>
                     <button type="button" class="btn" onclick="window.saveSettings()" style="width: 100%; background: #028090; margin-top:10px;">حفظ الرد الآلي</button>
                 </div>
-
 
                 <div style="background: var(--input-bg); padding: 12px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 12px;">
                     <label style="font-weight: bold; color: var(--primary); display:block; margin-bottom:10px; font-size:0.9rem;">🎁 إعدادات نقاط الولاء:</label>

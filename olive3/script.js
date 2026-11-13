@@ -1,6 +1,6 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, updateDoc, setDoc, getDoc, increment, arrayUnion, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, updateDoc, setDoc, getDoc, getDocs, increment, arrayUnion, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBJFZRij_8cprlkj4qV98WSZVRWdYLQY-I", authDomain: "olive-oile-store.firebaseapp.com", projectId: "olive-oile-store", messagingSenderId: "991769684700", appId: "1:991769684700:web:adfd4958d6aba1c7902219" };
@@ -209,7 +209,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         let savedAccounts = JSON.parse(localStorage.getItem('zait_saved_accounts')) || [];
         let currentRenderedProducts = 8; const productsPerPage = 8;
         
-        let storeSettings = { walletNumber: "01018631768", fbPixelId: "", ttPixelId: "", categories: ["زيت زيتون"], autoReplyMessage: "أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.", floatingButtons: [{ id: 'btn_support', icon: '💬', link: '#support', color: '#007bff', isSystem: true, title: 'خدمة العملاء' }, { id: 'btn_wa', icon: '📱', link: 'https://wa.me/201018631768', color: '#25D366', isSystem: false, title: 'واتساب' }], revenueResetDate: "2000-01-01T00:00:00.000Z", ordersResetDate: "2000-01-01T00:00:00.000Z", enableCrossSell: true, visualBarMode: 'categories', autoReplyMessage: `أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.` };
+        let storeSettings = { walletNumber: "01018631768", fbPixelId: "", ttPixelId: "", categories: ["زيت زيتون"], autoReplyMessage: "أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.", floatingButtons: [{ id: 'btn_support', icon: '💬', link: '#support', color: '#007bff', isSystem: true, title: 'خدمة العملاء' }, { id: 'btn_wa', icon: '📱', link: 'https://wa.me/201018631768', color: '#25D366', isSystem: false, title: 'واتساب' }], revenueResetDate: "2000-01-01T00:00:00.000Z", ordersResetDate: "2000-01-01T00:00:00.000Z", enableCrossSell: true, visualBarMode: 'categories' };
 
         window.syncCartToCloud = async function() {
             if(currentUser) {
@@ -437,9 +437,8 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                 let loyE = document.getElementById('setting-loyalty-earn'); if(loyE && storeSettings.loyaltyEarnRate) loyE.value = storeSettings.loyaltyEarnRate;
                 let loyV = document.getElementById('setting-loyalty-value'); if(loyV && storeSettings.loyaltyRedeemValue) loyV.value = storeSettings.loyaltyRedeemValue;
                 let vMode = document.getElementById('setting-visual-bar-mode'); if(vMode) vMode.value = storeSettings.visualBarMode || 'categories';
-                let autoEl = document.getElementById('setting-auto-reply'); if(autoEl) autoEl.value = storeSettings.autoReplyMessage || `أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.`;
 
-                let autoEl = document.getElementById('setting-auto-reply'); if(autoEl) autoEl.value = storeSettings.autoReplyMessage || ''; let wallEl = document.getElementById('setting-wallet-number'); if(wallEl) wallEl.value = storeSettings.walletNumber || ''; let fbEl = document.getElementById('setting-fb-pixel'); if(fbEl) fbEl.value = storeSettings.fbPixelId || ''; let ttEl = document.getElementById('setting-tt-pixel'); if(ttEl) ttEl.value = storeSettings.ttPixelId || ''; 
+                let autoEl = document.getElementById('setting-auto-reply'); if(autoEl) autoEl.value = storeSettings.autoReplyMessage || 'أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.'; let wallEl = document.getElementById('setting-wallet-number'); if(wallEl) wallEl.value = storeSettings.walletNumber || ''; let fbEl = document.getElementById('setting-fb-pixel'); if(fbEl) fbEl.value = storeSettings.fbPixelId || ''; let ttEl = document.getElementById('setting-tt-pixel'); if(ttEl) ttEl.value = storeSettings.ttPixelId || ''; 
                 let fsInp = document.getElementById('setting-free-shipping'); if(fsInp && storeSettings.freeShippingThreshold) fsInp.value = storeSettings.freeShippingThreshold; }
             let chWall = document.getElementById('checkout-wallet-number'); if(chWall) chWall.textContent = storeSettings.walletNumber || '01018631768';
             const floatingContainer = document.getElementById('floating-menu-container'), footerSocialContainer = document.getElementById('footer-social-links'), adminBtnsList = document.getElementById('admin-floating-btns-list');
@@ -467,7 +466,6 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             const newWallet = document.getElementById('setting-wallet-number') ? document.getElementById('setting-wallet-number').value.trim() : storeSettings.walletNumber; 
             const newFb = document.getElementById('setting-fb-pixel') ? document.getElementById('setting-fb-pixel').value.trim() : storeSettings.fbPixelId; 
             const newTt = document.getElementById('setting-tt-pixel') ? document.getElementById('setting-tt-pixel').value.trim() : storeSettings.ttPixelId; 
-            const newAutoReply = document.getElementById('setting-auto-reply') ? document.getElementById('setting-auto-reply').value.trim() : storeSettings.autoReplyMessage;
             const newCrossSell = document.getElementById('setting-cross-sell') ? document.getElementById('setting-cross-sell').checked : true;
             const newVMode = document.getElementById('setting-visual-bar-mode') ? document.getElementById('setting-visual-bar-mode').value : 'categories';
             
@@ -481,14 +479,14 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                     walletNumber: newWallet, 
                     fbPixelId: newFb, 
                     ttPixelId: newTt, 
-                    autoReplyMessage: newAutoReply, enableCrossSell: newCrossSell, 
+                    enableCrossSell: newCrossSell, 
                     freeShippingThreshold: fsThresh, 
                     loyaltyEarnRate: lEarn, 
                     loyaltyRedeemValue: lRedeem, 
                     visualBarMode: newVMode
                 }); 
                 window.showToast('تم الحفظ بنجاح', 'success'); 
-                window.injectPixels(); 
+                injectPixels(); 
             } catch(e) {
                 window.showToast('فشل الحفظ', 'error');
                 console.error(e);
@@ -812,11 +810,10 @@ let adminUsersUnsubscribe = null;
                 document.querySelectorAll('.admin-tab').forEach(tab => tab.style.display = isCurrentUserAdmin ? 'inline-block' : 'none'); 
                 let activePanel = document.querySelector('.panel.active');
                 if(!isCurrentUserAdmin && activePanel && ['admin', 'admin-orders', 'admin-messages', 'admin-dashboard', 'admin-returns', 'admin-users'].includes(activePanel.id.replace('-panel',''))) { window.showPanel('home'); }
-                if(isCurrentUserAdmin) { window.loadAdminOrders(); window.loadAdminReturns(); window.loadAdminUsers(); window.loadAdminAbandonedCarts(); window.renderLowStockAlerts(); }
+                if(isCurrentUserAdmin) { window.loadAdminOrders(); window.loadAdminReturns(); window.loadAdminUsers(); if(window.loadAdminAbandonedCarts) window.loadAdminAbandonedCarts(); if(window.renderLowStockAlerts) window.renderLowStockAlerts(); }
             } else { 
                 isCurrentUserAdmin = false; document.querySelectorAll('.admin-tab').forEach(tab => tab.style.display = 'none'); 
-                if(adminOrdersUnsubscribe) { adminOrdersUnsubscribe(); adminOrdersUnsubscribe = null; } if(adminReturnsUnsubscribe) { adminReturnsUnsubscribe(); adminReturnsUnsubscribe = null; } if(adminUsersUnsubscribe) { adminUsersUnsubscribe(); adminUsersUnsubscribe = null; }
-                if(adminAbandonedCartsUnsubscribe) { adminAbandonedCartsUnsubscribe(); adminAbandonedCartsUnsubscribe = null; }
+                if(adminOrdersUnsubscribe) { adminOrdersUnsubscribe(); adminOrdersUnsubscribe = null; } if(adminReturnsUnsubscribe) { adminReturnsUnsubscribe(); adminReturnsUnsubscribe = null; } if(adminUsersUnsubscribe) { adminUsersUnsubscribe(); adminUsersUnsubscribe = null; } if(window.adminAbandonedCartsUnsubscribe) { window.adminAbandonedCartsUnsubscribe(); window.adminAbandonedCartsUnsubscribe = null; }
             } window.applySettingsToUI(); window.renderProducts(false); window.renderVisualBar(); 
         }
         
@@ -916,8 +913,7 @@ try {
                 let videoIcon = product.videoUrl ? `<div style="position:absolute; bottom:50px; right:10px; background:rgba(0,0,0,0.7); padding:5px; border-radius:50%; color:white; font-size:0.8rem; z-index:2;">▶️</div>` : '';
                 htmlContent += `<div class="product-card" onclick="window.openProductModal('${product.id}')">${discountBadge}${wishBtnHtml}<span class="category-badge">${categoryLabel}</span><div style="position:relative;"><img loading="lazy" src="${primaryImage}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'">${videoIcon}</div><div style="padding: 0 10px;"><h3>${product.name}</h3><div class="rating-stars">⭐ ${avgRating}</div>${priceHtml}${stockBadge}<button type="button" class="btn btn-full" style="padding: 8px; font-size:1rem;" ${addBtnState}>${vArr.length > 0 ? selTxt : addTxt}</button></div>${adminBtns}</div>`;
             }); 
-            container.innerHTML = htmlContent; if(scrollToTop) window.scrollTo(0,0);
-            if (isCurrentUserAdmin) window.renderLowStockAlerts();
+            container.innerHTML = htmlContent; if(scrollToTop) window.scrollTo(0,0); if(isCurrentUserAdmin && window.renderLowStockAlerts) window.renderLowStockAlerts();
         }
 
         window.renderWishlist = function() {
@@ -1424,32 +1420,37 @@ try {
 window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت متأكد من حذف هذا الطلب نهائياً من قاعدة البيانات؟')) { await deleteDoc(doc(db, 'orders', orderId)); window.showToast('تم حذف الطلب بنجاح', 'success'); } };
 
         window.loadCustomerChat = function() { if(!currentUser) return; let chatId = currentUser.email || currentUser.phoneNumber; if(!chatId) return; if(unsubscribeUserChat) unsubscribeUserChat(); unsubscribeUserChat = onSnapshot(doc(db, 'chats', chatId), (docSnap) => { const container = document.getElementById('support-history-container'); if(!container) return; if(docSnap.exists()) { let data = docSnap.data(); let html = ''; (data.messages || []).forEach(m => { let isCust = m.sender === 'customer'; let alignClass = isCust ? 'chat-msg-customer' : 'chat-msg-admin'; let bubbleClass = isCust ? 'bubble-customer' : 'bubble-admin'; let prefix = isCust ? '' : '<strong style="color:var(--secondary);font-size:0.8rem;">الدعم:</strong><br>'; html += `<div class="chat-msg-wrapper ${alignClass}"><div class="chat-bubble ${bubbleClass}">${prefix}${window.escapeHTML(m.text)}</div></div>`; }); container.innerHTML = html; container.scrollTop = container.scrollHeight; } else { let msg = window.currentLang === 'ar' ? 'ابدأ المحادثة الآن وسنرد عليك في أقرب وقت!' : 'Start the conversation now!'; container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">${msg}</p>`; } }); }
-        let sf = document.getElementById('support-form'); 
-        if(sf) { 
-            sf.addEventListener('submit', async (e) => { 
-                e.preventDefault(); 
-                const msgInput = document.getElementById('support-message'); 
-                const txt = msgInput.value.trim(); 
-                if(!txt || !currentUser) return; 
-                msgInput.value = ''; 
-                let chatId = currentUser.email || currentUser.phoneNumber; 
-                let dName = currentUser.displayName || chatId.split('@')[0]; 
-                let msg = { sender: 'customer', text: txt, timestamp: new Date().toISOString() }; 
-                let chatRef = doc(db, 'chats', chatId); 
-                let snap = await getDoc(chatRef); 
-                if(snap.exists()) { 
-                    await updateDoc(chatRef, { messages: arrayUnion(msg), lastUpdate: msg.timestamp }); 
-                } else { 
+        let sf = document.getElementById('support-form');
+        if(sf) {
+            sf.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const msgInput = document.getElementById('support-message');
+                const txt = msgInput.value.trim();
+                if(!txt || !currentUser) return;
+                msgInput.value = '';
+                let chatId = currentUser.email || currentUser.phoneNumber;
+                let dName = currentUser.displayName || chatId.split('@')[0];
+                let msg = { sender: 'customer', text: txt, timestamp: new Date().toISOString() };
+                let chatRef = doc(db, 'chats', chatId);
+                let snap = await getDoc(chatRef);
+                let arMsg = (storeSettings.autoReplyMessage || 'أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.').trim();
+                if(snap.exists()) {
+                    let existingMsgs = snap.data().messages || [];
+                    let recentlyAutoReplied = existingMsgs.slice(-3).some(m => m.sender === 'admin' && m.text === arMsg);
+                    await updateDoc(chatRef, { messages: arrayUnion(msg), lastUpdate: msg.timestamp });
+                    if(arMsg && !recentlyAutoReplied) {
+                        let replyObj = { sender: 'admin', text: arMsg, timestamp: new Date(Date.now() + 1000).toISOString() };
+                        await updateDoc(chatRef, { messages: arrayUnion(replyObj), lastUpdate: replyObj.timestamp });
+                    }
+                } else {
                     let initialMsgs = [msg];
-                    let arMsg = storeSettings.autoReplyMessage || `أهلًا بيك❤️
-اكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.`;
-                    if(arMsg && arMsg.trim() !== '') {
+                    if(arMsg) {
                         initialMsgs.push({ sender: 'admin', text: arMsg, timestamp: new Date(Date.now() + 1000).toISOString() });
                     }
-                    await setDoc(chatRef, { customerName: dName, messages: initialMsgs, lastUpdate: msg.timestamp }); 
-                } 
-            }); 
-        } else { await setDoc(chatRef, { customerName: dName, messages: [msg], lastUpdate: msg.timestamp }); } }); }
+                    await setDoc(chatRef, { customerName: dName, messages: initialMsgs, lastUpdate: msg.timestamp });
+                }
+            });
+        }
 
         window.loadAdminChats = function() { onSnapshot(query(collection(db, 'chats'), orderBy('lastUpdate', 'desc')), (snap) => { let container = document.getElementById('admin-chat-list'); if(!container) return; let html = ''; snap.forEach(d => { let chat = d.data(); let date = new Date(chat.lastUpdate).toLocaleString('ar-EG'); html += `<div class="admin-msg-card" style="cursor:pointer; border-right:4px solid var(--primary);" onclick="window.openAdminChat('${d.id}', '${chat.customerName}')"><h4 style="margin:0 0 5px 0;">👤 ${chat.customerName}</h4><span style="font-size:0.85rem; color:var(--text-muted);">آخر رسالة: ${date}</span></div>`; }); container.innerHTML = html || '<h3 style="text-align:center; color:var(--text-muted);">لا توجد رسائل.</h3>'; }); }
         window.openAdminChat = function(id, name) { let acl = document.getElementById('admin-chat-list'); if(acl) acl.style.display = 'none'; let aac = document.getElementById('admin-active-chat'); if(aac) aac.style.display = 'block'; let acu = document.getElementById('active-chat-user'); if(acu) acu.textContent = name; activeAdminChatId = id; if(unsubscribeActiveAdminChat) unsubscribeActiveAdminChat(); unsubscribeActiveAdminChat = onSnapshot(doc(db, 'chats', id), (docSnap) => { let container = document.getElementById('admin-chat-messages'); if(!container) return; if(docSnap.exists()) { let data = docSnap.data(); let html = ''; (data.messages || []).forEach(m => { let isAdm = m.sender === 'admin'; let alignClass = isAdm ? 'chat-msg-customer' : 'chat-msg-admin'; let bubbleClass = isAdm ? 'bubble-customer' : 'bubble-admin'; let prefix = isAdm ? '' : '<strong style="color:var(--secondary);font-size:0.8rem;">العميل:</strong><br>'; html += `<div class="chat-msg-wrapper ${alignClass}"><div class="chat-bubble ${bubbleClass}">${prefix}${window.escapeHTML(m.text)}</div></div>`; }); container.innerHTML = html; container.scrollTop = container.scrollHeight; } }); }
@@ -1667,44 +1668,45 @@ window.showUserHistory = function(userId, userName) {
         };
 
 
-        let adminAbandonedCartsUnsubscribe = null;
+        window.adminAbandonedCartsUnsubscribe = null;
         window.loadAdminAbandonedCarts = function() {
-            if(adminAbandonedCartsUnsubscribe) adminAbandonedCartsUnsubscribe();
-            adminAbandonedCartsUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+            if(window.adminAbandonedCartsUnsubscribe) window.adminAbandonedCartsUnsubscribe();
+            window.adminAbandonedCartsUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
                 let container = document.getElementById('admin-abandoned-carts-list');
                 if(!container) return;
                 let abandonedHtml = '';
                 let count = 0;
                 let usersList = [];
-                snapshot.forEach(doc => usersList.push({id: doc.id, ...doc.data()}));
+                snapshot.forEach(d => usersList.push({id: d.id, ...d.data()}));
                 usersList.sort((a,b) => new Date(b.lastLogin || 0) - new Date(a.lastLogin || 0));
 
                 usersList.forEach(data => {
-                    if (data.cart && data.cart.length > 0) {
+                    if (data.cart && Array.isArray(data.cart) && data.cart.length > 0) {
                         let total = 0;
-                        data.cart.forEach(item => total += (item.price * item.quantity));
+                        data.cart.forEach(item => total += (Number(item.price || 0) * Number(item.quantity || 1)));
                         let phone = data.phone1 || data.email || 'غير مسجل';
-                        let pureWa = phone.replace(/\D/g,'');
+                        let pureWa = String(phone).replace(/\D/g, '');
                         if(pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
                         
-                        let waLink = `https://wa.me/${pureWa}?text=${encodeURIComponent('مرحباً ' + (data.name||'عميلنا العزيز') + '، لاحظنا وجود منتجات في سلة مشترياتك 🛒 هل واجهت مشكلة أثناء الدفع؟ خصم خاص بانتظارك لو أكملت الطلب اليوم!')}`;
-                        
+                        let waText = 'مرحباً ' + (data.name || 'عميلنا العزيز') + '، لاحظنا وجود منتجات في سلة مشترياتك 🛒 هل واجهت مشكلة أثناء الدفع؟ خصم خاص بانتظارك لو أكملت الطلب اليوم!';
+                        let waBtn = pureWa.length >= 10 
+                            ? `<a href="https://wa.me/${pureWa}?text=${encodeURIComponent(waText)}" target="_blank" class="btn btn-outline" style="border-color:#25D366; color:#25D366; padding:5px 10px; font-size:0.85rem; text-decoration:none;">💬 تواصل واتساب</a>`
+                            : `<span style="font-size:0.8rem; color:var(--text-muted);">لا يوجد رقم هاتف</span>`;
+
                         abandonedHtml += `<div style="background:var(--input-bg); padding:10px; border:1px solid var(--border-color); border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                             <div>
-                                <strong style="color:var(--primary);">${data.name || 'عميل'}</strong><br>
-                                <span style="font-size:0.85rem; color:var(--text-muted);">${phone}</span><br>
+                                <strong style="color:var(--primary);">${window.escapeHTML(data.name || 'عميل')}</strong><br>
+                                <span style="font-size:0.85rem; color:var(--text-muted);">${window.escapeHTML(phone)}</span><br>
                                 <span style="font-size:0.85rem; color:var(--secondary); font-weight:bold;">المنتجات: ${data.cart.length} (بقيمة ~${total} ج)</span>
                             </div>
-                            <a href="${waLink}" target="_blank" class="btn btn-outline" style="border-color:#25D366; color:#25D366; padding:5px 10px; font-size:0.85rem; text-decoration:none;">💬 تواصل واتساب</a>
+                            ${waBtn}
                         </div>`;
                         count++;
                     }
                 });
-                if (count === 0) {
-                    container.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">لا توجد سلال متروكة حالياً.</p>';
-                } else {
-                    container.innerHTML = abandonedHtml;
-                }
+                container.innerHTML = count === 0 
+                    ? '<p style="color:var(--text-muted); font-size:0.9rem;">لا توجد سلال متروكة حالياً.</p>' 
+                    : abandonedHtml;
             });
         };
 
@@ -1719,9 +1721,9 @@ window.showUserHistory = function(userId, userName) {
             let html = '<ul style="padding-right:20px; margin:0; line-height:1.8;">';
             lowProducts.forEach(p => {
                 let stockNum = Number(p.stock);
-                let color = stockNum === 0 ? 'var(--danger)' : '#e0a800';
-                let txt = stockNum === 0 ? 'نفدت الكمية تماماً ❌' : `متبقي ${stockNum} قطع فقط ⚠️`;
-                html += `<li style="margin-bottom:8px; font-size:0.9rem;"><strong>${p.name}</strong> - <span style="color:${color};">${txt}</span> <button type="button" onclick="window.showPanel('admin'); window.editProduct('${p.id}')" style="background:transparent; border:1px solid #ccc; padding:2px 8px; cursor:pointer; border-radius:4px; font-size:0.75rem; margin-right:10px;">تحديث</button></li>`;
+                let color = stockNum <= 0 ? 'var(--danger)' : '#e0a800';
+                let txt = stockNum <= 0 ? 'نفدت الكمية تماماً ❌' : `متبقي ${stockNum} قطع فقط ⚠️`;
+                html += `<li style="margin-bottom:8px; font-size:0.9rem;"><strong>${window.escapeHTML(p.name)}</strong> - <span style="color:${color};">${txt}</span> <button type="button" onclick="window.showPanel('admin'); window.editProduct('${p.id}')" style="background:transparent; border:1px solid #ccc; padding:2px 8px; cursor:pointer; border-radius:4px; font-size:0.75rem; margin-right:10px;">تحديث</button></li>`;
             });
             html += '</ul>';
             container.innerHTML = html;
