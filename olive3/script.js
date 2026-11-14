@@ -1113,13 +1113,15 @@ try {
         window.deleteProduct = async function(id) { if(confirm('حذف المنتج نهائياً؟')) { await deleteDoc(doc(db, 'products', id)); window.showToast('تم الحذف', 'success'); } }
         window.editProduct = function(id) { const product = products.find(p => p.id === id); if(!product) return; document.getElementById('edit-product-id').value = product.id; document.getElementById('product-name').value = product.name; document.getElementById('product-price').value = product.price; document.getElementById('product-old-price').value = product.oldPrice || ''; document.getElementById('product-category').value = product.category || 'أخرى'; document.getElementById('product-stock').value = product.stock !== undefined ? product.stock : ''; document.getElementById('product-desc').value = product.description || '';
         let spBadgeEl = document.getElementById('product-special-badge'); if(spBadgeEl) spBadgeEl.value = product.specialBadge || '';
-        let cSpecsEl = document.getElementById('product-custom-specs'); if(cSpecsEl) cSpecsEl.value = product.customSpecs || ''; let vStr = ""; if(product.variantsData) { vStr = product.variantsData.map(v => `${v.name}-${v.price}`).join(', '); } document.getElementById('product-variants').value = vStr; document.getElementById('edit-product-old-image').value = (product.images && product.images.length > 0) ? JSON.stringify(product.images) : (product.imageUrl || ''); document.getElementById('product-image-url').value = ''; let pvu = document.getElementById('product-video-url'); if(pvu) pvu.value = product.videoUrl || ''; document.getElementById('admin-product-title').innerHTML = '✏️ تعديل المنتج'; document.getElementById('btn-submit-product').textContent = 'تحديث'; document.getElementById('btn-cancel-edit').style.display = 'block'; window.showPanel('admin'); window.scrollTo(0,0); }
+        let cSpecsEl = document.getElementById('product-custom-specs'); if(cSpecsEl) cSpecsEl.value = product.customSpecs || '';
+        let cCostEl = document.getElementById('product-cost-price'); if(cCostEl) cCostEl.value = product.costPrice || ''; let vStr = ""; if(product.variantsData) { vStr = product.variantsData.map(v => `${v.name}-${v.price}`).join(', '); } document.getElementById('product-variants').value = vStr; document.getElementById('edit-product-old-image').value = (product.images && product.images.length > 0) ? JSON.stringify(product.images) : (product.imageUrl || ''); document.getElementById('product-image-url').value = ''; let pvu = document.getElementById('product-video-url'); if(pvu) pvu.value = product.videoUrl || ''; document.getElementById('admin-product-title').innerHTML = '✏️ تعديل المنتج'; document.getElementById('btn-submit-product').textContent = 'تحديث'; document.getElementById('btn-cancel-edit').style.display = 'block'; window.showPanel('admin'); window.scrollTo(0,0); }
         window.cancelEditProduct = function() { document.getElementById('add-product-form').reset(); document.getElementById('edit-product-id').value = ''; document.getElementById('edit-product-old-image').value = ''; document.getElementById('admin-product-title').innerHTML = '🛒 إضافة منتج جديد'; document.getElementById('btn-submit-product').textContent = 'حفظ'; document.getElementById('btn-cancel-edit').style.display = 'none'; }
 
         let addPForm = document.getElementById('add-product-form');
         if(addPForm) { addPForm.addEventListener('submit', async (e) => { e.preventDefault(); const btnSubmit = document.getElementById('btn-submit-product'); const statusLabel = document.getElementById('upload-status'); btnSubmit.disabled = true; const id = document.getElementById('edit-product-id').value; const name = document.getElementById('product-name').value; const price = Number(document.getElementById('product-price').value); const oldPrice = document.getElementById('product-old-price').value; const category = document.getElementById('product-category').value; const description = document.getElementById('product-desc').value; const stockVal = document.getElementById('product-stock').value; const vString = document.getElementById('product-variants').value.trim(); const variantsData = parseVariants(vString); let stock = stockVal === "" ? "" : Number(stockVal); let finalImages = []; let oldImgData = document.getElementById('edit-product-old-image').value; if(oldImgData) { try { finalImages = JSON.parse(oldImgData); } catch(err) { finalImages = [oldImgData]; } } const fileInput = document.getElementById('product-image-file'); const urlInput = document.getElementById('product-image-url').value.trim(); let videoUrl = ""; let pvu = document.getElementById('product-video-url'); if(pvu) videoUrl = pvu.value.trim(); try { if(fileInput.files.length > 0) { if(statusLabel) {statusLabel.style.display = 'block'; statusLabel.textContent = `⏳ جاري الرفع`;} const imgbbKey = "D37b01ec4b27dcce48777a7b229a1fdb"; let newUploads = []; let limit = Math.min(fileInput.files.length, 4); for(let i=0; i<limit; i++) { const formData = new FormData(); formData.append('image', fileInput.files[i]); const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { newUploads.push(data.data.url); } } if(newUploads.length > 0) finalImages = newUploads; } else if (urlInput) { finalImages = [urlInput]; } else if (finalImages.length === 0) { window.showToast('اختر صورة أو ضع رابط', 'error'); btnSubmit.disabled = false; return; } let specialBadge = document.getElementById('product-special-badge') ? document.getElementById('product-special-badge').value : '';
         let customSpecs = document.getElementById('product-custom-specs') ? document.getElementById('product-custom-specs').value.trim() : '';
-        let productPayload = { createdAt: new Date().toISOString(), name, price, oldPrice, category, stock, description, images: finalImages, variantsData, imageUrl: finalImages[0], specialBadge, customSpecs }; if(videoUrl) productPayload.videoUrl = videoUrl; if(id) { await updateDoc(doc(db, 'products', id), productPayload); window.showToast('تم التحديث!', 'success'); } else { 
+        let costPrice = document.getElementById('product-cost-price') ? (Number(document.getElementById('product-cost-price').value) || 0) : 0;
+        let productPayload = { createdAt: new Date().toISOString(), name, price, oldPrice, costPrice, category, stock, description, images: finalImages, variantsData, imageUrl: finalImages[0], specialBadge, customSpecs }; if(videoUrl) productPayload.videoUrl = videoUrl; if(id) { await updateDoc(doc(db, 'products', id), productPayload); window.showToast('تم التحديث!', 'success'); } else { 
                 let fcEl = document.getElementById('product-fake-reviews-count');
                 let fCount = fcEl ? parseInt(fcEl.value) : 5;
                 productPayload.reviews = window.generateFakeReviews(name, fCount); 
@@ -2547,7 +2549,7 @@ window.showUserHistory = function(userId, userName) {
                     <div style="display:flex; align-items:center; gap:12px;">
                         ${checkHtml}
                         <div>
-                            <strong style="color:var(--primary); font-size:1.1rem;">👤 ${window.escapeHTML(data.customerName)}</strong><br>
+                            <strong style="color:var(--primary); font-size:1.1rem;">👤 ${window.escapeHTML(data.customerName)} ${window.getCustomerTagBadgeHtml ? window.getCustomerTagBadgeHtml((data.phones && data.phones.primary) || "") : ""}</strong><br>
                             <span style="font-size:0.85rem; color:var(--text-muted);">رقم: #${data.id.slice(0,6).toUpperCase()} | 📞 ${window.escapeHTML((data.phones && data.phones.primary) || '')} | 📅 ${dStr}</span><br>
                             <strong style="color:var(--secondary);">${data.totalAmount} ج</strong>
                         </div>
@@ -3998,4 +4000,563 @@ window.showUserHistory = function(userId, userName) {
         });
         Object.assign(window.PLACEHOLDER_AR_TO_EN, {
             "أدخل رقم هاتفك (واتساب)...": "Enter your WhatsApp phone number..."
+        });
+
+
+        // =========================================================================
+        // === النسخة V55: عجلة الـ 7 هدايا المخصصة + تجديد الخميس + أدوات المدير ===
+        // =========================================================================
+
+        // 1. الـ 7 هدايا الافتراضية لعجلة الحظ (مع تحديد 3 هدايا مسموح الفوز بها افتراضياً)
+        window.getDefaultWheel7Prizes = function() {
+            return [
+                { label: "خصم 5% فوري", code: "WIN5", discount: 5, allowed: true },
+                { label: "خصم 10% فوري", code: "LUCKY10", discount: 10, allowed: true },
+                { label: "شحن مجاني 🚚", code: "FREESHIP", discount: 0, allowed: false },
+                { label: "خصم 8% خاص", code: "ZAIT8", discount: 8, allowed: true },
+                { label: "عبوة 250مل هدية 🎁", code: "GIFT250", discount: 0, allowed: false },
+                { label: "خصم 20% كبرى", code: "MEGA20", discount: 20, allowed: false },
+                { label: "جركن 1 لتر هدية 🏆", code: "GIFT1L", discount: 0, allowed: false }
+            ];
+        };
+
+        window.getWheel7Prizes = function() {
+            if (Array.isArray(storeSettings.wheel7Prizes) && storeSettings.wheel7Prizes.length === 7) {
+                return storeSettings.wheel7Prizes;
+            }
+            return window.getDefaultWheel7Prizes();
+        };
+
+        // حساب دورة يوم الخميس الحالية + وقت التجديد القادم يوم الخميس
+        window.getThursdayCycleInfo = function() {
+            let now = new Date();
+            let day = now.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+            let daysSinceThu = (day - 4 + 7) % 7;
+            let lastThu = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysSinceThu, 0, 0, 0, 0);
+            let nextThu = new Date(lastThu.getTime() + 7 * 86400000);
+            let resetVer = storeSettings.wheelResetVersion || 1;
+            let cycleId = `${lastThu.getFullYear()}-${lastThu.getMonth()+1}-${lastThu.getDate()}_v${resetVer}`;
+            return { cycleId, nextThu, remMs: Math.max(0, nextThu.getTime() - now.getTime()) };
+        };
+
+        // عداد تنازلي حي ليوم الخميس القادم بالأيام والساعات والدقائق والثواني
+        window.updateWheelThursdayCountdown = function() {
+            let el = document.getElementById('wheel-thursday-countdown');
+            if (!el) return;
+            let info = window.getThursdayCycleInfo();
+            let totalSec = Math.floor(info.remMs / 1000);
+            let days = Math.floor(totalSec / 86400);
+            let hours = Math.floor((totalSec % 86400) / 3600);
+            let mins = Math.floor((totalSec % 3600) / 60);
+            let secs = totalSec % 60;
+
+            let isEn = window.currentLang === 'en';
+            el.innerHTML = isEn
+                ? `⏳ Next Spin Reset (Thursday) in: <strong>${days}d : ${hours}h : ${mins}m : ${secs}s</strong>`
+                : `⏳ تتجدد فرصتك القادمة يوم الخميس بعد: <strong style="color:var(--danger);">${days} يوم و ${hours} ساعة و ${mins} دقيقة و ${secs} ثانية</strong>`;
+        };
+        setInterval(window.updateWheelThursdayCountdown, 1000);
+
+        // رسم قائمة الـ 7 هدايا داخل نافذة العجلة للعميل
+        window.renderWheelModalContent = function(highlightIdx = -1) {
+            window.updateWheelThursdayCountdown();
+            let prizes = window.getWheel7Prizes();
+            let legendEl = document.getElementById('wheel-prizes-legend');
+            if (legendEl) {
+                legendEl.innerHTML = prizes.map((p, idx) => `
+                    <div class="wheel-prize-pill ${highlightIdx === idx ? 'winner-highlight' : ''}" id="wheel-pill-${idx}">
+                        <span style="background:var(--secondary); color:white; border-radius:50%; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem;">${idx + 1}</span>
+                        <span>${window.escapeHTML(p.label)}</span>
+                    </div>
+                `).join('');
+            }
+
+            // التحقق من رقم الواتساب المحفوظ مسبقاً (يُطلب أول مرة فقط)
+            let savedPhone = localStorage.getItem('zait_wheel_saved_phone') || '';
+            let phoneInp = document.getElementById('wheel-phone-input');
+            let savedBar = document.getElementById('wheel-saved-phone-bar');
+            if (savedPhone && phoneInp && savedBar) {
+                phoneInp.value = savedPhone;
+                phoneInp.style.display = 'none';
+                savedBar.style.display = 'block';
+                savedBar.innerHTML = window.currentLang === 'en'
+                    ? `✅ Registered WhatsApp: <strong>${window.escapeHTML(savedPhone)}</strong> <a href="#" onclick="event.preventDefault(); window.changeWheelSavedPhone();" style="color:var(--secondary); margin-left:6px;">(Change)</a>`
+                    : `✅ رقم الواتساب المسجل: <strong>${window.escapeHTML(savedPhone)}</strong> <a href="#" onclick="event.preventDefault(); window.changeWheelSavedPhone();" style="color:var(--secondary); margin-right:6px;">(تغيير الرقم)</a>`;
+            } else if (phoneInp && savedBar) {
+                phoneInp.style.display = 'block';
+                savedBar.style.display = 'none';
+            }
+
+            // التحقق مما إذا كان العميل قد لف العجلة في دورة الخميس الحالية
+            let info = window.getThursdayCycleInfo();
+            let lastCycle = localStorage.getItem('zait_wheel_last_cycle');
+            let lastPrizeJson = localStorage.getItem('zait_wheel_last_prize');
+            let btn = document.getElementById('btn-spin-now');
+            let resArea = document.getElementById('wheel-result-area');
+
+            if (lastCycle === info.cycleId && lastPrizeJson) {
+                try {
+                    let won = JSON.parse(lastPrizeJson);
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = window.currentLang === 'en' ? '✅ Used this week (Resets Thursday)' : '✅ حصلت على هديتك هذا الأسبوع (تتجدد الخميس)';
+                        btn.style.opacity = '0.65';
+                    }
+                    if (resArea) {
+                        resArea.style.display = 'block';
+                        resArea.innerHTML = window.currentLang === 'en'
+                            ? `🎁 Your Prize This Week: <strong>${window.escapeHTML(won.label)}</strong> (Code: <strong>${window.escapeHTML(won.code)}</strong>)<br><small>Come back on Thursday for a new spin!</small>`
+                            : `🎁 هديتك في هذا الأسبوع: <strong>${window.escapeHTML(won.label)}</strong> (الكود: <strong>${window.escapeHTML(won.code)}</strong>)<br><small>انتظر تجديد الفرصة يوم الخميس القادم لتلف العجلة من جديد!</small>`;
+                    }
+                } catch (e) {}
+            } else {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = window.currentLang === 'en' ? '🎲 Spin the Wheel Now!' : '🎲 لف العجلة الآن!';
+                    btn.style.opacity = '1';
+                }
+                if (resArea && highlightIdx === -1) {
+                    resArea.style.display = 'none';
+                }
+            }
+        };
+
+        window.changeWheelSavedPhone = function() {
+            localStorage.removeItem('zait_wheel_saved_phone');
+            let phoneInp = document.getElementById('wheel-phone-input');
+            let savedBar = document.getElementById('wheel-saved-phone-bar');
+            if (phoneInp) {
+                phoneInp.style.display = 'block';
+                phoneInp.value = '';
+                phoneInp.focus();
+            }
+            if (savedBar) savedBar.style.display = 'none';
+        };
+
+        window.openSpinWheelModal = function() {
+            let modal = document.getElementById('spin-wheel-modal');
+            if (modal) {
+                window.renderWheelModalContent(-1);
+                modal.style.display = 'flex';
+            }
+        };
+
+        window.spinTheWheelNow = async function() {
+            let info = window.getThursdayCycleInfo();
+            if (localStorage.getItem('zait_wheel_last_cycle') === info.cycleId) {
+                window.showToast(window.currentLang === 'en' ? 'You already spun this week! Next spin is on Thursday.' : 'لقد استخدمت فرصتك لهذا الأسبوع! تتجدد الفرصة يوم الخميس القادم.', 'info');
+                window.renderWheelModalContent(-1);
+                return;
+            }
+
+            let savedPhone = localStorage.getItem('zait_wheel_saved_phone') || '';
+            let phoneInp = document.getElementById('wheel-phone-input');
+            let phone = savedPhone || (phoneInp ? phoneInp.value.trim() : '');
+
+            if (!phone || phone.replace(/\D/g, '').length < 9) {
+                window.showToast(window.currentLang === 'en' ? 'Please enter your WhatsApp phone number first!' : 'يرجى إدخال رقم الواتساب الخاص بك أولاً!', 'error');
+                if (phoneInp) { phoneInp.style.display = 'block'; phoneInp.focus(); }
+                return;
+            }
+
+            // حفظ رقم الواتساب حتى لا يضطر العميل لكتابته مرة أخرى في الأسابيع القادمة
+            localStorage.setItem('zait_wheel_saved_phone', phone);
+
+            let prizes = window.getWheel7Prizes();
+            // اختيار الهدية حصرياً من الهدايا التي حددها الأدمن كـ (مسموح الفوز بها)
+            let allowedIndices = [];
+            prizes.forEach((p, idx) => { if (p.allowed) allowedIndices.push(idx); });
+            if (allowedIndices.length === 0) allowedIndices = [0];
+
+            let winningIndex = allowedIndices[Math.floor(Math.random() * allowedIndices.length)];
+            let winningPrize = prizes[winningIndex];
+
+            let btn = document.getElementById('btn-spin-now');
+            let wheel = document.getElementById('wheel-visual-circle');
+            let resArea = document.getElementById('wheel-result-area');
+            if (btn) btn.disabled = true;
+
+            // حساب زاوية الدوران لتقف العجلة على رقم الهدية الفائزة
+            let sliceDeg = 360 / 7;
+            let targetSliceCenter = (winningIndex * sliceDeg) + (sliceDeg / 2);
+            let extraSpins = 5 * 360;
+            let finalDeg = extraSpins + (360 - targetSliceCenter);
+            if (wheel) {
+                wheel.style.transition = 'none';
+                wheel.style.transform = 'rotate(0deg)';
+                setTimeout(() => {
+                    wheel.style.transition = 'transform 3.6s cubic-bezier(0.15, 0.85, 0.15, 1)';
+                    wheel.style.transform = `rotate(${finalDeg}deg)`;
+                }, 30);
+            }
+
+            setTimeout(async () => {
+                // تطبيق الجائزة للعميل
+                let winDisc = Number(winningPrize.discount) || 0;
+                let winCode = String(winningPrize.code || 'LUCKY').trim().toUpperCase();
+                if (winDisc > 0) {
+                    currentDiscountPercent = winDisc;
+                    appliedPromoCode = winCode;
+                } else if (winCode === 'FREESHIP') {
+                    currentShippingCost = 0;
+                    appliedPromoCode = winCode;
+                } else {
+                    appliedPromoCode = `${winCode} (${winningPrize.label})`;
+                }
+                window.updateInvoiceUI();
+
+                localStorage.setItem('zait_wheel_last_cycle', info.cycleId);
+                localStorage.setItem('zait_wheel_last_prize', JSON.stringify(winningPrize));
+
+                window.renderWheelModalContent(winningIndex);
+                if (resArea) {
+                    resArea.style.display = 'block';
+                    resArea.innerHTML = window.currentLang === 'en'
+                        ? `🎉 <strong>Congrats! You won Prize #${winningIndex + 1}:</strong><br><span style="font-size:1.05rem; font-weight:900;">${window.escapeHTML(winningPrize.label)}</span><br>Code: <strong style="background:white; padding:2px 8px; border-radius:6px; border:1px dashed #166534;">${window.escapeHTML(winCode)}</strong> (Applied automatically!)`
+                        : `🎉 <strong>مبروك! فزت بالهدية رقم (${winningIndex + 1}):</strong><br><span style="font-size:1.05rem; font-weight:900;">${window.escapeHTML(winningPrize.label)}</span><br>الكود: <strong style="background:white; padding:2px 8px; border-radius:6px; border:1px dashed #166534;">${window.escapeHTML(winCode)}</strong> (تم تفعيله تلقائياً في طلبك!)`;
+                }
+
+                try {
+                    await addDoc(collection(db, 'wheel_leads'), {
+                        phone: phone,
+                        prizeCode: `${winningPrize.label} (${winCode})`,
+                        discount: winDisc,
+                        date: new Date().toISOString()
+                    });
+                } catch (e) {}
+            }, 3700);
+        };
+
+        // رسم محرر الهدايا الـ 7 داخل الإعدادات المحمية للأدمن
+        window.renderAdminWheel7PrizesEditor = function() {
+            let cont = document.getElementById('admin-wheel-7prizes-editor');
+            if (!cont) return;
+            let prizes = window.getWheel7Prizes();
+            let html = '';
+            prizes.forEach((p, idx) => {
+                html += `<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; background:var(--input-bg); padding:6px 8px; border-radius:8px; border:1px solid var(--border-color);">
+                    <strong style="color:var(--primary); font-size:0.8rem; min-width:22px;">#${idx + 1}</strong>
+                    <label style="display:flex; align-items:center; gap:4px; font-size:0.78rem; color:#166534; font-weight:bold; cursor:pointer; margin:0;">
+                        <input type="checkbox" class="wheel-prize-allowed-cb" data-idx="${idx}" ${p.allowed ? 'checked' : ''} style="width:16px; height:16px; margin:0; accent-color:#166534;">
+                        <span>مسموح يربحها</span>
+                    </label>
+                    <input type="text" class="wheel-prize-label-inp" data-idx="${idx}" value="${window.escapeHTML(p.label)}" placeholder="اسم الهدية" style="margin:0; flex:1.5; min-width:110px; padding:5px 8px; font-size:0.8rem;">
+                    <input type="text" class="wheel-prize-code-inp" data-idx="${idx}" value="${window.escapeHTML(p.code)}" placeholder="الكود" style="margin:0; flex:1; max-width:90px; padding:5px 8px; font-size:0.8rem;">
+                    <input type="number" class="wheel-prize-disc-inp" data-idx="${idx}" value="${Number(p.discount) || 0}" placeholder="الخصم %" style="margin:0; max-width:70px; padding:5px 8px; font-size:0.8rem;" title="نسبة الخصم % (اكتب 0 لو شحن مجاني أو هدية عينية)">
+                </div>`;
+            });
+            cont.innerHTML = html;
+        };
+
+        window.collectAdminWheel7PrizesFromDOM = function() {
+            let labels = document.querySelectorAll('.wheel-prize-label-inp');
+            if (!labels || labels.length !== 7) return window.getWheel7Prizes();
+            let result = [];
+            for (let i = 0; i < 7; i++) {
+                let lbl = document.querySelector(`.wheel-prize-label-inp[data-idx="${i}"]`);
+                let cod = document.querySelector(`.wheel-prize-code-inp[data-idx="${i}"]`);
+                let dsc = document.querySelector(`.wheel-prize-disc-inp[data-idx="${i}"]`);
+                let alw = document.querySelector(`.wheel-prize-allowed-cb[data-idx="${i}"]`);
+                result.push({
+                    label: lbl ? lbl.value.trim() : `هدية ${i+1}`,
+                    code: cod ? cod.value.trim().toUpperCase() : `WIN${i+1}`,
+                    discount: dsc ? (Number(dsc.value) || 0) : 0,
+                    allowed: alw ? alw.checked : false
+                });
+            }
+            return result;
+        };
+
+        window.resetAllUsersWheelSpinsNow = async function() {
+            if (!confirm('هل تريد تجديد فرصة لف العجلة لجميع العملاء الآن قبل يوم الخميس؟')) return;
+            let nextVer = (Number(storeSettings.wheelResetVersion) || 1) + 1;
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), { wheelResetVersion: nextVer });
+                localStorage.removeItem('zait_wheel_last_cycle');
+                localStorage.removeItem('zait_wheel_last_prize');
+                window.showToast('تم تجديد فرصة العجلة لجميع العملاء فوراً 🔄', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء التجديد', 'error');
+            }
+        };
+
+        // 2. حاسبة صافي الربح الفعلي للمدير (Net Profit Tracker)
+        window.renderNetProfitStat = function() {
+            let card = document.getElementById('admin-net-profit-card');
+            let statEl = document.getElementById('stat-net-profit');
+            if (card) card.style.display = storeSettings.enableNetProfit !== false ? 'block' : 'none';
+            if (!statEl || storeSettings.enableNetProfit === false) return;
+
+            let revReset = storeSettings.revenueResetDate ? new Date(storeSettings.revenueResetDate) : new Date(0);
+            let totalNet = 0;
+            adminOrdersArray.forEach(o => {
+                let st = String(o.status || '');
+                if (st.includes('رفض') || st.includes('لغى')) return;
+                if (new Date(o.orderDate) <= revReset) return;
+                let orderCost = 0;
+                (o.items || []).forEach(it => {
+                    let prod = products.find(p => p.id === it.id || p.name === it.name);
+                    let unitCost = (prod && prod.costPrice) ? Number(prod.costPrice) : 0;
+                    orderCost += unitCost * Number(it.quantity || 1);
+                });
+                let revWithoutShip = Number(o.totalAmount || 0) - Number(o.shippingCost || 0);
+                totalNet += Math.max(0, revWithoutShip - orderCost);
+            });
+            statEl.textContent = `${totalNet.toLocaleString()} ج`;
+        };
+
+        // 3. تعديل الأسعار الجماعي بضغطة زر (Bulk Price Editor)
+        window.executeBulkPriceUpdate = async function() {
+            let op = (document.getElementById('bulk-price-op') || {}).value || 'inc';
+            let type = (document.getElementById('bulk-price-type') || {}).value || 'pct';
+            let val = Number((document.getElementById('bulk-price-val') || {}).value || 0);
+            if (!val || val <= 0) {
+                window.showToast('يرجى إدخال قيمة صحيحة للتعديل الجماعي', 'error');
+                return;
+            }
+            let actionDesc = `${op === 'inc' ? 'زيادة' : 'تخفيض'} أسعار جميع المنتجات (${products.length} منتج) بمقدار ${val} ${type === 'pct' ? '%' : 'جنيه'}`;
+            if (!confirm(`هل أنت متأكد من ${actionDesc} دفعة واحدة؟`)) return;
+
+            try {
+                for (let p of products) {
+                    let curP = Number(p.price) || 0;
+                    let delta = type === 'pct' ? Math.round(curP * (val / 100)) : val;
+                    let newP = op === 'inc' ? (curP + delta) : Math.max(1, curP - delta);
+                    let updatedVariants = (p.variantsData || []).map(v => {
+                        let vp = Number(v.price) || 0;
+                        let vd = type === 'pct' ? Math.round(vp * (val / 100)) : val;
+                        return { ...v, price: op === 'inc' ? (vp + vd) : Math.max(1, vp - vd) };
+                    });
+                    await updateDoc(doc(db, 'products', p.id), { price: newP, variantsData: updatedVariants });
+                }
+                window.showToast('تم تحديث أسعار جميع المنتجات بنجاح 🚀', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء تحديث الأسعار', 'error');
+            }
+        };
+
+        // 4. تصنيف العملاء (VIP / حظر) + إرسال حالة الطلب عبر واتساب من داخل تفاصيل الطلب
+        window.getCustomerTagBadgeHtml = function(phone) {
+            if (storeSettings.enableCustomerTags === false || !phone) return '';
+            let clean = String(phone).replace(/\D/g, '');
+            let tagsMap = storeSettings.customerTagsMap || {};
+            let tagObj = tagsMap[clean];
+            if (!tagObj) return '';
+            if (tagObj.type === 'vip') return `<span class="cust-tag-vip" title="${window.escapeHTML(tagObj.note || '')}">🌟 VIP</span>`;
+            if (tagObj.type === 'blacklist') return `<span class="cust-tag-blacklist" title="${window.escapeHTML(tagObj.note || '')}">🚫 حظر / لا يستلم</span>`;
+            return '';
+        };
+
+        window.setCustomerTag = async function(phone, type) {
+            let clean = String(phone || '').replace(/\D/g, '');
+            if (!clean) return;
+            let tagsMap = { ...(storeSettings.customerTagsMap || {}) };
+            if (type === 'clear') {
+                delete tagsMap[clean];
+            } else {
+                let note = prompt(type === 'vip' ? 'ملاحظة عن العميل المميز (اختياري):' : 'سبب وضع العميل في قائمة الحظر (مثال: يرفض الاستلام):', (tagsMap[clean] && tagsMap[clean].note) || '');
+                if (note === null) return;
+                tagsMap[clean] = { type, note: note.trim() };
+            }
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), { customerTagsMap: tagsMap });
+                window.showToast('تم تحديث تصنيف العميل بنجاح ✅', 'success');
+            } catch (e) {}
+        };
+
+        window.sendOrderWhatsAppStatus = function(orderId) {
+            let o = adminOrdersArray.find(ord => ord.id === orderId);
+            if (!o) return;
+            let rawPhone = (o.phones && o.phones.primary) ? String(o.phones.primary).replace(/\D/g, '') : '';
+            if (rawPhone && !rawPhone.startsWith('20') && rawPhone.length >= 10) rawPhone = '20' + rawPhone;
+            let itemsStr = (o.items || []).map(i => `${i.name} (${i.quantity})`).join(' + ');
+            let msg = `مرحباً ${o.customerName} 🌿\nبخصوص طلبك رقم #${o.id.slice(0,6).toUpperCase()} من *متجر زيت الشجرة المباركة*:\n📦 المنتجات: ${itemsStr}\n💰 الإجمالي: ${o.totalAmount} ج\n📌 حالة الطلب الحالية: *${o.status}*\nنسعد دائماً بخدمتك!`;
+            window.open(`https://wa.me/${rawPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+        };
+
+        const origOpenAdminOrderModalV54 = window.openAdminOrderModal;
+        window.openAdminOrderModal = function(id) {
+            origOpenAdminOrderModalV54(id);
+            let o = adminOrdersArray.find(ord => ord.id === id);
+            let aom = document.getElementById('aom-content');
+            if (!o || !aom) return;
+            let phone = (o.phones && o.phones.primary) || '';
+            let clean = String(phone).replace(/\D/g, '');
+            let tagObj = (storeSettings.customerTagsMap || {})[clean];
+
+            let extraHtml = '<div style="margin-top:12px; padding-top:12px; border-top:1px dashed var(--border-color); display:flex; flex-direction:column; gap:8px;">';
+            if (storeSettings.enableWaOrderStatus !== false) {
+                extraHtml += `<button type="button" class="btn" style="background:#25D366; width:100%;" onclick="window.sendOrderWhatsAppStatus('${o.id}')">📲 إرسال تحديث حالة الطلب للعميل عبر واتساب</button>`;
+            }
+            if (storeSettings.enableCustomerTags !== false) {
+                let noteBanner = tagObj ? `<div style="padding:8px; border-radius:6px; background:${tagObj.type==='vip'?'#fef3c7':'#fee2e2'}; color:${tagObj.type==='vip'?'#92400e':'#991b1b'}; font-weight:bold; font-size:0.85rem;">${tagObj.type==='vip'?'🌟 عميل VIP مميز':'🚫 تنبيه: هذا العميل في قائمة الحظر'} ${tagObj.note ? ' - ' + window.escapeHTML(tagObj.note) : ''}</div>` : '';
+                extraHtml += `${noteBanner}
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-outline" style="flex:1; font-size:0.8rem; border-color:#d97706; color:#d97706; padding:6px;" onclick="window.setCustomerTag('${phone}', 'vip')">🌟 تمييز كـ VIP</button>
+                    <button type="button" class="btn btn-outline" style="flex:1; font-size:0.8rem; border-color:#dc2626; color:#dc2626; padding:6px;" onclick="window.setCustomerTag('${phone}', 'blacklist')">🚫 حظر / لا يستلم</button>
+                    ${tagObj ? `<button type="button" class="btn btn-outline" style="font-size:0.8rem; padding:6px;" onclick="window.setCustomerTag('${phone}', 'clear')">إلغاء التصنيف</button>` : ''}
+                </div>`;
+            }
+            extraHtml += '</div>';
+            aom.innerHTML += extraHtml;
+        };
+
+        // 5. نظام دعوة الأصدقاء (Referral Link)
+        window.getCustomerReferralLink = function() {
+            let baseUrl = window.location.origin + window.location.pathname;
+            let refCode = currentUser ? (currentUser.uid || '').slice(0, 6).toUpperCase() : 'FRIEND';
+            return `${baseUrl}?utm_source=referral&ref=${refCode}`;
+        };
+
+        window.shareReferralLinkWhatsApp = function() {
+            let link = window.getCustomerReferralLink();
+            let txt = window.currentLang === 'en'
+                ? `Try the finest 100% pure Sinai Extra Virgin Olive Oil from Blessed Tree Oil Store 🌿 Order now via my link: ${link}`
+                : `جرب أفضل زيت زيتون سيناوي بكر ممتاز عصره أولى على البارد 100% من متجر زيت الشجرة المباركة 🌿 اطلب الآن من خلال رابط الدعوة الخاص بي: ${link}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
+        };
+
+        window.copyReferralLink = function() {
+            let link = window.getCustomerReferralLink();
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(link);
+            }
+            window.showToast(window.currentLang === 'en' ? 'Referral link copied! 📋' : 'تم نسخ رابط الدعوة بنجاح! 📋', 'success');
+        };
+
+        // 6. القصص المصورة التفاعلية (Instagram-Style Stories)
+        let instaStoryInterval = null;
+        window.openInstaStoryModal = function(product) {
+            if (!product) return;
+            let modal = document.getElementById('insta-story-modal');
+            let img = document.getElementById('insta-story-img');
+            let title = document.getElementById('insta-story-title');
+            let desc = document.getElementById('insta-story-desc');
+            let act = document.getElementById('insta-story-action');
+            let prog = document.getElementById('insta-story-progress');
+            if (!modal || !img || !title || !desc || !act || !prog) return;
+
+            img.src = (product.images && product.images[0]) ? product.images[0] : (product.imageUrl || '1000392409.jpeg');
+            title.textContent = product.name;
+            desc.textContent = `${product.price} ${window.currentLang === 'en' ? 'EGP' : 'ج'} - ${(product.description || '').slice(0, 90)}`;
+            act.innerHTML = `<button type="button" class="btn btn-full" onclick="window.closeInstaStoryModal(); window.openProductModal('${product.id}')">${window.currentLang === 'en' ? '🛒 Order This Product Now' : '🛒 اطلب المنتج الآن'}</button>`;
+            modal.style.display = 'flex';
+
+            let pct = 0;
+            prog.style.width = '0%';
+            if (instaStoryInterval) clearInterval(instaStoryInterval);
+            instaStoryInterval = setInterval(() => {
+                pct += 2;
+                prog.style.width = pct + '%';
+                if (pct >= 100) {
+                    window.closeInstaStoryModal();
+                }
+            }, 100);
+        };
+
+        window.closeInstaStoryModal = function() {
+            if (instaStoryInterval) clearInterval(instaStoryInterval);
+            let modal = document.getElementById('insta-story-modal');
+            if (modal) modal.style.display = 'none';
+        };
+
+        // ربط الشريط المصور بالقصص التفاعلية عند تفعيلها
+        const origRenderVisualBarV54 = window.renderVisualBar;
+        window.renderVisualBar = function() {
+            origRenderVisualBarV54();
+            if (storeSettings.enableInstaStories !== false && storeSettings.visualBarMode === 'products') {
+                let items = document.querySelectorAll('#visual-scroll-bar .visual-item');
+                items.forEach((el, idx) => {
+                    if (products[idx]) {
+                        el.onclick = () => window.openInstaStoryModal(products[idx]);
+                    }
+                });
+            }
+        };
+
+        // 7. تطبيق ثيمات المواسم وربط إعدادات V55
+        window.applyStoreTheme = function() {
+            document.body.classList.remove('theme-ramadan', 'theme-blackfriday', 'theme-luxury');
+            if (storeSettings.enableSeasonalThemes !== false && storeSettings.storeThemeName && storeSettings.storeThemeName !== 'default') {
+                document.body.classList.add('theme-' + storeSettings.storeThemeName);
+            }
+        };
+
+        const origRenderAdminOrdersV54 = window.renderAdminOrdersUI;
+        window.renderAdminOrdersUI = function() {
+            origRenderAdminOrdersV54();
+            if (isCurrentUserAdmin) window.renderNetProfitStat();
+        };
+
+        const prevApplySettingsV54 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV54();
+            if (isCurrentUserAdmin) {
+                window.renderAdminWheel7PrizesEditor();
+                let setC = (id, val, def = true) => { let el = document.getElementById(id); if (el) el.checked = val !== undefined ? Boolean(val) : def; };
+                setC('setting-enable-net-profit', storeSettings.enableNetProfit, true);
+                setC('setting-enable-wa-order-status', storeSettings.enableWaOrderStatus, true);
+                setC('setting-enable-customer-tags', storeSettings.enableCustomerTags, true);
+                setC('setting-enable-referral', storeSettings.enableReferral, true);
+                setC('setting-enable-insta-stories', storeSettings.enableInstaStories, true);
+                setC('setting-enable-seo-articles', storeSettings.enableSeoArticles, true);
+                setC('setting-enable-seasonal-themes', storeSettings.enableSeasonalThemes, true);
+                setC('setting-enable-bulk-price', storeSettings.enableBulkPrice, true);
+
+                let thSel = document.getElementById('setting-store-theme-name');
+                if (thSel) thSel.value = storeSettings.storeThemeName || 'default';
+                let bulkBox = document.getElementById('admin-bulk-price-tool-box');
+                if (bulkBox) bulkBox.style.display = storeSettings.enableBulkPrice !== false ? 'flex' : 'none';
+            }
+
+            let seoSec = document.getElementById('home-seo-benefits-section');
+            if (seoSec) seoSec.style.display = storeSettings.enableSeoArticles !== false ? 'block' : 'none';
+
+            let refBox = document.getElementById('loyalty-referral-box');
+            if (refBox) refBox.style.display = storeSettings.enableReferral !== false ? 'block' : 'none';
+
+            window.applyStoreTheme();
+            if (isCurrentUserAdmin) window.renderNetProfitStat();
+            if (window.currentLang === 'en') window.translateDOM(document.body);
+        };
+
+        const prevSaveSettingsV54 = window.saveSettings;
+        window.saveSettings = async function() {
+            const getC = (id, def = true) => { let el = document.getElementById(id); return el ? el.checked : def; };
+            let thSel = document.getElementById('setting-store-theme-name');
+            let collectedPrizes = window.collectAdminWheel7PrizesFromDOM();
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    wheel7Prizes: collectedPrizes,
+                    enableNetProfit: getC('setting-enable-net-profit', true),
+                    enableWaOrderStatus: getC('setting-enable-wa-order-status', true),
+                    enableCustomerTags: getC('setting-enable-customer-tags', true),
+                    enableReferral: getC('setting-enable-referral', true),
+                    enableInstaStories: getC('setting-enable-insta-stories', true),
+                    enableSeoArticles: getC('setting-enable-seo-articles', true),
+                    enableSeasonalThemes: getC('setting-enable-seasonal-themes', true),
+                    storeThemeName: thSel ? thSel.value : 'default',
+                    enableBulkPrice: getC('setting-enable-bulk-price', true)
+                });
+            } catch (e) {}
+            await prevSaveSettingsV54();
+        };
+
+        // إضافة مصطلحات V55 للقاموس الإنجليزي
+        Object.assign(window.FULL_AR_TO_EN, {
+            "عجلة الحظ الأسبوعية (7 هدايا)": "Weekly Spin & Win (7 Prizes)",
+            "فوائد زيت الزيتون السيناوي البكر وطريقة الاستخدام الصحيحة": "Benefits of Sinai Extra Virgin Olive Oil & Best Usage",
+            "عصرة أولى على البارد 100%": "100% First Cold Press",
+            "غني بمضادات الأكسدة الطبيعية والأوميجا 3 و 9 لدعم صحة القلب والمناعة والهضم.": "Rich in natural antioxidants and Omega 3 & 9 to support heart health, immunity, and digestion.",
+            "الاستخدام اليومي المثالي": "Ideal Daily Usage",
+            "ملعقة صباحاً على الريق أو إضافته للسلطات والجبن والفول ليمنحك طاقة ونقاء طبيعي.": "One spoonful in the morning or added to salads and dishes for natural energy and purity.",
+            "للشعر والبشرة": "For Hair & Skin Care",
+            "يرطب البشرة بعمق ويغذي بصيلات الشعر بفضل فيتامين E الطبيعي بدون أي كيماويات.": "Deeply moisturizes skin and nourishes hair follicles with natural Vitamin E.",
+            "ادعُ أصدقاءك واكسب نقاط ومكافآت!": "Invite Friends & Earn Rewards!",
+            "شارك رابط الدعوة الخاص بك مع أصدقائك على واتساب، واحصل على نقاط ولاء إضافية عند طلبهم من المتجر!": "Share your referral link with friends on WhatsApp and earn bonus loyalty points on their orders!",
+            "مشاركة الرابط عبر واتساب": "Share Link via WhatsApp",
+            "نسخ رابط الدعوة": "Copy Referral Link"
+        });
+        Object.assign(window.PLACEHOLDER_AR_TO_EN, {
+            "أدخل رقم هاتفك (واتساب) لأول مرة فقط...": "Enter your WhatsApp number (first time only)..."
         });

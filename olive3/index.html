@@ -183,19 +183,42 @@
     </button>
 
     <div id="spin-wheel-modal" class="modal-overlay" style="z-index: 5700;">
-        <div class="modal-content" style="max-width: 400px; text-align: center; border: 3px solid var(--secondary); padding-bottom: 20px;">
+        <div class="modal-content" style="max-width: 440px; text-align: center; border: 3px solid var(--secondary); padding-bottom: 20px;">
             <button type="button" class="modal-close" onclick="document.getElementById('spin-wheel-modal').style.display='none'">X</button>
-            <h2 style="color:var(--primary); margin:0 0 5px 0;">🎡 <span class="translatable">عجلة الحظ والمكافآت</span></h2>
-            <p style="color:var(--text-muted); font-size:0.88rem; margin:0 0 10px 0;" class="translatable">أدخل رقم الواتساب الخاص بك ولف العجلة لتربح كود خصم فوري على طلبك!</p>
-            <div style="font-size:1.4rem; color:var(--danger); margin-bottom:-10px; position:relative; z-index:2;">▼</div>
-            <div class="wheel-visual-circle" id="wheel-visual-circle">
+            <h2 style="color:var(--primary); margin:0 0 4px 0;">🎡 <span class="translatable">عجلة الحظ الأسبوعية (7 هدايا)</span></h2>
+            <div id="wheel-thursday-countdown" class="wheel-thursday-countdown">⏳ تتجدد الفرصة كل يوم خميس!</div>
+            <div style="font-size:1.5rem; color:var(--danger); margin-bottom:-12px; position:relative; z-index:2;">▼</div>
+            <div class="wheel-visual-circle-7" id="wheel-visual-circle">
+                <span class="wheel-slice-num" style="top:14px; right:72px;">1</span>
+                <span class="wheel-slice-num" style="top:52px; right:22px;">2</span>
+                <span class="wheel-slice-num" style="bottom:48px; right:26px;">3</span>
+                <span class="wheel-slice-num" style="bottom:14px; left:96px;">4</span>
+                <span class="wheel-slice-num" style="bottom:48px; left:26px;">5</span>
+                <span class="wheel-slice-num" style="top:52px; left:22px;">6</span>
+                <span class="wheel-slice-num" style="top:14px; left:72px;">7</span>
                 <div class="wheel-center-knob">🎁</div>
             </div>
+            <div id="wheel-prizes-legend" class="wheel-prizes-legend"></div>
+            <div id="wheel-saved-phone-bar" style="display:none; font-size:0.82rem; color:var(--primary); margin-bottom:8px; background:var(--input-bg); padding:6px 10px; border-radius:8px;"></div>
             <div id="wheel-form-area">
-                <input type="tel" id="wheel-phone-input" placeholder="أدخل رقم هاتفك (واتساب)..." style="margin-bottom:10px; text-align:center;">
+                <input type="tel" id="wheel-phone-input" placeholder="أدخل رقم هاتفك (واتساب) لأول مرة فقط..." style="margin-bottom:10px; text-align:center;">
                 <button type="button" class="btn btn-full" id="btn-spin-now" onclick="window.spinTheWheelNow()" style="background:linear-gradient(90deg, #ff6b00, #c59b27); font-size:1.05rem;">🎲 <span class="translatable">لف العجلة الآن!</span></button>
             </div>
             <div id="wheel-result-area" style="display:none; margin-top:12px; padding:12px; background:#f0fdf4; border:1px solid #22c55e; border-radius:10px; color:#166534;"></div>
+        </div>
+    </div>
+
+    <!-- نافذة القصص التفاعلية (Instagram-Style Story Modal) -->
+    <div id="insta-story-modal" class="modal-overlay" style="z-index: 5800; background: rgba(0,0,0,0.92);">
+        <div class="modal-content" style="max-width: 380px; background: #111; color: white; border: 2px solid var(--secondary); padding: 15px; text-align: center; position: relative;">
+            <div style="width:100%; height:4px; background:rgba(255,255,255,0.25); border-radius:4px; overflow:hidden; margin-bottom:10px;">
+                <div id="insta-story-progress" style="width:0%; height:100%; background:var(--secondary); transition:width 0.1s linear;"></div>
+            </div>
+            <button type="button" class="modal-close" style="color:white; background:rgba(255,255,255,0.2);" onclick="window.closeInstaStoryModal()">X</button>
+            <img id="insta-story-img" src="1000392409.jpeg" style="width:100%; height:290px; object-fit:cover; border-radius:12px; margin-bottom:12px;">
+            <h3 id="insta-story-title" style="color:var(--secondary); margin:0 0 6px 0;"></h3>
+            <p id="insta-story-desc" style="font-size:0.88rem; color:#ddd; margin:0 0 12px 0;"></p>
+            <div id="insta-story-action"></div>
         </div>
     </div>
 
@@ -338,6 +361,28 @@
             <div class="filter-btns" id="category-filters-container"></div>
             <div class="products-grid" id="products-container"><h3 style="text-align: center; grid-column: 1 / -1; color: var(--primary);" class="translatable">جاري تحميل المنتجات... ⏳</h3></div>
             <div id="loading-more-indicator" style="text-align:center; padding:20px; color:var(--primary); font-weight:bold; display:none;" class="translatable">جاري تحميل المزيد من المنتجات... ⏳</div>
+            <div id="home-seo-benefits-section" class="seo-benefits-section" style="display:none;">
+                <div onclick="let el=document.getElementById('home-seo-benefits-body'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                    <h3 style="margin:0; color:var(--primary); font-size:1.02rem;">📖 <span class="translatable">فوائد زيت الزيتون السيناوي البكر وطريقة الاستخدام الصحيحة</span></h3>
+                    <span style="color:var(--secondary); font-weight:bold;">▼</span>
+                </div>
+                <div id="home-seo-benefits-body" style="display:none; margin-top:10px;">
+                    <div class="seo-benefits-grid">
+                        <div class="seo-benefit-card">
+                            <strong style="color:var(--primary); display:block; margin-bottom:4px;">🌿 <span class="translatable">عصرة أولى على البارد 100%</span></strong>
+                            <span style="font-size:0.84rem; color:var(--text-muted);" class="translatable">غني بمضادات الأكسدة الطبيعية والأوميجا 3 و 9 لدعم صحة القلب والمناعة والهضم.</span>
+                        </div>
+                        <div class="seo-benefit-card">
+                            <strong style="color:var(--primary); display:block; margin-bottom:4px;">🥄 <span class="translatable">الاستخدام اليومي المثالي</span></strong>
+                            <span style="font-size:0.84rem; color:var(--text-muted);" class="translatable">ملعقة صباحاً على الريق أو إضافته للسلطات والجبن والفول ليمنحك طاقة ونقاء طبيعي.</span>
+                        </div>
+                        <div class="seo-benefit-card">
+                            <strong style="color:var(--primary); display:block; margin-bottom:4px;">✨ <span class="translatable">للشعر والبشرة</span></strong>
+                            <span style="font-size:0.84rem; color:var(--text-muted);" class="translatable">يرطب البشرة بعمق ويغذي بصيلات الشعر بفضل فيتامين E الطبيعي بدون أي كيماويات.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="panel" id="recently-viewed-panel">
@@ -369,6 +414,14 @@
                     <li><span class="translatable">تتم إضافة النقاط إلى حسابك تلقائياً بمجرد استلامك للطلب.</span></li>
                     <li><span class="translatable">يمكنك استبدال كل</span> <strong style="color:var(--danger);">50 نقطة</strong> <span class="translatable">بخصم فوري قيمته</span> <strong id="loyalty-redeem-text">10</strong> <span class="translatable">جنيه على طلبك القادم.</span></li>
                 </ul>
+            </div>
+            <div id="loyalty-referral-box" style="background:var(--input-bg); padding:18px; border-radius:12px; border:2px dashed var(--secondary); margin-top:15px; text-align:center;">
+                <h3 style="color:var(--primary); margin:0 0 8px 0;">🤝 <span class="translatable">ادعُ أصدقاءك واكسب نقاط ومكافآت!</span></h3>
+                <p style="font-size:0.88rem; color:var(--text-muted); margin:0 0 12px 0;" class="translatable">شارك رابط الدعوة الخاص بك مع أصدقائك على واتساب، واحصل على نقاط ولاء إضافية عند طلبهم من المتجر!</p>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+                    <button type="button" class="btn" style="background:#25D366; flex:1; min-width:170px;" onclick="window.shareReferralLinkWhatsApp()">📲 <span class="translatable">مشاركة الرابط عبر واتساب</span></button>
+                    <button type="button" class="btn btn-outline" style="flex:1; min-width:140px;" onclick="window.copyReferralLink()">📋 <span class="translatable">نسخ رابط الدعوة</span></button>
+                </div>
             </div>
         </div>
 
@@ -676,6 +729,7 @@
                 <div class="dash-card"><h3>👥 الزيارات</h3><div class="stat" id="stat-visits">0</div></div>
                 <div class="dash-card"><h3>📦 الطلبات</h3><div class="stat" id="stat-orders">0</div></div>
                 <div class="dash-card"><h3>💰 الأرباح</h3><div class="stat" id="stat-revenue" style="color: #28a745;">0 ج</div></div>
+                <div class="dash-card" id="admin-net-profit-card"><h3>💎 صافي الربح الفعلي</h3><div class="stat" id="stat-net-profit" style="color: #028090;">0 ج</div></div>
             </div>
             <div style="display: flex; gap:10px; margin-top: 15px; flex-wrap:wrap;">
                 <button type="button" class="btn btn-outline" style="flex:1; min-width:150px; border-color:var(--danger); color:var(--danger);" onclick="window.resetAdminRevenue()">تصفير الأرباح 🔄</button>
@@ -764,6 +818,7 @@
                     <div class="form-row">
                         <input type="number" id="product-price" placeholder="السعر الأساسي للواجهة (بالجنيه)" required>
                         <input type="number" id="product-old-price" placeholder="السعر قبل الخصم (اختياري)">
+                        <input type="number" id="product-cost-price" placeholder="تكلفة المنتج الفعلية عليك (سري للإدارة لحساب صافي الربح)">
                     </div>
                 </div>
                 <div class="form-row">
@@ -914,13 +969,17 @@
                             <span>🚚 تفعيل زر تصدير شيت شركات الشحن (Bosta / Mylerz) ومصادر الزيارات</span>
                         </label>
                         <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
-                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
-                            <input type="checkbox" id="setting-enable-spin-wheel" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
-                            <span>🎡 تفعيل عجلة الحظ التفاعلية (Spin & Win) لجذب العملاء وجمع أرقام الواتساب</span>
-                        </label>
-                        <div class="form-row" style="align-items:center; margin:4px 0 8px;">
-                            <input type="text" id="setting-wheel-coupon" placeholder="كود جائزة العجلة (مثال: LUCKY10)" style="margin-bottom:0; flex:1; font-size:0.82rem;">
-                            <input type="number" id="setting-wheel-discount" placeholder="نسبة الخصم % (مثال: 10)" style="margin-bottom:0; max-width:130px; font-size:0.82rem;">
+                        <div style="background:var(--panel-bg); padding:12px; border-radius:10px; border:2px solid #ff6b00; margin:8px 0;">
+                            <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.92rem; margin-bottom:8px;">
+                                <input type="checkbox" id="setting-enable-spin-wheel" style="width:18px; height:18px; margin:0; accent-color:#ff6b00;" onchange="window.saveSettings()">
+                                <span>🎡 تفعيل عجلة الحظ الأسبوعية (7 هدايا - تتجدد كل يوم خميس تلقائياً)</span>
+                            </label>
+                            <p style="font-size:0.78rem; color:var(--text-muted); margin:0 0 8px 0;">اكتب الهدايا الـ 7 التي تظهر للعميل في العجلة، وضع علامة (✅ مسموح) أمام الهدايا التي تريد للنظام أن يختار منها للعميل فقط (مثلاً 3 هدايا):</p>
+                            <div id="admin-wheel-7prizes-editor" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button type="button" class="btn" style="flex:1; background:#028090; padding:6px 10px; font-size:0.85rem;" onclick="window.saveSettings()">💾 حفظ هدايا وإعدادات العجلة</button>
+                                <button type="button" class="btn btn-outline" style="flex:1; border-color:#ff6b00; color:#ff6b00; padding:6px 10px; font-size:0.82rem;" onclick="window.resetAllUsersWheelSpinsNow()">🔄 تجديد فرصة العجلة لكل العملاء الآن</button>
+                            </div>
                         </div>
 
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
@@ -948,6 +1007,69 @@
                             <input type="checkbox" id="setting-enable-product-compare" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>⚖️ تفعيل مقارنة المنتجات السريعة وحاسبة التوفير للأحجام</span>
                         </label>
+                        <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
+                        <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🛠️ أدوات المدير المتقدمة وتصميمات المواسم (V55):</h4>
+
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-net-profit" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>💎 تفعيل حاسبة صافي الربح الفعلي للمدير في الإحصائيات</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-wa-order-status" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📲 تفعيل زر إرسال تحديث حالة الطلب للعميل عبر واتساب بضغطة زر</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-customer-tags" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🌟 تفعيل تصنيف العملاء وملاحظات الإدارة (عميل VIP / قائمة حظر)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-referral" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🤝 تفعيل نظام دعوة الأصدقاء (Referral Link) في صفحة نقاط الولاء</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-insta-stories" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🎬 تفعيل القصص التفاعلية السريعة (Stories) عند الضغط على الشريط المصور</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-seo-articles" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📖 تفعيل ركن الفوائد الصحية والـ SEO في أسفل الصفحة الرئيسية</span>
+                        </label>
+
+                        <!-- مبدل ثيمات المواسم -->
+                        <div style="background:var(--panel-bg); padding:10px; border-radius:8px; border:1px solid var(--border-color); margin-top:6px;">
+                            <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem; margin-bottom:6px;">
+                                <input type="checkbox" id="setting-enable-seasonal-themes" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                                <span>🎨 تفعيل مبدّل ثيمات المواسم والألوان</span>
+                            </label>
+                            <div class="form-row" style="align-items:center; margin-bottom:0;">
+                                <select id="setting-store-theme-name" style="margin-bottom:0; flex:1;" onchange="window.saveSettings()">
+                                    <option value="default">🌿 الثيم الزيتوني الأصلي (الافتراضي)</option>
+                                    <option value="ramadan">🌙 ثيم رمضان الذهبي والليلي</option>
+                                    <option value="blackfriday">🖤 ثيم عروض الجمعة البيضاء (أسود × ذهبي)</option>
+                                    <option value="luxury">👑 الثيم الملكي الزمردي الفاخر</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- أداة تعديل الأسعار الجماعي بضغطة زر -->
+                        <div style="background:var(--panel-bg); padding:10px; border-radius:8px; border:1px solid var(--border-color); margin-top:6px;">
+                            <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem; margin-bottom:8px;">
+                                <input type="checkbox" id="setting-enable-bulk-price" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                                <span>🏷️ تفعيل أداة تعديل الأسعار الجماعي بضغطة زر (Bulk Price Editor)</span>
+                            </label>
+                            <div id="admin-bulk-price-tool-box" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                                <select id="bulk-price-op" style="margin-bottom:0; flex:1; min-width:110px; font-size:0.82rem;">
+                                    <option value="inc">➕ زيادة الأسعار</option>
+                                    <option value="dec">➖ تخفيض الأسعار</option>
+                                </select>
+                                <select id="bulk-price-type" style="margin-bottom:0; flex:1; min-width:110px; font-size:0.82rem;">
+                                    <option value="pct">بنسبة مئوية (%)</option>
+                                    <option value="fixed">بمبلغ ثابت (ج)</option>
+                                </select>
+                                <input type="number" id="bulk-price-val" placeholder="القيمة (مثلاً 10)" style="margin-bottom:0; max-width:110px; font-size:0.82rem;">
+                                <button type="button" class="btn btn-danger" style="padding:8px 12px; font-size:0.82rem;" onclick="window.executeBulkPriceUpdate()">تطبيق فوراً 🚀</button>
+                            </div>
+                        </div>
                     </div>
                     <button type="button" class="btn" onclick="window.saveSettings()" style="width:100%; background:#028090; margin-top:12px;">حفظ إعدادات الواجهة وتسهيلات العملاء</button>
                 </div>

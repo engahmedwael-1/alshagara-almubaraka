@@ -1165,3 +1165,133 @@ html[dir="ltr"] .scarcity-sold-box {
     color: white;
     border-color: var(--secondary);
 }
+
+
+/* === النسخة V55: عجلة الـ 7 هدايا مع عداد الخميس + أدوات المدير المتقدمة + ثيمات المواسم والقصص === */
+.wheel-visual-circle-7 {
+    width: 210px;
+    height: 210px;
+    border-radius: 50%;
+    margin: 10px auto;
+    border: 6px solid var(--secondary);
+    background: conic-gradient(
+        #3c521e 0deg 51.43deg,
+        #c59b27 51.43deg 102.86deg,
+        #028090 102.86deg 154.29deg,
+        #e63946 154.29deg 205.71deg,
+        #6f42c1 205.71deg 257.14deg,
+        #d97706 257.14deg 308.57deg,
+        #166534 308.57deg 360deg
+    );
+    position: relative;
+    transition: transform 3.6s cubic-bezier(0.15, 0.85, 0.15, 1);
+    box-shadow: 0 6px 22px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.wheel-slice-num {
+    position: absolute;
+    color: #fff;
+    font-weight: 900;
+    font-size: 0.9rem;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+    pointer-events: none;
+}
+.wheel-prizes-legend {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin: 10px 0;
+    text-align: right;
+}
+html[dir="ltr"] .wheel-prizes-legend {
+    text-align: left;
+}
+.wheel-prize-pill {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 5px 8px;
+    font-size: 0.76rem;
+    font-weight: bold;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.wheel-prize-pill.winner-highlight {
+    background: #dcfce7;
+    border-color: #22c55e;
+    color: #166534;
+    transform: scale(1.03);
+}
+.wheel-thursday-countdown {
+    background: linear-gradient(90deg, rgba(60,82,30,0.1), rgba(197,155,39,0.18));
+    border: 1px dashed var(--secondary);
+    color: var(--primary);
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* ثيمات المواسم (Seasonal Themes) */
+body.theme-ramadan {
+    --primary: #1e3a5f;
+    --secondary: #d4af37;
+    --nav-bg: #0f203c;
+}
+body.theme-blackfriday {
+    --primary: #111827;
+    --secondary: #f59e0b;
+    --nav-bg: #000000;
+}
+body.theme-luxury {
+    --primary: #134e4a;
+    --secondary: #b45309;
+    --nav-bg: #042f2e;
+}
+
+/* شارات تصنيف العملاء (VIP / حظر) */
+.cust-tag-vip {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: bold;
+    margin-right: 6px;
+}
+.cust-tag-blacklist {
+    background: #dc2626;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: bold;
+    margin-right: 6px;
+}
+
+/* ركن الفوائد الصحية والـ SEO أسفل الرئيسية */
+.seo-benefits-section {
+    margin-top: 22px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px 16px;
+}
+.seo-benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+.seo-benefit-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-right: 4px solid var(--secondary);
+    border-radius: 10px;
+    padding: 10px 12px;
+}
