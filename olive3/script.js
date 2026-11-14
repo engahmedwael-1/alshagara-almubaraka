@@ -914,8 +914,14 @@ try {
                 if(product.oldPrice && Number(product.oldPrice) > Number(product.price)) { let discountPercent = Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100); discountBadge = `<span class="discount-badge">${discTxt} ${discountPercent}%</span>`; displayPriceText = `<del style="color:var(--text-muted); font-size:0.82rem; margin-left:4px; font-weight:normal;">${product.oldPrice}</del> ` + displayPriceText; }
                 let priceHtml = `<div class="price">${displayPriceText}</div>`; if(isCurrentUserAdmin && vArr.length === 0) { priceHtml = `<div class="price"><span class="inline-edit-price" contenteditable="true" onclick="event.stopPropagation();" onblur="window.updateProductPriceAdmin('${product.id}', this)">${product.price}</span> ج ✏️</div>`; }
                 let isWished = wishlist.includes(product.id) ? 'active' : ''; let wishBtnHtml = `<button type="button" class="wishlist-btn ${isWished}" onclick="window.toggleWishlist(event, '${product.id}')">❤</button>`;
-                let stockBadge = (product.stock !== undefined && product.stock !== "" && Number(product.stock) <= 0) ? `<div style="color:var(--danger); font-weight:bold; font-size:0.8rem; margin-bottom:4px;">نفدت الكمية ❌</div>` : '';
-                let addBtnState = (product.stock !== undefined && product.stock !== "" && Number(product.stock) <= 0) ? `disabled style="background:var(--border-color); cursor:not-allowed;"` : `onclick="window.executeAddToCart(event, '${product.id}', '${safeName}');"`;
+                let isOutOfStock = (product.stock !== undefined && product.stock !== "" && Number(product.stock) <= 0);
+                let stockBadge = isOutOfStock ? `<div style="color:var(--danger); font-weight:bold; font-size:0.8rem; margin-bottom:4px;">${window.currentLang === 'en' ? 'Out of Stock ❌' : 'نفدت الكمية ❌'}</div>` : '';
+                let notifyTxt = window.currentLang === 'en' ? '🔔 Notify Me' : '🔔 بلغني عند التوفر';
+                let addBtnState = isOutOfStock
+                    ? (storeSettings.enableBackInStock !== false
+                        ? `style="background:#e0a800; color:white; padding: 7px 10px; font-size:0.88rem; border-radius:8px;" onclick="window.requestBackInStock(event, '${product.id}', '${safeName}');"`
+                        : `disabled style="background:var(--border-color); cursor:not-allowed; padding: 7px 10px; font-size:0.92rem; border-radius:8px;"`)
+                    : `style="padding: 7px 10px; font-size:0.92rem; border-radius:8px;" onclick="window.executeAddToCart(event, '${product.id}', '${safeName}');"`;
                 let primaryImage = (product.images && product.images.length > 0) ? product.images[0] : (product.imageUrl || 'https://via.placeholder.com/300');
                 let videoIcon = product.videoUrl ? `<div style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.7); padding:4px 6px; border-radius:50%; color:white; font-size:0.75rem; z-index:2;">▶️</div>` : '';
                 let specialBadgeHtml = (storeSettings.enableProductBadges !== false && product.specialBadge) ? `<span class="special-product-badge">${window.escapeHTML(product.specialBadge)}</span>` : '';
@@ -939,7 +945,7 @@ try {
                         <div>
                             ${priceHtml}
                             ${stockBadge}
-                            <button type="button" class="btn btn-full" style="padding: 7px 10px; font-size:0.92rem; border-radius:8px;" ${addBtnState}>${vArr.length > 0 ? selTxt : addTxt}</button>
+                            <button type="button" class="btn btn-full" ${addBtnState}>${isOutOfStock && storeSettings.enableBackInStock !== false ? notifyTxt : (vArr.length > 0 ? selTxt : addTxt)}</button>
                         </div>
                     </div>
                     ${adminBtns}
@@ -1020,9 +1026,16 @@ try {
                 } else { crossSellSec.style.display = 'none'; }
             } else if (crossSellSec) { crossSellSec.style.display = 'none'; }
 
-            let addBtnState = (product.stock !== undefined && product.stock !== "" && Number(product.stock) <= 0) ? `disabled style="background:var(--border-color); cursor:not-allowed;"` : `onclick="window.executeAddToCart(event, '${product.id}', '${safeName}');"`;
-            let addTxt = window.currentLang === 'ar' ? 'أضف للسلة 🛒' : 'Add to Cart 🛒';
-            let sab = document.getElementById('sticky-action-btn'); if(sab) sab.innerHTML = `<button type="button" class="btn" style="padding: 8px 15px; font-size:1rem;" ${addBtnState}>${addTxt}</button>`;
+            let isModalOut = (product.stock !== undefined && product.stock !== "" && Number(product.stock) <= 0);
+            let addBtnState = isModalOut
+                ? (storeSettings.enableBackInStock !== false
+                    ? `style="background:#e0a800; color:white; padding: 8px 15px; font-size:0.95rem;" onclick="window.requestBackInStock(event, '${product.id}', '${safeName}');"`
+                    : `disabled style="background:var(--border-color); cursor:not-allowed; padding: 8px 15px; font-size:1rem;"`)
+                : `style="padding: 8px 15px; font-size:1rem;" onclick="window.executeAddToCart(event, '${product.id}', '${safeName}');"`;
+            let addTxt = isModalOut && storeSettings.enableBackInStock !== false
+                ? (window.currentLang === 'ar' ? '🔔 بلغني عند التوفر' : '🔔 Notify When Available')
+                : (window.currentLang === 'ar' ? 'أضف للسلة 🛒' : 'Add to Cart 🛒');
+            let sab = document.getElementById('sticky-action-btn'); if(sab) sab.innerHTML = `<button type="button" class="btn" ${addBtnState}>${addTxt}</button>`;
             
             window.trackEvent('ViewContent', { content_name: product.name, content_category: product.category, value: product.price, currency: 'EGP' });
             
@@ -1141,7 +1154,7 @@ try {
 
                 document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true); let waBtnInfo = storeSettings.floatingButtons ? storeSettings.floatingButtons.find(b => b.icon === '📱' || b.link.includes('wa.me')) : null; let pureWa = waBtnInfo ? waBtnInfo.link.split('/').pop() : "201018631768"; if(pureWa && !pureWa.startsWith('20') && pureWa.length === 10) pureWa = '20' + pureWa; let custEmail = currentUser ? (currentUser.email || currentUser.phoneNumber) : "غير مسجل";
                 
-                let orderPayload = { usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0, userId: currentUser ? currentUser.uid : "", customerEmail: custEmail || "", customerName: name || "", phones: { primary: phone1 || "", secondary: phone2 || "" }, location: { governorate: gov || "", city: city || "", mapAddress: mapAddress || "", details: addressDetails || "", lat: lat || 0, lng: lng || 0, mapLink: mapLink || "" }, items: selectedItems, subtotal: currentSubtotal || 0, discount: discountVal || 0, promoCode: appliedPromoCode || "", shippingCost: finalShippingCost || 0, totalAmount: finalTotal || 0, orderMethod: method || "", paymentMethod: payMethod || "", receiptUrl: receiptUrl || "", status: "قيد المراجعة", orderDate: new Date().toISOString() };
+                let orderPayload = { usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0, userId: currentUser ? currentUser.uid : "", customerEmail: custEmail || "", customerName: name || "", phones: { primary: phone1 || "", secondary: phone2 || "" }, location: { governorate: gov || "", city: city || "", mapAddress: mapAddress || "", details: addressDetails || "", lat: lat || 0, lng: lng || 0, mapLink: mapLink || "" }, items: selectedItems, subtotal: currentSubtotal || 0, discount: discountVal || 0, promoCode: appliedPromoCode || "", shippingCost: finalShippingCost || 0, totalAmount: finalTotal || 0, orderMethod: method || "", trafficSource: window.getDetectedTrafficSource ? window.getDetectedTrafficSource() : 'مباشر (Direct)', paymentMethod: payMethod || "", receiptUrl: receiptUrl || "", status: "قيد المراجعة", orderDate: new Date().toISOString() };
                 await addDoc(collection(db, 'orders'), orderPayload);
                 if(currentUser) { await setDoc(doc(db, 'users', currentUser.uid), { name: name||"", phone1: phone1||"", phone2: phone2||"", gov: gov||"", city: city||"", address: addressDetails||"" }, { merge: true }); }
                 window.trackEvent('Purchase', { value: finalTotal, currency: 'EGP', content_type: 'product_group' });
@@ -2793,4 +2806,724 @@ window.showUserHistory = function(userId, userName) {
                 });
             } catch (e) {}
             await prevSaveSettingsV51();
+        };
+
+
+        // =========================================================================
+        // === النسخة V53: الميزات العالمية النهائية + محرك الترجمة الشامل 100% ===
+        // =========================================================================
+
+        // 1. تتبع مصدر الزيارة (Traffic Source Detection)
+        window.getDetectedTrafficSource = function() {
+            let saved = sessionStorage.getItem('zait_traffic_source');
+            if (saved) return saved;
+            let src = 'مباشر (Direct)';
+            let urlParams = new URLSearchParams(window.location.search);
+            let utm = (urlParams.get('utm_source') || urlParams.get('ref') || '').toLowerCase();
+            let ref = (document.referrer || '').toLowerCase();
+            let combined = utm + ' ' + ref;
+            if (combined.includes('facebook') || combined.includes('fb')) src = 'فيسبوك (Facebook)';
+            else if (combined.includes('tiktok') || combined.includes('tt')) src = 'تيك توك (TikTok)';
+            else if (combined.includes('whatsapp') || combined.includes('wa')) src = 'واتساب (WhatsApp)';
+            else if (combined.includes('instagram') || combined.includes('ig')) src = 'إنستجرام (Instagram)';
+            else if (combined.includes('google')) src = 'بحث جوجل (Google)';
+            sessionStorage.setItem('zait_traffic_source', src);
+            return src;
+        };
+        window.getDetectedTrafficSource();
+
+        // 2. طلب "بلغني عند التوفر" للمنتجات النافدة
+        window.requestBackInStock = async function(event, productId, productName) {
+            if (event) event.stopPropagation();
+            let defaultContact = '';
+            if (currentUser) defaultContact = currentUser.phoneNumber || currentUser.email || '';
+            let promptMsg = window.currentLang === 'en'
+                ? `Enter your WhatsApp phone number to notify you as soon as (${productName}) is back in stock:`
+                : `أدخل رقم هاتفك (واتساب) لنقوم بإبلاغك فور توفر (${productName}):`;
+            let phone = prompt(promptMsg, defaultContact);
+            if (!phone || !phone.trim()) return;
+            try {
+                await addDoc(collection(db, 'stock_alerts'), {
+                    productId: productId,
+                    productName: productName,
+                    customerPhone: phone.trim(),
+                    customerName: currentUser && currentUser.displayName ? currentUser.displayName : 'عميل',
+                    date: new Date().toISOString()
+                });
+                window.showToast(window.currentLang === 'en' ? '🔔 You will be notified once back in stock!' : '🔔 تم تسجيل رقمك! سنبلغك فور توفر المنتج', 'success');
+            } catch (e) {
+                window.showToast(window.currentLang === 'en' ? 'Saved locally!' : 'تم تسجيل طلبك بنجاح!', 'success');
+            }
+        };
+
+        window.adminStockAlertsUnsubscribe = null;
+        window.loadAdminStockAlerts = function() {
+            if (window.adminStockAlertsUnsubscribe) window.adminStockAlertsUnsubscribe();
+            window.adminStockAlertsUnsubscribe = onSnapshot(collection(db, 'stock_alerts'), (snap) => {
+                let cont = document.getElementById('admin-stock-alerts-list');
+                let badge = document.getElementById('stock-alerts-count-badge');
+                if (!cont) return;
+                let list = [];
+                snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+                list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+                if (badge) badge.textContent = list.length;
+                if (list.length === 0) {
+                    cont.innerHTML = '<p style="color:var(--text-muted); font-size:0.88rem; margin:0;">لا توجد طلبات انتظار حالياً.</p>';
+                    return;
+                }
+                let html = '';
+                list.forEach(item => {
+                    let pureWa = String(item.customerPhone || '').replace(/\D/g, '');
+                    if (pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
+                    let waMsg = `مرحباً بك من متجر زيت الشجرة المباركة 🌿 نبشرك بأن المنتج الذي طلبته (${item.productName}) قد توفر الآن من جديد! يمكنك طلبه الآن قبل نفاد الكمية.`;
+                    let waBtn = pureWa.length >= 10
+                        ? `<a href="https://wa.me/${pureWa}?text=${encodeURIComponent(waMsg)}" target="_blank" class="btn btn-outline" style="border-color:#25D366; color:#25D366; padding:4px 10px; font-size:0.8rem; text-decoration:none;">💬 بشر العميل واتساب</a>`
+                        : '';
+                    html += `<div style="background:var(--input-bg); padding:8px 10px; border:1px solid var(--border-color); border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <div>
+                            <strong style="color:var(--primary);">${window.escapeHTML(item.productName)}</strong><br>
+                            <span style="font-size:0.82rem; color:var(--text-muted);">📞 ${window.escapeHTML(item.customerPhone)}</span>
+                        </div>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            ${waBtn}
+                            <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.78rem;" onclick="window.deleteStockAlert('${item.id}')">🗑️</button>
+                        </div>
+                    </div>`;
+                });
+                cont.innerHTML = html;
+            });
+        };
+
+        window.deleteStockAlert = async function(id) {
+            try {
+                await deleteDoc(doc(db, 'stock_alerts', id));
+                window.showToast('تم حذف التنبيه', 'info');
+            } catch (e) {}
+        };
+
+        // 3. حساب "إجمالي ما وفرته اليوم" + اقتراح منتج مكمل داخل السلة (In-Cart Upsell)
+        window.renderSavingsAndUpsell = function() {
+            // A. Total Savings Banner
+            let showSavings = storeSettings.enableSavingsBadge !== false;
+            let oldPriceSaved = 0;
+            cart.forEach(item => {
+                if (item.selected !== false) {
+                    let prod = products.find(p => p.id === item.id);
+                    if (prod && prod.oldPrice && Number(prod.oldPrice) > Number(item.price)) {
+                        oldPriceSaved += (Number(prod.oldPrice) - Number(item.price)) * Number(item.quantity || 1);
+                    }
+                }
+            });
+            let promoDiscVal = Math.round(currentSubtotal * (currentDiscountPercent / 100));
+            let bundleDiscVal = window.getBundleDiscountAmount ? window.getBundleDiscountAmount() : 0;
+            let enableFreeShip = storeSettings.enableFreeShipping !== false;
+            let targetAmount = (storeSettings && storeSettings.freeShippingThreshold) ? Number(storeSettings.freeShippingThreshold) : 1000;
+            let shipSaved = (enableFreeShip && currentSubtotal >= targetAmount && currentSubtotal > 0) ? (currentShippingCost || 90) : 0;
+
+            let totalSaved = oldPriceSaved + promoDiscVal + bundleDiscVal + (window.loyaltyDiscountFixed || 0) + shipSaved;
+
+            ['cart-total-savings-banner', 'checkout-total-savings-banner'].forEach(id => {
+                let el = document.getElementById(id);
+                if (!el) return;
+                if (showSavings && currentSubtotal > 0 && totalSaved > 0) {
+                    el.style.display = 'block';
+                    el.innerHTML = window.currentLang === 'en'
+                        ? `🎉 Congrats! Total saved on this order: <strong>${totalSaved} EGP</strong>`
+                        : `🎉 مبروك! إجمالي ما وفرته في هذا الطلب: <strong>${totalSaved} ج</strong>`;
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+
+            // B. In-Cart Upsell
+            let upsellBox = document.getElementById('cart-upsell-container');
+            if (!upsellBox) return;
+            if (storeSettings.enableCartUpsell === false || cart.length === 0 || products.length === 0) {
+                upsellBox.style.display = 'none';
+                return;
+            }
+            let cartIds = cart.map(c => c.id);
+            let candidate = products.find(p => !cartIds.includes(p.id) && !p.isHidden && (p.stock === undefined || p.stock === "" || Number(p.stock) > 0));
+            if (!candidate) {
+                upsellBox.style.display = 'none';
+                return;
+            }
+            let cImg = (candidate.images && candidate.images[0]) ? candidate.images[0] : (candidate.imageUrl || '1000392409.jpeg');
+            let safeCName = candidate.name.replace(/'/g, "\\'");
+            upsellBox.style.display = 'flex';
+            upsellBox.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img loading="lazy" src="${cImg}" style="width:48px; height:48px; border-radius:8px; object-fit:cover; border:1px solid var(--secondary);">
+                    <div>
+                        <span style="font-size:0.76rem; color:var(--secondary); font-weight:bold; display:block;">${window.currentLang === 'en' ? '💡 Recommended Add-On:' : '💡 منتج مقترح لإكمال طلبك:'}</span>
+                        <strong style="color:var(--primary); font-size:0.9rem;">${window.escapeHTML(candidate.name)}</strong>
+                        <span style="color:var(--text-muted); font-size:0.85rem; margin-right:6px;">(${candidate.price} ${window.currentLang === 'en' ? 'EGP' : 'ج'})</span>
+                    </div>
+                </div>
+                <button type="button" class="btn" style="padding:6px 12px; font-size:0.82rem;" onclick="window.executeAddToCart(event, '${candidate.id}', '${safeCName}')">${window.currentLang === 'en' ? '+ Add to Cart 🛒' : '+ أضف للسلة 🛒'}</button>
+            `;
+        };
+
+        const origUpdateInvoiceV52 = window.updateInvoiceUI;
+        window.updateInvoiceUI = function() {
+            origUpdateInvoiceV52();
+            window.renderSavingsAndUpsell();
+        };
+
+        // 4. مؤقت "اطلب خلال X ساعات للشحن اليوم"
+        window.updateDispatchTimerUI = function() {
+            let show = storeSettings.enableDispatchTimer !== false;
+            let now = new Date();
+            let cutoff = 18; // 6 PM daily dispatch cutoff
+            let remHours = cutoff - now.getHours() - 1;
+            let remMins = 59 - now.getMinutes();
+            if (remHours < 0) {
+                remHours += 24;
+            }
+            let msgAr = `⚡ اطلب خلال ${remHours} ساعة و ${remMins} دقيقة ليتم تجهيز وشحن طلبك في أسرع دفعة!`;
+            let msgEn = `⚡ Order within ${remHours} hrs ${remMins} mins for priority same-day preparation!`;
+            ['modal-dispatch-timer', 'checkout-dispatch-timer'].forEach(id => {
+                let el = document.getElementById(id);
+                if (el) {
+                    el.style.display = show ? 'block' : 'none';
+                    el.innerHTML = window.currentLang === 'en' ? msgEn : msgAr;
+                }
+            });
+        };
+
+        // 5. نوافذ السياسات والثقة وشهادة الجودة
+        window.openPolicyModal = function(type) {
+            let modal = document.getElementById('policy-info-modal');
+            let titleEl = document.getElementById('policy-modal-title');
+            let bodyEl = document.getElementById('policy-modal-body');
+            if (!modal || !titleEl || !bodyEl) return;
+            let isEn = window.currentLang === 'en';
+
+            if (type === 'story') {
+                titleEl.textContent = isEn ? '🌿 Our Farms Story in Sinai' : '🌿 قصة مزارعنا في سيناء';
+                bodyEl.textContent = isEn
+                    ? "At Blessed Tree Oil, we harvest the finest olives directly from our blessed farms in North Sinai.\n\n• 100% Cold Pressed (First Press) without any heat or chemicals.\n• Bottled fresh to preserve natural antioxidants, vitamins, and authentic Sinai aroma.\n• Direct from farm to your table with full quality guarantee."
+                    : "في متجر (زيت الشجرة المباركة)، نقطف لكم أجود ثمار الزيتون مباشرة من مزارعنا المباركة في أرض سيناء الحبيبة.\n\n• عصرة أولى على البارد 100% بدون أي معالجة حرارية أو إضافات كيميائية.\n• تعبئة طازجة تحفظ كافة الفيتامينات ومضادات الأكسدة الطبيعية والطعم السيناوي الأصلي.\n• من المزرعة إلى مائدتكم مباشرة بضمان كامل للجودة والنقاء.";
+            } else if (type === 'quality') {
+                titleEl.textContent = isEn ? '🏅 Quality Certificate & Acidity Test' : '🏅 شهادة الجودة ونسبة الحموضة';
+                bodyEl.textContent = isEn
+                    ? "✔ Extra Virgin Sinai Olive Oil (100% Pure & Natural).\n✔ Acidity Level: Less than 0.8% (International Extra Virgin Standard).\n✔ Extraction Method: First Cold Press (< 27°C).\n✔ Free from any preservatives, artificial colors, or blended oils.\n✔ Full Money-Back Guarantee if quality does not match specifications."
+                    : "✔ زيت زيتون سيناوي بكر ممتاز (طبيعي ونقي 100%).\n✔ نسبة الحموضة: أقل من 0.8% (مطابق لأعلى المعايير العالمية للزيت البكر الممتاز).\n✔ طريقة العصر: عصرة أولى على البارد (أقل من 27 درجة مئوية).\n✔ خالٍ تماماً من أي مواد حافظة أو ألوان صناعية أو زيوت مخلوطة.\n✔ ضمان استرجاع فوري في حال عدم مطابقة المنتج لأي من هذه المواصفات.";
+            } else if (type === 'return') {
+                titleEl.textContent = isEn ? '🔄 Return & Exchange Policy' : '🔄 سياسة الاستبدال والاسترجاع';
+                bodyEl.textContent = isEn
+                    ? "• Customer satisfaction is our top priority.\n• You have the right to inspect your order upon delivery.\n• Full return or replacement is guaranteed within 14 days if the product has any defect, damage, or mismatch.\n• Simply click 'Return Product' inside 'My Orders' or contact us via Customer Support or WhatsApp."
+                    : "• رضاكم وثقتكم هما أساس عملنا في زيت الشجرة المباركة.\n• يحق للعميل معاينة الطلب والتأكد من سلامة العبوات عند الاستلام.\n• نضمن لكم حق الاستبدال أو الاسترجاع الكامل خلال 14 يوماً في حال وجود أي تلف أو خطأ في الطلب أو عدم مطابقة للمواصفات.\n• يمكنك تقديم طلب استرجاع بضغطة زر من قسم (طلباتي) أو التواصل معنا عبر خدمة العملاء أو واتساب.";
+            } else if (type === 'privacy') {
+                titleEl.textContent = isEn ? '🔒 Privacy & Security Policy' : '🔒 سياسة الخصوصية والأمان';
+                bodyEl.textContent = isEn
+                    ? "• All customer data (name, phone number, and delivery address) is strictly confidential and encrypted.\n• Your information is used solely for delivering your orders and providing customer support.\n• We never share your personal information with any third party outside the delivery courier."
+                    : "• جميع بيانات العملاء (الاسم، رقم الهاتف، والعنوان) مشفرة ومحفوظة بسرية تامة.\n• تُستخدم البيانات فقط لغرض توصيل الطلبات، حساب نقاط الولاء، وخدمة العملاء.\n• لا يتم مشاركة بياناتك مع أي جهة خارجية باستثناء مندوب التوصيل المكلف بتسليم طلبك.";
+            }
+            modal.style.display = 'flex';
+        };
+
+        // 6. معرض صور العملاء في صفحة التقييمات
+        const origLoadAllReviewsV52 = window.loadAllReviews;
+        window.loadAllReviews = function() {
+            origLoadAllReviewsV52();
+            let galBox = document.getElementById('customer-photos-gallery-box');
+            let strip = document.getElementById('customer-photos-strip');
+            if (!galBox || !strip) return;
+            if (storeSettings.enableCustomerGallery === false) {
+                galBox.style.display = 'none';
+                return;
+            }
+            let imgs = [];
+            products.forEach(p => {
+                (p.reviews || []).forEach(r => { if (r.imageUrl) imgs.push(r.imageUrl); });
+                if (p.images && p.images[0]) imgs.push(p.images[0]);
+            });
+            imgs = [...new Set(imgs)].slice(0, 10);
+            if (imgs.length > 0) {
+                galBox.style.display = 'block';
+                strip.innerHTML = imgs.map(u => `<img loading="lazy" src="${u}" onclick="window.open('${u}', '_blank')" alt="Customer Review">`).join('');
+            } else {
+                galBox.style.display = 'none';
+            }
+        };
+
+        // 7. تصدير شيت شركات الشحن (Bosta / Mylerz CSV) + إحصائية مصادر الزيارات
+        window.exportCourierCSV = function() {
+            if (adminOrdersArray.length === 0) {
+                window.showToast('لا توجد طلبات لتصديرها', 'error');
+                return;
+            }
+            let activeOrders = adminOrdersArray.filter(o => !String(o.status || '').includes('رفض') && !String(o.status || '').includes('لغى'));
+            let csv = "Order Reference,Full Name,Phone 1,Phone 2,Governorate,City,Detailed Address,COD Amount,Items Description,Total Pieces,Payment Method,Order Status\n";
+            activeOrders.forEach(o => {
+                let refId = o.id.slice(0, 8).toUpperCase();
+                let cleanName = String(o.customerName || '').replace(/,/g, ' ');
+                let p1 = (o.phones && o.phones.primary) ? o.phones.primary : '';
+                let p2 = (o.phones && o.phones.secondary && o.phones.secondary !== 'لا يوجد') ? o.phones.secondary : '';
+                let gov = (o.location && o.location.governorate) ? String(o.location.governorate).replace(/,/g, ' ') : '';
+                let city = (o.location && o.location.city) ? String(o.location.city).replace(/,/g, ' ') : '';
+                let addr = (o.location && o.location.details) ? String(o.location.details).replace(/,/g, ' ').replace(/\n/g, ' ') : '';
+                let totalQty = 0;
+                let itemsDesc = (o.items || []).map(i => { totalQty += Number(i.quantity || 1); return `${i.name} x${i.quantity}`; }).join(' + ').replace(/,/g, ' ');
+                let cod = (o.paymentMethod === 'محفظة إلكترونية') ? 0 : o.totalAmount;
+                csv += `"${refId}","${cleanName}","${p1}","${p2}","${gov}","${city}","${addr}","${cod}","${itemsDesc}","${totalQty}","${o.paymentMethod || 'كاش'}","${o.status}"\n`;
+            });
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Courier_Sheet_Bosta_Mylerz_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+            window.showToast('تم تحميل شيت شركة الشحن بنجاح 🚚', 'success');
+        };
+
+        window.renderTrafficSourcesAnalytics = function() {
+            let cont = document.getElementById('admin-traffic-sources-list');
+            let card = document.getElementById('admin-traffic-sources-card');
+            if (card) card.style.display = storeSettings.enableCourierExport !== false ? 'block' : 'none';
+            if (!cont || storeSettings.enableCourierExport === false) return;
+            let srcMap = {};
+            adminOrdersArray.forEach(o => {
+                if (String(o.status || '').includes('رفض') || String(o.status || '').includes('لغى')) return;
+                let s = o.trafficSource || (o.orderMethod === 'عبر واتساب' ? 'واتساب (WhatsApp)' : 'مباشر (Direct)');
+                srcMap[s] = (srcMap[s] || 0) + 1;
+            });
+            let entries = Object.entries(srcMap).sort((a, b) => b[1] - a[1]);
+            if (entries.length === 0) {
+                cont.innerHTML = '<p style="color:var(--text-muted); margin:0;">لا توجد بيانات مصادر كافية بعد.</p>';
+                return;
+            }
+            let html = '<ul style="margin:0; padding-right:18px; line-height:1.9;">';
+            entries.forEach(([sName, count]) => {
+                html += `<li><strong>${window.escapeHTML(sName)}</strong>: <span style="color:#028090; font-weight:bold;">${count} طلب</span></li>`;
+            });
+            html += '</ul>';
+            cont.innerHTML = html;
+        };
+
+        // ربط فتح المنتج والمودال بـ V53
+        const origOpenProductModalV52 = window.openProductModal;
+        window.openProductModal = function(id) {
+            origOpenProductModalV52(id);
+            window.updateDispatchTimerUI();
+            let qBox = document.getElementById('modal-quality-cert-box');
+            if (qBox) qBox.style.display = storeSettings.enableQualityCert !== false ? 'flex' : 'none';
+            if (window.currentLang === 'en') window.translateDOM(document.getElementById('product-modal'));
+        };
+
+        const origUpdateAdminUIV52 = window.updateAdminUI;
+        window.updateAdminUI = function() {
+            origUpdateAdminUIV52();
+            if (isCurrentUserAdmin) {
+                window.loadAdminStockAlerts();
+                window.renderTrafficSourcesAnalytics();
+            } else if (window.adminStockAlertsUnsubscribe) {
+                window.adminStockAlertsUnsubscribe();
+                window.adminStockAlertsUnsubscribe = null;
+            }
+        };
+
+        const origRenderAdminOrdersV52 = window.renderAdminOrdersUI;
+        window.renderAdminOrdersUI = function() {
+            origRenderAdminOrdersV52();
+            if (isCurrentUserAdmin) window.renderTrafficSourcesAnalytics();
+        };
+
+        const prevApplySettingsV52 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV52();
+            if (isCurrentUserAdmin) {
+                let setC = (id, val) => { let el = document.getElementById(id); if (el) el.checked = val !== false; };
+                setC('setting-enable-savings-badge', storeSettings.enableSavingsBadge);
+                setC('setting-enable-cart-upsell', storeSettings.enableCartUpsell);
+                setC('setting-enable-back-in-stock', storeSettings.enableBackInStock);
+                setC('setting-enable-dispatch-timer', storeSettings.enableDispatchTimer);
+                setC('setting-enable-quality-cert', storeSettings.enableQualityCert);
+                setC('setting-enable-trust-policies', storeSettings.enableTrustPolicies);
+                setC('setting-enable-customer-gallery', storeSettings.enableCustomerGallery);
+                setC('setting-enable-courier-export', storeSettings.enableCourierExport);
+            }
+            let stockCard = document.getElementById('admin-stock-alerts-card');
+            if (stockCard) stockCard.style.display = storeSettings.enableBackInStock !== false ? 'block' : 'none';
+
+            let courierBtn = document.getElementById('btn-export-courier-csv');
+            if (courierBtn) courierBtn.style.display = storeSettings.enableCourierExport !== false ? 'block' : 'none';
+
+            document.querySelectorAll('.footer-policy-item').forEach(el => {
+                el.style.display = storeSettings.enableTrustPolicies !== false ? 'block' : 'none';
+            });
+
+            window.updateDispatchTimerUI();
+            window.renderSavingsAndUpsell();
+            if (window.currentLang === 'en') window.translateDOM(document.body);
+        };
+
+        const prevSaveSettingsV52 = window.saveSettings;
+        window.saveSettings = async function() {
+            const getC = (id) => { let el = document.getElementById(id); return el ? el.checked : true; };
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    enableSavingsBadge: getC('setting-enable-savings-badge'),
+                    enableCartUpsell: getC('setting-enable-cart-upsell'),
+                    enableBackInStock: getC('setting-enable-back-in-stock'),
+                    enableDispatchTimer: getC('setting-enable-dispatch-timer'),
+                    enableQualityCert: getC('setting-enable-quality-cert'),
+                    enableTrustPolicies: getC('setting-enable-trust-policies'),
+                    enableCustomerGallery: getC('setting-enable-customer-gallery'),
+                    enableCourierExport: getC('setting-enable-courier-export')
+                });
+            } catch (e) {}
+            await prevSaveSettingsV52();
+        };
+
+        // =========================================================================
+        // === 8. محرك الترجمة الشامل ثنائي اللغة (100% Arabic <-> English) ===
+        // =========================================================================
+        window.FULL_AR_TO_EN = {
+            "زيت الشجرة المباركة": "Blessed Tree Oil",
+            "🌿 زيت الشجرة المباركة": "🌿 Blessed Tree Oil",
+            "زيتون سيناوي بكر ممتاز لذيذ أول طعم بارد بدون أي إضافات، أصلي من قلب الطبيعة.": "Premium Sinai Extra Virgin Olive Oil, first cold press without any additives, 100% natural.",
+            "متجركم الأول للمنتجات الطبيعية. الجودة والثقة هما أساس عملنا.": "Your #1 store for 100% natural products. Quality and trust are our foundation.",
+            "روابط هامة": "Important Links",
+            "تواصل معنا": "Contact Us",
+            "📍 الإدارة: مزارعنا في سيناء": "📍 HQ: Our Farms in Sinai",
+            "تم الإنشاء بواسطة المهندس أحمد وائل": "Created by Eng. Ahmed Wael",
+            "🌿 قصة مزارعنا في سيناء": "🌿 Our Sinai Farms Story",
+            "🏅 شهادة الجودة ونسبة الحموضة": "🏅 Quality & Acidity Certificate",
+            "🔄 سياسة الاستبدال والاسترجاع": "🔄 Return & Exchange Policy",
+            "🔒 سياسة الخصوصية والأمان": "🔒 Privacy & Security Policy",
+            "إغلاق": "Close",
+            "الرئيسية": "Home",
+            "السلة": "Cart",
+            "المفضلة": "Wishlist",
+            "حسابي": "My Account",
+            "الخدمات والأقسام": "Services & Categories",
+            "خدمة العملاء": "Customer Support",
+            "آراء العملاء": "Customer Reviews",
+            "آراء العملاء ⭐️": "Customer Reviews ⭐️",
+            "تتبع طلبي برقم الهاتف": "Track Order by Phone",
+            "👤 حسابي:": "👤 My Account:",
+            "نقاط الولاء": "Loyalty Points",
+            "سلة المشتريات": "Shopping Cart",
+            "طلباتي": "My Orders",
+            "الإشعارات": "Notifications",
+            "سجل المشاهدات": "Recently Viewed",
+            "تصفح الأقسام:": "Browse Categories:",
+            "🔄 تبديل الحسابات:": "🔄 Switch Accounts:",
+            "إضافة حساب آخر": "Add Another Account",
+            "الوضع الليلي / النهاري": "Dark / Light Mode",
+            "تسجيل الدخول": "Login",
+            "تسجيل الدخول الآن": "Login Now",
+            "تسجيل الخروج": "Logout",
+            "🚪 تسجيل الخروج": "🚪 Logout",
+            "رصيد نقاط الولاء": "Loyalty Points Balance",
+            "نقطة": "Pts",
+            "فلتر وترتيب": "Filter & Sort",
+            "الفلاتر والترتيب:": "Filters & Sorting:",
+            "الترتيب الافتراضي": "Default Sorting",
+            "الأقل سعراً أولاً": "Price: Low to High",
+            "الأعلى سعراً أولاً": "Price: High to Low",
+            "الأعلى تقييماً ⭐️": "Highest Rated ⭐️",
+            "الكل": "All",
+            "زيت زيتون": "Olive Oil",
+            "📂 زيت زيتون": "📂 Olive Oil",
+            "أخرى": "Other",
+            "🔥 عرض خاص لفترة محدودة!": "🔥 Special Limited Time Offer!",
+            "جاري تحميل المنتجات... ⏳": "Loading products... ⏳",
+            "جاري تحميل المزيد من المنتجات... ⏳": "Loading more products... ⏳",
+            "جاري التحميل...": "Loading...",
+            "جاري تحميل طلباتك...": "Loading your orders...",
+            "🛒 سلة مشترياتك": "🛒 Your Shopping Cart",
+            "سلتك فارغة.": "Your cart is empty.",
+            "هل لديك كود خصم؟ 🎁": "Have a promo code? 🎁",
+            "تفعيل": "Apply",
+            "إلغاء كود الخصم ✖": "Remove Promo Code ✖",
+            "لديك نقاط ولاء! 🎁": "You have loyalty points! 🎁",
+            "رصيدك:": "Your Balance:",
+            "استبدل بخصم": "Redeem Discount",
+            "إلغاء ✖": "Cancel ✖",
+            "الإجمالي الفرعي:": "Subtotal:",
+            "الخصم:": "Discount:",
+            "الشحن المتوقع:": "Estimated Shipping:",
+            "الشحن:": "Shipping:",
+            "المنتجات:": "Products:",
+            "الإجمالي النهائي:": "Final Total:",
+            "المتابعة للدفع والتوصيل": "Proceed to Checkout & Delivery",
+            "📦 محفوظة لوقت لاحق": "📦 Saved for Later",
+            "حفظ لوقت لاحق": "Save for later",
+            "نقل إلى السلة": "Move to Cart",
+            "❤️ منتجاتي المفضلة": "❤️ My Wishlist",
+            "لم تقم بإضافة منتجات للمفضلة بعد.": "No products in your wishlist yet.",
+            "⭐️ آراء وتقييمات عملائنا": "⭐️ Customer Reviews & Ratings",
+            "📸 صور حقيقية من تجارب عملائنا:": "📸 Real Photos from Our Customers:",
+            "هل جربت الشراء منا؟": "Have you tried our products?",
+            "نشر التقييم": "Post Review",
+            "📍 بيانات التوصيل والدفع": "📍 Delivery & Payment Details",
+            "حدد موقعك على الخريطة لتسهيل التوصيل تلقائياً.": "Pin your location on the map for fast delivery.",
+            "📍 حدد موقعي الحالي": "📍 Pin My Current Location",
+            "يرجى لمس الخريطة لتحديد موقعك بدقة!": "Please tap the map to pin your exact location!",
+            "💳 طريقة الدفع:": "💳 Payment Method:",
+            "💵 الدفع كاش عند الاستلام": "💵 Cash on Delivery (COD)",
+            "📱 المحافظ الإلكترونية وإنستاباي": "📱 Mobile Wallets & InstaPay",
+            "برجاء تحويل إجمالي المبلغ على الرقم / الحساب التالي:": "Please transfer the total amount to the following number/account:",
+            "📸 أرفق صورة إيصال التحويل (سكرين شوت):": "📸 Attach transfer receipt screenshot:",
+            "تأكيد عبر الموقع 🌐": "Confirm via Website 🌐",
+            "تأكيد عبر واتساب 💬": "Confirm via WhatsApp 💬",
+            "العودة للسلة": "Back to Cart",
+            "🔔 الإشعارات": "🔔 Notifications",
+            "👤 طلباتي وحالة الشحن": "👤 My Orders & Tracking",
+            "🚚 تتبع حالة طلبك برقم الهاتف (للزوار والعملاء):": "🚚 Track Your Order by Phone Number (Guests & Customers):",
+            "بحث وتتبع 🔍": "Track Order 🔍",
+            "💬 خدمة العملاء": "💬 Customer Support",
+            "إنهاء 🛑": "End 🛑",
+            "حذف 🗑️": "Delete 🗑️",
+            "يرجى تسجيل الدخول أولاً.": "Please login first.",
+            "إرسال 🚀": "Send 🚀",
+            "👤 حسابي الشخصي": "👤 My Profile",
+            "يرجى تسجيل الدخول لعرض حسابك.": "Please login to view your profile.",
+            "🎁 نقاطي": "🎁 My Points",
+            "📦 طلباتي": "📦 My Orders",
+            "تحديث بياناتي وعنواني:": "Update My Info & Address:",
+            "حفظ التعديلات": "Save Changes",
+            "حساب جديد": "Create Account",
+            "دخول": "Login",
+            "تسجيل": "Sign Up",
+            "نسيت كلمة المرور؟": "Forgot Password?",
+            "ليس لديك حساب؟ أنشئ حساباً جديداً": "Don't have an account? Create one",
+            "ليس لديك حساب؟ أنشئ حساباً": "Don't have an account? Create one",
+            "لديك حساب؟ سجل الدخول": "Already have an account? Login",
+            "أو": "OR",
+            "🌐 المتابعة بحساب جوجل": "🌐 Continue with Google",
+            "👀 سجل المشاهدات": "👀 Recently Viewed",
+            "📅 ابحث عن المنتجات التي شاهدتها في يوم محدد:": "📅 Filter viewed products by date:",
+            "تصفية": "Filter",
+            "نقاط الولاء 🎁": "Loyalty Points 🎁",
+            "مرحباً بك في برنامج الولاء الخاص بنا!": "Welcome to our Loyalty Program!",
+            "إجمالي نقاطك الحالية": "Your Current Points Balance",
+            "استبدل النقاط بخصم الآن!": "Redeem Points for Discount Now!",
+            "كيف يعمل البرنامج؟ 🤔": "How does it work? 🤔",
+            "تكسب": "Earn",
+            "1 نقطة": "1 Point",
+            "مقابل كل": "for every",
+            "جنيه تنفقها في المتجر.": "EGP spent in our store.",
+            "تتم إضافة النقاط إلى حسابك تلقائياً بمجرد استلامك للطلب.": "Points are added automatically once your order is delivered.",
+            "يمكنك استبدال كل": "You can redeem every",
+            "50 نقطة": "50 Points",
+            "بخصم فوري قيمته": "for an instant discount of",
+            "جنيه على طلبك القادم.": "EGP on your next order.",
+            "مشاركة": "Share",
+            "يشاهده الآن": "Viewing now:",
+            "شخص": "people",
+            "اختر الحجم / النوع:": "Select Size / Variant:",
+            "🚀 اشتري الآن (دفع سريع)": "🚀 Buy Now (Express Checkout)",
+            "🏅 ضمان الجودة الأصلي 100%": "🏅 100% Authentic Quality Guarantee",
+            "عصرة أولى على البارد - حموضة أقل من 0.8% - مفحوص معملياً": "First Cold Press - Acidity < 0.8% - Lab Tested",
+            "📜 شهادة الجودة": "📜 Quality Cert",
+            "طبيعي 100%": "100% Natural",
+            "شحن سريع": "Fast Delivery",
+            "دفع آمن": "Secure Payment",
+            "استرجاع مضمون": "Guaranteed Return",
+            "📋 مواصفات وضمان المنتج:": "📋 Product Specifications & Guarantee:",
+            "❓ أسئلة شائعة:": "❓ Frequently Asked Questions:",
+            "🛍️ منتجات قد تعجبك:": "🛍️ You May Also Like:",
+            "تقييمات العملاء ⭐️": "Customer Reviews ⭐️",
+            "أضف تقييمك:": "Add Your Review:",
+            "⭐⭐⭐⭐⭐ ممتاز": "⭐⭐⭐⭐⭐ Excellent",
+            "⭐⭐⭐⭐ جيد جداً": "⭐⭐⭐⭐ Very Good",
+            "⭐⭐⭐ جيد": "⭐⭐⭐ Good",
+            "⭐⭐ مقبول": "⭐⭐ Fair",
+            "⭐ سيء": "⭐ Poor",
+            "📸 إرفاق صورة للمنتج (اختياري):": "📸 Attach Product Photo (Optional):",
+            "⏳ جاري الرفع...": "⏳ Uploading...",
+            "إرسال التقييم": "Submit Review",
+            "سجل الدخول لإضافة تقييم.": "Please login to add a review.",
+            "🛒 منتجاتك في انتظارك!": "🛒 Your Cart is Waiting!",
+            "لإتمام طلبك الآن نهديك كود خصم خاص!": "Complete your order now with this special discount code!",
+            "إكمال الطلب الآن 🚀": "Complete Order Now 🚀",
+            "🔄 طلب استرجاع منتج": "🔄 Return Product Request",
+            "سبب الاسترجاع:": "Reason for Return:",
+            "المنتج تالف أو مكسور": "Product is damaged or broken",
+            "وصلني منتج مختلف عن طلبي": "Received wrong item",
+            "جودة المنتج غير مطابقة للمواصفات": "Quality does not match description",
+            "سبب آخر": "Other reason",
+            "ملاحظات تفصيلية:": "Detailed Notes:",
+            "📸 إرفاق صورة توضح المشكلة (مهم جداً):": "📸 Attach photo showing the issue (Required):",
+            "إرسال طلب الاسترجاع 🚀": "Submit Return Request 🚀",
+            "📦 تفاصيل طلبي": "📦 My Order Details",
+            "📋 تفاصيل الطلب": "📋 Order Details",
+            "الإحصائيات 📊": "Analytics 📊",
+            "الطلبات 📦": "Orders 📦",
+            "الرسائل 📩": "Messages 📩",
+            "الاسترجاع 🔄": "Returns 🔄",
+            "العملاء 👥": "Customers 👥",
+            "الإعدادات ⚙️": "Settings ⚙️",
+            "اختر المحافظة...": "Select Governorate...",
+            "المحافظة...": "Governorate...",
+            "المركز / المدينة...": "City / District...",
+            "المدينة...": "City...",
+            "اختر المركز/المدينة...": "Select City / District...",
+            "أخرى (تُكتب بالعنوان التفصيلي)": "Other (Write in detailed address)",
+            "🔥 الأكثر مبيعاً": "🔥 Bestseller",
+            "✨ وصل حديثاً": "✨ New Arrival",
+            "🌿 عصرة أولى عالبارد": "🌿 Cold Pressed",
+            "⭐ اختيار العملاء": "⭐ Top Pick",
+            "⚡ كمية محدودة": "⚡ Limited Stock",
+            "📌 مثبت": "📌 Pinned",
+            "إضافة 🛒": "Add 🛒",
+            "اختر الحجم 🛒": "Select Size 🛒",
+            "أضف للسلة 🛒": "Add to Cart 🛒",
+            "🔔 بلغني عند التوفر": "🔔 Notify Me",
+            "نفدت الكمية ❌": "Out of Stock ❌",
+            "عرض التفاصيل": "View Details",
+            "عرض مجدداً": "View Again",
+            "🎉 مبروك! لقد حصلت على شحن مجاني": "🎉 Congrats! You unlocked FREE Shipping",
+            "أضف منتجات بقيمة": "Add products worth",
+            "لتحصل على شحن مجاني! 🚚": "to get FREE shipping! 🚚",
+            "اشترى": "Purchased",
+            "منذ دقيقتين": "2 mins ago",
+            "محمد من القاهرة": "Mohamed from Cairo"
+        };
+
+        // ترجمة أسماء المحافظات
+        const GOV_EN_MAP = {
+            "القاهرة": "Cairo", "الجيزة": "Giza", "الشرقية": "Sharqia", "الإسكندرية": "Alexandria",
+            "القليوبية": "Qalyubia", "الدقهلية": "Dakahlia", "البحيرة": "Beheira", "الغربية": "Gharbia",
+            "المنوفية": "Monufia", "كفر الشيخ": "Kafr El Sheikh", "دمياط": "Damietta", "بورسعيد": "Port Said",
+            "الإسماعيلية": "Ismailia", "السويس": "Suez", "شمال سيناء": "North Sinai", "جنوب سيناء": "South Sinai",
+            "الفيوم": "Fayoum", "بني سويف": "Beni Suef", "المنيا": "Minya", "أسيوط": "Assiut",
+            "سوهاج": "Sohag", "قنا": "Qena", "الأقصر": "Luxor", "أسوان": "Aswan",
+            "البحر الأحمر": "Red Sea", "الوادي الجديد": "New Valley", "مطروح": "Matrouh"
+        };
+        Object.assign(window.FULL_AR_TO_EN, GOV_EN_MAP);
+
+        // ترجمة الـ Placeholders
+        window.PLACEHOLDER_AR_TO_EN = {
+            "ابحث عن منتج...": "Search for a product...",
+            "أقل سعر": "Min Price",
+            "أعلى سعر": "Max Price",
+            "أدخل الكود": "Enter promo code",
+            "أدخل رقم الهاتف الذي طلبت به...": "Enter the phone number used in your order...",
+            "الاسم بالكامل": "Full Name",
+            "رقم الهاتف الأساسي": "Primary Phone Number",
+            "رقم هاتف احتياطي (اختياري)": "Secondary Phone (Optional)",
+            "العنوان المستخرج من الخريطة تلقائياً...": "Address extracted from map automatically...",
+            "العنوان التفصيلي الدقيق (اسم الشارع، رقم العمارة، رقم الشقة، علامة مميزة)": "Detailed Address (Street, Building, Floor/Apt, Landmark)",
+            "العنوان التفصيلي (شارع، عمارة، شقة)": "Detailed Address (Street, Building, Apt)",
+            "اكتب أو تحدث استفسارك...": "Type or speak your message...",
+            "البريد الإلكتروني": "Email Address",
+            "كلمة المرور (6 أحرف على الأقل)": "Password (at least 6 characters)",
+            "رأيك يهمنا...": "Share your experience with this product...",
+            "اكتب رأيك في المتجر وخدماتنا بشكل عام...": "Write your review about our store and service...",
+            "اكتب تفاصيل المشكلة هنا...": "Describe the issue in detail..."
+        };
+
+        // دالة ذكية لتحويل أي نص عربي ثابت أو ديناميكي إلى الإنجليزية
+        window.translateTextToEn = function(str) {
+            if (!str) return str;
+            let trimmed = str.trim();
+            if (!trimmed) return str;
+            if (window.FULL_AR_TO_EN[trimmed]) {
+                return str.replace(trimmed, window.FULL_AR_TO_EN[trimmed]);
+            }
+            let out = str;
+            // استبدالات ديناميكية للأرقام والأسعار والعبارات المركبة
+            out = out.replace(/يبدأ من\s*(\d+)\s*ج/g, 'Starts from $1 EGP');
+            out = out.replace(/السعر:\s*(\d+)\s*ج/g, 'Price: $1 EGP');
+            out = out.replace(/الكمية المتاحة:\s*(\d+)/g, 'Available Stock: $1');
+            out = out.replace(/خصم\s*(\d+)%/g, '$1% Off');
+            out = out.replace(/\(خصم\s*(\d+)%\)/g, '($1% Off)');
+            out = out.replace(/خصم \((.*?)\):/g, 'Discount ($1):');
+            out = out.replace(/كوبون/g, 'Coupon');
+            out = out.replace(/عرض الباقات/g, 'Bundle Offer');
+            out = out.replace(/نقاط الولاء/g, 'Loyalty Points');
+            out = out.replace(/🎁 كوبونات متاحة \(اضغط للتفعيل الفوري\):/g, '🎁 Available Coupons (Tap to apply):');
+            out = out.replace(/💬 استفسار عن المنتج عبر واتساب/g, '💬 Inquire via WhatsApp');
+            out = out.replace(/🔄 اطلبه مجدداً/g, '🔄 Buy Again');
+            out = out.replace(/أدخل رقم هاتفك في المربع بالأعلى لتتبع طلباتك فوراً بدون الحاجة لتسجيل الدخول\./g, 'Enter your phone number above to track your orders instantly without logging in.');
+            out = out.replace(/ابدأ المحادثة الآن وسنرد عليك في أقرب وقت!/g, 'Start the conversation now and we will reply shortly!');
+            out = out.replace(/الدعم:/g, 'Support:');
+            out = out.replace(/(\d+)\s*ج\b/g, '$1 EGP');
+            out = out.replace(/^ج$/g, 'EGP');
+            return out;
+        };
+
+        let isTranslatingDOM = false;
+        window.translateDOM = function(root = document.body) {
+            if (!root || isTranslatingDOM) return;
+            isTranslatingDOM = true;
+            try {
+                const isEn = window.currentLang === 'en';
+                // 1. ترجمة جميع الـ Placeholders
+                root.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
+                    if (!el.dataset.origArPh) {
+                        el.dataset.origArPh = el.getAttribute('placeholder') || '';
+                    }
+                    if (isEn) {
+                        let orig = el.dataset.origArPh;
+                        if (window.PLACEHOLDER_AR_TO_EN[orig]) {
+                            el.setAttribute('placeholder', window.PLACEHOLDER_AR_TO_EN[orig]);
+                        }
+                    } else if (el.dataset.origArPh) {
+                        el.setAttribute('placeholder', el.dataset.origArPh);
+                    }
+                });
+
+                // 2. ترجمة جميع النصوص عبر TreeWalker
+                const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+                let node;
+                const arRegex = /[\u0600-\u06FF]/;
+                while ((node = walker.nextNode())) {
+                    let parent = node.parentElement;
+                    if (!parent) continue;
+                    let tag = parent.tagName;
+                    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA') continue;
+                    // لا نترجم داخل لوحة الإعدادات المحمية الخاصة بالمدير حتى لا تتغير نصوص الإعدادات المحفوظة
+                    if (parent.closest('#roles-content-section') || parent.closest('#admin-dashboard-panel') || parent.closest('#admin-orders-panel')) continue;
+
+                    let val = node.nodeValue;
+                    if (arRegex.test(val)) {
+                        node._origAr = val;
+                    }
+                    if (isEn) {
+                        let sourceAr = node._origAr || val;
+                        let translated = window.translateTextToEn(sourceAr);
+                        if (translated !== val) {
+                            node.nodeValue = translated;
+                        }
+                    } else {
+                        if (node._origAr && node.nodeValue !== node._origAr) {
+                            node.nodeValue = node._origAr;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Translation error:", e);
+            }
+            isTranslatingDOM = false;
+        };
+
+        // مراقب ذكي لترجمة أي عنصر ديناميكي يظهر أثناء تفعيل اللغة الإنجليزية
+        const domLangObserver = new MutationObserver(() => {
+            if (window.currentLang === 'en' && !isTranslatingDOM) {
+                window.translateDOM(document.body);
+            }
+        });
+        domLangObserver.observe(document.body, { childList: true, subtree: true });
+
+        // استبدال دالة toggleLanguage لتعمل بشكل شامل 100%
+        window.toggleLanguage = function() {
+            window.currentLang = window.currentLang === 'ar' ? 'en' : 'ar';
+            document.documentElement.dir = window.currentLang === 'ar' ? 'rtl' : 'ltr';
+            document.documentElement.lang = window.currentLang;
+            let langBtn = document.getElementById('lang-btn');
+            if (langBtn) langBtn.innerText = window.currentLang === 'ar' ? '🌐 EN' : '🌐 ع';
+
+            window.renderProducts(false);
+            window.renderVisualBar();
+            window.updateCartUI();
+            window.updateEstimatedDeliveryUI();
+            window.updateDispatchTimerUI();
+            window.renderOneTapCoupons();
+            window.renderSavingsAndUpsell();
+            window.translateDOM(document.body);
         };

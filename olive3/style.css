@@ -874,3 +874,86 @@ body.compact-ui .visual-item span {
     font-size: 1.05rem;
     margin-bottom: 6px;
 }
+
+
+/* === النسخة V53: أدوات زيادة المبيعات، الثقة والسياسات، والترجمة الشاملة === */
+.total-savings-banner {
+    background: linear-gradient(90deg, #dcfce7, #bbf7d0);
+    border: 1px solid #22c55e;
+    color: #166534;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 0.95rem;
+    text-align: center;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 6px rgba(34, 197, 94, 0.15);
+}
+body.dark-mode .total-savings-banner {
+    background: rgba(22, 101, 52, 0.25);
+    color: #86efac;
+}
+.in-cart-upsell-box {
+    background: var(--input-bg);
+    border: 1px dashed var(--secondary);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin: 12px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.dispatch-timer-box {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #b45309;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    margin: 8px 0;
+    text-align: center;
+}
+body.dark-mode .dispatch-timer-box {
+    background: rgba(180, 83, 9, 0.2);
+    border-color: #b45309;
+    color: #fcd34d;
+}
+.quality-cert-box {
+    background: linear-gradient(135deg, rgba(197, 155, 39, 0.14), rgba(60, 82, 30, 0.08));
+    border: 1px solid var(--secondary);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin: 12px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    text-align: right;
+}
+html[dir="ltr"] .quality-cert-box {
+    text-align: left;
+}
+.customer-photo-gallery-strip {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px 4px;
+    margin-bottom: 18px;
+}
+.customer-photo-gallery-strip img {
+    width: 95px;
+    height: 95px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid var(--secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+.customer-photo-gallery-strip img:hover {
+    transform: scale(1.05);
+}
