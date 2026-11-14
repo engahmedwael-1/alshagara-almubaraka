@@ -58,6 +58,7 @@
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.showPanel('home'); window.closeSidebar();">🏠 <span class="translatable">الرئيسية</span></button>
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.showPanel('support'); window.closeSidebar();">💬 <span class="translatable">خدمة العملاء</span></button>
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.loadAllReviews(); window.closeSidebar();">⭐️ <span class="translatable">آراء العملاء</span></button>
+            <button type="button" id="sidebar-track-order-btn" class="btn btn-outline" style="width: 100%; border-color: #028090; color: #028090; text-align: right; font-weight:bold;" onclick="window.showPanel('customer-orders'); window.closeSidebar();">🚚 <span class="translatable">تتبع طلبي برقم الهاتف</span></button>
             <div id="sidebar-account-section" style="display:none; margin-top:10px;">
                 <h4 style="margin: 0 0 10px 0; color: var(--primary);" class="translatable">👤 حسابي:</h4>
                 <div style="display:flex; flex-direction:column; gap:8px;">
@@ -193,6 +194,7 @@
             <h3 id="modal-price" style="color: var(--secondary); display: flex; align-items: center; justify-content: center; gap:10px; margin: 10px 0; font-size:1.5rem;"></h3>
             <p id="modal-stock" style="color: var(--danger); font-weight: bold; font-size: 0.9rem; margin-top: -5px;"></p>
             <div id="modal-bundle-banner" class="bundle-offer-banner" style="display:none;"></div>
+            <div id="modal-estimated-delivery" class="estimated-delivery-box" style="display:none;"></div>
             <div id="modal-wa-btn-container" style="margin-bottom: 10px; width: 100%;"></div>
             <button type="button" class="btn btn-full" id="btn-buy-now" style="background-color: var(--primary); margin-bottom:10px; display:none;" onclick="window.executeBuyNow()"><span class="translatable">🚀 اشتري الآن (دفع سريع)</span></button>
 
@@ -204,6 +206,11 @@
                 <div class="trust-badge"><span class="icon">🔄</span><span class="translatable">استرجاع مضمون</span></div>
             </div>
             <p id="modal-desc" style="line-height: 1.6; color: var(--text-muted); font-size: 0.95rem; text-align: justify; padding: 10px; background: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color);"></p>
+            <div id="modal-specs-faq-section" class="specs-faq-container" style="display:none;">
+                <h4 style="color:var(--primary); margin:0 0 8px 0;">📋 مواصفات وضمان المنتج:</h4>
+                <table class="specs-table" id="modal-specs-table"></table>
+                <div id="modal-faq-list"></div>
+            </div>
             <div id="modal-cross-sell-section" style="display:none; border-top:1px dashed var(--border-color); padding-top:15px; margin-top:15px; text-align:right;">
                 <h4 style="color:var(--primary); margin:0;" class="translatable">🛍️ منتجات قد تعجبك:</h4>
                 <div class="cross-sell-container" id="modal-cross-sell-list" style="display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px; margin-top: 15px;"></div>
@@ -235,6 +242,10 @@
     <div class="hero-section" id="hero-section">
         <img loading="lazy" src="1000392409.jpeg" alt="Logo" class="hero-logo" onerror="this.src='https://via.placeholder.com/140?text=لوجو'">
         <h2 class="hero-slogan" class="translatable">زيتون سيناوي بكر ممتاز لذيذ أول طعم بارد بدون أي إضافات، أصلي من قلب الطبيعة.</h2>
+    </div>
+    <div class="hero-slider-wrapper" id="hero-slider-wrapper">
+        <div id="hero-slides-container"></div>
+        <div class="hero-slider-dots" id="hero-slider-dots"></div>
     </div>
 
     <div class="container">
@@ -319,6 +330,7 @@
                     <button type="button" class="btn" style="flex: 1;" onclick="window.applyPromoCodeCart()"><span class="translatable">تفعيل</span></button>
                 </div>
                 <small id="promo-msg-cart" style="display: block; margin-top: 8px; font-weight: bold;"></small>
+                <div id="one-tap-coupons-cart" class="one-tap-coupons-box" style="display:none;"></div>
                 <button type="button" id="btn-cancel-promo" class="btn btn-outline" style="display:none; width:100%; margin-top:10px; border-color:var(--danger); color:var(--danger); padding:8px;" onclick="window.removeDiscount()">إلغاء كود الخصم ✖</button>
             </div>
 
@@ -369,6 +381,8 @@
                 <label style="font-weight: bold; color: var(--primary);" class="translatable">هل لديك كود خصم؟ 🎁</label>
                 <div class="form-row" style="margin-top: 10px;"><input type="text" id="promo-code-input" placeholder="أدخل الكود" autocomplete="off" style="margin-bottom:0; flex: 2;"><button type="button" class="btn" style="flex: 1;" onclick="window.applyPromoCode()"><span class="translatable">تفعيل</span></button></div>
                 <small id="promo-msg" style="display: block; margin-top: 8px; font-weight: bold;"></small>
+                <div id="one-tap-coupons-checkout" class="one-tap-coupons-box" style="display:none;"></div>
+                <div id="checkout-estimated-delivery" class="estimated-delivery-box" style="display:none; margin-top:12px;"></div>
             </div>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom:15px;" class="translatable">حدد موقعك على الخريطة لتسهيل التوصيل تلقائياً.</p>
             <form id="checkout-form">
@@ -426,6 +440,14 @@
 
         <div class="panel" id="customer-orders-panel">
             <h2 style="color: #028090; margin-top: 0;" class="translatable">👤 طلباتي وحالة الشحن</h2>
+            <div id="guest-order-track-box" style="background:var(--input-bg); padding:15px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:20px;">
+                <label style="font-weight:bold; color:var(--primary); display:block; margin-bottom:8px;">🚚 تتبع حالة طلبك برقم الهاتف (للزوار والعملاء):</label>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <input type="tel" id="track-phone-input" placeholder="أدخل رقم الهاتف الذي طلبت به..." style="margin:0; flex:2; min-width:180px;">
+                    <button type="button" class="btn btn-info" onclick="window.trackOrderByPhone()" style="flex:1;">بحث وتتبع 🔍</button>
+                </div>
+                <div id="phone-tracked-orders-result" style="margin-top:15px;"></div>
+            </div>
             <div id="customer-orders-container"><h3 style="text-align: center; color: var(--text-muted);" class="translatable">جاري تحميل طلباتك...</h3></div>
         </div>
 
@@ -616,6 +638,17 @@
                         <option value="10">إضافة 10 تعليقات إيجابية ⭐️</option>
                     </select>
                 </div>
+                <div class="form-row" style="margin-bottom:10px;">
+                    <select id="product-special-badge" style="margin-bottom:0;">
+                        <option value="">بدون شارة إضافية</option>
+                        <option value="🔥 الأكثر مبيعاً">🔥 الأكثر مبيعاً</option>
+                        <option value="✨ وصل حديثاً">✨ وصل حديثاً</option>
+                        <option value="🌿 عصرة أولى عالبارد">🌿 عصرة أولى عالبارد</option>
+                        <option value="⭐ اختيار العملاء">⭐ اختيار العملاء</option>
+                        <option value="⚡ كمية محدودة">⚡ كمية محدودة</option>
+                    </select>
+                    <input type="text" id="product-custom-specs" placeholder="مواصفات خاصة (مثال: الحموضة: أقل من 0.8% | المنشأ: سيناء)" style="margin-bottom:0;">
+                </div>
                 <textarea id="product-desc" placeholder="وصف وتفاصيل المنتج..." rows="3" required></textarea>
                 <div style="background: var(--input-bg); padding: 20px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 20px;">
                     <label style="font-weight: bold; color: var(--primary); display:block; margin-bottom:15px; font-size: 1.1rem;">🖼️ صور وفيديو المنتج:</label>
@@ -635,6 +668,57 @@
             <div id="roles-auth-section"><div class="form-row"><input type="password" id="roles-pin" placeholder="رمز الأمان للمؤسس" style="margin-bottom:0;" autocomplete="new-password"><button type="button" class="btn" id="btn-unlock-roles" style="background-color: #028090; width: 30%;">فتح 🔓</button></div></div>
             <div id="roles-content-section" style="display: none;">
                 <p style="color: #2a9d8f; margin-bottom: 20px; font-weight: bold; text-align: center;">✅ تم فتح قفل الإعدادات بنجاح! يمكنك تشغيل أو إيقاف أي عنصر والتحكم فيه:</p>
+
+                <!-- ميزات المرحلة العالمية (الجزء الأول V49) -->
+                <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 2px solid var(--secondary); margin-bottom: 18px;">
+                    <h3 style="margin:0 0 12px 0; color:var(--primary); font-size:1.05rem;">🌟 إعدادات الواجهة العالمية وتسهيلات العملاء (أمازون ستايل):</h3>
+                    
+                    <!-- 1. بنر العروض المتحرك Hero Slider -->
+                    <div class="admin-toggle-header">
+                        <label><input type="checkbox" id="setting-enable-hero-slider" onchange="window.saveSettings()"> 🖼️ تفعيل بنر العروض المتحرك الكبير أعلى المتجر (بدل الشعار الثابت)</label>
+                    </div>
+                    <textarea id="setting-hero-slides-data" rows="3" style="font-size:0.85rem; margin-bottom:10px;" placeholder="كل سطر يمثل شريحة: العنوان | الوصف | نص الزر"></textarea>
+
+                    <!-- 2. موعد التوصيل المتوقع -->
+                    <div class="admin-toggle-header" style="margin-top:10px;">
+                        <label><input type="checkbox" id="setting-enable-est-delivery" onchange="window.saveSettings()"> 🚚 تفعيل إظهار موعد التوصيل المتوقع تلقائياً للمنتج والدفع</label>
+                    </div>
+                    <div class="form-row" style="align-items:center; margin-bottom:10px;">
+                        <span style="font-size:0.82rem;">مدة التوصيل المتوقعة (بالأيام): من</span>
+                        <input type="number" id="setting-delivery-min-days" placeholder="2" style="margin-bottom:0; max-width:70px;">
+                        <span style="font-size:0.82rem;">إلى</span>
+                        <input type="number" id="setting-delivery-max-days" placeholder="4" style="margin-bottom:0; max-width:70px;">
+                        <span style="font-size:0.82rem;">أيام</span>
+                    </div>
+
+                    <!-- 3. جدول المواصفات والأسئلة الشائعة -->
+                    <div class="admin-toggle-header" style="margin-top:10px;">
+                        <label><input type="checkbox" id="setting-enable-specs-faq" onchange="window.saveSettings()"> 📋 تفعيل جدول مواصفات المنتج والأسئلة الشائعة</label>
+                    </div>
+                    <input type="text" id="setting-default-specs" placeholder="المواصفات الافتراضية (مثال: العصرة: أولى على البارد | النقاء: طبيعي 100% | المنشأ: مزارع سيناء)" style="margin-bottom:8px; font-size:0.85rem;">
+                    <textarea id="setting-default-faqs" rows="2" style="font-size:0.85rem; margin-bottom:10px;" placeholder="الأسئلة الشائعة (كل سطر: السؤال ؟ الإجابة)"></textarea>
+
+                    <!-- 4. شارات المنتجات + تتبع الهاتف + الكوبونات الضغطة الواحدة + إعادة الطلب -->
+                    <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color);">
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-product-badges" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🔥 تفعيل شارات التميز على كروت المنتجات (الأكثر مبيعاً / وصل حديثاً)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-guest-tracking" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🔍 تفعيل ميزة تتبع الطلب السريع برقم الهاتف للزوار والعملاء</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-onetap-coupons" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🎁 تفعيل ظهور الكوبونات الجاهزة بضغطة واحدة في السلة والدفع</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-buy-again" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🔄 تفعيل زر (إعادة الطلب بضغطة واحدة) في طلبات العميل السابقة</span>
+                        </label>
+                    </div>
+                    <button type="button" class="btn" onclick="window.saveSettings()" style="width:100%; background:#028090; margin-top:12px;">حفظ إعدادات الواجهة وتسهيلات العملاء</button>
+                </div>
 
                 <!-- 1. الشريط الإعلاني أعلى الموقع -->
                 <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 15px;">
