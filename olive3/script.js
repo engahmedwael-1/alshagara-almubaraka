@@ -357,7 +357,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
 
         window.showToast = function(message, type = 'info') { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type}`; let icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️'); toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`; container.appendChild(toast); setTimeout(() => toast.classList.add('show'), 10); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000); };
 
-        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'global-notifications-panel': document.getElementById('global-notifications-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel'), 'profile': document.getElementById('profile-panel') };
+        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'global-notifications-panel': document.getElementById('global-notifications-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel'), 'profile': document.getElementById('profile-panel'), 'admin-work': document.getElementById('admin-work-panel') };
         let checkoutMap = null, userMarker = null;
 
         window.openSidebar = function() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('show'); }
@@ -812,7 +812,7 @@ let adminUsersUnsubscribe = null;
                 isCurrentUserAdmin = SUPER_ADMINS.includes((currentUser.email || '').toLowerCase()) || dynamicAdmins.includes((currentUser.email || '').toLowerCase()) || (currentUser.phoneNumber && SUPER_ADMINS.includes(currentUser.phoneNumber)); 
                 document.querySelectorAll('.admin-tab').forEach(tab => tab.style.display = isCurrentUserAdmin ? 'inline-block' : 'none'); 
                 let activePanel = document.querySelector('.panel.active');
-                if(!isCurrentUserAdmin && activePanel && ['admin', 'admin-orders', 'admin-messages', 'admin-dashboard', 'admin-returns', 'admin-users'].includes(activePanel.id.replace('-panel',''))) { window.showPanel('home'); }
+                if(!isCurrentUserAdmin && activePanel && ['admin', 'admin-work', 'admin-orders', 'admin-messages', 'admin-dashboard', 'admin-returns', 'admin-users'].includes(activePanel.id.replace('-panel',''))) { window.showPanel('home'); }
                 if(isCurrentUserAdmin) { window.loadAdminOrders(); window.loadAdminReturns(); window.loadAdminUsers(); if(window.loadAdminAbandonedCarts) window.loadAdminAbandonedCarts(); if(window.renderLowStockAlerts) window.renderLowStockAlerts(); }
             } else { 
                 isCurrentUserAdmin = false; document.querySelectorAll('.admin-tab').forEach(tab => tab.style.display = 'none'); 
@@ -947,7 +947,10 @@ try {
                             ${priceHtml}
                             ${window.getScarcityBarHtml ? window.getScarcityBarHtml(product) : ''}
                             ${stockBadge}
-                            <button type="button" class="btn btn-full" ${addBtnState}>${isOutOfStock && storeSettings.enableBackInStock !== false ? notifyTxt : (vArr.length > 0 ? selTxt : addTxt)}</button>
+                            <div style="display:flex; gap:5px; align-items:center;">
+                                <button type="button" class="btn btn-full" style="flex:1;" ${addBtnState}>${isOutOfStock && storeSettings.enableBackInStock !== false ? notifyTxt : (vArr.length > 0 ? selTxt : addTxt)}</button>
+                                ${(!isOutOfStock && storeSettings.enableQuickOrder !== false) ? `<button type="button" class="btn btn-outline" style="padding:7px 9px; font-size:0.82rem; border-radius:8px; border-color:var(--secondary); color:var(--primary); white-space:nowrap;" title="طلب فوري سريع" onclick="window.openQuickOrderModal(event, '${product.id}')">⚡</button>` : ''}
+                            </div>
                         </div>
                     </div>
                     ${adminBtns}
@@ -1380,7 +1383,7 @@ try {
         let orderDoc = await getDoc(doc(db, 'orders', orderId));
         if(orderDoc.exists()) {
             let oData = orderDoc.data();
-            await updateDoc(doc(db, 'orders', orderId), { status: 'ملغى من العميل ❌' }); 
+            await updateDoc(doc(db, 'orders', orderId), { status: 'ملغى من العميل ❌', canceledAt: new Date().toISOString() }); 
             
             // Restore loyalty points if they were used
             if(oData.usedLoyaltyPoints && oData.userId) {
@@ -4559,4 +4562,841 @@ window.showUserHistory = function(userId, userName) {
         });
         Object.assign(window.PLACEHOLDER_AR_TO_EN, {
             "أدخل رقم هاتفك (واتساب) لأول مرة فقط...": "Enter your WhatsApp number (first time only)..."
+        });
+
+
+        // =========================================================================
+        // === النسخة V56: غرفة متابعة العمل والشغل المباشرة (Live Work Center) ===
+        // =========================================================================
+        window.currentWorkHubFilter = 'all';
+        window.workHubChatsArray = [];
+        window.workHubStockAlerts = [];
+        window.workHubWheelLeads = [];
+        window.workHubAbandonedUsers = [];
+        window.workSoundEnabled = localStorage.getItem('zait_work_sound') !== 'off';
+        window.lastWorkTotalEventsCount = -1;
+        window.workChatsUnsub = null;
+        window.workAbandonedUnsub = null;
+
+        // تنبيه صوتي لطيف عند وصول طلب جديد أو رسالة أو إلغاء
+        window.playWorkNotificationSound = function() {
+            if (!window.workSoundEnabled) return;
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // A5
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.45);
+            } catch (e) {}
+        };
+
+        window.toggleWorkSoundAlert = function() {
+            window.workSoundEnabled = !window.workSoundEnabled;
+            localStorage.setItem('zait_work_sound', window.workSoundEnabled ? 'on' : 'off');
+            let btn = document.getElementById('btn-toggle-work-sound');
+            if (btn) btn.textContent = window.workSoundEnabled ? '🔊 الصوت: مفعل' : '🔇 الصوت: صامت';
+            if (window.workSoundEnabled) window.playWorkNotificationSound();
+        };
+
+        window.initAdminWorkHubStreams = function() {
+            if (!isCurrentUserAdmin) return;
+            let btnSnd = document.getElementById('btn-toggle-work-sound');
+            if (btnSnd) btnSnd.textContent = window.workSoundEnabled ? '🔊 الصوت: مفعل' : '🔇 الصوت: صامت';
+
+            // متابعة لحظية لمحادثات العملاء
+            if (!window.workChatsUnsub) {
+                window.workChatsUnsub = onSnapshot(collection(db, 'chats'), (snap) => {
+                    let arr = [];
+                    snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+                    arr.sort((a, b) => new Date(b.lastUpdate || 0) - new Date(a.lastUpdate || 0));
+                    window.workHubChatsArray = arr;
+                    window.renderAdminWorkHub();
+                });
+            }
+
+            // متابعة لحظية للسلال المتروكة
+            if (!window.workAbandonedUnsub) {
+                window.workAbandonedUnsub = onSnapshot(collection(db, 'users'), (snap) => {
+                    let arr = [];
+                    snap.forEach(d => {
+                        let data = d.data();
+                        if (data.cart && Array.isArray(data.cart) && data.cart.length > 0) {
+                            arr.push({ id: d.id, ...data });
+                        }
+                    });
+                    window.workHubAbandonedUsers = arr;
+                    window.renderAdminWorkHub();
+                });
+            }
+        };
+
+        window.filterWorkHub = function(tab) {
+            window.currentWorkHubFilter = tab;
+            ['all', 'orders', 'chats', 'cancels', 'leads'].forEach(t => {
+                let el = document.getElementById('wk-tab-' + t);
+                if (el) el.classList.toggle('active', t === tab);
+            });
+            window.renderAdminWorkHub();
+        };
+
+        // إرسال رد فوري للعميل من داخل غرفة العمل مباشرة بدون مغادرة الصفحة
+        window.sendInlineWorkChatReply = async function(chatId) {
+            let inp = document.getElementById('wk-reply-inp-' + chatId);
+            if (!inp || !inp.value.trim()) {
+                window.showToast('اكتب رسالة الرد أولاً', 'error');
+                return;
+            }
+            let txt = inp.value.trim();
+            inp.value = '';
+            let msg = { sender: 'admin', text: txt, timestamp: new Date().toISOString(), isAutoReply: false };
+            try {
+                await updateDoc(doc(db, 'chats', chatId), {
+                    messages: arrayUnion(msg),
+                    lastUpdate: msg.timestamp,
+                    adminReplied: true
+                });
+                window.showToast('تم إرسال ردك للعميل فوراً ✅', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء إرسال الرد', 'error');
+            }
+        };
+
+        window.insertCannedWorkReply = function(chatId, text) {
+            let inp = document.getElementById('wk-reply-inp-' + chatId);
+            if (inp) {
+                inp.value = text;
+                inp.focus();
+            }
+        };
+
+        window.insertCannedAdminReply = function(text) {
+            let inp = document.getElementById('admin-chat-input');
+            if (inp) {
+                inp.value = text;
+                inp.focus();
+            }
+        };
+
+        // بناء وعرض كل أحداث الشغل في شاشة واحدة مرتبة زمنياً
+        window.renderAdminWorkHub = function() {
+            if (!isCurrentUserAdmin) return;
+            let container = document.getElementById('admin-work-stream-container');
+            let searchEl = document.getElementById('work-hub-search');
+            let q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
+            let events = [];
+            let activeOrdersCount = 0;
+            let pendingReviewOrdersCount = 0;
+            let unrepliedChatsCount = 0;
+            let cancelsAndReturnsCount = 0;
+            let leadsCount = 0;
+
+            // 1. جمع الطلبات (النشطة والملغاة)
+            (adminOrdersArray || []).forEach(ord => {
+                let st = String(ord.status || '');
+                let isCanceled = st.includes('لغى') || st.includes('رفض');
+                if (isCanceled) {
+                    cancelsAndReturnsCount++;
+                    events.push({
+                        category: 'cancels',
+                        subType: 'canceled_order',
+                        date: ord.canceledAt || ord.orderDate || new Date().toISOString(),
+                        data: ord
+                    });
+                } else {
+                    activeOrdersCount++;
+                    if (st === 'قيد المراجعة') pendingReviewOrdersCount++;
+                    events.push({
+                        category: 'orders',
+                        subType: 'active_order',
+                        date: ord.orderDate || new Date().toISOString(),
+                        data: ord
+                    });
+                }
+            });
+
+            // 2. جمع طلبات الاسترجاع
+            (adminReturnsArray || []).forEach(ret => {
+                cancelsAndReturnsCount++;
+                events.push({
+                    category: 'cancels',
+                    subType: 'return_request',
+                    date: ret.date || new Date().toISOString(),
+                    data: ret
+                });
+            });
+
+            // 3. جمع رسائل خدمة العملاء
+            (window.workHubChatsArray || []).forEach(chat => {
+                let msgs = chat.messages || [];
+                let lastCustMsg = [...msgs].reverse().find(m => m.sender === 'customer');
+                let needsReply = !chat.adminReplied && Boolean(lastCustMsg);
+                if (needsReply) unrepliedChatsCount++;
+                events.push({
+                    category: 'chats',
+                    subType: 'chat_thread',
+                    needsReply: needsReply,
+                    date: chat.lastUpdate || new Date().toISOString(),
+                    data: chat
+                });
+            });
+
+            // 4. جمع السلال المتروكة وتنبيهات العملاء
+            (window.workHubAbandonedUsers || []).forEach(u => {
+                leadsCount++;
+                events.push({
+                    category: 'leads',
+                    subType: 'abandoned_cart',
+                    date: u.lastLogin || new Date().toISOString(),
+                    data: u
+                });
+            });
+
+            // تحديث العدادات العلوية وشارة زر (💼 العمل)
+            let urgentTotal = pendingReviewOrdersCount + unrepliedChatsCount + cancelsAndReturnsCount;
+            let badgeEl = document.getElementById('work-hub-badge');
+            if (badgeEl) badgeEl.textContent = urgentTotal;
+
+            if (window.lastWorkTotalEventsCount !== -1 && urgentTotal > window.lastWorkTotalEventsCount) {
+                window.playWorkNotificationSound();
+            }
+            window.lastWorkTotalEventsCount = urgentTotal;
+
+            let setKpi = (id, val) => { let el = document.getElementById(id); if (el) el.textContent = val; };
+            setKpi('wk-count-all', events.length);
+            setKpi('wk-count-orders', activeOrdersCount);
+            setKpi('wk-count-chats', (window.workHubChatsArray || []).length);
+            setKpi('wk-count-cancels', cancelsAndReturnsCount);
+            setKpi('wk-count-leads', leadsCount);
+
+            if (!container) return;
+
+            // فلترة حسب التبويب والبحث
+            let filtered = events.filter(ev => {
+                if (window.currentWorkHubFilter !== 'all' && ev.category !== window.currentWorkHubFilter) return false;
+                if (!q) return true;
+                let str = JSON.stringify(ev.data || {}).toLowerCase();
+                return str.includes(q);
+            });
+
+            // ترتيب زمني من الأحدث للأقدم
+            filtered.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:40px 20px; background:var(--input-bg); border-radius:12px; color:var(--text-muted);">
+                    <span style="font-size:2.8rem; display:block; margin-bottom:8px;">✨</span>
+                    <h3 style="margin:0;">لا توجد أحداث في هذا القسم حالياً</h3>
+                    <p style="font-size:0.85rem; margin-top:5px;">أي طلب جديد أو رسالة عميل أو إلغاء سيظهر لك هنا تلقائياً وفي نفس اللحظة!</p>
+                </div>`;
+                return;
+            }
+
+            let html = '';
+            filtered.slice(0, 60).forEach(ev => {
+                let dStr = new Date(ev.date).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
+
+                if (ev.subType === 'active_order') {
+                    let o = ev.data;
+                    let phone = (o.phones && o.phones.primary) || '';
+                    let itemsTxt = (o.items || []).map(i => `${window.escapeHTML(i.name)} (${i.quantity})`).join(' ، ');
+                    let tagBadge = window.getCustomerTagBadgeHtml ? window.getCustomerTagBadgeHtml(phone) : '';
+                    let statusColor = o.status === 'قيد المراجعة' ? '#dc3545' : (o.status.includes('توصيل') ? '#28a745' : '#028090');
+
+                    html += `<div class="work-event-card type-order">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                <span style="background:${statusColor}; color:white; padding:2px 8px; border-radius:8px; font-size:0.75rem; font-weight:bold;">📦 طلب #${o.id.slice(0,6).toUpperCase()} (${window.escapeHTML(o.status)})</span>
+                                <strong style="color:var(--primary); font-size:1.05rem; margin-right:6px;">👤 ${window.escapeHTML(o.customerName)} ${tagBadge}</strong>
+                            </div>
+                            <span style="font-size:0.78rem; color:var(--text-muted);">🕒 ${dStr}</span>
+                        </div>
+                        <div style="margin-top:8px; font-size:0.88rem; color:var(--text-color); line-height:1.6;">
+                            <div>📞 <strong>الهاتف:</strong> ${window.escapeHTML(phone)} | 📍 <strong>العنوان:</strong> ${window.escapeHTML((o.location && o.location.governorate) || '')} - ${window.escapeHTML((o.location && o.location.city) || '')}</div>
+                            <div>🛍️ <strong>المنتجات:</strong> ${itemsTxt} ${o.freeGiftUnlocked ? `<span style="color:#166534; font-weight:bold;">+ ${window.escapeHTML(o.freeGiftUnlocked)}</span>` : ''}</div>
+                            <div>💰 <strong>الإجمالي المطلوب:</strong> <strong style="color:var(--secondary); font-size:1rem;">${o.totalAmount} ج</strong> (${window.escapeHTML(o.paymentMethod || 'كاش')})</div>
+                        </div>
+                        <div class="work-inline-actions">
+                            <button type="button" class="btn" style="padding:5px 10px; font-size:0.78rem; background:#028090;" onclick="window.updateOrderStatus('${o.id}', 'تم التجهيز')">📦 تم التجهيز</button>
+                            <button type="button" class="btn" style="padding:5px 10px; font-size:0.78rem; background:#007bff;" onclick="window.updateOrderStatus('${o.id}', 'تم الشحن')">🚚 تم الشحن</button>
+                            <button type="button" class="btn" style="padding:5px 10px; font-size:0.78rem; background:#28a745;" onclick="window.updateOrderStatus('${o.id}', 'تم التوصيل ✅')">✅ تم التوصيل</button>
+                            <button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem; border-color:#25D366; color:#25D366;" onclick="window.sendOrderWhatsAppStatus('${o.id}')">📲 واتساب</button>
+                            ${storeSettings.enableShippingLabel !== false ? `<button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem;" onclick="window.printOrderShippingLabel('${o.id}')">🖨️ بوليصة الشحن</button>` : ''}
+                            <button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem;" onclick="window.openAdminOrderModal('${o.id}')">📋 التفاصيل</button>
+                        </div>
+                    </div>`;
+                } else if (ev.subType === 'canceled_order') {
+                    let o = ev.data;
+                    let phone = (o.phones && o.phones.primary) || '';
+                    let pureWa = String(phone).replace(/\D/g, '');
+                    if (pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
+                    let waMsg = `مرحباً ${o.customerName} 🌿 لاحظنا إلغاء طلبك رقم #${o.id.slice(0,6).toUpperCase()} في متجر زيت الشجرة المباركة، هل واجهتك أي مشكلة أو تود تعديل الطلب؟ يسعدنا خدمتك فوراً!`;
+                    let itemsTxt = (o.items || []).map(i => `${window.escapeHTML(i.name)} (${i.quantity})`).join(' ، ');
+
+                    html += `<div class="work-event-card type-cancel">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                <span style="background:#dc3545; color:white; padding:2px 8px; border-radius:8px; font-size:0.75rem; font-weight:bold;">🚨 طلب ملغى #${o.id.slice(0,6).toUpperCase()}</span>
+                                <strong style="color:var(--danger); font-size:1.02rem; margin-right:6px;">👤 ${window.escapeHTML(o.customerName)} (${window.escapeHTML(o.status)})</strong>
+                            </div>
+                            <span style="font-size:0.78rem; color:var(--text-muted);">🕒 ${dStr}</span>
+                        </div>
+                        <div style="margin-top:8px; font-size:0.86rem;">
+                            📞 <strong>الهاتف:</strong> ${window.escapeHTML(phone)} | 🛍️ <strong>المنتجات:</strong> ${itemsTxt} | 💰 <strong>القيمة:</strong> ${o.totalAmount} ج
+                        </div>
+                        <div class="work-inline-actions">
+                            <a href="https://wa.me/${pureWa}?text=${encodeURIComponent(waMsg)}" target="_blank" class="btn" style="background:#25D366; padding:5px 12px; font-size:0.78rem; text-decoration:none;">💬 تواصل واتساب لمعرفة سبب الإلغاء</a>
+                            <button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem;" onclick="window.updateOrderStatus('${o.id}', 'قيد المراجعة')">🔄 استعادة وتفعيل الطلب</button>
+                            <button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem;" onclick="window.openAdminOrderModal('${o.id}')">📋 التفاصيل</button>
+                        </div>
+                    </div>`;
+                } else if (ev.subType === 'return_request') {
+                    let r = ev.data;
+                    html += `<div class="work-event-card type-cancel">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                <span style="background:#e0a800; color:white; padding:2px 8px; border-radius:8px; font-size:0.75rem; font-weight:bold;">🔄 طلب استرجاع #${(r.orderId || '').slice(0,6).toUpperCase()}</span>
+                                <strong style="color:var(--primary); margin-right:6px;">السبب: ${window.escapeHTML(r.reason || '')}</strong>
+                            </div>
+                            <span style="font-size:0.78rem; color:var(--text-muted);">🕒 ${dStr}</span>
+                        </div>
+                        <p style="margin:6px 0; font-size:0.85rem; color:var(--text-muted);">ملاحظات العميل: ${window.escapeHTML(r.notes || 'لا توجد')}</p>
+                        <div class="work-inline-actions">
+                            ${r.status === 'قيد المراجعة' ? `<button type="button" class="btn" style="background:#28a745; padding:5px 12px; font-size:0.78rem;" onclick="window.approveReturn('${r.id}', '${r.orderId}')">✅ الموافقة وإرسال مندوب</button>` : `<span style="color:#28a745; font-weight:bold; font-size:0.82rem;">✅ تمت الموافقة</span>`}
+                            ${r.imageUrl ? `<a href="${r.imageUrl}" target="_blank" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem; text-decoration:none;">📸 عرض صورة المنتج</a>` : ''}
+                        </div>
+                    </div>`;
+                } else if (ev.subType === 'chat_thread') {
+                    let c = ev.data;
+                    let msgs = c.messages || [];
+                    let lastMsgs = msgs.slice(-2);
+                    let statusBadge = ev.needsReply
+                        ? `<span style="background:#dc3545; color:white; padding:2px 8px; border-radius:8px; font-size:0.74rem; font-weight:bold;">🔴 رسالة عميل تنتظر ردك</span>`
+                        : `<span style="background:#007bff; color:white; padding:2px 8px; border-radius:8px; font-size:0.74rem; font-weight:bold;">💬 محادثة خدمة عملاء (تم الرد)</span>`;
+
+                    let previewHtml = lastMsgs.map(m => `<div style="font-size:0.83rem; padding:4px 8px; border-radius:6px; margin-top:4px; background:${m.sender==='customer'?'rgba(0,123,255,0.08)':'var(--input-bg)'};"><strong>${m.sender==='customer'?'👤 العميل:':'🛡️ الإدارة:'}</strong> ${window.escapeHTML(m.text)}</div>`).join('');
+                    let safeId = c.id.replace(/'/g, "\\'");
+                    let safeName = (c.customerName || 'عميل').replace(/'/g, "\\'");
+
+                    html += `<div class="work-event-card type-chat">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                ${statusBadge}
+                                <strong style="color:var(--primary); font-size:1rem; margin-right:6px;">👤 ${window.escapeHTML(c.customerName || c.id)}</strong>
+                            </div>
+                            <span style="font-size:0.78rem; color:var(--text-muted);">🕒 ${dStr}</span>
+                        </div>
+                        <div style="margin:8px 0;">${previewHtml}</div>
+                        <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:6px;">
+                            <button type="button" class="work-canned-chip" onclick="window.insertCannedWorkReply('${safeId}', 'أهلاً بحضرتك 🌿 تحت أمرك، جاري مراجعة استفسارك فوراً.')">👋 ترحيب</button>
+                            <button type="button" class="work-canned-chip" onclick="window.insertCannedWorkReply('${safeId}', 'طلب حضرتك قيد التجهيز والشحن السريع لباب البيت 🚚')">🚚 حالة الشحن</button>
+                            <button type="button" class="work-canned-chip" onclick="window.insertCannedWorkReply('${safeId}', 'زيت الشجرة المباركة سيناوي بكر عصرة أولى على البارد 100% ومضمون 🌿')">🌿 ضمان الزيت</button>
+                        </div>
+                        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                            <input type="text" id="wk-reply-inp-${c.id}" placeholder="اكتب ردك المباشر للعميل هنا..." style="margin:0; flex:1; min-width:170px; padding:7px 10px; font-size:0.85rem;">
+                            <button type="button" class="btn" style="background:#007bff; padding:7px 12px; font-size:0.82rem;" onclick="window.sendInlineWorkChatReply('${safeId}')">إرسال الرد 🚀</button>
+                            <button type="button" class="btn btn-outline" style="padding:7px 10px; font-size:0.8rem;" onclick="window.showPanel('admin-messages'); window.openAdminChat('${safeId}', '${safeName}');">فتح الشات 💬</button>
+                        </div>
+                    </div>`;
+                } else if (ev.subType === 'abandoned_cart') {
+                    let u = ev.data;
+                    let total = 0;
+                    (u.cart || []).forEach(it => total += Number(it.price || 0) * Number(it.quantity || 1));
+                    let phone = u.phone1 || u.email || 'غير مسجل';
+                    let pureWa = String(phone).replace(/\D/g, '');
+                    if (pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
+                    let waText = `مرحباً ${u.name || 'عميلنا العزيز'} 🌿 لاحظنا وجود منتجات في سلة مشترياتك بمتجر زيت الشجرة المباركة، هل تحب نساعدك في إتمام الطلب اليوم مع هدية أو خصم خاص؟`;
+
+                    html += `<div class="work-event-card type-lead">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                <span style="background:#ff6b00; color:white; padding:2px 8px; border-radius:8px; font-size:0.74rem; font-weight:bold;">🛒 سلة متروكة نشطة</span>
+                                <strong style="color:var(--primary); margin-right:6px;">👤 ${window.escapeHTML(u.name || 'عميل')} (${window.escapeHTML(phone)})</strong>
+                            </div>
+                            <span style="font-size:0.78rem; color:var(--text-muted);">🕒 ${dStr}</span>
+                        </div>
+                        <div style="margin-top:6px; font-size:0.85rem; color:var(--secondary); font-weight:bold;">
+                            عدد المنتجات بالسلة: ${u.cart.length} (بقيمة إجمالية ~${total} ج)
+                        </div>
+                        ${pureWa.length >= 10 ? `<div class="work-inline-actions"><a href="https://wa.me/${pureWa}?text=${encodeURIComponent(waText)}" target="_blank" class="btn btn-outline" style="border-color:#25D366; color:#25D366; padding:5px 12px; font-size:0.8rem; text-decoration:none;">💬 تواصل مع العميل عبر واتساب</a></div>` : ''}
+                    </div>`;
+                }
+            });
+
+            container.innerHTML = html;
+        };
+
+        // =========================================================================
+        // === 2. طباعة بوليصة الشحن بالباركود (Shipping Label) + فاتورة العميل ===
+        // =========================================================================
+        window.printOrderShippingLabel = function(orderId) {
+            let o = (adminOrdersArray || []).find(ord => ord.id === orderId) || (window.customerOrdersArray || []).find(ord => ord.id === orderId);
+            if (!o) return;
+            let itemsHtml = (o.items || []).map(i => `<tr><td style="padding:6px; border:1px solid #333;">${window.escapeHTML(i.name)}</td><td style="padding:6px; border:1px solid #333; text-align:center;">${i.quantity}</td><td style="padding:6px; border:1px solid #333; text-align:center;">${i.price * i.quantity} ج</td></tr>`).join('');
+            let qrUrl = o.location && o.location.mapLink ? `https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(o.location.mapLink)}` : '';
+            let codAmount = (o.paymentMethod === 'محفظة إلكترونية') ? '0 ج (مدفوع مسبقاً)' : `${o.totalAmount} ج`;
+
+            let w = window.open('', '_blank', 'width=720,height=850');
+            if (!w) return;
+            w.document.write(`
+                <html dir="rtl" lang="ar">
+                <head>
+                    <title>بوليصة شحن وفاتورة #${o.id.slice(0,6).toUpperCase()}</title>
+                    <style>
+                        body { font-family: 'Cairo', Tahoma, sans-serif; padding: 20px; color: #111; }
+                        .label-box { border: 3px solid #111; border-radius: 12px; padding: 18px; max-width: 650px; margin: 0 auto; }
+                        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed #333; padding-bottom: 12px; margin-bottom: 12px; }
+                        .cod-box { background: #f1f5f9; border: 2px solid #111; padding: 10px 16px; border-radius: 8px; font-size: 1.25rem; font-weight: 900; text-align: center; margin: 12px 0; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.92rem; }
+                    </style>
+                </head>
+                <body onload="window.print()">
+                    <div class="label-box">
+                        <div class="header">
+                            <div>
+                                <h2 style="margin:0; color:#3c521e;">🌿 متجر زيت الشجرة المباركة</h2>
+                                <small>زيت زيتون سيناوي بكر ممتاز - عصرة أولى على البارد 100%</small><br>
+                                <strong>رقم البوليصة / الطلب: #${o.id.slice(0,8).toUpperCase()}</strong>
+                            </div>
+                            ${qrUrl ? `<div style="text-align:center;"><img src="${qrUrl}" width="90" height="90"><br><small style="font-size:0.7rem;">امسح لموقع العميل GPS</small></div>` : ''}
+                        </div>
+                        <div style="line-height:1.8; font-size:1rem;">
+                            <div><strong>👤 اسم المستلم:</strong> ${window.escapeHTML(o.customerName)}</div>
+                            <div><strong>📞 هاتف المستلم:</strong> ${window.escapeHTML((o.phones && o.phones.primary) || '')} ${(o.phones && o.phones.secondary && o.phones.secondary !== 'لا يوجد') ? ' / ' + window.escapeHTML(o.phones.secondary) : ''}</div>
+                            <div><strong>📍 المحافظة والمدينة:</strong> ${window.escapeHTML((o.location && o.location.governorate) || '')} - ${window.escapeHTML((o.location && o.location.city) || '')}</div>
+                            <div><strong>🏠 العنوان التفصيلي:</strong> ${window.escapeHTML((o.location && o.location.details) || '')}</div>
+                        </div>
+                        <div class="cod-box">
+                            💰 المبلغ المطلوب تحصيله (COD): ${codAmount}
+                        </div>
+                        <table>
+                            <thead>
+                                <tr style="background:#eee;">
+                                    <th style="padding:6px; border:1px solid #333;">المنتج</th>
+                                    <th style="padding:6px; border:1px solid #333;">الكمية</th>
+                                    <th style="padding:6px; border:1px solid #333;">الإجمالي</th>
+                                </tr>
+                            </thead>
+                            <tbody>${itemsHtml}</tbody>
+                        </table>
+                        ${o.freeGiftUnlocked ? `<p style="margin-top:8px; font-weight:bold; color:#166534;">🎁 هدية مرفقة مع الطلب: ${window.escapeHTML(o.freeGiftUnlocked)}</p>` : ''}
+                        <div style="margin-top:14px; padding-top:10px; border-top:1px solid #ccc; display:flex; justify-content:space-between; font-size:0.8rem;">
+                            <span>تاريخ الطلب: ${new Date(o.orderDate).toLocaleDateString('ar-EG')}</span>
+                            <span>✅ متاح معاينة الطلب عند الاستلام - ضمان استرجاع كامل</span>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+            w.document.close();
+        };
+
+        // إضافة زر طباعة البوليصة داخل تفاصيل طلب الإدارة وزر فاتورة الضمان داخل طلب العميل
+        const origOpenAdminOrderModalV55 = window.openAdminOrderModal;
+        window.openAdminOrderModal = function(id) {
+            origOpenAdminOrderModalV55(id);
+            if (storeSettings.enableShippingLabel === false) return;
+            let aom = document.getElementById('aom-content');
+            if (aom) {
+                aom.innerHTML += `<button type="button" class="btn btn-outline" style="width:100%; margin-top:8px; border-color:var(--primary); color:var(--primary);" onclick="window.printOrderShippingLabel('${id}')">🖨️ طباعة بوليصة الشحن والفاتورة (QR)</button>`;
+            }
+        };
+
+        const origOpenCustOrderModalV55 = window.openCustomerOrderModal;
+        window.openCustomerOrderModal = function(orderId) {
+            origOpenCustOrderModalV55(orderId);
+            if (storeSettings.enableShippingLabel === false) return;
+            let com = document.getElementById('com-content');
+            if (com) {
+                com.innerHTML += `<button type="button" class="btn btn-outline" style="width:100%; margin-top:10px; border-color:var(--primary); color:var(--primary);" onclick="window.printOrderShippingLabel('${orderId}')">🧾 طباعة / تحميل فاتورة الضمان الرسمية</button>`;
+            }
+        };
+
+        // =========================================================================
+        // === 3. سجل المصروفات والإعلانات (Expense Tracker) وخصمه من صافي الربح ===
+        // =========================================================================
+        window.getStoreExpensesList = function() {
+            return Array.isArray(storeSettings.expensesList) ? storeSettings.expensesList : [];
+        };
+
+        window.addStoreExpense = async function() {
+            let tInp = document.getElementById('expense-title-input');
+            let aInp = document.getElementById('expense-amount-input');
+            if (!tInp || !aInp || !tInp.value.trim() || !aInp.value) {
+                window.showToast('أدخل بيان المصروف والمبلغ أولاً', 'error');
+                return;
+            }
+            let list = [...window.getStoreExpensesList()];
+            list.unshift({
+                id: 'exp_' + Date.now(),
+                title: tInp.value.trim(),
+                amount: Number(aInp.value) || 0,
+                date: new Date().toISOString()
+            });
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), { expensesList: list });
+                tInp.value = '';
+                aInp.value = '';
+                window.showToast('تم تسجيل المصروف وخصمه من صافي الربح ✅', 'success');
+            } catch (e) {}
+        };
+
+        window.deleteStoreExpense = async function(expId) {
+            let list = window.getStoreExpensesList().filter(e => e.id !== expId);
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), { expensesList: list });
+                window.showToast('تم حذف المصروف', 'info');
+            } catch (e) {}
+        };
+
+        window.renderAdminExpenses = function() {
+            let card = document.getElementById('admin-expenses-card');
+            let listEl = document.getElementById('admin-expenses-list');
+            let badge = document.getElementById('admin-total-expenses-badge');
+            if (card) card.style.display = storeSettings.enableShippingLabel !== false ? 'block' : 'none';
+            if (!listEl || !badge) return;
+
+            let list = window.getStoreExpensesList();
+            let totalExp = 0;
+            let html = '';
+            list.forEach(e => {
+                totalExp += Number(e.amount || 0);
+                let dStr = new Date(e.date).toLocaleDateString('ar-EG');
+                html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 10px; background:var(--input-bg); border:1px solid var(--border-color); border-radius:8px; margin-bottom:6px; font-size:0.85rem;">
+                    <span><strong>${window.escapeHTML(e.title)}</strong> <small style="color:var(--text-muted);">(${dStr})</small></span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <strong style="color:var(--danger);">-${e.amount} ج</strong>
+                        <button type="button" class="btn btn-danger" style="padding:2px 7px; font-size:0.75rem;" onclick="window.deleteStoreExpense('${e.id}')">✖</button>
+                    </div>
+                </div>`;
+            });
+            badge.textContent = `${totalExp.toLocaleString()} ج`;
+            listEl.innerHTML = html || '<p style="color:var(--text-muted); font-size:0.84rem; margin:0;">لم يتم تسجيل مصروفات بعد.</p>';
+        };
+
+        // تحديث دالة صافي الربح لتخصم إجمالي المصروفات المسجلة أيضاً
+        const origRenderNetProfitV55 = window.renderNetProfitStat;
+        window.renderNetProfitStat = function() {
+            origRenderNetProfitV55();
+            window.renderAdminExpenses();
+            let statEl = document.getElementById('stat-net-profit');
+            if (!statEl || storeSettings.enableNetProfit === false) return;
+            let currentNet = parseInt(statEl.textContent.replace(/[^0-9-]/g, '')) || 0;
+            let totalExp = window.getStoreExpensesList().reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+            let finalNet = currentNet - totalExp;
+            statEl.textContent = `${finalNet.toLocaleString()} ج`;
+        };
+
+        // =========================================================================
+        // === 4. كرتونة التوفير المخصصة + مساعد الاختيار الذكي + الطلب الخاطف ===
+        // =========================================================================
+
+        // أ) كوّن كرتونة التوفير (Build Your Own Box)
+        window.customBoxCounts = {};
+        window.openCustomBoxModal = function() {
+            let modal = document.getElementById('custom-box-modal');
+            if (!modal) return;
+            window.customBoxCounts = {};
+            window.renderCustomBoxBuilder();
+            modal.style.display = 'flex';
+        };
+
+        window.changeCustomBoxQty = function(prodId, delta) {
+            let cur = window.customBoxCounts[prodId] || 0;
+            let next = Math.max(0, cur + delta);
+            if (next === 0) delete window.customBoxCounts[prodId];
+            else window.customBoxCounts[prodId] = next;
+            window.renderCustomBoxBuilder();
+        };
+
+        window.renderCustomBoxBuilder = function() {
+            let listEl = document.getElementById('custom-box-products-list');
+            let statusEl = document.getElementById('custom-box-status-bar');
+            if (!listEl || !statusEl) return;
+
+            let totalItems = 0;
+            let totalPrice = 0;
+            let availableProds = products.filter(p => !p.isHidden && (p.stock === undefined || p.stock === "" || Number(p.stock) > 0));
+
+            let html = '';
+            availableProds.forEach(p => {
+                let q = window.customBoxCounts[p.id] || 0;
+                totalItems += q;
+                totalPrice += q * Number(p.price || 0);
+                let img = (p.images && p.images[0]) ? p.images[0] : (p.imageUrl || '1000392409.jpeg');
+                html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--panel-bg); border:1px solid ${q>0?'var(--secondary)':'var(--border-color)'}; border-radius:10px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <img src="${img}" style="width:45px; height:45px; border-radius:8px; object-fit:cover;">
+                        <div>
+                            <strong style="color:var(--primary); font-size:0.88rem;">${window.escapeHTML(p.name)}</strong><br>
+                            <span style="color:var(--secondary); font-weight:bold; font-size:0.84rem;">${p.price} ج</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button type="button" class="qty-btn" onclick="window.changeCustomBoxQty('${p.id}', 1)">+</button>
+                        <strong style="min-width:20px; text-align:center;">${q}</strong>
+                        <button type="button" class="qty-btn" onclick="window.changeCustomBoxQty('${p.id}', -1)">-</button>
+                    </div>
+                </div>`;
+            });
+            listEl.innerHTML = html;
+
+            let discPct = Number(storeSettings.bundleDiscountPercent) || 10;
+            if (totalItems >= 3) {
+                let afterDisc = Math.round(totalPrice * (1 - discPct / 100));
+                statusEl.innerHTML = `🎉 اخترت ${totalItems} عبوات! السعر بعد خصم الكرتونة (${discPct}%): <strong style="color:#166534;">${afterDisc} ج</strong> بدلاً من <del>${totalPrice} ج</del>`;
+            } else {
+                statusEl.innerHTML = `📦 اخترت (${totalItems} من 3 عبوات) — أضف ${3 - totalItems} عبوة أخرى لتفعيل خصم الكرتونة الفوري (${discPct}%)!`;
+            }
+        };
+
+        window.addCustomBoxToCart = function() {
+            let entries = Object.entries(window.customBoxCounts);
+            if (entries.length === 0) {
+                window.showToast('اختر منتجات الكرتونة أولاً', 'error');
+                return;
+            }
+            let totalPicked = 0;
+            entries.forEach(([pid, qty]) => {
+                totalPicked += qty;
+                let p = products.find(pr => pr.id === pid);
+                if (!p) return;
+                let existing = cart.find(c => c.cartItemId === p.id);
+                if (existing) {
+                    existing.quantity += qty;
+                    existing.selected = true;
+                } else {
+                    cart.push({
+                        id: p.id,
+                        cartItemId: p.id,
+                        name: p.name,
+                        price: Number(p.price),
+                        imageUrl: (p.images && p.images[0]) || p.imageUrl || '1000392409.jpeg',
+                        quantity: qty,
+                        variant: '',
+                        selected: true
+                    });
+                }
+            });
+            if (totalPicked >= 3) {
+                currentDiscountPercent = Math.max(currentDiscountPercent, Number(storeSettings.bundleDiscountPercent) || 10);
+                if (!appliedPromoCode) appliedPromoCode = 'BOX' + (storeSettings.bundleDiscountPercent || 10);
+            }
+            localStorage.setItem('cart', JSON.stringify(cart));
+            window.updateCartUI();
+            document.getElementById('custom-box-modal').style.display = 'none';
+            window.showToast('تمت إضافة كرتونة التوفير إلى سلتك بنجاح 📦🛒', 'success');
+            window.showPanel('cart');
+        };
+
+        // ب) مساعد الاختيار الذكي (Product Finder Quiz)
+        window.openProductQuizModal = function() {
+            let modal = document.getElementById('product-quiz-modal');
+            let res = document.getElementById('quiz-result-box');
+            if (res) res.style.display = 'none';
+            if (modal) modal.style.display = 'flex';
+        };
+
+        window.runProductFinderQuiz = function() {
+            let q2 = (document.getElementById('quiz-q2') || {}).value || 'medium';
+            let resBox = document.getElementById('quiz-result-box');
+            if (!resBox || products.length === 0) return;
+
+            let available = products.filter(p => !p.isHidden);
+            if (available.length === 0) available = products;
+            let sorted = [...available].sort((a, b) => Number(a.price) - Number(b.price));
+
+            let recommended = sorted[0];
+            if (q2 === 'large') recommended = sorted[sorted.length - 1];
+            else if (q2 === 'medium') recommended = sorted[Math.floor(sorted.length / 2)];
+
+            let img = (recommended.images && recommended.images[0]) ? recommended.images[0] : (recommended.imageUrl || '1000392409.jpeg');
+            resBox.style.display = 'block';
+            resBox.innerHTML = `
+                <div style="display:flex; align-items:center; gap:12px; text-align:right; margin-bottom:10px;">
+                    <img src="${img}" style="width:65px; height:65px; border-radius:10px; object-fit:cover; border:2px solid var(--secondary);">
+                    <div>
+                        <span style="font-size:0.76rem; color:#028090; font-weight:bold;">🎯 الترشيح الأنسب والأوفر لاحتياجك:</span>
+                        <h4 style="margin:2px 0; color:var(--primary);">${window.escapeHTML(recommended.name)}</h4>
+                        <strong style="color:var(--secondary);">${recommended.price} ج</strong>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-full" onclick="document.getElementById('product-quiz-modal').style.display='none'; window.openProductModal('${recommended.id}');">🛒 عرض المنتج وإضافته للسلة</button>
+            `;
+        };
+
+        // ج) الشراء الخاطف بضغطة واحدة (1-Click Quick Order)
+        window.quickOrderTargetProduct = null;
+        window.openQuickOrderModal = function(event, prodId) {
+            if (event) event.stopPropagation();
+            let p = products.find(pr => pr.id === prodId);
+            if (!p) return;
+            window.quickOrderTargetProduct = p;
+
+            let sumEl = document.getElementById('quick-order-product-summary');
+            if (sumEl) sumEl.textContent = `🛍️ ${p.name} — السعر: ${p.price} ج`;
+
+            let govSel = document.getElementById('qo-gov');
+            if (govSel && govSel.options.length === 0) {
+                let gHtml = '<option value="" disabled selected>اختر المحافظة...</option>';
+                for (let g in deliveryData) gHtml += `<option value="${g}">${g}</option>`;
+                govSel.innerHTML = gHtml;
+            }
+
+            let modal = document.getElementById('quick-order-modal');
+            if (modal) modal.style.display = 'flex';
+        };
+
+        window.submitQuickOrderNow = async function() {
+            let p = window.quickOrderTargetProduct;
+            if (!p) return;
+            let name = (document.getElementById('qo-name') || {}).value.trim();
+            let phone = (document.getElementById('qo-phone') || {}).value.trim();
+            let gov = (document.getElementById('qo-gov') || {}).value;
+            let addr = (document.getElementById('qo-address') || {}).value.trim();
+
+            if (!name || !phone || !gov || !addr) {
+                window.showToast('يرجى إدخال الاسم ورقم الهاتف والمحافظة والعنوان', 'error');
+                return;
+            }
+            let btn = document.getElementById('btn-submit-quick-order');
+            if (btn) btn.disabled = true;
+
+            let shipCost = window.getShippingCostForGov ? window.getShippingCostForGov(gov) : 90;
+            let enableFreeShip = storeSettings.enableFreeShipping !== false;
+            let targetAmount = (storeSettings && storeSettings.freeShippingThreshold) ? Number(storeSettings.freeShippingThreshold) : 1000;
+            if (enableFreeShip && Number(p.price) >= targetAmount) shipCost = 0;
+
+            let totalAmt = Number(p.price) + shipCost;
+            let orderPayload = {
+                userId: currentUser ? currentUser.uid : "guest_quick",
+                userEmail: currentUser ? (currentUser.email || currentUser.phoneNumber || "زائر سريع") : "زائر سريع",
+                customerName: name,
+                phones: { primary: phone, secondary: "لا يوجد" },
+                location: { governorate: gov, city: "طلب سريع", details: addr, mapAddress: "", mapLink: "" },
+                items: [{
+                    id: p.id,
+                    cartItemId: p.id,
+                    name: p.name,
+                    price: Number(p.price),
+                    imageUrl: (p.images && p.images[0]) || p.imageUrl || '1000392409.jpeg',
+                    quantity: 1
+                }],
+                subtotal: Number(p.price),
+                shippingCost: shipCost,
+                discountApplied: "0%",
+                usedLoyaltyPoints: 0,
+                totalAmount: totalAmt,
+                paymentMethod: "كاش عند الاستلام (طلب سريع ⚡)",
+                receiptUrl: "",
+                orderMethod: "طلب خاطف سريع ⚡",
+                trafficSource: window.getDetectedTrafficSource ? window.getDetectedTrafficSource() : 'مباشر (Direct)',
+                status: "قيد المراجعة",
+                pointsAwarded: false,
+                orderDate: new Date().toISOString()
+            };
+
+            try {
+                await addDoc(collection(db, 'orders'), orderPayload);
+                document.getElementById('quick-order-modal').style.display = 'none';
+                window.showToast('🎉 تم تسجيل طلبك السريع بنجاح! سنتواصل معك فوراً لتأكيد الشحن', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء إرسال الطلب السريع', 'error');
+            }
+            if (btn) btn.disabled = false;
+        };
+
+        // د) تبديل طريقة عرض المنتجات (Grid / List View)
+        window.isListViewMode = false;
+        window.toggleProductsViewMode = function() {
+            window.isListViewMode = !window.isListViewMode;
+            let grid = document.getElementById('products-container');
+            let btn = document.getElementById('btn-toggle-view-mode');
+            if (grid) grid.classList.toggle('list-view-mode', window.isListViewMode);
+            if (btn) btn.textContent = window.isListViewMode ? '🔲' : '📋';
+        };
+
+        // ربط تحديثات الإدارة والإعدادات بـ V56
+        const origUpdateAdminUIV55 = window.updateAdminUI;
+        window.updateAdminUI = function() {
+            origUpdateAdminUIV55();
+            if (isCurrentUserAdmin) {
+                window.initAdminWorkHubStreams();
+                window.renderAdminWorkHub();
+            }
+        };
+
+        const origRenderAdminOrdersV55 = window.renderAdminOrdersUI;
+        window.renderAdminOrdersUI = function() {
+            origRenderAdminOrdersV55();
+            if (isCurrentUserAdmin) window.renderAdminWorkHub();
+        };
+
+        const prevApplySettingsV55 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV55();
+            if (isCurrentUserAdmin) {
+                let setC = (id, val, def = true) => { let el = document.getElementById(id); if (el) el.checked = val !== undefined ? Boolean(val) : def; };
+                setC('setting-enable-work-hub', storeSettings.enableWorkHub, true);
+                setC('setting-enable-quick-order', storeSettings.enableQuickOrder, true);
+                setC('setting-enable-box-builder', storeSettings.enableBoxBuilder, true);
+                setC('setting-enable-trust-marquee', storeSettings.enableTrustMarquee, true);
+                setC('setting-enable-shipping-label', storeSettings.enableShippingLabel, true);
+            }
+
+            let toolsBar = document.getElementById('home-smart-tools-bar');
+            if (toolsBar) toolsBar.style.display = storeSettings.enableBoxBuilder !== false ? 'flex' : 'none';
+
+            let marquee = document.getElementById('home-trust-marquee');
+            let viewBtn = document.getElementById('btn-toggle-view-mode');
+            if (marquee) marquee.style.display = storeSettings.enableTrustMarquee !== false ? 'flex' : 'none';
+            if (viewBtn) viewBtn.style.display = storeSettings.enableTrustMarquee !== false ? 'flex' : 'none';
+
+            if (isCurrentUserAdmin) {
+                window.renderAdminWorkHub();
+                window.renderAdminExpenses();
+            }
+            if (window.currentLang === 'en') window.translateDOM(document.body);
+        };
+
+        const prevSaveSettingsV55 = window.saveSettings;
+        window.saveSettings = async function() {
+            const getC = (id, def = true) => { let el = document.getElementById(id); return el ? el.checked : def; };
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    enableWorkHub: getC('setting-enable-work-hub', true),
+                    enableQuickOrder: getC('setting-enable-quick-order', true),
+                    enableBoxBuilder: getC('setting-enable-box-builder', true),
+                    enableTrustMarquee: getC('setting-enable-trust-marquee', true),
+                    enableShippingLabel: getC('setting-enable-shipping-label', true)
+                });
+            } catch (e) {}
+            await prevSaveSettingsV55();
+        };
+
+        // إضافة مصطلحات V56 للقاموس الإنجليزي
+        Object.assign(window.FULL_AR_TO_EN, {
+            "من مزارعنا في سيناء مباشرة": "Direct from Our Sinai Farms",
+            "حق معاينة الطلب عند الاستلام": "Inspect Order Upon Delivery",
+            "ضمان استبدال واسترجاع": "Guaranteed Return & Exchange",
+            "كوّن كرتونة التوفير بخصم خاص!": "Build Your Own Box & Save!",
+            "محتار؟ مساعد الاختيار الذكي": "Product Finder Quiz",
+            "كوّن كرتونة التوفير الخاصة بك": "Build Your Own Value Box",
+            "اختر 3 منتجات أو أكثر في كرتونتك واحصل على خصم باقة إضافي فوري!": "Pick 3 or more items in your box and get an instant bundle discount!",
+            "🛒 إضافة الكرتونة للسلة وتفعيل الخصم": "🛒 Add Box to Cart & Apply Discount",
+            "مساعد اختيار العبوة الأنسب": "Smart Product Finder Quiz",
+            "أجب عن سؤالين سريعين لنرشح لك المنتج والعبوة الأفضل والأوفر لك:": "Answer 2 quick questions to find the best value bottle for you:",
+            "1. ما هو استخدامك الأساسي لزيت الزيتون؟": "1. What is your primary use for olive oil?",
+            "2. ما هو حجم استهلاكك أو عدد أفراد الأسرة؟": "2. What is your household consumption size?",
+            "اعرض الترشيح الأنسب لي": "Show My Best Match",
+            "طلب سريع فوري في 5 ثوانٍ": "Express 1-Click Order in 5 Seconds",
+            "تأكيد وإرسال الطلب فوراً": "Confirm & Submit Order Instantly"
         });

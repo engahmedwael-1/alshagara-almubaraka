@@ -1295,3 +1295,140 @@ body.theme-luxury {
     border-radius: 10px;
     padding: 10px 12px;
 }
+
+
+/* === النسخة V56: قسم العمل الموحد (Live Work Center) + الميزات العالمية الشاملة === */
+.work-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.work-kpi-card {
+    background: var(--input-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+.work-kpi-card.active, .work-kpi-card:hover {
+    border-color: var(--secondary);
+    background: rgba(197, 155, 39, 0.1);
+    transform: translateY(-2px);
+}
+.work-kpi-card .kpi-num {
+    font-size: 1.55rem;
+    font-weight: 900;
+    display: block;
+    margin-top: 4px;
+}
+.work-event-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+    transition: transform 0.2s;
+}
+.work-event-card.type-order { border-right: 5px solid #28a745; }
+.work-event-card.type-chat { border-right: 5px solid #007bff; }
+.work-event-card.type-cancel { border-right: 5px solid #dc3545; background: rgba(220, 53, 69, 0.03); }
+.work-event-card.type-lead { border-right: 5px solid #ff6b00; }
+
+.work-inline-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color);
+}
+.work-canned-chip {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--primary);
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.76rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.work-canned-chip:hover {
+    background: var(--primary);
+    color: white;
+}
+
+/* شريط الثقة المتحرك (Trust Marquee) */
+.trust-marquee-bar {
+    background: linear-gradient(90deg, rgba(60,82,30,0.08), rgba(197,155,39,0.15), rgba(60,82,30,0.08));
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 7px 12px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--primary);
+}
+
+/* أزرار المساعد الذكي وكرتونة التوفير أعلى المنتجات */
+.smart-shopping-tools-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+.smart-tool-pill {
+    flex: 1;
+    min-width: 155px;
+    background: linear-gradient(135deg, var(--panel-bg), var(--input-bg));
+    border: 1px solid var(--secondary);
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-weight: bold;
+    font-size: 0.84rem;
+    color: var(--primary);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    transition: 0.2s;
+}
+.smart-tool-pill:hover {
+    background: var(--secondary);
+    color: white;
+}
+
+/* وضع عرض القائمة (List View Mode) للمنتجات */
+.products-grid.list-view-mode {
+    grid-template-columns: 1fr !important;
+}
+.products-grid.list-view-mode .product-card {
+    flex-direction: row;
+    align-items: center;
+    padding: 10px;
+    gap: 14px;
+}
+.products-grid.list-view-mode .product-card-media {
+    width: 130px;
+    height: 130px;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+.products-grid.list-view-mode .product-card-body {
+    text-align: right;
+    padding: 0;
+}
+html[dir="ltr"] .products-grid.list-view-mode .product-card-body {
+    text-align: left;
+}

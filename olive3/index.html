@@ -161,6 +161,7 @@
 
     <nav class="main-nav" id="smart-nav" style="display: none;">
         <!-- أزرار الإدارة فقط -->
+        <button type="button" class="nav-btn admin-tab" style="display: none; background: linear-gradient(135deg, #28a745, #028090); color: white; border: none; font-weight: 900;" onclick="window.showPanel('admin-work')">💼 العمل <span id="work-hub-badge" style="background:#dc3545; color:white; padding:1px 7px; border-radius:12px; font-size:0.75rem; margin-right:4px;">0</span></button>
         
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(255,193,7,0.2); border-color: #ffc107; color: #d39e00;" onclick="window.showPanel('admin-dashboard')">الإحصائيات 📊</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(220,53,69,0.2); border-color: #dc3545;" onclick="window.showPanel('admin-orders')">الطلبات 📦</button>
@@ -234,6 +235,57 @@
             <button type="button" class="modal-close" onclick="document.getElementById('compare-products-modal').style.display='none'">X</button>
             <h2 style="color:var(--primary); margin-top:0;">⚖️ <span class="translatable">مقارنة المنتجات</span></h2>
             <div id="compare-table-container" style="overflow-x:auto;"></div>
+        </div>
+    </div>
+
+    <!-- نافذة كرتونة التوفير المخصصة (Build Your Own Box) -->
+    <div id="custom-box-modal" class="modal-overlay" style="z-index: 5750;">
+        <div class="modal-content" style="max-width: 560px; text-align: center; border: 2px solid var(--secondary); padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('custom-box-modal').style.display='none'">X</button>
+            <h2 style="color:var(--primary); margin:0 0 5px 0;">📦 <span class="translatable">كوّن كرتونة التوفير الخاصة بك</span></h2>
+            <p style="font-size:0.88rem; color:var(--text-muted); margin:0 0 12px 0;" class="translatable">اختر 3 منتجات أو أكثر في كرتونتك واحصل على خصم باقة إضافي فوري!</p>
+            <div id="custom-box-status-bar" style="background:var(--input-bg); padding:10px; border-radius:8px; font-weight:bold; color:var(--primary); margin-bottom:12px;"></div>
+            <div id="custom-box-products-list" style="max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; text-align:right; margin-bottom:12px;"></div>
+            <button type="button" class="btn btn-full" onclick="window.addCustomBoxToCart()"><span class="translatable">🛒 إضافة الكرتونة للسلة وتفعيل الخصم</span></button>
+        </div>
+    </div>
+
+    <!-- نافذة مساعد الاختيار الذكي (Product Finder Quiz) -->
+    <div id="product-quiz-modal" class="modal-overlay" style="z-index: 5750;">
+        <div class="modal-content" style="max-width: 460px; text-align: center; border: 2px solid #028090; padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('product-quiz-modal').style.display='none'">X</button>
+            <h2 style="color:var(--primary); margin:0 0 6px 0;">🧭 <span class="translatable">مساعد اختيار العبوة الأنسب</span></h2>
+            <p style="font-size:0.86rem; color:var(--text-muted); margin:0 0 12px 0;" class="translatable">أجب عن سؤالين سريعين لنرشح لك المنتج والعبوة الأفضل والأوفر لك:</p>
+            <div style="text-align:right; margin-bottom:12px;">
+                <label style="font-weight:bold; font-size:0.88rem; color:var(--primary); display:block; margin-bottom:5px;" class="translatable">1. ما هو استخدامك الأساسي لزيت الزيتون؟</label>
+                <select id="quiz-q1" style="margin-bottom:10px;">
+                    <option value="food">🥗 للأكل الصحي والسلطات والمائدة اليومية</option>
+                    <option value="health">🥄 للشرب على الريق والمناعة وصحة القلب</option>
+                    <option value="care">✨ للعناية بالشعر والبشرة والاستخدام الشامل</option>
+                </select>
+                <label style="font-weight:bold; font-size:0.88rem; color:var(--primary); display:block; margin-bottom:5px;" class="translatable">2. ما هو حجم استهلاكك أو عدد أفراد الأسرة؟</label>
+                <select id="quiz-q2" style="margin-bottom:10px;">
+                    <option value="small">👤 استهلاك خفيف / تجربة لأول مرة</option>
+                    <option value="medium">👨‍👩‍👧 استهلاك متوسط لأسرة صغيرة</option>
+                    <option value="large">👨‍👩‍👧‍👦 استهلاك عائلي وتوفير أقصى في سعر اللتر</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-full" style="background:#028090;" onclick="window.runProductFinderQuiz()">✨ <span class="translatable">اعرض الترشيح الأنسب لي</span></button>
+            <div id="quiz-result-box" style="display:none; margin-top:14px; padding:12px; background:var(--input-bg); border:1px solid var(--secondary); border-radius:10px;"></div>
+        </div>
+    </div>
+
+    <!-- نافذة الشراء الخاطف بضغطة واحدة (1-Click Quick Order) -->
+    <div id="quick-order-modal" class="modal-overlay" style="z-index: 5780;">
+        <div class="modal-content" style="max-width: 420px; text-align: right; border: 2px solid var(--primary); padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('quick-order-modal').style.display='none'">X</button>
+            <h2 style="color:var(--primary); margin:0 0 6px 0; text-align:center;">⚡ <span class="translatable">طلب سريع فوري في 5 ثوانٍ</span></h2>
+            <div id="quick-order-product-summary" style="background:var(--input-bg); padding:10px; border-radius:8px; margin-bottom:12px; font-weight:bold; color:var(--secondary); text-align:center;"></div>
+            <input type="text" id="qo-name" placeholder="الاسم بالكامل..." style="margin-bottom:8px;">
+            <input type="tel" id="qo-phone" placeholder="رقم الهاتف (واتساب)..." style="margin-bottom:8px;">
+            <select id="qo-gov" style="margin-bottom:8px;"></select>
+            <input type="text" id="qo-address" placeholder="المدينة والعنوان بالتفصيل (شارع / عمارة / علامة مميزة)..." style="margin-bottom:12px;">
+            <button type="button" class="btn btn-full" id="btn-submit-quick-order" onclick="window.submitQuickOrderNow()">🚀 <span class="translatable">تأكيد وإرسال الطلب فوراً</span></button>
         </div>
     </div>
 
@@ -332,6 +384,20 @@
         <div class="panel active" id="home-panel">
             <div id="visual-scroll-bar" class="visual-scroll-bar" style="display:none;"></div>
             <div class="limited-offer-banner" id="home-limited-offer-banner"><span id="home-offer-banner-text" class="translatable">🔥 عرض خاص لفترة محدودة!</span><span class="timer" id="offer-timer">72:00:00</span></div>
+            <div id="home-trust-marquee" class="trust-marquee-bar">
+                <span>🌿 <span class="translatable">عصرة أولى على البارد 100%</span></span>
+                <span>🚜 <span class="translatable">من مزارعنا في سيناء مباشرة</span></span>
+                <span>🔍 <span class="translatable">حق معاينة الطلب عند الاستلام</span></span>
+                <span>🔄 <span class="translatable">ضمان استبدال واسترجاع</span></span>
+            </div>
+            <div id="home-smart-tools-bar" class="smart-shopping-tools-bar">
+                <button type="button" id="btn-open-box-builder" class="smart-tool-pill" onclick="window.openCustomBoxModal()">
+                    <span>📦</span> <span class="translatable">كوّن كرتونة التوفير بخصم خاص!</span>
+                </button>
+                <button type="button" id="btn-open-product-quiz" class="smart-tool-pill" onclick="window.openProductQuizModal()">
+                    <span>🧭</span> <span class="translatable">محتار؟ مساعد الاختيار الذكي</span>
+                </button>
+            </div>
             <div class="compact-search-wrapper" style="background:var(--input-bg); padding:10px 12px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:12px;">
                 <div style="display:flex; gap:8px; align-items:center;">
                     <!-- قسم البحث الحي -->
@@ -342,6 +408,7 @@
                         </div>
                         <div id="live-search-results" class="live-search-box"></div>
                     </div>
+                    <button type="button" id="btn-toggle-view-mode" class="btn btn-outline" onclick="window.toggleProductsViewMode()" title="تغيير طريقة العرض" style="padding: 0 10px; height:42px; display:flex; align-items:center; justify-content:center; border-radius:8px; font-size:1rem; border-color:var(--border-color); color:var(--primary); background:var(--panel-bg);">📋</button>
                     <button type="button" id="btn-toggle-filters" class="btn btn-outline" onclick="window.toggleAdvancedFilters()" style="padding: 0 12px; height:42px; display:flex; align-items:center; gap:5px; white-space:nowrap; border-radius:8px; font-size:0.85rem; border-color:var(--border-color); color:var(--primary); background:var(--panel-bg);">
                         <span>🌪️</span> <span class="translatable">فلتر وترتيب</span> <span id="filter-arrow-icon" style="font-size:0.7rem; transition:transform 0.3s;">▼</span>
                     </button>
@@ -672,6 +739,49 @@
         
         
 
+        <div class="panel" id="admin-work-panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid var(--border-color); padding-bottom:12px; margin-bottom:15px;">
+                <div>
+                    <h2 style="color:var(--primary); margin:0; display:flex; align-items:center; gap:8px;">💼 غرفة متابعة العمل والشغل المباشرة</h2>
+                    <span style="font-size:0.82rem; color:#28a745; font-weight:bold;">🟢 متابعة لحظية لكل الطلبات، الرسائل، الإلغاءات، والتنبيهات في شاشة واحدة</span>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button type="button" id="btn-toggle-work-sound" class="btn btn-outline" style="padding:6px 12px; font-size:0.82rem; border-color:var(--primary); color:var(--primary);" onclick="window.toggleWorkSoundAlert()">🔊 الصوت: مفعل</button>
+                    <button type="button" class="btn" style="padding:6px 12px; font-size:0.82rem; background:#028090;" onclick="window.renderAdminWorkHub()">🔄 تحديث</button>
+                </div>
+            </div>
+
+            <!-- كروت الفلترة السريعة لأحداث الشغل -->
+            <div class="work-kpi-grid">
+                <div class="work-kpi-card active" id="wk-tab-all" onclick="window.filterWorkHub('all')">
+                    <span style="font-size:0.82rem; font-weight:bold; color:var(--text-muted);">🌐 كل الشغل</span>
+                    <span class="kpi-num" id="wk-count-all" style="color:var(--primary);">0</span>
+                </div>
+                <div class="work-kpi-card" id="wk-tab-orders" onclick="window.filterWorkHub('orders')">
+                    <span style="font-size:0.82rem; font-weight:bold; color:#28a745;">📦 طلبات نشطة</span>
+                    <span class="kpi-num" id="wk-count-orders" style="color:#28a745;">0</span>
+                </div>
+                <div class="work-kpi-card" id="wk-tab-chats" onclick="window.filterWorkHub('chats')">
+                    <span style="font-size:0.82rem; font-weight:bold; color:#007bff;">💬 رسائل العملاء</span>
+                    <span class="kpi-num" id="wk-count-chats" style="color:#007bff;">0</span>
+                </div>
+                <div class="work-kpi-card" id="wk-tab-cancels" onclick="window.filterWorkHub('cancels')">
+                    <span style="font-size:0.82rem; font-weight:bold; color:#dc3545;">🚨 إلغاء واسترجاع</span>
+                    <span class="kpi-num" id="wk-count-cancels" style="color:#dc3545;">0</span>
+                </div>
+                <div class="work-kpi-card" id="wk-tab-leads" onclick="window.filterWorkHub('leads')">
+                    <span style="font-size:0.82rem; font-weight:bold; color:#ff6b00;">🔔 سلال وتنبيهات</span>
+                    <span class="kpi-num" id="wk-count-leads" style="color:#ff6b00;">0</span>
+                </div>
+            </div>
+
+            <!-- شريط بحث سريع داخل غرفة العمل -->
+            <input type="text" id="work-hub-search" placeholder="🔍 ابحث في غرفة العمل (باسم العميل، رقم الهاتف، نص الرسالة، أو رقم الطلب)..." oninput="window.renderAdminWorkHub()" style="margin-bottom:15px;">
+
+            <!-- سجل الأحداث الموحد -->
+            <div id="admin-work-stream-container"></div>
+        </div>
+
         <div class="panel" id="admin-dashboard-panel">
             <h2 style="color: var(--secondary); margin-top: 0;">📊 الإحصائيات (للإدارة)</h2>
             <div class="dashboard-grid" style="grid-template-columns: 1fr; margin-top:20px;">
@@ -730,6 +840,20 @@
                 <div class="dash-card"><h3>📦 الطلبات</h3><div class="stat" id="stat-orders">0</div></div>
                 <div class="dash-card"><h3>💰 الأرباح</h3><div class="stat" id="stat-revenue" style="color: #28a745;">0 ج</div></div>
                 <div class="dash-card" id="admin-net-profit-card"><h3>💎 صافي الربح الفعلي</h3><div class="stat" id="stat-net-profit" style="color: #028090;">0 ج</div></div>
+            </div>
+            <div class="dash-card" id="admin-expenses-card" style="border-top-color: #dc3545; text-align:right; margin-top:15px;">
+                <div onclick="let el=document.getElementById('admin-expenses-body'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+                    <h3 style="color:#dc3545; margin:0;">💸 سجل المصروفات والإعلانات (تُخصم تلقائياً من صافي الربح): <span id="admin-total-expenses-badge" style="color:var(--danger);">0 ج</span></h3>
+                    <span style="color:#dc3545; font-weight:bold;">▼</span>
+                </div>
+                <div id="admin-expenses-body" style="display:none; margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px;">
+                    <div class="form-row" style="margin-bottom:10px;">
+                        <input type="text" id="expense-title-input" placeholder="بيان المصروف (مثال: إعلان ممول فيسبوك / كراتين تغليف)" style="margin-bottom:0; flex:2;">
+                        <input type="number" id="expense-amount-input" placeholder="المبلغ (ج)" style="margin-bottom:0; flex:1;">
+                        <button type="button" class="btn btn-danger" style="padding:8px 14px;" onclick="window.addStoreExpense()">➕ تسجيل مصروف</button>
+                    </div>
+                    <div id="admin-expenses-list"></div>
+                </div>
             </div>
             <div style="display: flex; gap:10px; margin-top: 15px; flex-wrap:wrap;">
                 <button type="button" class="btn btn-outline" style="flex:1; min-width:150px; border-color:var(--danger); color:var(--danger);" onclick="window.resetAdminRevenue()">تصفير الأرباح 🔄</button>
@@ -795,6 +919,12 @@
                     </div>
                 </div>
                 <div id="admin-chat-messages" style="height: 350px; overflow-y: auto; margin-bottom: 15px; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column;"></div>
+                <div id="admin-canned-responses-bar" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:8px;">
+                    <button type="button" class="work-canned-chip" onclick="window.insertCannedAdminReply('أهلاً بحضرتك في متجر زيت الشجرة المباركة 🌿 تحت أمرك، كيف يمكنني مساعدتك؟')">👋 ترحيب</button>
+                    <button type="button" class="work-canned-chip" onclick="window.insertCannedAdminReply('تم تأكيد طلب حضرتك وجاري تجهيزه بعناية ليصلك في أسرع وقت 📦')">📦 تأكيد التجهيز</button>
+                    <button type="button" class="work-canned-chip" onclick="window.insertCannedAdminReply('طلب حضرتك خرج مع المندوب للشحن وسيتواصل معك قريباً جداً 🚚')">🚚 تم الشحن</button>
+                    <button type="button" class="work-canned-chip" onclick="window.insertCannedAdminReply('الزيت سيناوي بكر ممتاز عصرة أولى على البارد 100% ومضمون مع حق المعاينة عند الاستلام 🌿')">🌿 ضمان الجودة</button>
+                </div>
                 <div style="display:flex; gap:10px; align-items:center;">
                     <div style="flex:1; display:flex; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; overflow:hidden; position:relative;">
                         <input type="text" id="admin-chat-input" placeholder="رد على العميل صوتاً أو كتابة..." autocomplete="off" style="border:none; margin:0; border-radius:0; padding-left: 50px;">
@@ -1008,6 +1138,27 @@
                             <span>⚖️ تفعيل مقارنة المنتجات السريعة وحاسبة التوفير للأحجام</span>
                         </label>
                         <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
+                        <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">💼 غرفة متابعة العمل الموحدة وأدوات الشراء الخاطف (V56):</h4>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-work-hub" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>💼 تفعيل قسم (العمل / الشغل) الموحد لمتابعة الطلبات والرسائل والإلغاءات في شاشة واحدة</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-quick-order" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>⚡ تفعيل زر (الشراء الخاطف بضغطة واحدة) على كروت المنتجات</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-box-builder" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📦 تفعيل أداة (كوّن كرتونة التوفير) ومساعد الاختيار الذكي بالرئيسية</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-trust-marquee" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🏆 تفعيل شريط ضمانات الثقة أعلى الرئيسية وزر تبديل طريقة العرض (شبكة/قائمة)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-shipping-label" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🖨️ تفعيل طباعة بوليصة الشحن بالباركود وفاتورة العميل وسجل المصروفات</span>
+                        </label>
                         <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🛠️ أدوات المدير المتقدمة وتصميمات المواسم (V55):</h4>
 
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
