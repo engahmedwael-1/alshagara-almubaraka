@@ -201,7 +201,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             return arr;
         }
 let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = false, isProductsLoaded = false, currentCategoryFilter = 'الكل', searchQuery = '', activeProductForReview = null, activeVariantForCart = null;
-        let adminOrdersArray = [], currentAdminOrderFilter = 'الكل';
+        let adminOrdersArray = [], adminReturnsArray = [], currentAdminOrderFilter = 'الكل'; window.adminReturnsArray = adminReturnsArray;
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
         let savedForLater = JSON.parse(localStorage.getItem('savedForLater')) || [];
         let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
