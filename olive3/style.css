@@ -639,3 +639,32 @@ body.dark-mode .estimated-delivery-box {
     background: var(--secondary);
     color: white;
 }
+
+
+/* === الجزء الثاني V50: تثبيت وإخفاء المنتجات + بحث وتحديث جماعي للطلبات === */
+.pinned-product-badge {
+    position: absolute;
+    bottom: 10px;
+    left: 8px;
+    background: rgba(197, 155, 39, 0.95);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: bold;
+    z-index: 3;
+}
+.hidden-product-card {
+    opacity: 0.55;
+    border: 2px dashed var(--danger) !important;
+}
+.admin-orders-toolbar {
+    background: var(--input-bg);
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}

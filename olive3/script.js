@@ -886,7 +886,10 @@ try {
 
         window.toggleWishlist = function(event, id) { event.stopPropagation(); const index = wishlist.indexOf(id); if(index > -1) { wishlist.splice(index, 1); window.showToast('تم الحذف من المفضلة'); } else { wishlist.push(id); window.showToast('تمت الإضافة للمفضلة ❤️', 'success'); } localStorage.setItem('wishlist', JSON.stringify(wishlist)); window.renderProducts(false); window.renderVisualBar(); if(document.getElementById('wishlist-panel') && document.getElementById('wishlist-panel').classList.contains('active')) window.renderWishlist(); }
 
-        window.getFilteredProductsCount = function() { let minP = document.getElementById('min-price'); let minPrice = minP ? (Number(minP.value) || 0) : 0; let maxP = document.getElementById('max-price'); let maxPrice = maxP ? (Number(maxP.value) || Infinity) : Infinity; if(maxPrice === 0) maxPrice = Infinity; let filteredProducts = products.filter(p => { let inCategory = (currentCategoryFilter === 'الكل' || (p.category || 'أخرى') === currentCategoryFilter); let inSearch = window.fuzzyMatch(p.name, searchQuery); let inPrice = p.price >= minPrice && p.price <= maxPrice; return inCategory && inSearch && inPrice; }); return filteredProducts.length; }
+        window.getFilteredProductsCount = function() { let minP = document.getElementById('min-price'); let minPrice = minP ? (Number(minP.value) || 0) : 0; let maxP = document.getElementById('max-price'); let maxPrice = maxP ? (Number(maxP.value) || Infinity) : Infinity; if(maxPrice === 0) maxPrice = Infinity; let filteredProducts = products.filter(p => { if (p.isHidden && !isCurrentUserAdmin) return false; let inCategory = (currentCategoryFilter === 'الكل' || (p.category || 'أخرى') === currentCategoryFilter); let inSearch = window.fuzzyMatch(p.name, searchQuery); let inPrice = p.price >= minPrice && p.price <= maxPrice; return inCategory && inSearch && inPrice; });
+            if (storeSettings.enablePinHideProducts !== false) {
+                filteredProducts.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+            } return filteredProducts.length; }
 
         window.renderProducts = function(scrollToTop = true) {
             let container = document.getElementById('products-container'); if(!container) return;
@@ -901,7 +904,8 @@ try {
             paginatedProducts.forEach(product => {
                 let safeName = product.name.replace(/'/g, "\\'"); let categoryLabel = product.category || 'أخرى';
                 let avgRating = 5; if(product.reviews && product.reviews.length > 0) { let total = 0; product.reviews.forEach(r => total += r.rating); avgRating = (total / product.reviews.length).toFixed(1); }
-                let adminBtns = currentUser && isCurrentUserAdmin ? `<div style="display:flex; gap:5px; padding: 0 10px; margin-top:5px;"><button type="button" class="btn btn-info" style="flex:1; font-size:0.9rem; padding:5px;" onclick="event.stopPropagation(); window.editProduct('${product.id}')">تعديل</button><button type="button" class="btn btn-danger" style="flex:1; font-size:0.9rem; padding:5px;" onclick="event.stopPropagation(); window.deleteProduct('${product.id}')">حذف</button></div>` : '';
+                let pinHideBtns = (currentUser && isCurrentUserAdmin && storeSettings.enablePinHideProducts !== false) ? `<div style="display:flex; gap:5px; padding:0 10px; margin-top:5px;"><button type="button" class="btn btn-outline" style="flex:1; font-size:0.78rem; padding:4px;" onclick="event.stopPropagation(); window.togglePinProduct('${product.id}', ${Boolean(product.isPinned)})">${product.isPinned ? '📌 إلغاء التثبيت' : '📌 تثبيت بالأول'}</button><button type="button" class="btn btn-outline" style="flex:1; font-size:0.78rem; padding:4px; border-color:var(--danger); color:var(--danger);" onclick="event.stopPropagation(); window.toggleHideProduct('${product.id}', ${Boolean(product.isHidden)})">${product.isHidden ? '👁️ إظهار للعملاء' : '🙈 إخفاء مؤقت'}</button></div>` : '';
+                let adminBtns = currentUser && isCurrentUserAdmin ? `<div style="display:flex; gap:5px; padding: 0 10px; margin-top:5px;"><button type="button" class="btn btn-info" style="flex:1; font-size:0.9rem; padding:5px;" onclick="event.stopPropagation(); window.editProduct('${product.id}')">تعديل</button><button type="button" class="btn btn-danger" style="flex:1; font-size:0.9rem; padding:5px;" onclick="event.stopPropagation(); window.deleteProduct('${product.id}')">حذف</button></div>${pinHideBtns}` : '';
                 let vArr = product.variantsData ? product.variantsData : []; let displayPriceText = `${product.price} ج`; if(vArr.length > 0) displayPriceText = `يبدأ من ${vArr[0].price} ج`;
                 let priceHtml = `<div class="price">${displayPriceText}</div>`; if(isCurrentUserAdmin && vArr.length === 0) { priceHtml = `<div class="price"><span class="inline-edit-price" contenteditable="true" onclick="event.stopPropagation();" onblur="window.updateProductPriceAdmin('${product.id}', this)">${product.price}</span> ج ✏️</div>`; }
                 let discountBadge = ''; let addTxt = window.currentLang === 'ar' ? 'إضافة 🛒' : 'Add 🛒'; let selTxt = window.currentLang === 'ar' ? 'اختر الحجم 🛒' : 'Select 🛒'; let discTxt = window.currentLang === 'ar' ? 'خصم' : 'Off';
@@ -912,7 +916,9 @@ try {
                 let primaryImage = (product.images && product.images.length > 0) ? product.images[0] : (product.imageUrl || 'https://via.placeholder.com/300');
                 let videoIcon = product.videoUrl ? `<div style="position:absolute; bottom:50px; right:10px; background:rgba(0,0,0,0.7); padding:5px; border-radius:50%; color:white; font-size:0.8rem; z-index:2;">▶️</div>` : '';
                 let specialBadgeHtml = (storeSettings.enableProductBadges !== false && product.specialBadge) ? `<span class="special-product-badge">${window.escapeHTML(product.specialBadge)}</span>` : '';
-                htmlContent += `<div class="product-card" onclick="window.openProductModal('${product.id}')">${discountBadge}${wishBtnHtml}${specialBadgeHtml}<span class="category-badge">${categoryLabel}</span><div style="position:relative;"><img loading="lazy" src="${primaryImage}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'">${videoIcon}</div><div style="padding: 0 10px;"><h3>${product.name}</h3><div class="rating-stars">⭐ ${avgRating}</div>${priceHtml}${stockBadge}<button type="button" class="btn btn-full" style="padding: 8px; font-size:1rem;" ${addBtnState}>${vArr.length > 0 ? selTxt : addTxt}</button></div>${adminBtns}</div>`;
+                let pinnedBadgeHtml = (storeSettings.enablePinHideProducts !== false && product.isPinned) ? `<span class="pinned-product-badge">📌 مثبت</span>` : '';
+                let hiddenClass = product.isHidden ? 'hidden-product-card' : '';
+                htmlContent += `<div class="product-card ${hiddenClass}" onclick="window.openProductModal('${product.id}')">${discountBadge}${wishBtnHtml}${specialBadgeHtml}${pinnedBadgeHtml}<span class="category-badge">${categoryLabel}</span><div style="position:relative;"><img loading="lazy" src="${primaryImage}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'">${videoIcon}</div><div style="padding: 0 10px;"><h3>${product.name}</h3><div class="rating-stars">⭐ ${avgRating}</div>${priceHtml}${stockBadge}<button type="button" class="btn btn-full" style="padding: 8px; font-size:1rem;" ${addBtnState}>${vArr.length > 0 ? selTxt : addTxt}</button></div>${adminBtns}</div>`;
             }); 
             container.innerHTML = htmlContent; if(scrollToTop) window.scrollTo(0,0); if(isCurrentUserAdmin && window.renderLowStockAlerts) window.renderLowStockAlerts();
         }
@@ -2437,4 +2443,129 @@ window.showUserHistory = function(userId, userName) {
                 console.error(e);
             }
             await prevSaveSettingsV48();
+        };
+
+
+        // === الجزء الثاني V50: تثبيت وإخفاء المنتجات + بحث وتحديث جماعي للطلبات ===
+        window.togglePinProduct = async function(id, currentlyPinned) {
+            try {
+                await updateDoc(doc(db, 'products', id), { isPinned: !currentlyPinned });
+                window.showToast(!currentlyPinned ? '📌 تم تثبيت المنتج في مقدمة المتجر' : 'تم إلغاء تثبيت المنتج', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء التحديث', 'error');
+            }
+        };
+
+        window.toggleHideProduct = async function(id, currentlyHidden) {
+            try {
+                await updateDoc(doc(db, 'products', id), { isHidden: !currentlyHidden });
+                window.showToast(!currentlyHidden ? '🙈 تم إخفاء المنتج مؤقتاً عن العملاء' : '👁️ تم إظهار المنتج للعملاء', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء التحديث', 'error');
+            }
+        };
+
+        window.renderAdminOrdersUI = function() {
+            const container = document.getElementById('admin-orders-container');
+            if (!container) return;
+            if (adminOrdersArray.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;"><span style="font-size:3rem; display:block; margin-bottom:10px;">📭</span><h3>لا توجد طلبات هنا</h3></div>';
+                return;
+            }
+            let searchEl = document.getElementById('admin-orders-search');
+            let q = (searchEl && storeSettings.enableAdminOrderTools !== false) ? searchEl.value.trim().toLowerCase() : '';
+
+            let filtered = adminOrdersArray.filter(o => {
+                let matchStatus = (currentAdminOrderFilter === 'الكل' || o.status === currentAdminOrderFilter);
+                if (!matchStatus) return false;
+                if (!q) return true;
+                let nameStr = String(o.customerName || '').toLowerCase();
+                let phoneStr = String((o.phones && o.phones.primary) || '').toLowerCase();
+                let govStr = String((o.location && o.location.governorate) || '').toLowerCase();
+                let idStr = String(o.id || '').toLowerCase();
+                return nameStr.includes(q) || phoneStr.includes(q) || govStr.includes(q) || idStr.includes(q);
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;"><span style="font-size:3rem; display:block; margin-bottom:10px;">📭</span><h3>لا توجد طلبات مطابقة</h3></div>';
+                return;
+            }
+            let htmlContent = '';
+            let showCheck = storeSettings.enableAdminOrderTools !== false;
+            filtered.forEach((data) => {
+                let badgeClass = 'status-pending';
+                if (data.status.includes('تجهيز')) badgeClass = 'status-prep';
+                else if (data.status.includes('شحن')) badgeClass = 'status-shipped';
+                else if (data.status.includes('توصيل')) badgeClass = 'status-delivered';
+                else if (data.status.includes('رفض') || data.status.includes('لغى')) badgeClass = 'status-canceled';
+
+                let dStr = new Date(data.orderDate).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
+                let checkHtml = showCheck ? `<input type="checkbox" class="order-checkbox" value="${data.id}" onclick="event.stopPropagation();" style="width:20px; height:20px; accent-color:var(--primary); cursor:pointer;">` : '';
+
+                htmlContent += `
+                <div class="admin-msg-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; cursor:pointer; border-right:4px solid var(--secondary);" onclick="window.openAdminOrderModal('${data.id}')">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        ${checkHtml}
+                        <div>
+                            <strong style="color:var(--primary); font-size:1.1rem;">👤 ${window.escapeHTML(data.customerName)}</strong><br>
+                            <span style="font-size:0.85rem; color:var(--text-muted);">رقم: #${data.id.slice(0,6).toUpperCase()} | 📞 ${window.escapeHTML((data.phones && data.phones.primary) || '')} | 📅 ${dStr}</span><br>
+                            <strong style="color:var(--secondary);">${data.totalAmount} ج</strong>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="order-status-badge ${badgeClass}" style="font-size:0.75rem;">${window.escapeHTML(data.status)}</span>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = htmlContent;
+        };
+
+        window.bulkUpdateSelectedOrders = async function() {
+            let selectedIds = [];
+            document.querySelectorAll('.order-checkbox:checked').forEach(cb => selectedIds.push(cb.value));
+            if (selectedIds.length === 0) {
+                window.showToast('يرجى تحديد طلب واحد على الأقل أولاً', 'error');
+                return;
+            }
+            let statusSel = document.getElementById('bulk-order-status-select');
+            let newStatus = statusSel ? statusSel.value : 'تم الشحن';
+            if (confirm(`هل أنت متأكد من تحديث حالة (${selectedIds.length}) طلبات إلى "${newStatus}" دفعة واحدة؟`)) {
+                try {
+                    for (let oid of selectedIds) {
+                        await window.updateOrderStatus(oid, newStatus);
+                    }
+                    window.showToast(`تم تحديث ${selectedIds.length} طلبات بنجاح ✅`, 'success');
+                } catch (e) {
+                    window.showToast('حدث خطأ أثناء التحديث الجماعي', 'error');
+                }
+            }
+        };
+
+        const prevApplySettingsV49 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV49();
+            if (isCurrentUserAdmin) {
+                let elPin = document.getElementById('setting-enable-pin-hide-products');
+                if (elPin) elPin.checked = storeSettings.enablePinHideProducts !== false;
+                let elOrdTools = document.getElementById('setting-enable-admin-order-tools');
+                if (elOrdTools) elOrdTools.checked = storeSettings.enableAdminOrderTools !== false;
+            }
+            let toolbar = document.getElementById('admin-orders-toolbar');
+            if (toolbar) {
+                toolbar.style.display = storeSettings.enableAdminOrderTools !== false ? 'flex' : 'none';
+            }
+            if (isCurrentUserAdmin) window.renderAdminOrdersUI();
+        };
+
+        const prevSaveSettingsV49 = window.saveSettings;
+        window.saveSettings = async function() {
+            let elPin = document.getElementById('setting-enable-pin-hide-products');
+            let elOrdTools = document.getElementById('setting-enable-admin-order-tools');
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    enablePinHideProducts: elPin ? elPin.checked : true,
+                    enableAdminOrderTools: elOrdTools ? elOrdTools.checked : true
+                });
+            } catch (e) {}
+            await prevSaveSettingsV49();
         };

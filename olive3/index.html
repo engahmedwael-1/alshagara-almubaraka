@@ -579,6 +579,18 @@
                 <button type="button" class="filter-btn" id="btn-filter-processing" onclick="window.filterAdminOrders('تم التجهيز')">تم التجهيز</button>
                 <button type="button" class="filter-btn" id="btn-filter-shipped" onclick="window.filterAdminOrders('تم الشحن')">تم الشحن</button>
             </div>
+            <div id="admin-orders-toolbar" class="admin-orders-toolbar">
+                <input type="text" id="admin-orders-search" placeholder="🔍 ابحث في الطلبات (باسم العميل، رقم الهاتف، المحافظة، أو رقم الطلب)..." oninput="window.renderAdminOrdersUI()" style="margin-bottom:0;">
+                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                    <button type="button" class="btn btn-outline" style="padding:6px 12px; font-size:0.85rem;" onclick="window.selectAllOrders()">☑️ تحديد / إلغاء تحديد الكل</button>
+                    <select id="bulk-order-status-select" style="margin-bottom:0; flex:1; min-width:150px; padding:6px 10px;">
+                        <option value="تم التجهيز">تحويل المحدد إلى: تم التجهيز 📦</option>
+                        <option value="تم الشحن">تحويل المحدد إلى: تم الشحن 🚚</option>
+                        <option value="تم التوصيل ✅">تحويل المحدد إلى: تم التوصيل ✅</option>
+                    </select>
+                    <button type="button" class="btn btn-info" style="padding:6px 15px; font-size:0.85rem;" onclick="window.bulkUpdateSelectedOrders()">تطبيق على المحدد 🚀</button>
+                </div>
+            </div>
             <div id="admin-orders-container"></div>
         </div>
         
@@ -715,6 +727,14 @@
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                             <input type="checkbox" id="setting-enable-buy-again" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>🔄 تفعيل زر (إعادة الطلب بضغطة واحدة) في طلبات العميل السابقة</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-pin-hide-products" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📌 تفعيل أزرار تثبيت المنتجات في المقدمة وإخفائها مؤقتاً</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-admin-order-tools" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📦 تفعيل شريط البحث السريع والتحديث الجماعي في طلبات الإدارة</span>
                         </label>
                     </div>
                     <button type="button" class="btn" onclick="window.saveSettings()" style="width:100%; background:#028090; margin-top:12px;">حفظ إعدادات الواجهة وتسهيلات العملاء</button>
