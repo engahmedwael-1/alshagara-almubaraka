@@ -43,6 +43,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 
         // دالة البحث الحي السريع (Live Search)
         window.handleLiveSearch = function(val) {
+            searchQuery = val.trim();
+            currentRenderedProducts = productsPerPage;
+            window.renderProducts(false);
             let resContainer = document.getElementById('live-search-results');
             if(!val.trim() || !isProductsLoaded) { resContainer.style.display = 'none'; return; }
             let q = val.toLowerCase();
@@ -907,18 +910,40 @@ try {
                 let pinHideBtns = (currentUser && isCurrentUserAdmin && storeSettings.enablePinHideProducts !== false) ? `<div style="display:flex; gap:5px; padding:0 10px; margin-top:5px;"><button type="button" class="btn btn-outline" style="flex:1; font-size:0.78rem; padding:4px;" onclick="event.stopPropagation(); window.togglePinProduct('${product.id}', ${Boolean(product.isPinned)})">${product.isPinned ? '📌 إلغاء التثبيت' : '📌 تثبيت بالأول'}</button><button type="button" class="btn btn-outline" style="flex:1; font-size:0.78rem; padding:4px; border-color:var(--danger); color:var(--danger);" onclick="event.stopPropagation(); window.toggleHideProduct('${product.id}', ${Boolean(product.isHidden)})">${product.isHidden ? '👁️ إظهار للعملاء' : '🙈 إخفاء مؤقت'}</button></div>` : '';
                 let adminBtns = currentUser && isCurrentUserAdmin ? `<div style="display:flex; gap:5px; padding: 0 10px; margin-top:5px;"><button type="button" class="btn btn-info" style="flex:1; font-size:0.9rem; padding:5px;" onclick="event.stopPropagation(); window.editProduct('${product.id}')">تعديل</button><button type="button" class="btn btn-danger" style="flex:1; font-size:0.9rem; padding:5px;" onclick="event.stopPropagation(); window.deleteProduct('${product.id}')">حذف</button></div>${pinHideBtns}` : '';
                 let vArr = product.variantsData ? product.variantsData : []; let displayPriceText = `${product.price} ج`; if(vArr.length > 0) displayPriceText = `يبدأ من ${vArr[0].price} ج`;
-                let priceHtml = `<div class="price">${displayPriceText}</div>`; if(isCurrentUserAdmin && vArr.length === 0) { priceHtml = `<div class="price"><span class="inline-edit-price" contenteditable="true" onclick="event.stopPropagation();" onblur="window.updateProductPriceAdmin('${product.id}', this)">${product.price}</span> ج ✏️</div>`; }
                 let discountBadge = ''; let addTxt = window.currentLang === 'ar' ? 'إضافة 🛒' : 'Add 🛒'; let selTxt = window.currentLang === 'ar' ? 'اختر الحجم 🛒' : 'Select 🛒'; let discTxt = window.currentLang === 'ar' ? 'خصم' : 'Off';
-                if(product.oldPrice && Number(product.oldPrice) > Number(product.price)) { let discountPercent = Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100); discountBadge = `<span class="discount-badge">${discTxt} ${discountPercent}%</span>`; displayPriceText = `<del style="color:var(--text-muted); font-size:0.9rem; margin-left:5px; font-weight:normal;">${product.oldPrice}</del> ` + displayPriceText; }
+                if(product.oldPrice && Number(product.oldPrice) > Number(product.price)) { let discountPercent = Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100); discountBadge = `<span class="discount-badge">${discTxt} ${discountPercent}%</span>`; displayPriceText = `<del style="color:var(--text-muted); font-size:0.82rem; margin-left:4px; font-weight:normal;">${product.oldPrice}</del> ` + displayPriceText; }
+                let priceHtml = `<div class="price">${displayPriceText}</div>`; if(isCurrentUserAdmin && vArr.length === 0) { priceHtml = `<div class="price"><span class="inline-edit-price" contenteditable="true" onclick="event.stopPropagation();" onblur="window.updateProductPriceAdmin('${product.id}', this)">${product.price}</span> ج ✏️</div>`; }
                 let isWished = wishlist.includes(product.id) ? 'active' : ''; let wishBtnHtml = `<button type="button" class="wishlist-btn ${isWished}" onclick="window.toggleWishlist(event, '${product.id}')">❤</button>`;
-                let stockBadge = (product.stock !== undefined && product.stock !== "" && Number(product.stock) <= 0) ? `<div style="color:var(--danger); font-weight:bold; margin-bottom:5px;">نفدت الكمية ❌</div>` : '';
+                let stockBadge = (product.stock !== undefined && product.stock !== "" && Number(product.stock) <= 0) ? `<div style="color:var(--danger); font-weight:bold; font-size:0.8rem; margin-bottom:4px;">نفدت الكمية ❌</div>` : '';
                 let addBtnState = (product.stock !== undefined && product.stock !== "" && Number(product.stock) <= 0) ? `disabled style="background:var(--border-color); cursor:not-allowed;"` : `onclick="window.executeAddToCart(event, '${product.id}', '${safeName}');"`;
                 let primaryImage = (product.images && product.images.length > 0) ? product.images[0] : (product.imageUrl || 'https://via.placeholder.com/300');
-                let videoIcon = product.videoUrl ? `<div style="position:absolute; bottom:50px; right:10px; background:rgba(0,0,0,0.7); padding:5px; border-radius:50%; color:white; font-size:0.8rem; z-index:2;">▶️</div>` : '';
+                let videoIcon = product.videoUrl ? `<div style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.7); padding:4px 6px; border-radius:50%; color:white; font-size:0.75rem; z-index:2;">▶️</div>` : '';
                 let specialBadgeHtml = (storeSettings.enableProductBadges !== false && product.specialBadge) ? `<span class="special-product-badge">${window.escapeHTML(product.specialBadge)}</span>` : '';
                 let pinnedBadgeHtml = (storeSettings.enablePinHideProducts !== false && product.isPinned) ? `<span class="pinned-product-badge">📌 مثبت</span>` : '';
                 let hiddenClass = product.isHidden ? 'hidden-product-card' : '';
-                htmlContent += `<div class="product-card ${hiddenClass}" onclick="window.openProductModal('${product.id}')">${discountBadge}${wishBtnHtml}${specialBadgeHtml}${pinnedBadgeHtml}<span class="category-badge">${categoryLabel}</span><div style="position:relative;"><img loading="lazy" src="${primaryImage}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'">${videoIcon}</div><div style="padding: 0 10px;"><h3>${product.name}</h3><div class="rating-stars">⭐ ${avgRating}</div>${priceHtml}${stockBadge}<button type="button" class="btn btn-full" style="padding: 8px; font-size:1rem;" ${addBtnState}>${vArr.length > 0 ? selTxt : addTxt}</button></div>${adminBtns}</div>`;
+                htmlContent += `<div class="product-card ${hiddenClass}" onclick="window.openProductModal('${product.id}')">
+                    <div class="product-card-media">
+                        ${wishBtnHtml}
+                        <span class="category-badge">${categoryLabel}</span>
+                        ${pinnedBadgeHtml}
+                        <img loading="lazy" src="${primaryImage}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'">
+                        ${discountBadge}
+                        ${specialBadgeHtml}
+                        ${videoIcon}
+                    </div>
+                    <div class="product-card-body">
+                        <div>
+                            <h3>${product.name}</h3>
+                            <div class="rating-stars">⭐ ${avgRating}</div>
+                        </div>
+                        <div>
+                            ${priceHtml}
+                            ${stockBadge}
+                            <button type="button" class="btn btn-full" style="padding: 7px 10px; font-size:0.92rem; border-radius:8px;" ${addBtnState}>${vArr.length > 0 ? selTxt : addTxt}</button>
+                        </div>
+                    </div>
+                    ${adminBtns}
+                </div>`;
             }); 
             container.innerHTML = htmlContent; if(scrollToTop) window.scrollTo(0,0); if(isCurrentUserAdmin && window.renderLowStockAlerts) window.renderLowStockAlerts();
         }
@@ -2718,4 +2743,54 @@ window.showUserHistory = function(userId, userName) {
                 });
             } catch (e) {}
             await prevSaveSettingsV50();
+        };
+
+
+        // === النسخة V52: طي الفلاتر والتصميم المدمج السريع وإخفاء شريط الإدارة الفارغ للعملاء ===
+        window.toggleAdvancedFilters = function() {
+            let box = document.getElementById('advanced-filters-box');
+            let arrow = document.getElementById('filter-arrow-icon');
+            if (!box) return;
+            if (box.style.display === 'none' || box.style.display === '') {
+                box.style.display = 'flex';
+                if (arrow) arrow.style.transform = 'rotate(180deg)';
+            } else {
+                box.style.display = 'none';
+                if (arrow) arrow.style.transform = 'rotate(0deg)';
+            }
+        };
+
+        const origUpdateAdminUIV51 = window.updateAdminUI;
+        window.updateAdminUI = function() {
+            origUpdateAdminUIV51();
+            let sNav = document.getElementById('smart-nav');
+            if (sNav) {
+                sNav.style.display = isCurrentUserAdmin ? 'flex' : 'none';
+            }
+        };
+
+        const prevApplySettingsV51 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV51();
+            let isCompact = storeSettings.enableCompactUI !== false;
+            document.body.classList.toggle('compact-ui', isCompact);
+            if (isCurrentUserAdmin) {
+                let elComp = document.getElementById('setting-enable-compact-ui');
+                if (elComp) elComp.checked = isCompact;
+            }
+            let sNav = document.getElementById('smart-nav');
+            if (sNav) {
+                sNav.style.display = isCurrentUserAdmin ? 'flex' : 'none';
+            }
+        };
+
+        const prevSaveSettingsV51 = window.saveSettings;
+        window.saveSettings = async function() {
+            let elComp = document.getElementById('setting-enable-compact-ui');
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    enableCompactUI: elComp ? elComp.checked : true
+                });
+            } catch (e) {}
+            await prevSaveSettingsV51();
         };

@@ -40,7 +40,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="compact-ui">
     <div id="social-proof-toast" class="social-proof-toast">
         <img loading="lazy" id="sp-img" src="1000392409.jpeg" alt="Product">
         <div>
@@ -159,7 +159,7 @@
         </div>
     </header>
 
-    <nav class="main-nav" id="smart-nav">
+    <nav class="main-nav" id="smart-nav" style="display: none;">
         <!-- أزرار الإدارة فقط -->
         
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(255,193,7,0.2); border-color: #ffc107; color: #d39e00;" onclick="window.showPanel('admin-dashboard')">الإحصائيات 📊</button>
@@ -254,19 +254,22 @@
         <div class="panel active" id="home-panel">
             <div id="visual-scroll-bar" class="visual-scroll-bar" style="display:none;"></div>
             <div class="limited-offer-banner" id="home-limited-offer-banner"><span id="home-offer-banner-text" class="translatable">🔥 عرض خاص لفترة محدودة!</span><span class="timer" id="offer-timer">72:00:00</span></div>
-            <div style="background:var(--input-bg); padding:15px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:20px;">
-                <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
+            <div class="compact-search-wrapper" style="background:var(--input-bg); padding:10px 12px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:12px;">
+                <div style="display:flex; gap:8px; align-items:center;">
                     <!-- قسم البحث الحي -->
-                    <div style="flex:1; display:flex; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; overflow:visible; position:relative;">
-                        <input type="text" id="search-input" placeholder="ابحث عن منتج..." autocomplete="off" style="border:none; margin:0; border-radius:0; padding-left: 50px;" oninput="window.handleLiveSearch(this.value)">
+                    <div style="flex:1; display:flex; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; overflow:visible; position:relative; align-items:center;">
+                        <input type="text" id="search-input" placeholder="ابحث عن منتج..." autocomplete="off" style="border:none; margin:0; border-radius:8px; padding: 8px 12px 8px 42px; height:42px;" oninput="window.handleLiveSearch(this.value)">
                         <div class="mic-btn-container" onclick="window.startVoiceTyping('search-input', this.querySelector('.mic-btn'))">
                             <button type="button" id="voice-search-btn" class="mic-btn">🎤</button>
                         </div>
                         <div id="live-search-results" class="live-search-box"></div>
                     </div>
+                    <button type="button" id="btn-toggle-filters" class="btn btn-outline" onclick="window.toggleAdvancedFilters()" style="padding: 0 12px; height:42px; display:flex; align-items:center; gap:5px; white-space:nowrap; border-radius:8px; font-size:0.85rem; border-color:var(--border-color); color:var(--primary); background:var(--panel-bg);">
+                        <span>🌪️</span> <span class="translatable">فلتر وترتيب</span> <span id="filter-arrow-icon" style="font-size:0.7rem; transition:transform 0.3s;">▼</span>
+                    </button>
                 </div>
-                <div class="advanced-filters">
-                    <label style="font-weight:bold; color:var(--text-color); font-size:0.9rem;" class="translatable">الفلاتر والترتيب:</label>
+                <div class="advanced-filters" id="advanced-filters-box" style="display:none; margin-top:10px; margin-bottom:0; padding:10px 0 0; border:none; border-top:1px dashed var(--border-color); border-radius:0;">
+                    <label style="font-weight:bold; color:var(--text-color); font-size:0.85rem;" class="translatable">الفلاتر والترتيب:</label>
                     <input type="number" id="min-price" placeholder="أقل سعر" onchange="window.applyAdvancedFilters()">
                     <input type="number" id="max-price" placeholder="أعلى سعر" onchange="window.applyAdvancedFilters()">
                     <select id="sort-options" onchange="window.applyAdvancedFilters()">
@@ -771,6 +774,10 @@
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                             <input type="checkbox" id="setting-enable-backup-restore" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>💾 تفعيل أزرار النسخ الاحتياطي واستعادة البيانات (Backup & Restore)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-compact-ui" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>⚡ تفعيل التصميم المدمج السريع للصفحة الرئيسية (إظهار المنتجات فوراً وطي الفلاتر)</span>
                         </label>
                     </div>
                     <button type="button" class="btn" onclick="window.saveSettings()" style="width:100%; background:#028090; margin-top:12px;">حفظ إعدادات الواجهة وتسهيلات العملاء</button>
