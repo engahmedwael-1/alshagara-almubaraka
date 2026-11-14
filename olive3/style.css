@@ -1432,3 +1432,71 @@ body.theme-luxury {
 html[dir="ltr"] .products-grid.list-view-mode .product-card-body {
     text-align: left;
 }
+
+
+/* === النسخة V57: ضبط غرفة العمل 100% + صفقة اليوم + الاشتراك الشهري + بطاقات الهدايا + QR + آخر مشاهدة === */
+.work-time-pill {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--primary);
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 0.76rem;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.work-urgent-pulse {
+    animation: pulseOffer 1.8s infinite;
+}
+.flash-deal-banner-box {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    border: 2px solid #f59e0b;
+    border-radius: 14px;
+    padding: 12px 15px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+}
+body.dark-mode .flash-deal-banner-box {
+    background: linear-gradient(135deg, rgba(180, 83, 9, 0.25), rgba(146, 64, 14, 0.2));
+    border-color: #f59e0b;
+}
+.subscribe-save-box {
+    background: linear-gradient(135deg, rgba(2, 128, 144, 0.08), rgba(60, 82, 30, 0.08));
+    border: 1.5px solid #028090;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin: 10px 0;
+    text-align: right;
+}
+html[dir="ltr"] .subscribe-save-box {
+    text-align: left;
+}
+.sticky-last-viewed-bar {
+    position: fixed;
+    bottom: 75px;
+    left: 15px;
+    background: var(--panel-bg);
+    border: 2px solid var(--secondary);
+    border-radius: 30px;
+    padding: 5px 12px 5px 8px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    z-index: 995;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    max-width: 260px;
+}
+.sticky-last-viewed-bar img {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--secondary);
+}

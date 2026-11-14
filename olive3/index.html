@@ -126,6 +126,10 @@
         </div>
         <div class="header-actions">
             <!-- الإشعارات الأساسية -->
+            <button type="button" id="header-work-hub-btn" onclick="window.showPanel('admin-work')" style="display:none; background:linear-gradient(135deg, #28a745, #028090); color:white; border:1px solid rgba(255,255,255,0.6); padding:5px 11px; border-radius:20px; font-size:0.82rem; font-weight:900; cursor:pointer; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+                <span>💼</span> <span class="translatable">الشغل</span>
+                <span class="work-hub-live-badge" style="background:#dc3545; color:white; padding:1px 6px; border-radius:10px; font-size:0.74rem; font-weight:900;">0</span>
+            </button>
             <button type="button" class="notification-bell" id="btn-notifications-main" onclick="window.showPanel('global-notifications-panel')" style="display:none; position:relative;">
                 🔔<span class="notification-badge" id="notif-badge-main" style="top:-5px; right:-5px;">0</span>
             </button>
@@ -161,7 +165,7 @@
 
     <nav class="main-nav" id="smart-nav" style="display: none;">
         <!-- أزرار الإدارة فقط -->
-        <button type="button" class="nav-btn admin-tab" style="display: none; background: linear-gradient(135deg, #28a745, #028090); color: white; border: none; font-weight: 900;" onclick="window.showPanel('admin-work')">💼 العمل <span id="work-hub-badge" style="background:#dc3545; color:white; padding:1px 7px; border-radius:12px; font-size:0.75rem; margin-right:4px;">0</span></button>
+        <button type="button" class="nav-btn admin-tab" style="display: none; background: linear-gradient(135deg, #28a745, #028090); color: white; border: none; font-weight: 900;" onclick="window.showPanel('admin-work')">💼 العمل <span id="work-hub-badge" class="work-hub-live-badge" style="background:#dc3545; color:white; padding:1px 7px; border-radius:12px; font-size:0.75rem; margin-right:4px;">0</span></button>
         
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(255,193,7,0.2); border-color: #ffc107; color: #d39e00;" onclick="window.showPanel('admin-dashboard')">الإحصائيات 📊</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(220,53,69,0.2); border-color: #dc3545;" onclick="window.showPanel('admin-orders')">الطلبات 📦</button>
@@ -289,6 +293,51 @@
         </div>
     </div>
 
+    <!-- نافذة بطاقات الهدايا الرقمية (Digital Gift Cards) -->
+    <div id="gift-card-modal" class="modal-overlay" style="z-index: 5790;">
+        <div class="modal-content" style="max-width: 440px; text-align: center; border: 2px solid var(--secondary); padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('gift-card-modal').style.display='none'">X</button>
+            <h2 style="color:var(--primary); margin:0 0 6px 0;">🎟️ <span class="translatable">بطاقة هدية رقمية من زيت الشجرة المباركة</span></h2>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin:0 0 12px 0;" class="translatable">أهدِ من تحب قسيمة شراء منتجات طبيعية أصلية 100% من مزارع سيناء:</p>
+            <div style="display:flex; gap:8px; justify-content:center; margin-bottom:12px;">
+                <button type="button" class="btn btn-outline gift-amt-btn" onclick="window.selectGiftCardAmount(250, this)" style="flex:1; border-color:var(--secondary); color:var(--primary);">250 ج</button>
+                <button type="button" class="btn gift-amt-btn" onclick="window.selectGiftCardAmount(500, this)" style="flex:1; background:var(--secondary);">500 ج</button>
+                <button type="button" class="btn btn-outline gift-amt-btn" onclick="window.selectGiftCardAmount(1000, this)" style="flex:1; border-color:var(--secondary); color:var(--primary);">1000 ج</button>
+            </div>
+            <input type="text" id="gc-sender-name" placeholder="اسمك (المُهدي)..." style="margin-bottom:8px;">
+            <input type="text" id="gc-receiver-name" placeholder="اسم المُهدى إليه (صديقك / قريبك)..." style="margin-bottom:8px;">
+            <input type="tel" id="gc-receiver-phone" placeholder="رقم واتساب المُهدى إليه..." style="margin-bottom:8px;">
+            <input type="text" id="gc-message" placeholder="رسالة الإهداء (مثال: كل عام وأنت بخير وصحة 🌿)..." style="margin-bottom:12px;">
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="button" class="btn btn-full" style="background:var(--primary);" onclick="window.addGiftCardToCart()"><span class="translatable">🛒 إضافة البطاقة للسلة وإتمام الإهداء</span></button>
+                <button type="button" class="btn btn-outline" style="width:100%; border-color:#25D366; color:#25D366;" onclick="window.shareGiftCardPreviewWhatsApp()">📲 <span class="translatable">إرسال كارت التهنئة مباشرة عبر واتساب</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة باركود QR السريع للمنتج -->
+    <div id="product-qr-modal" class="modal-overlay" style="z-index: 5820;">
+        <div class="modal-content" style="max-width: 340px; text-align: center; border: 2px solid #028090; padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('product-qr-modal').style.display='none'">X</button>
+            <h3 id="qr-modal-prod-title" style="color:var(--primary); margin:0 0 10px 0;">📱 باركود المنتج</h3>
+            <div style="background:white; padding:12px; border-radius:12px; border:1px solid var(--border-color); display:inline-block; margin-bottom:10px;">
+                <img id="qr-modal-img" src="" width="180" height="180" alt="QR Code">
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:0 0 12px 0;" class="translatable">امسح الرمز بكاميرا الموبايل لفتح هذا المنتج مباشرة أو اطبعه على العبوة لإعادة الطلب السريع.</p>
+            <button type="button" class="btn btn-full" onclick="window.printProductQRLabel()">🖨️ <span class="translatable">طباعة ملصق QR للعبوة</span></button>
+        </div>
+    </div>
+
+    <!-- شريط آخر منتج تمت مشاهدته (Sticky Last Viewed Mini-Bar) -->
+    <div id="sticky-last-viewed-bar" class="sticky-last-viewed-bar">
+        <img id="slv-img" src="1000392409.jpeg" alt="Last Viewed">
+        <div style="flex:1; overflow:hidden; cursor:pointer;" onclick="window.reopenLastViewedProduct()">
+            <span style="font-size:0.68rem; color:var(--text-muted); display:block;" class="translatable">شاهدت مؤخراً:</span>
+            <strong id="slv-name" style="font-size:0.78rem; color:var(--primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;"></strong>
+        </div>
+        <button type="button" style="background:transparent; border:none; color:var(--danger); font-weight:bold; cursor:pointer; font-size:0.85rem; padding:0 4px;" onclick="window.dismissLastViewedBar()">✖</button>
+    </div>
+
     <div id="policy-info-modal" class="modal-overlay" style="z-index: 5600;">
         <div class="modal-content" style="max-width: 550px; text-align: right; border: 2px solid var(--secondary); padding-bottom: 25px;">
             <button type="button" class="modal-close" onclick="document.getElementById('policy-info-modal').style.display='none'">X</button>
@@ -302,6 +351,7 @@
         <div class="modal-content">
             <button type="button" class="modal-close" onclick="window.closeProductModal()">X</button>
             <button type="button" class="btn btn-outline" style="position: absolute; top: 15px; right: 15px; border-radius: 20px; padding: 4px 10px; font-size: 0.8rem; color:var(--primary); border-color:var(--primary);" id="btn-share-modal" onclick="window.shareProduct()">🔗 <span class="translatable">مشاركة</span></button>
+            <button type="button" class="btn btn-outline" style="position: absolute; top: 15px; right: 95px; border-radius: 20px; padding: 4px 10px; font-size: 0.8rem; color:#028090; border-color:#028090;" id="btn-qr-modal" onclick="window.openProductQRModal()">📱 QR</button>
             <div style="background:#fff3cd; color:#856404; padding:5px 10px; border-radius:6px; font-size:0.85rem; font-weight:bold; margin-bottom:10px; display:inline-block; border:1px solid #ffeeba;">👁️ <span class="translatable">يشاهده الآن</span> <span id="live-viewers-count">0</span> <span class="translatable">شخص</span></div>
             <div class="modal-img-container" id="magnifier-container"><img loading="lazy" id="modal-img-main" class="modal-img-main" src="" alt="Product"></div>
             <div id="modal-gallery-container" class="modal-gallery"></div>
@@ -319,6 +369,12 @@
             <div id="modal-bundle-banner" class="bundle-offer-banner" style="display:none;"></div>
             <div id="modal-estimated-delivery" class="estimated-delivery-box" style="display:none;"></div>
             <div id="modal-dispatch-timer" class="dispatch-timer-box" style="display:none;"></div>
+            <div id="modal-subscribe-save-box" class="subscribe-save-box" style="display:none;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:bold; color:var(--primary); font-size:0.88rem; margin:0;">
+                    <input type="checkbox" id="modal-subscribe-checkbox" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.toggleModalSubscribeOption(this.checked)">
+                    <span>🔄 <span class="translatable">اشتراك شهري تلقائي</span> (<span class="translatable">خصم إضافي</span> <strong id="modal-sub-disc-pct" style="color:#028090;">5%</strong> + <span class="translatable">تذكير شهري عبر واتساب</span>)</span>
+                </label>
+            </div>
             <div id="modal-wa-btn-container" style="margin-bottom: 10px; width: 100%;"></div>
             <button type="button" class="btn btn-full" id="btn-buy-now" style="background-color: var(--primary); margin-bottom:10px; display:none;" onclick="window.executeBuyNow()"><span class="translatable">🚀 اشتري الآن (دفع سريع)</span></button>
 
@@ -390,12 +446,17 @@
                 <span>🔍 <span class="translatable">حق معاينة الطلب عند الاستلام</span></span>
                 <span>🔄 <span class="translatable">ضمان استبدال واسترجاع</span></span>
             </div>
+            <!-- صفقة اليوم الخاطفة الموقوتة (Flash Deal of the Day) -->
+            <div id="home-flash-deal-box" class="flash-deal-banner-box" style="display:none;"></div>
             <div id="home-smart-tools-bar" class="smart-shopping-tools-bar">
                 <button type="button" id="btn-open-box-builder" class="smart-tool-pill" onclick="window.openCustomBoxModal()">
                     <span>📦</span> <span class="translatable">كوّن كرتونة التوفير بخصم خاص!</span>
                 </button>
                 <button type="button" id="btn-open-product-quiz" class="smart-tool-pill" onclick="window.openProductQuizModal()">
                     <span>🧭</span> <span class="translatable">محتار؟ مساعد الاختيار الذكي</span>
+                </button>
+                <button type="button" id="btn-open-gift-card" class="smart-tool-pill" onclick="window.openGiftCardModal()">
+                    <span>🎟️</span> <span class="translatable">إهداء بطاقة هدية رقمية</span>
                 </button>
             </div>
             <div class="compact-search-wrapper" style="background:var(--input-bg); padding:10px 12px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:12px;">
@@ -745,9 +806,11 @@
                     <h2 style="color:var(--primary); margin:0; display:flex; align-items:center; gap:8px;">💼 غرفة متابعة العمل والشغل المباشرة</h2>
                     <span style="font-size:0.82rem; color:#28a745; font-weight:bold;">🟢 متابعة لحظية لكل الطلبات، الرسائل، الإلغاءات، والتنبيهات في شاشة واحدة</span>
                 </div>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <button type="button" id="btn-toggle-work-sound" class="btn btn-outline" style="padding:6px 12px; font-size:0.82rem; border-color:var(--primary); color:var(--primary);" onclick="window.toggleWorkSoundAlert()">🔊 الصوت: مفعل</button>
-                    <button type="button" class="btn" style="padding:6px 12px; font-size:0.82rem; background:#028090;" onclick="window.renderAdminWorkHub()">🔄 تحديث</button>
+                <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                    <button type="button" id="btn-toggle-work-sound" class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem; border-color:var(--primary); color:var(--primary);" onclick="window.toggleWorkSoundAlert()">🔊 الصوت: مفعل</button>
+                    <button type="button" class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem; border-color:#ff6b00; color:#ff6b00;" onclick="window.playWorkNotificationSound(true)">🔔 تجربة الصوت</button>
+                    <button type="button" id="btn-toggle-work-hide-done" class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem;" onclick="window.toggleWorkHideCompleted()">👁️ إخفاء المكتمل القديم</button>
+                    <button type="button" class="btn" style="padding:6px 12px; font-size:0.8rem; background:#028090;" onclick="window.renderAdminWorkHub()">🔄 تحديث</button>
                 </div>
             </div>
 
@@ -1136,6 +1199,44 @@
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                             <input type="checkbox" id="setting-enable-product-compare" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>⚖️ تفعيل مقارنة المنتجات السريعة وحاسبة التوفير للأحجام</span>
+                        </label>
+                        <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
+                        <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🌟 صفقة اليوم والاشتراك الشهري وبطاقات الهدايا والـ QR (V57):</h4>
+                        <div style="background:var(--panel-bg); padding:10px; border-radius:8px; border:1px solid #f59e0b; margin-bottom:6px;">
+                            <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem; margin-bottom:6px;">
+                                <input type="checkbox" id="setting-enable-flash-deal" style="width:18px; height:18px; margin:0; accent-color:#f59e0b;" onchange="window.saveSettings()">
+                                <span>⚡ تفعيل (صفقة اليوم الخاطفة الموقوتة - Flash Deal) في مقدمة الرئيسية</span>
+                            </label>
+                            <div class="form-row" style="align-items:center; margin-bottom:0;">
+                                <select id="setting-flash-deal-product" style="margin-bottom:0; flex:1; font-size:0.82rem;"></select>
+                                <input type="text" id="setting-flash-deal-title" placeholder="عنوان الصفقة (مثال: ⚡ صفقة اليوم بخصم استثنائي!)" style="margin-bottom:0; flex:1.2; font-size:0.82rem;">
+                                <button type="button" class="btn" style="padding:6px 12px; font-size:0.8rem; background:#028090;" onclick="window.saveSettings()">حفظ</button>
+                            </div>
+                        </div>
+
+                        <div style="background:var(--panel-bg); padding:10px; border-radius:8px; border:1px solid #028090; margin-bottom:6px;">
+                            <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem; margin-bottom:6px;">
+                                <input type="checkbox" id="setting-enable-subscribe-save" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                                <span>🔄 تفعيل خيار (الاشتراك الشهري التلقائي بخصم خاص Subscribe & Save)</span>
+                            </label>
+                            <div class="form-row" style="align-items:center; margin-bottom:0;">
+                                <span style="font-size:0.8rem;">نسبة خصم الاشتراك الشهري الإضافي (%):</span>
+                                <input type="number" id="setting-subscribe-discount" placeholder="5" style="margin-bottom:0; max-width:90px; font-size:0.82rem;">
+                                <button type="button" class="btn" style="padding:6px 12px; font-size:0.8rem; background:#028090;" onclick="window.saveSettings()">حفظ</button>
+                            </div>
+                        </div>
+
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-gift-cards" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🎟️ تفعيل ميزة (بطاقات الهدايا الرقمية Gift Cards) وإهداء الأصدقاء عبر واتساب</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-product-qr" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📱 تفعيل زر (باركود QR السريع للمنتج) داخل نافذة المنتج للطباعة والمشاركة</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-last-viewed-bar" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📌 تفعيل شريط (شاهدت مؤخراً) العائم لتذكير العميل بآخر منتج فتحه</span>
                         </label>
                         <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
                         <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">💼 غرفة متابعة العمل الموحدة وأدوات الشراء الخاطف (V56):</h4>

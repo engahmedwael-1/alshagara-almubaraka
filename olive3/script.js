@@ -217,7 +217,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         window.syncCartToCloud = async function() {
             if(currentUser) {
                 try {
-                    await setDoc(doc(db, 'users', currentUser.uid), { cart: cart, savedForLater: savedForLater }, { merge: true });
+                    await setDoc(doc(db, 'users', currentUser.uid), { cart: cart, savedForLater: savedForLater, cartUpdatedAt: new Date().toISOString() }, { merge: true });
                 } catch(e) { console.error("Sync error", e); }
             }
         };
@@ -380,7 +380,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         window.initMagnifier = function() { const container = document.getElementById('magnifier-container'); const img = document.getElementById('modal-img-main'); if(!container || !img) return; container.addEventListener('mousemove', function(e) { const {left, top, width, height} = container.getBoundingClientRect(); const x = (e.clientX - left) / width * 100; const y = (e.clientY - top) / height * 100; img.style.transformOrigin = `${x}% ${y}%`; img.style.transform = 'scale(2)'; }); container.addEventListener('mouseleave', function() { img.style.transformOrigin = 'center center'; img.style.transform = 'scale(1)'; }); }
 
         let lastScrollY = window.scrollY;
-        window.addEventListener('scroll', () => { const nav = document.getElementById('smart-nav'); if(nav) { if (window.scrollY > lastScrollY && window.scrollY > 100) nav.classList.add('hidden'); else nav.classList.remove('hidden'); } lastScrollY = window.scrollY; let homePanel = document.getElementById('home-panel'); if (homePanel && homePanel.classList.contains('active')) { if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) { let totalFiltered = window.getFilteredProductsCount(); if(currentRenderedProducts < totalFiltered) { let indicator = document.getElementById('loading-more-indicator'); if(indicator) indicator.style.display = 'block'; setTimeout(() => { currentRenderedProducts += productsPerPage; window.renderProducts(false); window.renderVisualBar(); if(indicator) indicator.style.display = 'none'; }, 500); } } } });
+        window.addEventListener('scroll', () => { const nav = document.getElementById('smart-nav'); if(nav) { if (!isCurrentUserAdmin && window.scrollY > lastScrollY && window.scrollY > 100) nav.classList.add('hidden'); else nav.classList.remove('hidden'); } lastScrollY = window.scrollY; let homePanel = document.getElementById('home-panel'); if (homePanel && homePanel.classList.contains('active')) { if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) { let totalFiltered = window.getFilteredProductsCount(); if(currentRenderedProducts < totalFiltered) { let indicator = document.getElementById('loading-more-indicator'); if(indicator) indicator.style.display = 'block'; setTimeout(() => { currentRenderedProducts += productsPerPage; window.renderProducts(false); window.renderVisualBar(); if(indicator) indicator.style.display = 'none'; }, 500); } } } });
 
         window.updateOfferTimer = function() { let endTime = localStorage.getItem('offer_end_time'); let now = new Date().getTime(); if(!endTime || now > endTime) { endTime = now + (72 * 60 * 60 * 1000); localStorage.setItem('offer_end_time', endTime); } setInterval(() => { now = new Date().getTime(); let distance = endTime - now; if(distance < 0) { endTime = now + (72 * 60 * 60 * 1000); localStorage.setItem('offer_end_time', endTime); distance = endTime - now; } let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)); let seconds = Math.floor((distance % (1000 * 60)) / 1000); let tStr = (hours < 10 ? "0"+hours : hours) + ":" + (minutes < 10 ? "0"+minutes : minutes) + ":" + (seconds < 10 ? "0"+seconds : seconds); let timerEl = document.getElementById('offer-timer'); if(timerEl) timerEl.innerText = tStr; }, 1000); }
         window.updateOfferTimer();
@@ -728,7 +728,9 @@ window.toEngDigits = function(str) { const ar = ['٠','١','٢','٣','٤','٥','
                     let d = docSnap.data(); adminReturnsArray.push({id: docSnap.id, ...d}); let imgHtml = d.imageUrl ? `<a href="${d.imageUrl}" target="_blank" style="display:inline-block; margin-top:10px; padding:5px 10px; background:#17a2b8; color:white; text-decoration:none; border-radius:6px; font-size:0.85rem;">📸 عرض صورة المشكلة</a>` : ''; let actionBtn = d.status === 'قيد المراجعة' ? `<button type="button" class="btn btn-full" style="background:#28a745; margin-top:10px;" onclick="window.approveReturn('${docSnap.id}', '${d.orderId}')">الموافقة وإرسال مندوب ✅</button>` : `<div style="margin-top:10px; font-weight:bold; color:var(--primary); text-align:center;">تم الموافقة على الطلب</div>`;
                     html += `<div class="admin-msg-card" style="border-left:4px solid var(--danger);"><h4>رقم الطلب الأصلي: #${d.orderId.slice(0,6).toUpperCase()}</h4><p><strong>العميل:</strong> ${d.customerEmail}</p><p><strong>السبب:</strong> ${d.reason}</p><p style="color:var(--text-muted);"><strong>الملاحظات:</strong> ${d.notes}</p><p><strong>التاريخ:</strong> ${new Date(d.date).toLocaleString('ar-EG')}</p>${imgHtml}${actionBtn}</div>`;
                 });
-                if(container) container.innerHTML = html || '<h3 style="text-align: center; color: var(--text-muted);">لا توجد طلبات استرجاع حالياً.</h3>'; 
+                if(container) container.innerHTML = html || '<h3 style="text-align: center; color: var(--text-muted);">لا توجد طلبات استرجاع حالياً.</h3>';
+                if (window.checkWorkHubRealtimeChanges) window.checkWorkHubRealtimeChanges('returns');
+                if (window.renderAdminWorkHub) window.renderAdminWorkHub();
             });
         }
 
@@ -743,14 +745,22 @@ window.toEngDigits = function(str) { const ar = ['٠','١','٢','٣','٤','٥','
                     let d = docSnap.data(); adminOrdersArray.push({id: docSnap.id, ...d}); 
                     if(d.status !== "تم الرفض" && d.status !== "ملغى من العميل ❌" && d.status !== "تم الرفض ❌") { let orderDate = new Date(d.orderDate); if(orderDate >= revResetDate) { totalGlobalRevenue += Number(d.totalAmount); } if(orderDate >= ordResetDate) { totalGlobalOrders++; } } 
                 }); 
-                window.renderAdminOrdersUI();  
+                if (window.checkWorkHubRealtimeChanges) window.checkWorkHubRealtimeChanges('orders');
+                window.renderAdminOrdersUI();
+                if (window.renderAdminWorkHub) window.renderAdminWorkHub();
                 let so = document.getElementById('stat-orders'); if(so) so.textContent = totalGlobalOrders; let sr = document.getElementById('stat-revenue'); if(sr) sr.textContent = totalGlobalRevenue.toLocaleString() + ' ج'; 
             });
         }
 
         
-        window.updateOrderStatus = async function(orderId, newStatus) { 
-            await updateDoc(doc(db, 'orders', orderId), { status: newStatus }); 
+        window.updateOrderStatus = async function(orderId, newStatus) {
+            let statusPayload = { status: newStatus, updatedAt: new Date().toISOString() };
+            if (String(newStatus).includes('لغى') || String(newStatus).includes('رفض')) {
+                statusPayload.canceledAt = new Date().toISOString();
+            } else {
+                statusPayload.unreadCancelByAdmin = false;
+            }
+            await updateDoc(doc(db, 'orders', orderId), statusPayload); 
             window.showToast('تم تحديث الحالة', 'success'); 
             let oData = adminOrdersArray.find(o => o.id === orderId);
             if(oData && oData.userId) {
@@ -898,7 +908,10 @@ try {
             let container = document.getElementById('products-container'); if(!container) return;
             if (!isProductsLoaded) { let skeletonHtml = `<div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div><div class="skeleton-btn"></div></div>`.repeat(8); container.innerHTML = skeletonHtml; return; }
             let sOpt = document.getElementById('sort-options'); let sortOption = sOpt ? sOpt.value : 'default'; let minP = document.getElementById('min-price'); let minPrice = minP ? (Number(minP.value) || 0) : 0; let maxP = document.getElementById('max-price'); let maxPrice = maxP ? (Number(maxP.value) || Infinity) : Infinity; if(maxPrice === 0) maxPrice = Infinity;
-            let filteredProducts = products.filter(p => { let inCategory = (currentCategoryFilter === 'الكل' || (p.category || 'أخرى') === currentCategoryFilter); let inSearch = window.fuzzyMatch(p.name, searchQuery); let inPrice = p.price >= minPrice && p.price <= maxPrice; return inCategory && inSearch && inPrice; });
+            let filteredProducts = products.filter(p => { if (p.isHidden && !isCurrentUserAdmin) return false; let inCategory = (currentCategoryFilter === 'الكل' || (p.category || 'أخرى') === currentCategoryFilter); let inSearch = window.fuzzyMatch(p.name, searchQuery); let inPrice = p.price >= minPrice && p.price <= maxPrice; return inCategory && inSearch && inPrice; });
+            if (storeSettings.enablePinHideProducts !== false) {
+                filteredProducts.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+            }
             if(sortOption === 'price-asc') { filteredProducts.sort((a,b) => a.price - b.price); } else if(sortOption === 'price-desc') { filteredProducts.sort((a,b) => b.price - a.price); } else if(sortOption === 'rating-desc') { filteredProducts.sort((a,b) => { let rA = a.reviews && a.reviews.length>0 ? a.reviews.reduce((acc, r)=>acc+r.rating,0)/a.reviews.length : 0; let rB = b.reviews && b.reviews.length>0 ? b.reviews.reduce((acc, r)=>acc+r.rating,0)/b.reviews.length : 0; return rB - rA; }); }
             if(filteredProducts.length === 0) { let msg = window.currentLang === 'ar' ? 'لا توجد منتجات مطابقة للبحث أو الفلتر.' : 'No products match your search or filter.'; container.innerHTML = `<h3 style="text-align: center; grid-column: 1 / -1; color: var(--text-muted);">${msg}</h3>`; return; }
             
@@ -1383,7 +1396,7 @@ try {
         let orderDoc = await getDoc(doc(db, 'orders', orderId));
         if(orderDoc.exists()) {
             let oData = orderDoc.data();
-            await updateDoc(doc(db, 'orders', orderId), { status: 'ملغى من العميل ❌', canceledAt: new Date().toISOString() }); 
+            await updateDoc(doc(db, 'orders', orderId), { status: 'ملغى من العميل ❌', canceledAt: new Date().toISOString(), updatedAt: new Date().toISOString(), unreadCancelByAdmin: true }); 
             
             // Restore loyalty points if they were used
             if(oData.usedLoyaltyPoints && oData.userId) {
@@ -1517,7 +1530,9 @@ window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت مت
                         await setDoc(chatRef, {
                             customerName: dName,
                             messages: existingMsgs,
-                            lastUpdate: nowIso
+                            lastUpdate: nowIso,
+                            lastCustomerMsgAt: nowIso,
+                            unreadByAdmin: true
                         }, { merge: true });
                     } else {
                         existingMsgs.push(msg, replyObj);
@@ -1525,7 +1540,9 @@ window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت مت
                             customerName: dName,
                             messages: existingMsgs,
                             lastUpdate: replyIso,
-                            adminReplied: false
+                            lastCustomerMsgAt: nowIso,
+                            adminReplied: false,
+                            unreadByAdmin: true
                         }, { merge: true });
                     }
                     window.showToast('تم إرسال رسالتك بنجاح 💬', 'success');
@@ -1538,7 +1555,7 @@ window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت مت
         window.loadAdminChats = function() { onSnapshot(query(collection(db, 'chats'), orderBy('lastUpdate', 'desc')), (snap) => { let container = document.getElementById('admin-chat-list'); if(!container) return; let html = ''; snap.forEach(d => { let chat = d.data(); let date = new Date(chat.lastUpdate).toLocaleString('ar-EG'); html += `<div class="admin-msg-card" style="cursor:pointer; border-right:4px solid var(--primary);" onclick="window.openAdminChat('${d.id}', '${chat.customerName}')"><h4 style="margin:0 0 5px 0;">👤 ${chat.customerName}</h4><span style="font-size:0.85rem; color:var(--text-muted);">آخر رسالة: ${date}</span></div>`; }); container.innerHTML = html || '<h3 style="text-align:center; color:var(--text-muted);">لا توجد رسائل.</h3>'; }); }
         window.openAdminChat = function(id, name) { let acl = document.getElementById('admin-chat-list'); if(acl) acl.style.display = 'none'; let aac = document.getElementById('admin-active-chat'); if(aac) aac.style.display = 'block'; let acu = document.getElementById('active-chat-user'); if(acu) acu.textContent = name; activeAdminChatId = id; if(unsubscribeActiveAdminChat) unsubscribeActiveAdminChat(); unsubscribeActiveAdminChat = onSnapshot(doc(db, 'chats', id), (docSnap) => { let container = document.getElementById('admin-chat-messages'); if(!container) return; if(docSnap.exists()) { let data = docSnap.data(); let html = ''; (data.messages || []).forEach(m => { let isAdm = m.sender === 'admin'; let alignClass = isAdm ? 'chat-msg-customer' : 'chat-msg-admin'; let bubbleClass = isAdm ? 'bubble-customer' : 'bubble-admin'; let prefix = isAdm ? '' : '<strong style="color:var(--secondary);font-size:0.8rem;">العميل:</strong><br>'; html += `<div class="chat-msg-wrapper ${alignClass}"><div class="chat-bubble ${bubbleClass}">${prefix}${window.escapeHTML(m.text)}</div></div>`; }); container.innerHTML = html; container.scrollTop = container.scrollHeight; } }); }
         window.closeAdminChat = function() { let acl = document.getElementById('admin-chat-list'); if(acl) acl.style.display = 'block'; let aac = document.getElementById('admin-active-chat'); if(aac) aac.style.display = 'none'; activeAdminChatId = null; if(unsubscribeActiveAdminChat) { unsubscribeActiveAdminChat(); unsubscribeActiveAdminChat = null; } }
-        window.sendAdminMessage = async function() { let input = document.getElementById('admin-chat-input'); let txt = input ? input.value.trim() : ""; if(!txt || !activeAdminChatId) return; input.value = ''; let msg = { sender: 'admin', text: txt, timestamp: new Date().toISOString(), isAutoReply: false }; await updateDoc(doc(db, 'chats', activeAdminChatId), { messages: arrayUnion(msg), lastUpdate: msg.timestamp, adminReplied: true }); }
+        window.sendAdminMessage = async function() { let input = document.getElementById('admin-chat-input'); let txt = input ? input.value.trim() : ""; if(!txt || !activeAdminChatId) return; input.value = ''; let msg = { sender: 'admin', text: txt, timestamp: new Date().toISOString(), isAutoReply: false }; await updateDoc(doc(db, 'chats', activeAdminChatId), { messages: arrayUnion(msg), lastUpdate: msg.timestamp, adminReplied: true, unreadByAdmin: false }); }
         window.endAdminChat = async function() { if(activeAdminChatId && confirm('إنهاء المحادثة الحالية؟ (سيعود الرد الآلي للعمل إذا أرسل العميل رسالة جديدة)')) { let msg = { sender: 'admin', text: '--- تم إنهاء المحادثة من خدمة العملاء ---', timestamp: new Date().toISOString() }; await updateDoc(doc(db, 'chats', activeAdminChatId), { messages: arrayUnion(msg), lastUpdate: msg.timestamp, adminReplied: false }); window.showToast('تم إنهاء المحادثة', 'info'); } }
         window.deleteAdminChat = async function() { if(confirm('حذف المحادثة للعميل؟')) { await deleteDoc(doc(db, 'chats', activeAdminChatId)); window.showToast('تم الحذف', 'success'); window.closeAdminChat(); } }
         window.endChat = async function() { if(confirm('إنهاء المحادثة؟')) { let chatId = currentUser.email || currentUser.phoneNumber || currentUser.uid; let msg = { sender: 'customer', text: '--- تم إنهاء المحادثة من العميل ---', timestamp: new Date().toISOString() }; await updateDoc(doc(db, 'chats', chatId), { messages: arrayUnion(msg), lastUpdate: msg.timestamp, adminReplied: false }); window.showToast('تم إنهاء المحادثة', 'info'); } }
@@ -5399,4 +5416,911 @@ window.showUserHistory = function(userId, userName) {
             "اعرض الترشيح الأنسب لي": "Show My Best Match",
             "طلب سريع فوري في 5 ثوانٍ": "Express 1-Click Order in 5 Seconds",
             "تأكيد وإرسال الطلب فوراً": "Confirm & Submit Order Instantly"
+        });
+
+
+        // =========================================================================
+        // === النسخة V57: الضبط الجذري لغرفة العمل (الصوت + العداد + التواريخ) + المرحلة النهائية ===
+        // =========================================================================
+
+        // 1. نظام الصوت المضمون 100% (Web Audio API المفتوح تلقائياً + ملف WAV احتياطي مدمج)
+        window.sharedWorkAudioCtx = null;
+        window.fallbackChimeAudio = null;
+
+        window.initFallbackWavChime = function() {
+            if (window.fallbackChimeAudio) return;
+            try {
+                // توليد نغمة جرس واضحة جداً بصيغة WAV في الذاكرة للعمل على جميع المتصفحات والموبايلات
+                const sampleRate = 22050;
+                const duration = 0.55;
+                const numSamples = Math.floor(sampleRate * duration);
+                const buffer = new ArrayBuffer(44 + numSamples * 2);
+                const view = new DataView(buffer);
+                const writeStr = (offset, str) => { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); };
+                writeStr(0, 'RIFF');
+                view.setUint32(4, 36 + numSamples * 2, true);
+                writeStr(8, 'WAVE');
+                writeStr(12, 'fmt ');
+                view.setUint32(16, 16, true);
+                view.setUint16(20, 1, true);
+                view.setUint16(22, 1, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * 2, true);
+                view.setUint16(32, 2, true);
+                view.setUint16(34, 16, true);
+                writeStr(36, 'data');
+                view.setUint32(40, numSamples * 2, true);
+
+                for (let i = 0; i < numSamples; i++) {
+                    let t = i / sampleRate;
+                    let freq = t < 0.22 ? 659.25 : 880.0; // E5 -> A5 Ding-Dong chime
+                    let env = Math.exp(-3.5 * (t < 0.22 ? t : (t - 0.22)));
+                    let sample = Math.sin(2 * Math.PI * freq * t) * env * 0.65;
+                    view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, sample)) * 32767, true);
+                }
+                let binary = '';
+                let bytes = new Uint8Array(buffer);
+                for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                window.fallbackChimeAudio = new Audio('data:audio/wav;base64,' + btoa(binary));
+                window.fallbackChimeAudio.volume = 0.95;
+            } catch (e) {}
+        };
+        window.initFallbackWavChime();
+
+        // فتح قفل الصوت في المتصفح مع أول لمسة أو ضغطة في أي مكان بالموقع
+        window.unlockWorkAudioEngine = function() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) {
+                    if (!window.sharedWorkAudioCtx) window.sharedWorkAudioCtx = new AudioCtx();
+                    if (window.sharedWorkAudioCtx.state === 'suspended') {
+                        window.sharedWorkAudioCtx.resume();
+                    }
+                }
+                if (!window.fallbackChimeAudio) window.initFallbackWavChime();
+            } catch (e) {}
+        };
+        ['click', 'touchstart', 'keydown'].forEach(evt => {
+            document.addEventListener(evt, window.unlockWorkAudioEngine, { passive: true });
+        });
+
+        window.playWorkNotificationSound = function(forcePlay = false) {
+            if (!forcePlay && !window.workSoundEnabled) return;
+            window.unlockWorkAudioEngine();
+            let playedWebAudio = false;
+            try {
+                let ctx = window.sharedWorkAudioCtx;
+                if (ctx && ctx.state === 'running') {
+                    let now = ctx.currentTime;
+                    // النغمة الأولى (Ding)
+                    let osc1 = ctx.createOscillator();
+                    let g1 = ctx.createGain();
+                    osc1.type = 'triangle';
+                    osc1.frequency.setValueAtTime(659.25, now);
+                    g1.gain.setValueAtTime(0.35, now);
+                    g1.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc1.connect(g1);
+                    g1.connect(ctx.destination);
+                    osc1.start(now);
+                    osc1.stop(now + 0.25);
+
+                    // النغمة الثانية (Dong)
+                    let osc2 = ctx.createOscillator();
+                    let g2 = ctx.createGain();
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(880.0, now + 0.22);
+                    g2.gain.setValueAtTime(0.4, now + 0.22);
+                    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+                    osc2.connect(g2);
+                    g2.connect(ctx.destination);
+                    osc2.start(now + 0.22);
+                    osc2.stop(now + 0.65);
+                    playedWebAudio = true;
+                }
+            } catch (e) {}
+
+            // تشغيل ملف الـ WAV المدمج كدعم إضافي مضمون 100%
+            try {
+                if (window.fallbackChimeAudio) {
+                    window.fallbackChimeAudio.currentTime = 0;
+                    let p = window.fallbackChimeAudio.play();
+                    if (p && p.catch) p.catch(() => {});
+                }
+            } catch (e) {}
+        };
+
+        // 2. محلل ومُنسق التواريخ الذكي الدقيق (يمنع أي تاريخ قديم أو خاطئ أو 1970 أو هجري)
+        window.parseSafeTimestamp = function(val, fallbackMs = 0) {
+            if (!val) return fallbackMs;
+            if (typeof val === 'number') return val > 1e11 ? val : val * 1000;
+            if (typeof val === 'object') {
+                if (typeof val.toDate === 'function') return val.toDate().getTime();
+                if (typeof val.seconds === 'number') return val.seconds * 1000;
+            }
+            let parsed = Date.parse(String(val));
+            if (!isNaN(parsed) && parsed > 946684800000) { // بعد سنة 2000
+                return parsed;
+            }
+            return fallbackMs;
+        };
+
+        window.formatWorkHubDate = function(rawVal) {
+            let ms = window.parseSafeTimestamp(rawVal, Date.now());
+            let now = Date.now();
+            let diffSec = Math.max(0, Math.floor((now - ms) / 1000));
+            let rel = '';
+            if (diffSec < 60) rel = 'الآن';
+            else if (diffSec < 3600) rel = `منذ ${Math.floor(diffSec / 60)} دقيقة`;
+            else if (diffSec < 86400) rel = `منذ ${Math.floor(diffSec / 3600)} ساعة`;
+            else if (diffSec < 172800) rel = 'أمس';
+            else rel = `منذ ${Math.floor(diffSec / 86400)} يوم`;
+
+            let dObj = new Date(ms);
+            let exactStr = '';
+            try {
+                exactStr = new Intl.DateTimeFormat('ar-EG-u-ca-gregory', {
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', hour12: true
+                }).format(dObj);
+            } catch (e) {
+                exactStr = dObj.toLocaleString('ar-EG');
+            }
+            return `<span class="work-time-pill">🕒 <strong style="color:var(--secondary);">${rel}</strong> <span>• ${exactStr}</span></span>`;
+        };
+
+        // 3. حساب الرسائل غير المقروءة وآخر توقيت فعلي لكل محادثة بدقة 100%
+        window.getChatWorkInfo = function(chat) {
+            let msgs = Array.isArray(chat.messages) ? chat.messages : [];
+            let lastAdminRealIdx = -1;
+            let latestMs = window.parseSafeTimestamp(chat.lastCustomerMsgAt, 0) || window.parseSafeTimestamp(chat.lastUpdate, 0);
+            let totalCustMsgs = 0;
+
+            msgs.forEach((m, idx) => {
+                let mTime = window.parseSafeTimestamp(m.timestamp, 0);
+                if (mTime > latestMs) latestMs = mTime;
+                if (m.sender === 'admin' && !m.isAutoReply && !String(m.text || '').includes('تم إنهاء المحادثة')) {
+                    lastAdminRealIdx = idx;
+                }
+                if (m.sender === 'customer' && !String(m.text || '').includes('تم إنهاء المحادثة')) {
+                    totalCustMsgs++;
+                }
+            });
+
+            let unreadCustMsgs = 0;
+            for (let i = lastAdminRealIdx + 1; i < msgs.length; i++) {
+                let m = msgs[i];
+                if (m && m.sender === 'customer' && !String(m.text || '').includes('تم إنهاء المحادثة')) {
+                    unreadCustMsgs++;
+                }
+            }
+            if (chat.unreadByAdmin === false) {
+                unreadCustMsgs = 0;
+            }
+            let needsReply = unreadCustMsgs > 0 || chat.unreadByAdmin === true;
+            if (needsReply && unreadCustMsgs === 0) unreadCustMsgs = 1;
+            if (!latestMs) latestMs = Date.now();
+
+            return {
+                needsReply,
+                unreadCustMsgs,
+                totalCustMsgs,
+                latestMs,
+                latestIso: new Date(latestMs).toISOString()
+            };
+        };
+
+        // 4. راصد التغييرات اللحظي (يكتشف أي رسالة جديدة أو طلب جديد أو إلغاء أثناء وجودك في الصفحة الرئيسية أو أي صفحة)
+        window.workKnownOrders = new Map();
+        window.workKnownChats = new Map();
+        window.workKnownReturns = new Set();
+        window.workOrdersInitialized = false;
+        window.workChatsInitialized = false;
+        window.workReturnsInitialized = false;
+
+        window.showWorkLivePopupAlert = function(title, subtitle) {
+            window.playWorkNotificationSound(false);
+            let container = document.getElementById('toast-container');
+            if (!container) return;
+            let toast = document.createElement('div');
+            toast.className = 'toast info show';
+            toast.style.cssText = 'background:linear-gradient(135deg, #1e3a5f, #028090); color:white; border:2px solid #c59b27; cursor:pointer; padding:12px 16px; box-shadow:0 8px 25px rgba(0,0,0,0.3);';
+            toast.innerHTML = `<div onclick="window.showPanel('admin-work'); this.parentElement.remove();">
+                <strong style="display:block; font-size:0.95rem; color:#fcd34d;">${window.escapeHTML(title)}</strong>
+                <span style="font-size:0.84rem;">${window.escapeHTML(subtitle)} (اضغط للفتح في غرفة العمل 💼)</span>
+            </div>`;
+            container.appendChild(toast);
+            setTimeout(() => { if (toast.parentElement) toast.remove(); }, 6500);
+        };
+
+        window.checkWorkHubRealtimeChanges = function(source) {
+            if (!isCurrentUserAdmin) return;
+            try {
+                if (source === 'orders') {
+                    if (!window.workOrdersInitialized) {
+                        (adminOrdersArray || []).forEach(o => window.workKnownOrders.set(o.id, o.status));
+                        window.workOrdersInitialized = true;
+                        return;
+                    }
+                    (adminOrdersArray || []).forEach(o => {
+                        let prevStatus = window.workKnownOrders.get(o.id);
+                        if (prevStatus === undefined) {
+                            window.showWorkLivePopupAlert('📦 وصل طلب جديد الآن!', `العميل: ${o.customerName} — الإجمالي: ${o.totalAmount} ج`);
+                        } else if (prevStatus !== o.status && (String(o.status).includes('لغى') || String(o.status).includes('رفض'))) {
+                            window.showWorkLivePopupAlert('🚨 تم إلغاء طلب الآن!', `العميل: ${o.customerName} — طلب #${o.id.slice(0,6).toUpperCase()}`);
+                        }
+                        window.workKnownOrders.set(o.id, o.status);
+                    });
+                } else if (source === 'chats') {
+                    if (!window.workChatsInitialized) {
+                        (window.workHubChatsArray || []).forEach(c => {
+                            let info = window.getChatWorkInfo(c);
+                            window.workKnownChats.set(c.id, info.totalCustMsgs);
+                        });
+                        window.workChatsInitialized = true;
+                        return;
+                    }
+                    (window.workHubChatsArray || []).forEach(c => {
+                        let info = window.getChatWorkInfo(c);
+                        let prevCount = window.workKnownChats.get(c.id) || 0;
+                        if (info.totalCustMsgs > prevCount) {
+                            let msgs = c.messages || [];
+                            let lastCust = [...msgs].reverse().find(m => m.sender === 'customer');
+                            let snippet = lastCust ? lastCust.text.slice(0, 45) : 'رسالة جديدة';
+                            window.showWorkLivePopupAlert(`💬 رسالة جديدة من ${c.customerName || 'عميل'}!`, snippet);
+                        }
+                        window.workKnownChats.set(c.id, info.totalCustMsgs);
+                    });
+                } else if (source === 'returns') {
+                    if (!window.workReturnsInitialized) {
+                        (adminReturnsArray || []).forEach(r => window.workKnownReturns.add(r.id));
+                        window.workReturnsInitialized = true;
+                        return;
+                    }
+                    (adminReturnsArray || []).forEach(r => {
+                        if (!window.workKnownReturns.has(r.id)) {
+                            window.showWorkLivePopupAlert('🔄 طلب استرجاع جديد الآن!', `السبب: ${r.reason || 'غير محدد'}`);
+                            window.workKnownReturns.add(r.id);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("Realtime check error:", e);
+            }
+        };
+
+        // ربط استماع المحادثات اللحظي براصد التغييرات فوراً
+        window.initAdminWorkHubStreams = function() {
+            if (!isCurrentUserAdmin) return;
+            let btnSnd = document.getElementById('btn-toggle-work-sound');
+            if (btnSnd) btnSnd.textContent = window.workSoundEnabled ? '🔊 الصوت: مفعل' : '🔇 الصوت: صامت';
+
+            if (!window.workChatsUnsub) {
+                window.workChatsUnsub = onSnapshot(collection(db, 'chats'), (snap) => {
+                    let arr = [];
+                    snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+                    window.workHubChatsArray = arr;
+                    window.checkWorkHubRealtimeChanges('chats');
+                    window.renderAdminWorkHub();
+                });
+            }
+
+            if (!window.workAbandonedUnsub) {
+                window.workAbandonedUnsub = onSnapshot(collection(db, 'users'), (snap) => {
+                    let arr = [];
+                    snap.forEach(d => {
+                        let data = d.data();
+                        if (data.cart && Array.isArray(data.cart) && data.cart.length > 0) {
+                            arr.push({ id: d.id, ...data });
+                        }
+                    });
+                    window.workHubAbandonedUsers = arr;
+                    window.renderAdminWorkHub();
+                });
+            }
+        };
+
+        // تحديث sendInlineWorkChatReply ليصفر عداد الرسائل غير المقروءة فوراً عند الرد من غرفة العمل
+        window.sendInlineWorkChatReply = async function(chatId) {
+            let inp = document.getElementById('wk-reply-inp-' + chatId);
+            if (!inp || !inp.value.trim()) {
+                window.showToast('اكتب رسالة الرد أولاً', 'error');
+                return;
+            }
+            let txt = inp.value.trim();
+            inp.value = '';
+            let nowIso = new Date().toISOString();
+            let msg = { sender: 'admin', text: txt, timestamp: nowIso, isAutoReply: false };
+            try {
+                await updateDoc(doc(db, 'chats', chatId), {
+                    messages: arrayUnion(msg),
+                    lastUpdate: nowIso,
+                    adminReplied: true,
+                    unreadByAdmin: false
+                });
+                window.showToast('تم إرسال ردك للعميل فوراً ✅', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء إرسال الرد', 'error');
+            }
+        };
+
+        window.workHideCompletedOld = false;
+        window.toggleWorkHideCompleted = function() {
+            window.workHideCompletedOld = !window.workHideCompletedOld;
+            let btn = document.getElementById('btn-toggle-work-hide-done');
+            if (btn) {
+                btn.textContent = window.workHideCompletedOld ? '👁️ إظهار كل السجل' : '👁️ إخفاء المكتمل القديم';
+                btn.style.background = window.workHideCompletedOld ? 'var(--secondary)' : 'transparent';
+                btn.style.color = window.workHideCompletedOld ? 'white' : 'var(--primary)';
+            }
+            window.renderAdminWorkHub();
+        };
+
+        // 5. النسخة المطورة الخالية من الأخطاء من غرفة متابعة العمل (renderAdminWorkHub)
+        window.renderAdminWorkHub = function() {
+            if (!isCurrentUserAdmin) return;
+            try {
+                let container = document.getElementById('admin-work-stream-container');
+                let searchEl = document.getElementById('work-hub-search');
+                let q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
+                let events = [];
+                let activeOrdersCount = 0;
+                let pendingReviewOrdersCount = 0;
+                let totalUnreadCustomerMsgs = 0;
+                let unrepliedChatsThreads = 0;
+                let cancelsAndReturnsCount = 0;
+                let urgentCancelsAndReturns = 0;
+                let leadsCount = 0;
+
+                // أ) جمع الطلبات (النشطة والملغاة) مع التوقيت الدقيق
+                (adminOrdersArray || []).forEach(ord => {
+                    let st = String(ord.status || '');
+                    let isCanceled = st.includes('لغى') || st.includes('رفض');
+                    let isDelivered = st.includes('توصيل');
+                    if (window.workHideCompletedOld && isDelivered) return;
+
+                    let ordMs = window.parseSafeTimestamp(ord.updatedAt, 0) || window.parseSafeTimestamp(ord.orderDate, Date.now());
+                    if (isCanceled) {
+                        let cancelMs = window.parseSafeTimestamp(ord.canceledAt, 0) || ordMs;
+                        cancelsAndReturnsCount++;
+                        let isUrgentCancel = ord.unreadCancelByAdmin !== false && (Date.now() - cancelMs < 172800000); // آخر 48 ساعة أو غير مقروء
+                        if (isUrgentCancel) urgentCancelsAndReturns++;
+                        events.push({
+                            category: 'cancels',
+                            subType: 'canceled_order',
+                            isUrgent: isUrgentCancel,
+                            timestampMs: cancelMs,
+                            data: ord
+                        });
+                    } else {
+                        activeOrdersCount++;
+                        let isUrgentOrder = (st === 'قيد المراجعة');
+                        if (isUrgentOrder) pendingReviewOrdersCount++;
+                        events.push({
+                            category: 'orders',
+                            subType: 'active_order',
+                            isUrgent: isUrgentOrder,
+                            timestampMs: ordMs,
+                            data: ord
+                        });
+                    }
+                });
+
+                // ب) جمع طلبات الاسترجاع
+                (adminReturnsArray || []).forEach(ret => {
+                    if (window.workHideCompletedOld && ret.status !== 'قيد المراجعة') return;
+                    cancelsAndReturnsCount++;
+                    let isUrgentRet = (ret.status === 'قيد المراجعة');
+                    if (isUrgentRet) urgentCancelsAndReturns++;
+                    let retMs = window.parseSafeTimestamp(ret.date, Date.now());
+                    events.push({
+                        category: 'cancels',
+                        subType: 'return_request',
+                        isUrgent: isUrgentRet,
+                        timestampMs: retMs,
+                        data: ret
+                    });
+                });
+
+                // ج) جمع رسائل خدمة العملاء مع حساب كل رسالة جديدة بدقة
+                (window.workHubChatsArray || []).forEach(chat => {
+                    let info = window.getChatWorkInfo(chat);
+                    if (window.workHideCompletedOld && !info.needsReply) return;
+                    if (info.needsReply) {
+                        unrepliedChatsThreads++;
+                        totalUnreadCustomerMsgs += info.unreadCustMsgs;
+                    }
+                    events.push({
+                        category: 'chats',
+                        subType: 'chat_thread',
+                        isUrgent: info.needsReply,
+                        needsReply: info.needsReply,
+                        unreadCustMsgs: info.unreadCustMsgs,
+                        timestampMs: info.latestMs,
+                        data: chat
+                    });
+                });
+
+                // د) جمع السلال المتروكة (تظهر في تبويب السلال والتنبيهات حتى لا تخلط التواريخ القديمة بتبويب كل الشغل)
+                (window.workHubAbandonedUsers || []).forEach(u => {
+                    leadsCount++;
+                    let cartMs = window.parseSafeTimestamp(u.cartUpdatedAt, 0) || window.parseSafeTimestamp(u.lastLogin, Date.now());
+                    events.push({
+                        category: 'leads',
+                        subType: 'abandoned_cart',
+                        isUrgent: false,
+                        timestampMs: cartMs,
+                        data: u
+                    });
+                });
+
+                // تحديث جميع عدادات (💼 العمل / الشغل) في الهيدر بالصفحة الرئيسية وشريط الإدارة فوراً!
+                let urgentTotal = pendingReviewOrdersCount + totalUnreadCustomerMsgs + urgentCancelsAndReturns;
+                document.querySelectorAll('.work-hub-live-badge, #work-hub-badge').forEach(b => {
+                    b.textContent = urgentTotal;
+                    b.style.display = 'inline-block';
+                });
+                let hdrWorkBtn = document.getElementById('header-work-hub-btn');
+                if (hdrWorkBtn) {
+                    hdrWorkBtn.style.display = isCurrentUserAdmin ? 'inline-flex' : 'none';
+                }
+
+                let setKpi = (id, val) => { let el = document.getElementById(id); if (el) el.textContent = val; };
+                let mainWorkEventsCount = events.filter(e => e.category !== 'leads').length;
+                setKpi('wk-count-all', mainWorkEventsCount);
+                setKpi('wk-count-orders', activeOrdersCount);
+                setKpi('wk-count-chats', unrepliedChatsThreads > 0 ? `${unrepliedChatsThreads} (${totalUnreadCustomerMsgs} جديدة)` : (window.workHubChatsArray || []).length);
+                setKpi('wk-count-cancels', cancelsAndReturnsCount);
+                setKpi('wk-count-leads', leadsCount);
+
+                if (!container) return;
+
+                // فلترة الأحداث حسب التبويب المختار (في تبويب "كل الشغل" نعرض الطلبات والرسائل والإلغاءات فقط بدون السلال القديمة)
+                let filtered = events.filter(ev => {
+                    if (window.currentWorkHubFilter === 'all') {
+                        if (ev.category === 'leads') return false;
+                    } else if (ev.category !== window.currentWorkHubFilter) {
+                        return false;
+                    }
+                    if (!q) return true;
+                    let str = JSON.stringify(ev.data || {}).toLowerCase();
+                    return str.includes(q);
+                });
+
+                // الترتيب الذكي: المهام العاجلة التي تنتظر ردك/مراجعتك في الأعلى دائماً ثم الأحدث فالأقدم بالتوقيت الدقيق
+                filtered.sort((a, b) => {
+                    if (a.isUrgent !== b.isUrgent) return a.isUrgent ? -1 : 1;
+                    return (b.timestampMs || 0) - (a.timestampMs || 0);
+                });
+
+                if (filtered.length === 0) {
+                    container.innerHTML = `<div style="text-align:center; padding:40px 20px; background:var(--input-bg); border-radius:12px; color:var(--text-muted);">
+                        <span style="font-size:2.8rem; display:block; margin-bottom:8px;">✨</span>
+                        <h3 style="margin:0;">لا توجد مهام في هذا التبويب حالياً</h3>
+                        <p style="font-size:0.85rem; margin-top:5px;">أي طلب جديد أو رسالة عميل أو إلغاء سيظهر لك هنا فوراً مع تنبيه صوتي وتوقيت لحظي دقيق!</p>
+                    </div>`;
+                    return;
+                }
+
+                let html = '';
+                filtered.slice(0, 60).forEach(ev => {
+                    let timeBadgeHtml = window.formatWorkHubDate(ev.timestampMs);
+
+                    if (ev.subType === 'active_order') {
+                        let o = ev.data;
+                        let phone = (o.phones && o.phones.primary) || '';
+                        let itemsTxt = (o.items || []).map(i => `${window.escapeHTML(i.name)} (${i.quantity})`).join(' ، ');
+                        let tagBadge = window.getCustomerTagBadgeHtml ? window.getCustomerTagBadgeHtml(phone) : '';
+                        let subBadge = o.isMonthlySubscription ? `<span style="background:#028090; color:white; padding:2px 8px; border-radius:8px; font-size:0.74rem; font-weight:bold; margin-right:5px;">🔄 اشتراك شهري</span>` : '';
+                        let statusColor = o.status === 'قيد المراجعة' ? '#dc3545' : (o.status.includes('توصيل') ? '#28a745' : '#028090');
+
+                        html += `<div class="work-event-card type-order">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                                <div>
+                                    <span class="${o.status === 'قيد المراجعة' ? 'work-urgent-pulse' : ''}" style="background:${statusColor}; color:white; padding:3px 9px; border-radius:8px; font-size:0.76rem; font-weight:bold;">📦 طلب #${o.id.slice(0,6).toUpperCase()} (${window.escapeHTML(o.status)})</span>
+                                    <strong style="color:var(--primary); font-size:1.05rem; margin-right:6px;">👤 ${window.escapeHTML(o.customerName)} ${tagBadge} ${subBadge}</strong>
+                                </div>
+                                ${timeBadgeHtml}
+                            </div>
+                            <div style="margin-top:8px; font-size:0.88rem; color:var(--text-color); line-height:1.6;">
+                                <div>📞 <strong>الهاتف:</strong> ${window.escapeHTML(phone)} | 📍 <strong>العنوان:</strong> ${window.escapeHTML((o.location && o.location.governorate) || '')} - ${window.escapeHTML((o.location && o.location.city) || '')} (${window.escapeHTML((o.location && o.location.details) || '')})</div>
+                                <div>🛍️ <strong>المنتجات:</strong> ${itemsTxt} ${o.freeGiftUnlocked ? `<span style="color:#166534; font-weight:bold;">+ ${window.escapeHTML(o.freeGiftUnlocked)}</span>` : ''}</div>
+                                <div>💰 <strong>الإجمالي المطلوب:</strong> <strong style="color:var(--secondary); font-size:1.02rem;">${o.totalAmount} ج</strong> (${window.escapeHTML(o.paymentMethod || 'كاش')})</div>
+                            </div>
+                            <div class="work-inline-actions">
+                                <button type="button" class="btn" style="padding:5px 10px; font-size:0.78rem; background:#028090;" onclick="window.updateOrderStatus('${o.id}', 'تم التجهيز')">📦 تم التجهيز</button>
+                                <button type="button" class="btn" style="padding:5px 10px; font-size:0.78rem; background:#007bff;" onclick="window.updateOrderStatus('${o.id}', 'تم الشحن')">🚚 تم الشحن</button>
+                                <button type="button" class="btn" style="padding:5px 10px; font-size:0.78rem; background:#28a745;" onclick="window.updateOrderStatus('${o.id}', 'تم التوصيل ✅')">✅ تم التوصيل</button>
+                                <button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem; border-color:#25D366; color:#25D366;" onclick="window.sendOrderWhatsAppStatus('${o.id}')">📲 واتساب</button>
+                                ${storeSettings.enableShippingLabel !== false ? `<button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem;" onclick="window.printOrderShippingLabel('${o.id}')">🖨️ بوليصة الشحن</button>` : ''}
+                                <button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem;" onclick="window.openAdminOrderModal('${o.id}')">📋 التفاصيل</button>
+                            </div>
+                        </div>`;
+                    } else if (ev.subType === 'canceled_order') {
+                        let o = ev.data;
+                        let phone = (o.phones && o.phones.primary) || '';
+                        let pureWa = String(phone).replace(/\D/g, '');
+                        if (pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
+                        let waMsg = `مرحباً ${o.customerName} 🌿 لاحظنا إلغاء طلبك رقم #${o.id.slice(0,6).toUpperCase()} في متجر زيت الشجرة المباركة، هل واجهتك أي مشكلة أو تود تعديل الطلب؟ يسعدنا خدمتك فوراً!`;
+                        let itemsTxt = (o.items || []).map(i => `${window.escapeHTML(i.name)} (${i.quantity})`).join(' ، ');
+
+                        html += `<div class="work-event-card type-cancel">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                                <div>
+                                    <span style="background:#dc3545; color:white; padding:3px 9px; border-radius:8px; font-size:0.76rem; font-weight:bold;">🚨 طلب ملغى #${o.id.slice(0,6).toUpperCase()}</span>
+                                    <strong style="color:var(--danger); font-size:1.02rem; margin-right:6px;">👤 ${window.escapeHTML(o.customerName)} (${window.escapeHTML(o.status)})</strong>
+                                </div>
+                                ${timeBadgeHtml}
+                            </div>
+                            <div style="margin-top:8px; font-size:0.86rem;">
+                                📞 <strong>الهاتف:</strong> ${window.escapeHTML(phone)} | 🛍️ <strong>المنتجات:</strong> ${itemsTxt} | 💰 <strong>القيمة:</strong> ${o.totalAmount} ج
+                            </div>
+                            <div class="work-inline-actions">
+                                <a href="https://wa.me/${pureWa}?text=${encodeURIComponent(waMsg)}" target="_blank" class="btn" style="background:#25D366; padding:5px 12px; font-size:0.78rem; text-decoration:none;">💬 تواصل واتساب لمعرفة سبب الإلغاء</a>
+                                <button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem;" onclick="window.updateOrderStatus('${o.id}', 'قيد المراجعة')">🔄 استعادة وتفعيل الطلب</button>
+                                <button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem;" onclick="window.openAdminOrderModal('${o.id}')">📋 التفاصيل</button>
+                            </div>
+                        </div>`;
+                    } else if (ev.subType === 'return_request') {
+                        let r = ev.data;
+                        html += `<div class="work-event-card type-cancel">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                                <div>
+                                    <span style="background:#e0a800; color:white; padding:3px 9px; border-radius:8px; font-size:0.76rem; font-weight:bold;">🔄 طلب استرجاع #${(r.orderId || '').slice(0,6).toUpperCase()}</span>
+                                    <strong style="color:var(--primary); margin-right:6px;">السبب: ${window.escapeHTML(r.reason || '')}</strong>
+                                </div>
+                                ${timeBadgeHtml}
+                            </div>
+                            <p style="margin:6px 0; font-size:0.85rem; color:var(--text-muted);">ملاحظات العميل: ${window.escapeHTML(r.notes || 'لا توجد')}</p>
+                            <div class="work-inline-actions">
+                                ${r.status === 'قيد المراجعة' ? `<button type="button" class="btn" style="background:#28a745; padding:5px 12px; font-size:0.78rem;" onclick="window.approveReturn('${r.id}', '${r.orderId}')">✅ الموافقة وإرسال مندوب</button>` : `<span style="color:#28a745; font-weight:bold; font-size:0.82rem;">✅ تمت الموافقة</span>`}
+                                ${r.imageUrl ? `<a href="${r.imageUrl}" target="_blank" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem; text-decoration:none;">📸 عرض صورة المنتج</a>` : ''}
+                            </div>
+                        </div>`;
+                    } else if (ev.subType === 'chat_thread') {
+                        let c = ev.data;
+                        let msgs = c.messages || [];
+                        let lastMsgs = msgs.slice(-3);
+                        let statusBadge = ev.needsReply
+                            ? `<span class="work-urgent-pulse" style="background:#dc3545; color:white; padding:3px 9px; border-radius:8px; font-size:0.75rem; font-weight:bold;">🔴 (${ev.unreadCustMsgs}) رسالة عميل جديدة تنتظر ردك</span>`
+                            : `<span style="background:#007bff; color:white; padding:3px 9px; border-radius:8px; font-size:0.74rem; font-weight:bold;">💬 محادثة خدمة عملاء (تم الرد)</span>`;
+
+                        let previewHtml = lastMsgs.map(m => {
+                            let mTimeStr = m.timestamp ? new Date(window.parseSafeTimestamp(m.timestamp, Date.now())).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
+                            return `<div style="font-size:0.84rem; padding:5px 9px; border-radius:6px; margin-top:4px; background:${m.sender==='customer'?'rgba(0,123,255,0.09)':'var(--input-bg)'}; display:flex; justify-content:space-between; gap:8px;">
+                                <span><strong>${m.sender==='customer'?'👤 العميل:':(m.isAutoReply?'🤖 رد آلي:':'🛡️ الإدارة:')}</strong> ${window.escapeHTML(m.text)}</span>
+                                <small style="color:var(--text-muted); white-space:nowrap;">${mTimeStr}</small>
+                            </div>`;
+                        }).join('');
+                        let safeId = c.id.replace(/'/g, "\\'");
+                        let safeName = (c.customerName || 'عميل').replace(/'/g, "\\'");
+
+                        html += `<div class="work-event-card type-chat">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                                <div>
+                                    ${statusBadge}
+                                    <strong style="color:var(--primary); font-size:1rem; margin-right:6px;">👤 ${window.escapeHTML(c.customerName || c.id)}</strong>
+                                </div>
+                                ${timeBadgeHtml}
+                            </div>
+                            <div style="margin:8px 0;">${previewHtml}</div>
+                            <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:6px;">
+                                <button type="button" class="work-canned-chip" onclick="window.insertCannedWorkReply('${safeId}', 'أهلاً بحضرتك 🌿 تحت أمرك، جاري مراجعة استفسارك فوراً.')">👋 ترحيب</button>
+                                <button type="button" class="work-canned-chip" onclick="window.insertCannedWorkReply('${safeId}', 'طلب حضرتك قيد التجهيز والشحن السريع لباب البيت 🚚')">🚚 حالة الشحن</button>
+                                <button type="button" class="work-canned-chip" onclick="window.insertCannedWorkReply('${safeId}', 'زيت الشجرة المباركة سيناوي بكر عصرة أولى على البارد 100% ومضمون 🌿')">🌿 ضمان الزيت</button>
+                            </div>
+                            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                                <input type="text" id="wk-reply-inp-${c.id}" placeholder="اكتب ردك المباشر للعميل هنا..." style="margin:0; flex:1; min-width:170px; padding:7px 10px; font-size:0.85rem;">
+                                <button type="button" class="btn" style="background:#007bff; padding:7px 12px; font-size:0.82rem;" onclick="window.sendInlineWorkChatReply('${safeId}')">إرسال الرد 🚀</button>
+                                <button type="button" class="btn btn-outline" style="padding:7px 10px; font-size:0.8rem;" onclick="window.showPanel('admin-messages'); window.openAdminChat('${safeId}', '${safeName}');">فتح الشات 💬</button>
+                            </div>
+                        </div>`;
+                    } else if (ev.subType === 'abandoned_cart') {
+                        let u = ev.data;
+                        let total = 0;
+                        (u.cart || []).forEach(it => total += Number(it.price || 0) * Number(it.quantity || 1));
+                        let phone = u.phone1 || u.email || 'غير مسجل';
+                        let pureWa = String(phone).replace(/\D/g, '');
+                        if (pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
+                        let waText = `مرحباً ${u.name || 'عميلنا العزيز'} 🌿 لاحظنا وجود منتجات في سلة مشترياتك بمتجر زيت الشجرة المباركة، هل تحب نساعدك في إتمام الطلب اليوم مع هدية أو خصم خاص؟`;
+
+                        html += `<div class="work-event-card type-lead">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                                <div>
+                                    <span style="background:#ff6b00; color:white; padding:3px 9px; border-radius:8px; font-size:0.74rem; font-weight:bold;">🛒 سلة متروكة نشطة</span>
+                                    <strong style="color:var(--primary); margin-right:6px;">👤 ${window.escapeHTML(u.name || 'عميل')} (${window.escapeHTML(phone)})</strong>
+                                </div>
+                                ${timeBadgeHtml}
+                            </div>
+                            <div style="margin-top:6px; font-size:0.85rem; color:var(--secondary); font-weight:bold;">
+                                عدد المنتجات بالسلة: ${u.cart.length} (بقيمة إجمالية ~${total} ج)
+                            </div>
+                            ${pureWa.length >= 10 ? `<div class="work-inline-actions"><a href="https://wa.me/${pureWa}?text=${encodeURIComponent(waText)}" target="_blank" class="btn btn-outline" style="border-color:#25D366; color:#25D366; padding:5px 12px; font-size:0.8rem; text-decoration:none;">💬 تواصل مع العميل عبر واتساب</a></div>` : ''}
+                        </div>`;
+                    }
+                });
+
+                container.innerHTML = html;
+            } catch (err) {
+                console.error("Work Hub render error:", err);
+            }
+        };
+
+        // =========================================================================
+        // === 6. ميزات المرحلة النهائية (صفقة اليوم + الاشتراك الشهري + بطاقات الهدايا + QR + آخر مشاهدة) ===
+        // =========================================================================
+
+        // أ) صفقة اليوم الخاطفة الموقوتة (Flash Deal of the Day)
+        window.renderHomeFlashDeal = function() {
+            let box = document.getElementById('home-flash-deal-box');
+            if (!box) return;
+            if (storeSettings.enableFlashDeal === false || !products || products.length === 0) {
+                box.style.display = 'none';
+                return;
+            }
+            let targetProd = products.find(p => p.id === storeSettings.flashDealProductId && !p.isHidden);
+            if (!targetProd) {
+                targetProd = products.find(p => !p.isHidden && p.oldPrice && Number(p.oldPrice) > Number(p.price)) || products.find(p => !p.isHidden);
+            }
+            if (!targetProd) {
+                box.style.display = 'none';
+                return;
+            }
+            box.style.display = 'flex';
+            let img = (targetProd.images && targetProd.images[0]) ? targetProd.images[0] : (targetProd.imageUrl || '1000392409.jpeg');
+            let dealTitle = storeSettings.flashDealTitle || (window.currentLang === 'en' ? '⚡ Flash Deal of the Day!' : '⚡ صفقة اليوم الخاطفة بخصم خاص!');
+            let oldP = (targetProd.oldPrice && Number(targetProd.oldPrice) > Number(targetProd.price)) ? Number(targetProd.oldPrice) : Math.round(Number(targetProd.price) * 1.15);
+            let saveAmt = Math.max(0, oldP - Number(targetProd.price));
+
+            box.innerHTML = `
+                <div style="display:flex; align-items:center; gap:12px; flex:1.5; min-width:220px;">
+                    <img loading="lazy" src="${img}" style="width:68px; height:68px; border-radius:12px; object-fit:cover; border:2px solid #f59e0b; flex-shrink:0; cursor:pointer;" onclick="window.openProductModal('${targetProd.id}')">
+                    <div>
+                        <span style="background:#ef4444; color:white; padding:2px 8px; border-radius:6px; font-size:0.72rem; font-weight:bold; display:inline-block; margin-bottom:3px;">${window.escapeHTML(dealTitle)}</span>
+                        <h4 style="margin:0 0 3px 0; color:var(--primary); font-size:0.98rem; cursor:pointer;" onclick="window.openProductModal('${targetProd.id}')">${window.escapeHTML(targetProd.name)}</h4>
+                        <div>
+                            <del style="color:var(--text-muted); font-size:0.82rem; margin-left:5px;">${oldP} ج</del>
+                            <strong style="color:#d97706; font-size:1.08rem;">${targetProd.price} ج</strong>
+                            <span style="color:#166534; font-size:0.76rem; font-weight:bold; margin-right:6px;">(وفر ${saveAmt} ج)</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <button type="button" class="btn" style="background:linear-gradient(90deg, #f59e0b, #d97706); padding:8px 14px; font-size:0.85rem;" onclick="window.openProductModal('${targetProd.id}')">🛒 ${window.currentLang === 'en' ? 'Grab Deal' : 'اغتنم الصفقة'}</button>
+                    ${storeSettings.enableQuickOrder !== false ? `<button type="button" class="btn btn-outline" style="padding:8px 10px; font-size:0.85rem; border-color:#d97706; color:#d97706;" onclick="window.openQuickOrderModal(event, '${targetProd.id}')">⚡</button>` : ''}
+                </div>
+            `;
+        };
+
+        // ب) الاشتراك الشهري التلقائي بخصم خاص (Subscribe & Save)
+        window.isCurrentOrderMonthlySubscription = false;
+        window.toggleModalSubscribeOption = function(isChecked) {
+            window.isCurrentOrderMonthlySubscription = Boolean(isChecked);
+            let subPct = Number(storeSettings.subscribeDiscountPercent) || 5;
+            if (isChecked) {
+                currentDiscountPercent = Math.max(currentDiscountPercent, subPct);
+                if (!appliedPromoCode) appliedPromoCode = `SUB${subPct}`;
+                window.showToast(window.currentLang === 'en' ? `🔄 Monthly Subscription activated (+${subPct}% OFF)!` : `🔄 تم تفعيل الاشتراك الشهري التلقائي (خصم ${subPct}% إضافي)!`, 'success');
+            } else if (appliedPromoCode && appliedPromoCode.startsWith('SUB')) {
+                currentDiscountPercent = 0;
+                appliedPromoCode = '';
+            }
+            window.updateInvoiceUI();
+        };
+
+        // ج) بطاقات الهدايا الرقمية (Digital Gift Cards)
+        window.selectedGiftCardValue = 500;
+        window.openGiftCardModal = function() {
+            let modal = document.getElementById('gift-card-modal');
+            if (modal) modal.style.display = 'flex';
+        };
+
+        window.selectGiftCardAmount = function(amt, btnEl) {
+            window.selectedGiftCardValue = Number(amt) || 500;
+            document.querySelectorAll('.gift-amt-btn').forEach(b => {
+                b.style.background = 'transparent';
+                b.style.color = 'var(--primary)';
+            });
+            if (btnEl) {
+                btnEl.style.background = 'var(--secondary)';
+                btnEl.style.color = 'white';
+            }
+        };
+
+        window.addGiftCardToCart = function() {
+            let receiver = (document.getElementById('gc-receiver-name') || {}).value.trim() || 'صديق';
+            let amt = window.selectedGiftCardValue || 500;
+            let gcId = `giftcard_${amt}`;
+            cart.push({
+                id: gcId,
+                cartItemId: `${gcId}_${Date.now()}`,
+                name: `🎟️ بطاقة هدية رقمية (${amt} ج) — إهداء إلى: ${receiver}`,
+                price: amt,
+                imageUrl: '1000392409.jpeg',
+                quantity: 1,
+                variant: '',
+                selected: true
+            });
+            localStorage.setItem('cart', JSON.stringify(cart));
+            window.updateCartUI();
+            document.getElementById('gift-card-modal').style.display = 'none';
+            window.showToast('تمت إضافة بطاقة الهدية إلى سلتك بنجاح 🎟️🛒', 'success');
+            window.showPanel('cart');
+        };
+
+        window.shareGiftCardPreviewWhatsApp = function() {
+            let sender = (document.getElementById('gc-sender-name') || {}).value.trim() || 'صديقك';
+            let receiver = (document.getElementById('gc-receiver-name') || {}).value.trim() || 'عزيزي';
+            let phone = (document.getElementById('gc-receiver-phone') || {}).value.trim();
+            let note = (document.getElementById('gc-message') || {}).value.trim() || 'أتمنى لك دوام الصحة والعافية 🌿';
+            let amt = window.selectedGiftCardValue || 500;
+            let pureWa = phone.replace(/\D/g, '');
+            if (pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
+
+            let msg = `🎁 *بطاقة هدية خاصة لك من (${sender})* 🌿\n\nأهلاً ${receiver}، تم إهداؤك قسيمة شراء بقيمة *(${amt} جنيه)* من *متجر زيت الشجرة المباركة* (أفضل زيت زيتون سيناوي بكر ممتاز عصره أولى على البارد 100%).\n\n💌 *رسالة الإهداء:* "${note}"\n\n🔗 تصفح المتجر واطلب هديتك الآن: ${window.location.origin + window.location.pathname}`;
+            window.open(`https://wa.me/${pureWa}?text=${encodeURIComponent(msg)}`, '_blank');
+        };
+
+        // د) باركود QR السريع لكل منتج (Product QR Code)
+        window.openProductQRModal = function() {
+            if (!activeProductForReview) return;
+            let p = products.find(pr => pr.id === activeProductForReview);
+            if (!p) return;
+            let prodUrl = `${window.location.origin}${window.location.pathname}?id=${encodeURIComponent(p.id)}`;
+            let qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(prodUrl)}`;
+
+            let titleEl = document.getElementById('qr-modal-prod-title');
+            let imgEl = document.getElementById('qr-modal-img');
+            let modal = document.getElementById('product-qr-modal');
+            if (titleEl) titleEl.textContent = `📱 ${p.name}`;
+            if (imgEl) imgEl.src = qrImgUrl;
+            if (modal) modal.style.display = 'flex';
+        };
+
+        window.printProductQRLabel = function() {
+            let p = products.find(pr => pr.id === activeProductForReview);
+            if (!p) return;
+            let prodUrl = `${window.location.origin}${window.location.pathname}?id=${encodeURIComponent(p.id)}`;
+            let qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(prodUrl)}`;
+            let w = window.open('', '_blank', 'width=450,height=500');
+            if (!w) return;
+            w.document.write(`
+                <html dir="rtl" lang="ar"><body style="font-family:Tahoma,sans-serif; text-align:center; padding:25px;" onload="window.print()">
+                    <div style="border:2px solid #3c521e; border-radius:12px; padding:15px; display:inline-block;">
+                        <h3 style="margin:0 0 5px; color:#3c521e;">🌿 زيت الشجرة المباركة</h3>
+                        <strong style="display:block; margin-bottom:10px;">${window.escapeHTML(p.name)}</strong>
+                        <img src="${qrImgUrl}" width="170" height="170"><br>
+                        <small style="display:block; margin-top:8px;">امسح الرمز لإعادة الطلب المباشر</small>
+                    </div>
+                </body></html>
+            `);
+            w.document.close();
+        };
+
+        // هـ) شريط آخر منتج تمت مشاهدته (Sticky Last Viewed Mini-Bar)
+        window.lastViewedProductId = null;
+        window.lastViewedBarDismissed = false;
+        window.updateStickyLastViewedBar = function(product) {
+            if (!product) return;
+            window.lastViewedProductId = product.id;
+            let bar = document.getElementById('sticky-last-viewed-bar');
+            let img = document.getElementById('slv-img');
+            let name = document.getElementById('slv-name');
+            if (!bar || !img || !name) return;
+            if (storeSettings.enableLastViewedBar === false || window.lastViewedBarDismissed) {
+                bar.style.display = 'none';
+                return;
+            }
+            img.src = (product.images && product.images[0]) ? product.images[0] : (product.imageUrl || '1000392409.jpeg');
+            name.textContent = product.name;
+            bar.style.display = 'flex';
+        };
+
+        window.reopenLastViewedProduct = function() {
+            if (window.lastViewedProductId) window.openProductModal(window.lastViewedProductId);
+        };
+
+        window.dismissLastViewedBar = function() {
+            window.lastViewedBarDismissed = true;
+            let bar = document.getElementById('sticky-last-viewed-bar');
+            if (bar) bar.style.display = 'none';
+        };
+
+        // ربط فتح نافذة المنتج وتحديث الإعدادات بـ V57
+        const origOpenProductModalV56 = window.openProductModal;
+        window.openProductModal = function(id) {
+            origOpenProductModalV56(id);
+            let p = products.find(pr => pr.id === id);
+            if (p) window.updateStickyLastViewedBar(p);
+
+            let subBox = document.getElementById('modal-subscribe-save-box');
+            let subPctEl = document.getElementById('modal-sub-disc-pct');
+            let subCb = document.getElementById('modal-subscribe-checkbox');
+            if (subBox) {
+                subBox.style.display = storeSettings.enableSubscribeSave !== false ? 'block' : 'none';
+                if (subPctEl) subPctEl.textContent = `${Number(storeSettings.subscribeDiscountPercent) || 5}%`;
+                if (subCb) subCb.checked = false;
+            }
+
+            let qrBtn = document.getElementById('btn-qr-modal');
+            if (qrBtn) qrBtn.style.display = storeSettings.enableProductQr !== false ? 'inline-block' : 'none';
+        };
+
+        const origRenderProductsV56 = window.renderProducts;
+        window.renderProducts = function(scrollToTop = true) {
+            origRenderProductsV56(scrollToTop);
+            window.renderHomeFlashDeal();
+        };
+
+        const prevApplySettingsV56 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV56();
+            if (isCurrentUserAdmin) {
+                let fdSel = document.getElementById('setting-flash-deal-product');
+                if (fdSel && products.length > 0) {
+                    let opts = '<option value="">تلقائي (أفضل منتج مخفض)</option>';
+                    products.forEach(p => {
+                        opts += `<option value="${p.id}" ${storeSettings.flashDealProductId === p.id ? 'selected' : ''}>${window.escapeHTML(p.name)} (${p.price} ج)</option>`;
+                    });
+                    fdSel.innerHTML = opts;
+                }
+                let setC = (id, val, def = true) => { let el = document.getElementById(id); if (el) el.checked = val !== undefined ? Boolean(val) : def; };
+                let setV = (id, val, def = '') => { let el = document.getElementById(id); if (el) el.value = val !== undefined ? val : def; };
+
+                setC('setting-enable-flash-deal', storeSettings.enableFlashDeal, true);
+                setV('setting-flash-deal-title', storeSettings.flashDealTitle, '⚡ صفقة اليوم الخاطفة بخصم خاص!');
+                setC('setting-enable-subscribe-save', storeSettings.enableSubscribeSave, true);
+                setV('setting-subscribe-discount', storeSettings.subscribeDiscountPercent, 5);
+                setC('setting-enable-gift-cards', storeSettings.enableGiftCards, true);
+                setC('setting-enable-product-qr', storeSettings.enableProductQr, true);
+                setC('setting-enable-last-viewed-bar', storeSettings.enableLastViewedBar, true);
+            }
+
+            let gcBtn = document.getElementById('btn-open-gift-card');
+            if (gcBtn) gcBtn.style.display = storeSettings.enableGiftCards !== false ? 'flex' : 'none';
+
+            let slvBar = document.getElementById('sticky-last-viewed-bar');
+            if (slvBar && storeSettings.enableLastViewedBar === false) slvBar.style.display = 'none';
+
+            let hdrWorkBtn = document.getElementById('header-work-hub-btn');
+            if (hdrWorkBtn) hdrWorkBtn.style.display = isCurrentUserAdmin ? 'inline-flex' : 'none';
+
+            window.renderHomeFlashDeal();
+            if (isCurrentUserAdmin) window.renderAdminWorkHub();
+            if (window.currentLang === 'en') window.translateDOM(document.body);
+        };
+
+        const prevSaveSettingsV56 = window.saveSettings;
+        window.saveSettings = async function() {
+            const getC = (id, def = true) => { let el = document.getElementById(id); return el ? el.checked : def; };
+            const getV = (id, def = '') => { let el = document.getElementById(id); return el ? el.value.trim() : def; };
+            let fdSel = document.getElementById('setting-flash-deal-product');
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    enableFlashDeal: getC('setting-enable-flash-deal', true),
+                    flashDealProductId: fdSel ? fdSel.value : '',
+                    flashDealTitle: getV('setting-flash-deal-title', '⚡ صفقة اليوم الخاطفة بخصم خاص!'),
+                    enableSubscribeSave: getC('setting-enable-subscribe-save', true),
+                    subscribeDiscountPercent: Number(getV('setting-subscribe-discount', 5)) || 5,
+                    enableGiftCards: getC('setting-enable-gift-cards', true),
+                    enableProductQr: getC('setting-enable-product-qr', true),
+                    enableLastViewedBar: getC('setting-enable-last-viewed-bar', true)
+                });
+            } catch (e) {}
+            await prevSaveSettingsV56();
+        };
+
+        // إضافة مصطلحات V57 للقاموس الإنجليزي
+        Object.assign(window.FULL_AR_TO_EN, {
+            "الشغل": "Work",
+            "إهداء بطاقة هدية رقمية": "Send Digital Gift Card",
+            "بطاقة هدية رقمية من زيت الشجرة المباركة": "Blessed Tree Oil Digital Gift Card",
+            "أهدِ من تحب قسيمة شراء منتجات طبيعية أصلية 100% من مزارع سيناء:": "Gift your loved ones a 100% natural Sinai olive oil voucher:",
+            "🛒 إضافة البطاقة للسلة وإتمام الإهداء": "🛒 Add Gift Card to Cart",
+            "إرسال كارت التهنئة مباشرة عبر واتساب": "Send Gift Card via WhatsApp",
+            "اشتراك شهري تلقائي": "Monthly Auto-Delivery",
+            "خصم إضافي": "Extra",
+            "تذكير شهري عبر واتساب": "Monthly WhatsApp reminder",
+            "طباعة ملصق QR للعبوة": "Print Bottle QR Label",
+            "شاهدت مؤخراً:": "Recently Viewed:"
         });
