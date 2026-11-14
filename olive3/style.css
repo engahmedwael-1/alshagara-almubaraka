@@ -957,3 +957,211 @@ html[dir="ltr"] .quality-cert-box {
 .customer-photo-gallery-strip img:hover {
     transform: scale(1.05);
 }
+
+
+/* === النسخة V54 (الجزء الأول): عجلة الحظ، الهدية المجانية، ندرة المخزون، الشات الذكي، دفتر العناوين، والمقارنة === */
+.spin-wheel-fab {
+    position: fixed;
+    bottom: 80px;
+    right: 18px;
+    background: linear-gradient(135deg, #ff6b00, #c59b27);
+    color: white;
+    border: 2px solid white;
+    border-radius: 30px;
+    padding: 8px 14px;
+    font-weight: bold;
+    font-size: 0.85rem;
+    cursor: pointer;
+    z-index: 998;
+    box-shadow: 0 4px 15px rgba(255, 107, 0, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    animation: pulseOffer 2s infinite;
+}
+html[dir="ltr"] .spin-wheel-fab {
+    right: auto;
+    left: 18px;
+}
+.wheel-visual-circle {
+    width: 190px;
+    height: 190px;
+    border-radius: 50%;
+    margin: 12px auto;
+    border: 6px solid var(--secondary);
+    background: conic-gradient(
+        #3c521e 0deg 60deg,
+        #c59b27 60deg 120deg,
+        #028090 120deg 180deg,
+        #e63946 180deg 240deg,
+        #3c521e 240deg 300deg,
+        #c59b27 300deg 360deg
+    );
+    position: relative;
+    transition: transform 3.2s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.wheel-center-knob {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+/* شريط الهدية المجانية في السلة */
+.free-gift-container {
+    background: linear-gradient(135deg, rgba(197, 155, 39, 0.12), rgba(2, 128, 144, 0.08));
+    border: 1px solid var(--secondary);
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    text-align: center;
+}
+.free-gift-progress {
+    background: var(--border-color);
+    height: 8px;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 6px;
+}
+.free-gift-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #c59b27, #28a745);
+    transition: width 0.4s ease;
+}
+
+/* شريط ندرة المخزون والمبيعات داخل كارت المنتج */
+.scarcity-sold-box {
+    margin: 4px 0 6px;
+    text-align: right;
+}
+html[dir="ltr"] .scarcity-sold-box {
+    text-align: left;
+}
+.scarcity-sold-text {
+    font-size: 0.72rem;
+    color: #d97706;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+}
+.scarcity-sold-track {
+    width: 100%;
+    height: 5px;
+    background: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.scarcity-sold-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #ef4444);
+    border-radius: 4px;
+}
+
+/* أزرار الأسئلة الذكية في الشات */
+.smart-chat-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    scrollbar-width: none;
+}
+.smart-chat-chips::-webkit-scrollbar {
+    display: none;
+}
+.smart-chat-chip {
+    background: var(--input-bg);
+    border: 1px solid #007bff;
+    color: #007bff;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: 0.2s;
+    flex-shrink: 0;
+}
+.smart-chat-chip:hover {
+    background: #007bff;
+    color: white;
+}
+
+/* دفتر العناوين المحفوظة */
+.saved-addresses-box {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 15px;
+}
+.saved-address-chip {
+    background: var(--panel-bg);
+    border: 1px solid var(--secondary);
+    color: var(--primary);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.saved-address-chip:hover {
+    background: var(--secondary);
+    color: white;
+}
+
+/* شريط ونافذة مقارنة المنتجات */
+.compare-floating-bar {
+    position: fixed;
+    bottom: 65px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--nav-bg);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 30px;
+    z-index: 1200;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    border: 2px solid var(--secondary);
+    font-size: 0.85rem;
+}
+.compare-btn-mini {
+    position: absolute;
+    top: 38px;
+    left: 8px;
+    background: rgba(255,255,255,0.9);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    cursor: pointer;
+    z-index: 3;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.compare-btn-mini.active {
+    background: var(--secondary);
+    color: white;
+    border-color: var(--secondary);
+}

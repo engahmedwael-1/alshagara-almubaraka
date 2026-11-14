@@ -930,6 +930,7 @@ try {
                 htmlContent += `<div class="product-card ${hiddenClass}" onclick="window.openProductModal('${product.id}')">
                     <div class="product-card-media">
                         ${wishBtnHtml}
+                        ${storeSettings.enableProductCompare !== false ? `<button type="button" class="compare-btn-mini ${(window.compareProductIds||[]).includes(product.id)?'active':''}" title="مقارنة" onclick="window.toggleCompareProduct(event, '${product.id}')">⚖️</button>` : ''}
                         <span class="category-badge">${categoryLabel}</span>
                         ${pinnedBadgeHtml}
                         <img loading="lazy" src="${primaryImage}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'">
@@ -944,6 +945,7 @@ try {
                         </div>
                         <div>
                             ${priceHtml}
+                            ${window.getScarcityBarHtml ? window.getScarcityBarHtml(product) : ''}
                             ${stockBadge}
                             <button type="button" class="btn btn-full" ${addBtnState}>${isOutOfStock && storeSettings.enableBackInStock !== false ? notifyTxt : (vArr.length > 0 ? selTxt : addTxt)}</button>
                         </div>
@@ -1154,7 +1156,7 @@ try {
 
                 document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true); let waBtnInfo = storeSettings.floatingButtons ? storeSettings.floatingButtons.find(b => b.icon === '📱' || b.link.includes('wa.me')) : null; let pureWa = waBtnInfo ? waBtnInfo.link.split('/').pop() : "201018631768"; if(pureWa && !pureWa.startsWith('20') && pureWa.length === 10) pureWa = '20' + pureWa; let custEmail = currentUser ? (currentUser.email || currentUser.phoneNumber) : "غير مسجل";
                 
-                let orderPayload = { usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0, userId: currentUser ? currentUser.uid : "", customerEmail: custEmail || "", customerName: name || "", phones: { primary: phone1 || "", secondary: phone2 || "" }, location: { governorate: gov || "", city: city || "", mapAddress: mapAddress || "", details: addressDetails || "", lat: lat || 0, lng: lng || 0, mapLink: mapLink || "" }, items: selectedItems, subtotal: currentSubtotal || 0, discount: discountVal || 0, promoCode: appliedPromoCode || "", shippingCost: finalShippingCost || 0, totalAmount: finalTotal || 0, orderMethod: method || "", trafficSource: window.getDetectedTrafficSource ? window.getDetectedTrafficSource() : 'مباشر (Direct)', paymentMethod: payMethod || "", receiptUrl: receiptUrl || "", status: "قيد المراجعة", orderDate: new Date().toISOString() };
+                let orderPayload = { usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0, userId: currentUser ? currentUser.uid : "", customerEmail: custEmail || "", customerName: name || "", phones: { primary: phone1 || "", secondary: phone2 || "" }, location: { governorate: gov || "", city: city || "", mapAddress: mapAddress || "", details: addressDetails || "", lat: lat || 0, lng: lng || 0, mapLink: mapLink || "" }, items: selectedItems, subtotal: currentSubtotal || 0, discount: discountVal || 0, promoCode: appliedPromoCode || "", shippingCost: finalShippingCost || 0, totalAmount: finalTotal || 0, orderMethod: method || "", trafficSource: window.getDetectedTrafficSource ? window.getDetectedTrafficSource() : 'مباشر (Direct)', freeGiftUnlocked: window.getUnlockedFreeGiftName ? window.getUnlockedFreeGiftName() : '', paymentMethod: payMethod || "", receiptUrl: receiptUrl || "", status: "قيد المراجعة", orderDate: new Date().toISOString() };
                 await addDoc(collection(db, 'orders'), orderPayload);
                 if(currentUser) { await setDoc(doc(db, 'users', currentUser.uid), { name: name||"", phone1: phone1||"", phone2: phone2||"", gov: gov||"", city: city||"", address: addressDetails||"" }, { merge: true }); }
                 window.trackEvent('Purchase', { value: finalTotal, currency: 'EGP', content_type: 'product_group' });
@@ -3527,3 +3529,473 @@ window.showUserHistory = function(userId, userName) {
             window.renderSavingsAndUpsell();
             window.translateDOM(document.body);
         };
+
+
+        // =========================================================================
+        // === النسخة V54 (الجزء الأول): التسويق التفاعلي وتسهيلات العميل الذكية ===
+        // =========================================================================
+
+        // 1. شريط ندرة المخزون والمبيعات (Scarcity Progress Bar)
+        window.getScarcityBarHtml = function(product) {
+            if (storeSettings.enableScarcityBar === false) return '';
+            if (product.stock !== undefined && product.stock !== "" && Number(product.stock) <= 0) return '';
+            let hash = 0;
+            let str = String(product.id || product.name || 'zait');
+            for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) % 100;
+            let soldPct = 68 + (hash % 24);
+            let label = window.currentLang === 'en' ? `🔥 Sold ${soldPct}% of batch` : `🔥 تم بيع ${soldPct}% من الكمية`;
+            return `<div class="scarcity-sold-box">
+                <div class="scarcity-sold-text"><span>${label}</span></div>
+                <div class="scarcity-sold-track"><div class="scarcity-sold-fill" style="width:${soldPct}%;"></div></div>
+            </div>`;
+        };
+
+        // 2. عجلة الحظ التفاعلية (Spin & Win)
+        window.openSpinWheelModal = function() {
+            let modal = document.getElementById('spin-wheel-modal');
+            if (modal) modal.style.display = 'flex';
+        };
+
+        window.spinTheWheelNow = async function() {
+            let phoneInp = document.getElementById('wheel-phone-input');
+            let btn = document.getElementById('btn-spin-now');
+            let wheel = document.getElementById('wheel-visual-circle');
+            let resArea = document.getElementById('wheel-result-area');
+            if (!phoneInp || !wheel || !resArea) return;
+
+            let phone = phoneInp.value.trim();
+            if (!phone || phone.replace(/\D/g, '').length < 9) {
+                window.showToast(window.currentLang === 'en' ? 'Please enter a valid WhatsApp phone number!' : 'يرجى إدخال رقم واتساب صحيح للمشاركة!', 'error');
+                return;
+            }
+            if (btn) btn.disabled = true;
+
+            let deg = 1440 + Math.floor(Math.random() * 360);
+            wheel.style.transform = `rotate(${deg}deg)`;
+
+            let winCode = (storeSettings.wheelCouponCode || 'LUCKY10').trim().toUpperCase();
+            let winDisc = Number(storeSettings.wheelDiscountPercent) || 10;
+
+            setTimeout(async () => {
+                currentDiscountPercent = winDisc;
+                appliedPromoCode = winCode;
+                window.updateInvoiceUI();
+
+                resArea.style.display = 'block';
+                resArea.innerHTML = window.currentLang === 'en'
+                    ? `🎉 <strong>Congratulations!</strong> You won a <strong>${winDisc}% OFF</strong> coupon: <span style="background:white; padding:2px 8px; border-radius:6px; border:1px dashed #166534;">${winCode}</span><br><small>Applied automatically to your cart!</small>`
+                    : `🎉 <strong>مبروك!</strong> كسبت خصم فوري <strong>${winDisc}%</strong> بكود: <span style="background:white; padding:2px 8px; border-radius:6px; border:1px dashed #166534;">${winCode}</span><br><small>تم تفعيل الخصم في سلتك تلقائياً الآن!</small>`;
+
+                localStorage.setItem('zait_wheel_spun', 'true');
+                try {
+                    await addDoc(collection(db, 'wheel_leads'), {
+                        phone: phone,
+                        prizeCode: winCode,
+                        discount: winDisc,
+                        date: new Date().toISOString()
+                    });
+                } catch (e) {}
+                if (btn) btn.disabled = false;
+            }, 3300);
+        };
+
+        window.adminWheelLeadsUnsubscribe = null;
+        window.loadAdminWheelLeads = function() {
+            if (window.adminWheelLeadsUnsubscribe) window.adminWheelLeadsUnsubscribe();
+            window.adminWheelLeadsUnsubscribe = onSnapshot(collection(db, 'wheel_leads'), (snap) => {
+                let cont = document.getElementById('admin-wheel-leads-list');
+                let badge = document.getElementById('wheel-leads-count-badge');
+                if (!cont) return;
+                let list = [];
+                snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+                list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+                if (badge) badge.textContent = list.length;
+                if (list.length === 0) {
+                    cont.innerHTML = '<p style="color:var(--text-muted); font-size:0.88rem; margin:0;">لا توجد أرقام مسجلة بعد.</p>';
+                    return;
+                }
+                let html = '';
+                list.forEach(item => {
+                    let pureWa = String(item.phone || '').replace(/\D/g, '');
+                    if (pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
+                    let waMsg = `مرحباً بك من متجر زيت الشجرة المباركة 🌿 مبروك فوزك في عجلة الحظ بخصم ${item.discount}% بكود (${item.prizeCode})! هل تحب نساعدك في إتمام طلبك بالخصم اليوم؟`;
+                    let waBtn = pureWa.length >= 10
+                        ? `<a href="https://wa.me/${pureWa}?text=${encodeURIComponent(waMsg)}" target="_blank" class="btn btn-outline" style="border-color:#25D366; color:#25D366; padding:4px 10px; font-size:0.8rem; text-decoration:none;">💬 تواصل واتساب</a>`
+                        : '';
+                    html += `<div style="background:var(--input-bg); padding:8px 10px; border:1px solid var(--border-color); border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <div>
+                            <strong style="color:var(--primary);">📞 ${window.escapeHTML(item.phone)}</strong><br>
+                            <span style="font-size:0.8rem; color:var(--secondary);">الجائزة: ${window.escapeHTML(item.prizeCode)} (${item.discount}%)</span>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            ${waBtn}
+                            <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.78rem;" onclick="window.deleteWheelLead('${item.id}')">🗑️</button>
+                        </div>
+                    </div>`;
+                });
+                cont.innerHTML = html;
+            });
+        };
+
+        window.deleteWheelLead = async function(id) {
+            try {
+                await deleteDoc(doc(db, 'wheel_leads', id));
+                window.showToast('تم حذف الرقم', 'info');
+            } catch (e) {}
+        };
+
+        // 3. شريط الهدية المجانية التلقائية في السلة (Free Gift Bar)
+        window.getUnlockedFreeGiftName = function() {
+            if (!storeSettings.enableFreeGift) return '';
+            let thresh = Number(storeSettings.freeGiftThreshold) || 1500;
+            let giftName = storeSettings.freeGiftName || 'عبوة زيت زيتون 250 مل هدية مجانية 🎁';
+            return currentSubtotal >= thresh ? giftName : '';
+        };
+
+        window.updateFreeGiftUI = function() {
+            let box = document.getElementById('free-gift-box');
+            let msg = document.getElementById('free-gift-msg');
+            let bar = document.getElementById('free-gift-bar');
+            if (!box || !msg || !bar) return;
+            if (storeSettings.enableFreeGift === false) {
+                box.style.display = 'none';
+                return;
+            }
+            box.style.display = 'block';
+            let thresh = Number(storeSettings.freeGiftThreshold) || 1500;
+            let giftName = storeSettings.freeGiftName || 'عبوة زيت زيتون 250 مل هدية مجانية 🎁';
+            if (currentSubtotal >= thresh) {
+                bar.style.width = '100%';
+                msg.innerHTML = window.currentLang === 'en'
+                    ? `🎁 Congrats! Free Gift Unlocked with your order: <strong style="color:#166534;">(${window.escapeHTML(giftName)})</strong>`
+                    : `🎁 مبروك! حصلت على هدية مجانية مع طلبك: <strong style="color:#166534;">(${window.escapeHTML(giftName)})</strong>`;
+            } else {
+                let rem = thresh - currentSubtotal;
+                let pct = Math.min(100, Math.round((currentSubtotal / thresh) * 100));
+                bar.style.width = pct + '%';
+                msg.innerHTML = window.currentLang === 'en'
+                    ? `🎁 Add <strong>${rem} EGP</strong> more to unlock your FREE Gift: <strong>(${window.escapeHTML(giftName)})</strong>`
+                    : `🎁 أضف منتجات بقيمة <strong>${rem} ج</strong> لتحصل على هدية مجانية: <strong>(${window.escapeHTML(giftName)})</strong>`;
+            }
+        };
+
+        const origUpdateInvoiceV53 = window.updateInvoiceUI;
+        window.updateInvoiceUI = function() {
+            origUpdateInvoiceV53();
+            window.updateFreeGiftUI();
+        };
+
+        // 4. أزرار الأسئلة الذكية الفورية في شات خدمة العملاء (Smart Chatbot Chips)
+        window.triggerSmartBotChip = function(topic) {
+            let container = document.getElementById('support-history-container');
+            if (!container) return;
+            if (container.querySelector('p')) container.innerHTML = '';
+            let isEn = window.currentLang === 'en';
+            let qText = '';
+            let aText = '';
+            let defShip = storeSettings.defaultShippingCost || 90;
+            let freeThresh = storeSettings.freeShippingThreshold || 1000;
+
+            if (topic === 'shipping') {
+                qText = isEn ? '🚚 How much is shipping and delivery time?' : '🚚 كم سعر ومدة الشحن؟';
+                aText = isEn
+                    ? `Shipping is ${defShip} EGP for standard governorates (and FREE on orders over ${freeThresh} EGP 🎉). Delivery takes 2 to 4 business days right to your doorstep.`
+                    : `سعر الشحن ${defShip} ج للمحافظات العادية (ومجاني تماماً للطلبات فوق ${freeThresh} ج 🎉). ويصل الطلب لباب البيت خلال 2 إلى 4 أيام عمل.`;
+            } else if (topic === 'quality') {
+                qText = isEn ? '🌿 How do I know the olive oil is 100% authentic?' : '🌿 كيف أتأكد أن الزيت أصلي؟';
+                aText = isEn
+                    ? 'Our olive oil is 100% pure Extra Virgin from our farms in Sinai, first cold press with acidity under 0.8%. You have the right to inspect your order upon delivery with a full money-back guarantee!'
+                    : 'زيت الشجرة المباركة طبيعي وبكر ممتاز 100% من مزارعنا في سيناء (عصرة أولى على البارد وحموضة أقل من 0.8%). ومتاح معاينة الطلب عند الاستلام مع ضمان استرجاع كامل!';
+            } else if (topic === 'payment') {
+                qText = isEn ? '💳 What payment methods are available?' : '💳 ما طرق الدفع المتاحة؟';
+                aText = isEn
+                    ? `You can pay Cash on Delivery (COD) or via Mobile Wallets & InstaPay to (${storeSettings.walletNumber || '01018631768'}).`
+                    : `متاح الدفع كاش عند الاستلام، أو التحويل عبر المحافظ الإلكترونية وإنستاباي على الرقم (${storeSettings.walletNumber || '01018631768'}).`;
+            } else if (topic === 'offers') {
+                qText = isEn ? '🎁 What are the current offers and gifts?' : '🎁 ما هي العروض والهدايا الحالية؟';
+                aText = isEn
+                    ? `Enjoy automatic bundle discounts, free shipping on orders over ${freeThresh} EGP, and loyalty points on every purchase!`
+                    : `متاح خصم فوري عند شراء عبوتين أو أكثر، وشحن مجاني للطلبات فوق ${freeThresh} ج، بالإضافة لنقاط ولاء تتحول لرصيد خصم في كل طلب!`;
+            }
+
+            container.innerHTML += `<div class="chat-msg-wrapper chat-msg-customer"><div class="chat-bubble bubble-customer">${window.escapeHTML(qText)}</div></div>`;
+            container.innerHTML += `<div class="chat-msg-wrapper chat-msg-admin"><div class="chat-bubble bubble-admin"><strong style="color:var(--secondary);font-size:0.8rem;">🤖 المساعد الذكي:</strong><br>${window.escapeHTML(aText)}</div></div>`;
+            container.scrollTop = container.scrollHeight;
+        };
+
+        // 5. دفتر العناوين المحفوظة للعميل (Saved Addresses Book)
+        window.getSavedAddressesList = function() {
+            try {
+                return JSON.parse(localStorage.getItem('zait_saved_addresses_book')) || [];
+            } catch (e) {
+                return [];
+            }
+        };
+
+        window.renderSavedAddressesBook = function() {
+            let box = document.getElementById('saved-addresses-book-box');
+            let listEl = document.getElementById('saved-addresses-chips-list');
+            if (!box || !listEl) return;
+            if (storeSettings.enableSavedAddresses === false) {
+                box.style.display = 'none';
+                return;
+            }
+            box.style.display = 'block';
+            let addrs = window.getSavedAddressesList();
+            if (addrs.length === 0) {
+                listEl.innerHTML = `<span style="font-size:0.8rem; color:var(--text-muted);">${window.currentLang === 'en' ? 'Fill your address below then click (+ Save Current Address) for 1-click checkout next time.' : 'املأ بيانات عنوانك بالأسفل ثم اضغط (➕ حفظ العنوان الحالي) لاختياره بضغطة زر في طلباتك القادمة.'}</span>`;
+                return;
+            }
+            let html = '';
+            addrs.forEach((a, idx) => {
+                html += `<div class="saved-address-chip" onclick="window.applySavedAddress(${idx})">
+                    <span>📍 ${window.escapeHTML(a.label)} (${window.escapeHTML(a.gov)})</span>
+                    <span style="color:var(--danger); font-weight:bold; margin-right:4px;" onclick="event.stopPropagation(); window.deleteSavedAddress(${idx})">✖</span>
+                </div>`;
+            });
+            listEl.innerHTML = html;
+        };
+
+        window.saveCurrentCheckoutAddress = function() {
+            let name = (document.getElementById('order-name') || {}).value || '';
+            let phone1 = (document.getElementById('order-phone1') || {}).value || '';
+            let phone2 = (document.getElementById('order-phone2') || {}).value || '';
+            let gov = (document.getElementById('order-gov') || {}).value || '';
+            let city = (document.getElementById('order-city') || {}).value || '';
+            let addr = (document.getElementById('order-address') || {}).value || '';
+            let lat = (document.getElementById('order-lat') || {}).value || '30.0444';
+            let lng = (document.getElementById('order-lng') || {}).value || '31.2357';
+
+            if (!gov || !addr) {
+                window.showToast(window.currentLang === 'en' ? 'Select governorate and write detailed address first!' : 'اختر المحافظة واكتب العنوان التفصيلي أولاً لحفظه!', 'error');
+                return;
+            }
+            let label = prompt(window.currentLang === 'en' ? 'Address Label (e.g. Home / Work / Family):' : 'اسم العنوان (مثال: المنزل / العمل / العائلة):', '🏠 المنزل');
+            if (!label) return;
+            let addrs = window.getSavedAddressesList();
+            addrs.push({ label: label.trim(), name, phone1, phone2, gov, city, addr, lat: lat || '30.0444', lng: lng || '31.2357' });
+            localStorage.setItem('zait_saved_addresses_book', JSON.stringify(addrs));
+            window.renderSavedAddressesBook();
+            window.showToast(window.currentLang === 'en' ? 'Address saved to your book!' : 'تم حفظ العنوان في دفترك بنجاح 📍', 'success');
+        };
+
+        window.applySavedAddress = function(idx) {
+            let addrs = window.getSavedAddressesList();
+            let a = addrs[idx];
+            if (!a) return;
+            if (a.name && document.getElementById('order-name')) document.getElementById('order-name').value = a.name;
+            if (a.phone1 && document.getElementById('order-phone1')) document.getElementById('order-phone1').value = a.phone1;
+            if (a.phone2 && document.getElementById('order-phone2')) document.getElementById('order-phone2').value = a.phone2;
+            if (a.addr && document.getElementById('order-address')) document.getElementById('order-address').value = a.addr;
+            if (document.getElementById('order-lat')) document.getElementById('order-lat').value = a.lat || '30.0444';
+            if (document.getElementById('order-lng')) document.getElementById('order-lng').value = a.lng || '31.2357';
+            let gEl = document.getElementById('order-gov');
+            if (gEl && a.gov) {
+                gEl.value = a.gov;
+                gEl.dispatchEvent(new Event('change'));
+                setTimeout(() => {
+                    let cEl = document.getElementById('order-city');
+                    if (cEl && a.city) cEl.value = a.city;
+                }, 80);
+            }
+            window.showToast(window.currentLang === 'en' ? `Applied address: ${a.label}` : `تم اختيار عنوان: ${a.label}`, 'success');
+        };
+
+        window.deleteSavedAddress = function(idx) {
+            let addrs = window.getSavedAddressesList();
+            addrs.splice(idx, 1);
+            localStorage.setItem('zait_saved_addresses_book', JSON.stringify(addrs));
+            window.renderSavedAddressesBook();
+        };
+
+        // 6. مقارنة المنتجات السريعة + حاسبة التوفير للأحجام (Product Compare & Value Calculator)
+        window.compareProductIds = [];
+        window.toggleCompareProduct = function(event, productId) {
+            if (event) event.stopPropagation();
+            if (storeSettings.enableProductCompare === false) return;
+            let idx = window.compareProductIds.indexOf(productId);
+            if (idx > -1) {
+                window.compareProductIds.splice(idx, 1);
+            } else {
+                if (window.compareProductIds.length >= 4) {
+                    window.showToast(window.currentLang === 'en' ? 'You can compare up to 4 products at a time' : 'يمكنك مقارنة 4 منتجات كحد أقصى في المرة الواحدة', 'info');
+                    return;
+                }
+                window.compareProductIds.push(productId);
+                window.showToast(window.currentLang === 'en' ? 'Added to comparison ⚖️' : 'تمت إضافة المنتج للمقارنة ⚖️', 'info');
+            }
+            window.updateCompareFloatingBar();
+            window.renderProducts(false);
+        };
+
+        window.clearCompareList = function() {
+            window.compareProductIds = [];
+            window.updateCompareFloatingBar();
+            window.renderProducts(false);
+        };
+
+        window.updateCompareFloatingBar = function() {
+            let bar = document.getElementById('compare-floating-bar');
+            let cnt = document.getElementById('compare-count-num');
+            if (!bar || !cnt) return;
+            if (storeSettings.enableProductCompare !== false && window.compareProductIds.length > 0) {
+                bar.style.display = 'flex';
+                cnt.textContent = window.compareProductIds.length;
+            } else {
+                bar.style.display = 'none';
+            }
+        };
+
+        window.openCompareModal = function() {
+            let modal = document.getElementById('compare-products-modal');
+            let cont = document.getElementById('compare-table-container');
+            if (!modal || !cont) return;
+            let items = products.filter(p => window.compareProductIds.includes(p.id));
+            if (items.length === 0) return;
+
+            let isEn = window.currentLang === 'en';
+            let html = `<table class="specs-table" style="text-align:center;">
+                <tr>
+                    <td>${isEn ? 'Product' : 'المنتج'}</td>
+                    ${items.map(p => `<td><img src="${(p.images && p.images[0]) || p.imageUrl || '1000392409.jpeg'}" style="width:65px; height:65px; object-fit:cover; border-radius:8px; display:block; margin:0 auto 6px;"><strong>${window.escapeHTML(p.name)}</strong></td>`).join('')}
+                </tr>
+                <tr>
+                    <td>${isEn ? 'Price' : 'السعر'}</td>
+                    ${items.map(p => `<td style="color:var(--secondary); font-weight:bold; font-size:1.05rem;">${p.price} ${isEn ? 'EGP' : 'ج'}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td>${isEn ? 'Category' : 'القسم'}</td>
+                    ${items.map(p => `<td>${window.escapeHTML(p.category || 'زيت زيتون')}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td>${isEn ? 'Sizes / Variants' : 'الأحجام المتاحة'}</td>
+                    ${items.map(p => `<td>${p.variantsData && p.variantsData.length > 0 ? p.variantsData.map(v => `${window.escapeHTML(v.name)} (${v.price} ج)`).join('<br>') : (isEn ? 'Standard Size' : 'الحجم الأساسي')}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td>${isEn ? 'Action' : 'الشراء'}</td>
+                    ${items.map(p => `<td><button type="button" class="btn" style="padding:5px 10px; font-size:0.8rem;" onclick="document.getElementById('compare-products-modal').style.display='none'; window.openProductModal('${p.id}')">${isEn ? 'View & Buy 🛒' : 'عرض وشراء 🛒'}</button></td>`).join('')}
+                </tr>
+            </table>`;
+            cont.innerHTML = html;
+            modal.style.display = 'flex';
+        };
+
+        window.updateModalValueCalculator = function(product) {
+            let calcEl = document.getElementById('modal-value-calculator');
+            if (!calcEl) return;
+            if (storeSettings.enableProductCompare === false || !product) {
+                calcEl.style.display = 'none';
+                return;
+            }
+            let vArr = product.variantsData || [];
+            if (vArr.length >= 2) {
+                let last = vArr[vArr.length - 1];
+                calcEl.style.display = 'block';
+                calcEl.innerHTML = window.currentLang === 'en'
+                    ? `🧮 <strong>Value Tip:</strong> Choosing larger sizes like (${window.escapeHTML(last.name)}) gives you the best value per liter + qualifies faster for Free Shipping!`
+                    : `🧮 <strong>نصيحة التوفير:</strong> اختيار العبوات الأكبر مثل (${window.escapeHTML(last.name)}) يوفر لك في سعر اللتر ويقربك أسرع للشحن المجاني والهدية!`;
+            } else if (product.oldPrice && Number(product.oldPrice) > Number(product.price)) {
+                let diff = Number(product.oldPrice) - Number(product.price);
+                calcEl.style.display = 'block';
+                calcEl.innerHTML = window.currentLang === 'en'
+                    ? `🧮 <strong>Direct Saving:</strong> You save <strong>${diff} EGP</strong> per unit on this offer!`
+                    : `🧮 <strong>حاسبة التوفير:</strong> توفر في العبوة الواحدة من هذا العرض <strong>${diff} ج</strong> فوراً!`;
+            } else {
+                calcEl.style.display = 'none';
+            }
+        };
+
+        const origOpenProductModalV53 = window.openProductModal;
+        window.openProductModal = function(id) {
+            origOpenProductModalV53(id);
+            const product = products.find(p => p.id === id);
+            window.updateModalValueCalculator(product);
+        };
+
+        const origUpdateAdminUIV53 = window.updateAdminUI;
+        window.updateAdminUI = function() {
+            origUpdateAdminUIV53();
+            if (isCurrentUserAdmin) {
+                window.loadAdminWheelLeads();
+            } else if (window.adminWheelLeadsUnsubscribe) {
+                window.adminWheelLeadsUnsubscribe();
+                window.adminWheelLeadsUnsubscribe = null;
+            }
+        };
+
+        const prevApplySettingsV53 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV53();
+            if (isCurrentUserAdmin) {
+                let setC = (id, val, def = true) => { let el = document.getElementById(id); if (el) el.checked = val !== undefined ? Boolean(val) : def; };
+                let setV = (id, val, def = '') => { let el = document.getElementById(id); if (el) el.value = val !== undefined ? val : def; };
+
+                setC('setting-enable-spin-wheel', storeSettings.enableSpinWheel, true);
+                setV('setting-wheel-coupon', storeSettings.wheelCouponCode, 'LUCKY10');
+                setV('setting-wheel-discount', storeSettings.wheelDiscountPercent, 10);
+
+                setC('setting-enable-free-gift', storeSettings.enableFreeGift, true);
+                setV('setting-free-gift-threshold', storeSettings.freeGiftThreshold, 1500);
+                setV('setting-free-gift-name', storeSettings.freeGiftName, 'عبوة زيت زيتون 250 مل هدية مجانية 🎁');
+
+                setC('setting-enable-scarcity-bar', storeSettings.enableScarcityBar, true);
+                setC('setting-enable-smart-chat-chips', storeSettings.enableSmartChatChips, true);
+                setC('setting-enable-saved-addresses', storeSettings.enableSavedAddresses, true);
+                setC('setting-enable-product-compare', storeSettings.enableProductCompare, true);
+            }
+
+            let fab = document.getElementById('spin-wheel-fab');
+            if (fab) fab.style.display = storeSettings.enableSpinWheel !== false ? 'flex' : 'none';
+
+            let wheelCard = document.getElementById('admin-wheel-leads-card');
+            if (wheelCard) wheelCard.style.display = storeSettings.enableSpinWheel !== false ? 'block' : 'none';
+
+            let chipsBox = document.getElementById('smart-chat-chips-box');
+            if (chipsBox) chipsBox.style.display = storeSettings.enableSmartChatChips !== false ? 'flex' : 'none';
+
+            window.updateFreeGiftUI();
+            window.renderSavedAddressesBook();
+            window.updateCompareFloatingBar();
+            if (window.currentLang === 'en') window.translateDOM(document.body);
+        };
+
+        const prevSaveSettingsV53 = window.saveSettings;
+        window.saveSettings = async function() {
+            const getC = (id, def = true) => { let el = document.getElementById(id); return el ? el.checked : def; };
+            const getV = (id, def = '') => { let el = document.getElementById(id); return el ? el.value.trim() : def; };
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    enableSpinWheel: getC('setting-enable-spin-wheel', true),
+                    wheelCouponCode: getV('setting-wheel-coupon', 'LUCKY10'),
+                    wheelDiscountPercent: Number(getV('setting-wheel-discount', 10)) || 10,
+                    enableFreeGift: getC('setting-enable-free-gift', true),
+                    freeGiftThreshold: Number(getV('setting-free-gift-threshold', 1500)) || 1500,
+                    freeGiftName: getV('setting-free-gift-name', 'عبوة زيت زيتون 250 مل هدية مجانية 🎁'),
+                    enableScarcityBar: getC('setting-enable-scarcity-bar', true),
+                    enableSmartChatChips: getC('setting-enable-smart-chat-chips', true),
+                    enableSavedAddresses: getC('setting-enable-saved-addresses', true),
+                    enableProductCompare: getC('setting-enable-product-compare', true)
+                });
+            } catch (e) {}
+            await prevSaveSettingsV53();
+        };
+
+        // إضافة مصطلحات V54 للقاموس الإنجليزي
+        Object.assign(window.FULL_AR_TO_EN, {
+            "جرب حظك واربح!": "Spin & Win!",
+            "عجلة الحظ والمكافآت": "Spin & Win Rewards",
+            "أدخل رقم الواتساب الخاص بك ولف العجلة لتربح كود خصم فوري على طلبك!": "Enter your WhatsApp number and spin the wheel to win an instant discount!",
+            "لف العجلة الآن!": "Spin Now!",
+            "المقارنة:": "Compare:",
+            "قارن الآن": "Compare Now",
+            "مقارنة المنتجات": "Product Comparison",
+            "كم سعر ومدة الشحن؟": "Shipping cost & time?",
+            "كيف أتأكد أن الزيت أصلي؟": "Is the olive oil 100% authentic?",
+            "ما طرق الدفع المتاحة؟": "Payment methods?",
+            "ما هي العروض والهدايا الحالية؟": "Current offers & gifts?",
+            "دفتر عناويني المحفوظة (اختر للتعبئة السريعة):": "My Saved Addresses (Tap to autofill):",
+            "حفظ العنوان الحالي": "Save Current Address"
+        });
+        Object.assign(window.PLACEHOLDER_AR_TO_EN, {
+            "أدخل رقم هاتفك (واتساب)...": "Enter your WhatsApp phone number..."
+        });
