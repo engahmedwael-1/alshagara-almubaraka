@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>زيت الشجرة المباركة</title>
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3c521e">
 
     <meta name="description" content="زيت الشجرة المباركة - أفضل زيت زيتون سيناوي بكر ممتاز، منتجات طبيعية 100% من قلب سيناء وتوصيل لجميع المحافظات.">
@@ -551,6 +552,22 @@
                 </div>
             </div>
 
+                        <div id="admin-advanced-analytics-box" class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top:15px;">
+                <div class="dash-card" style="border-top-color: #c59b27; text-align:right;">
+                    <div onclick="let el=document.getElementById('admin-top-products-list'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+                        <h3 style="color:var(--primary); margin:0;">🏆 الأكثر مبيعاً وربحاً</h3>
+                        <span style="color:var(--secondary); font-weight:bold;">▼</span>
+                    </div>
+                    <div id="admin-top-products-list" style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:10px; font-size:0.88rem;">جاري الحساب...</div>
+                </div>
+                <div class="dash-card" style="border-top-color: #6f42c1; text-align:right;">
+                    <div onclick="let el=document.getElementById('admin-top-govs-list'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+                        <h3 style="color:#6f42c1; margin:0;">📍 أكثر المحافظات طلباً</h3>
+                        <span style="color:#6f42c1; font-weight:bold;">▼</span>
+                    </div>
+                    <div id="admin-top-govs-list" style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:10px; font-size:0.88rem;">جاري الحساب...</div>
+                </div>
+            </div>
             <div class="dashboard-grid">
                 <div class="dash-card"><h3>👥 الزيارات</h3><div class="stat" id="stat-visits">0</div></div>
                 <div class="dash-card"><h3>📦 الطلبات</h3><div class="stat" id="stat-orders">0</div></div>
@@ -569,6 +586,13 @@
             </div>
             <h3 style="color: var(--primary); margin-top: 30px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">📥 تصدير</h3>
             <button type="button" class="btn" style="background: #107c41; width: 100%; font-size: 1.1rem;" onclick="window.exportOrdersCSV()">📊 تحميل الطلبات (CSV)</button>
+            <div id="admin-backup-restore-box" style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+                <button type="button" class="btn btn-info" style="flex:1; min-width:180px;" onclick="window.downloadStoreBackup()">💾 تحميل نسخة احتياطية شاملة (Backup)</button>
+                <label class="btn btn-outline" style="flex:1; min-width:180px; text-align:center; cursor:pointer; margin:0; display:flex; align-items:center; justify-content:center;">
+                    📂 استعادة نسخة احتياطية (Restore)
+                    <input type="file" accept=".json" style="display:none;" onchange="window.restoreStoreBackup(this)">
+                </label>
+            </div>
         </div>
 
         <div class="panel" id="admin-orders-panel">
@@ -735,6 +759,18 @@
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                             <input type="checkbox" id="setting-enable-admin-order-tools" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>📦 تفعيل شريط البحث السريع والتحديث الجماعي في طلبات الإدارة</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-top-analytics" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🏆 تفعيل إحصائيات الأكثر مبيعاً وأكثر المحافظات طلباً</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-quick-rating" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>⭐ تفعيل زر التقييم السريع للعميل بعد استلام الطلب</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-backup-restore" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>💾 تفعيل أزرار النسخ الاحتياطي واستعادة البيانات (Backup & Restore)</span>
                         </label>
                     </div>
                     <button type="button" class="btn" onclick="window.saveSettings()" style="width:100%; background:#028090; margin-top:12px;">حفظ إعدادات الواجهة وتسهيلات العملاء</button>

@@ -2569,3 +2569,153 @@ window.showUserHistory = function(userId, userName) {
             } catch (e) {}
             await prevSaveSettingsV49();
         };
+
+
+        // === الجزء الثالث والأخير V51: إحصائيات الأكثر مبيعاً + النسخ الاحتياطي + التقييم السريع بعد الاستلام ===
+        window.renderTopAnalytics = function() {
+            let box = document.getElementById('admin-advanced-analytics-box');
+            if (box) box.style.display = storeSettings.enableTopAnalytics !== false ? 'grid' : 'none';
+            if (storeSettings.enableTopAnalytics === false) return;
+
+            let prodCont = document.getElementById('admin-top-products-list');
+            let govCont = document.getElementById('admin-top-govs-list');
+            if (!prodCont || !govCont) return;
+
+            let validOrders = adminOrdersArray.filter(o => !String(o.status || '').includes('رفض') && !String(o.status || '').includes('لغى'));
+            let prodMap = {};
+            let govMap = {};
+
+            validOrders.forEach(o => {
+                let gov = (o.location && o.location.governorate) ? o.location.governorate : 'غير محدد';
+                govMap[gov] = (govMap[gov] || 0) + 1;
+                (o.items || []).forEach(it => {
+                    let key = it.name || 'منتج';
+                    if (!prodMap[key]) prodMap[key] = { qty: 0, rev: 0 };
+                    let q = Number(it.quantity || 1);
+                    prodMap[key].qty += q;
+                    prodMap[key].rev += (Number(it.price || 0) * q);
+                });
+            });
+
+            let topProds = Object.entries(prodMap).sort((a, b) => b[1].qty - a[1].qty).slice(0, 5);
+            if (topProds.length === 0) {
+                prodCont.innerHTML = '<p style="color:var(--text-muted); margin:0;">لا توجد بيانات مبيعات كافية بعد.</p>';
+            } else {
+                let pHtml = '<ol style="margin:0; padding-right:18px; line-height:1.9;">';
+                topProds.forEach(([name, stat]) => {
+                    pHtml += `<li><strong>${window.escapeHTML(name)}</strong>: <span style="color:var(--secondary); font-weight:bold;">${stat.qty} قطعة</span> (${stat.rev.toLocaleString()} ج)</li>`;
+                });
+                pHtml += '</ol>';
+                prodCont.innerHTML = pHtml;
+            }
+
+            let topGovs = Object.entries(govMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            if (topGovs.length === 0) {
+                govCont.innerHTML = '<p style="color:var(--text-muted); margin:0;">لا توجد بيانات محافظات بعد.</p>';
+            } else {
+                let gHtml = '<ol style="margin:0; padding-right:18px; line-height:1.9;">';
+                topGovs.forEach(([govName, cnt]) => {
+                    gHtml += `<li><strong>${window.escapeHTML(govName)}</strong>: <span style="color:#6f42c1; font-weight:bold;">${cnt} طلب</span></li>`;
+                });
+                gHtml += '</ol>';
+                govCont.innerHTML = gHtml;
+            }
+        };
+
+        const origRenderAdminOrdersV50 = window.renderAdminOrdersUI;
+        window.renderAdminOrdersUI = function() {
+            origRenderAdminOrdersV50();
+            if (isCurrentUserAdmin) window.renderTopAnalytics();
+        };
+
+        window.downloadStoreBackup = function() {
+            let backupData = {
+                backupDate: new Date().toISOString(),
+                storeSettings: storeSettings,
+                products: products,
+                promoCodes: promoCodesList
+            };
+            let blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json;charset=utf-8' });
+            let a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Zait_Store_Backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            window.showToast('تم تحميل النسخة الاحتياطية بنجاح 💾', 'success');
+        };
+
+        window.restoreStoreBackup = function(inputEl) {
+            if (!inputEl.files || inputEl.files.length === 0) return;
+            let file = inputEl.files[0];
+            let reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    let data = JSON.parse(e.target.result);
+                    if (!confirm('هل أنت متأكد من استعادة النسخة الاحتياطية؟ سيتم تحديث الإعدادات وإضافة المنتجات المحفوظة.')) return;
+                    if (data.storeSettings) {
+                        await setDoc(doc(db, 'settings', 'main'), data.storeSettings, { merge: true });
+                    }
+                    if (Array.isArray(data.products)) {
+                        for (let p of data.products) {
+                            let pId = p.id;
+                            let copy = { ...p };
+                            delete copy.id;
+                            if (pId) await setDoc(doc(db, 'products', pId), copy, { merge: true });
+                        }
+                    }
+                    window.showToast('تمت استعادة النسخة الاحتياطية بنجاح ✅', 'success');
+                } catch (err) {
+                    window.showToast('ملف النسخة الاحتياطية غير صالح', 'error');
+                }
+                inputEl.value = '';
+            };
+            reader.readAsText(file);
+        };
+
+        // نافذة التقييم السريع بعد التوصيل داخل تفاصيل طلب العميل
+        const origOpenCustOrderModal = window.openCustomerOrderModal;
+        window.openCustomerOrderModal = function(orderId) {
+            origOpenCustOrderModal(orderId);
+            if (storeSettings.enableQuickRating === false) return;
+            let order = (window.customerOrdersArray || []).find(o => o.id === orderId);
+            if (order && order.status.includes('توصيل')) {
+                let comContent = document.getElementById('com-content');
+                if (comContent) {
+                    comContent.innerHTML += `
+                    <div style="margin-top:12px; padding:12px; background:rgba(197,155,39,0.12); border:1px dashed var(--secondary); border-radius:8px; text-align:center;">
+                        <strong style="color:var(--primary); display:block; margin-bottom:8px;">⭐ ما رأيك في تجربتك مع هذا الطلب؟</strong>
+                        <button type="button" class="btn" style="padding:6px 16px; font-size:0.9rem;" onclick="document.getElementById('customer-order-modal').style.display='none'; window.loadAllReviews();">أضف تقييمك الآن ⭐</button>
+                    </div>`;
+                }
+            }
+        };
+
+        const prevApplySettingsV50 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV50();
+            if (isCurrentUserAdmin) {
+                let elTop = document.getElementById('setting-enable-top-analytics');
+                if (elTop) elTop.checked = storeSettings.enableTopAnalytics !== false;
+                let elQR = document.getElementById('setting-enable-quick-rating');
+                if (elQR) elQR.checked = storeSettings.enableQuickRating !== false;
+                let elBR = document.getElementById('setting-enable-backup-restore');
+                if (elBR) elBR.checked = storeSettings.enableBackupRestore !== false;
+            }
+            let brBox = document.getElementById('admin-backup-restore-box');
+            if (brBox) brBox.style.display = storeSettings.enableBackupRestore !== false ? 'flex' : 'none';
+            if (isCurrentUserAdmin) window.renderTopAnalytics();
+        };
+
+        const prevSaveSettingsV50 = window.saveSettings;
+        window.saveSettings = async function() {
+            let elTop = document.getElementById('setting-enable-top-analytics');
+            let elQR = document.getElementById('setting-enable-quick-rating');
+            let elBR = document.getElementById('setting-enable-backup-restore');
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    enableTopAnalytics: elTop ? elTop.checked : true,
+                    enableQuickRating: elQR ? elQR.checked : true,
+                    enableBackupRestore: elBR ? elBR.checked : true
+                });
+            } catch (e) {}
+            await prevSaveSettingsV50();
+        };
