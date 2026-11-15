@@ -194,8 +194,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             let parts = vStr.split(',');
             parts.forEach(p => {
                 let kv = p.split('-');
-                if(kv.length === 2) {
-                    arr.push({ name: kv[0].trim(), price: Number(kv[1].trim()) });
+                if(kv.length >= 2) {
+                    let vObj = { name: kv[0].trim(), price: Number(kv[1].trim()) };
+                    if (kv.length >= 3 && kv[2].trim() !== '') {
+                        vObj.stock = Number(kv[2].trim());
+                    }
+                    arr.push(vObj);
                 }
             });
             return arr;
@@ -268,6 +272,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                         <div><strong style="display:block; color:var(--primary); font-size:1.05rem;">${item.name}</strong>
                         <span style="color:var(--text-muted); font-size:0.9rem;">السعر: ${item.price} ج</span>
                         <br><button type="button" class="save-for-later-btn" onclick="window.saveForLater('${item.cartItemId}')"><span class="translatable">حفظ لوقت لاحق</span></button>
+                        ${storeSettings.enableCartItemNotes !== false ? `<input type="text" class="cart-item-note-inp" placeholder="📝 ملاحظة خاصة على هذه العبوة (اختياري)..." value="${window.escapeHTML(item.customNote || '')}" onchange="window.updateCartItemCustomNote('${item.cartItemId}', this.value)">` : ''}
                         </div>
                     </div>
                     <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
@@ -914,6 +919,16 @@ try {
         window.toggleWishlist = function(event, id) { event.stopPropagation(); const index = wishlist.indexOf(id); if(index > -1) { wishlist.splice(index, 1); window.showToast('تم الحذف من المفضلة'); } else { wishlist.push(id); window.showToast('تمت الإضافة للمفضلة ❤️', 'success'); } localStorage.setItem('wishlist', JSON.stringify(wishlist)); window.renderProducts(false); window.renderVisualBar(); if(document.getElementById('wishlist-panel') && document.getElementById('wishlist-panel').classList.contains('active')) window.renderWishlist(); }
 
         window.getFilteredProductsCount = function() { let minP = document.getElementById('min-price'); let minPrice = minP ? (Number(minP.value) || 0) : 0; let maxP = document.getElementById('max-price'); let maxPrice = maxP ? (Number(maxP.value) || Infinity) : Infinity; if(maxPrice === 0) maxPrice = Infinity; let filteredProducts = products.filter(p => { if (p.isHidden && !isCurrentUserAdmin) return false; let inCategory = (currentCategoryFilter === 'الكل' || (p.category || 'أخرى') === currentCategoryFilter); let inSearch = window.fuzzyMatch(p.name, searchQuery); let inPrice = p.price >= minPrice && p.price <= maxPrice; return inCategory && inSearch && inPrice; });
+            if (storeSettings.enableVariantStock !== false) {
+                let nowMs = Date.now();
+                filteredProducts.forEach(p => {
+                    if (p.discountEndsAt && Date.parse(p.discountEndsAt) < nowMs && p.oldPrice && Number(p.oldPrice) > Number(p.price)) {
+                        p.price = Number(p.oldPrice);
+                        p.oldPrice = '';
+                    }
+                });
+                filteredProducts.sort((a, b) => (Number(a.sortOrder ?? 999)) - (Number(b.sortOrder ?? 999)));
+            }
             if (storeSettings.enablePinHideProducts !== false) {
                 filteredProducts.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
             } return filteredProducts.length; }
@@ -923,6 +938,16 @@ try {
             if (!isProductsLoaded) { let skeletonHtml = `<div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div><div class="skeleton-btn"></div></div>`.repeat(8); container.innerHTML = skeletonHtml; return; }
             let sOpt = document.getElementById('sort-options'); let sortOption = sOpt ? sOpt.value : 'default'; let minP = document.getElementById('min-price'); let minPrice = minP ? (Number(minP.value) || 0) : 0; let maxP = document.getElementById('max-price'); let maxPrice = maxP ? (Number(maxP.value) || Infinity) : Infinity; if(maxPrice === 0) maxPrice = Infinity;
             let filteredProducts = products.filter(p => { if (p.isHidden && !isCurrentUserAdmin) return false; let inCategory = (currentCategoryFilter === 'الكل' || (p.category || 'أخرى') === currentCategoryFilter); let inSearch = window.fuzzyMatch(p.name, searchQuery); let inPrice = p.price >= minPrice && p.price <= maxPrice; return inCategory && inSearch && inPrice; });
+            if (storeSettings.enableVariantStock !== false) {
+                let nowMs = Date.now();
+                filteredProducts.forEach(p => {
+                    if (p.discountEndsAt && Date.parse(p.discountEndsAt) < nowMs && p.oldPrice && Number(p.oldPrice) > Number(p.price)) {
+                        p.price = Number(p.oldPrice);
+                        p.oldPrice = '';
+                    }
+                });
+                filteredProducts.sort((a, b) => (Number(a.sortOrder ?? 999)) - (Number(b.sortOrder ?? 999)));
+            }
             if (storeSettings.enablePinHideProducts !== false) {
                 filteredProducts.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
             }
@@ -1144,14 +1169,18 @@ try {
         window.editProduct = function(id) { const product = products.find(p => p.id === id); if(!product) return; document.getElementById('edit-product-id').value = product.id; document.getElementById('product-name').value = product.name; document.getElementById('product-price').value = product.price; document.getElementById('product-old-price').value = product.oldPrice || ''; document.getElementById('product-category').value = product.category || 'أخرى'; document.getElementById('product-stock').value = product.stock !== undefined ? product.stock : ''; document.getElementById('product-desc').value = product.description || '';
         let spBadgeEl = document.getElementById('product-special-badge'); if(spBadgeEl) spBadgeEl.value = product.specialBadge || '';
         let cSpecsEl = document.getElementById('product-custom-specs'); if(cSpecsEl) cSpecsEl.value = product.customSpecs || '';
-        let cCostEl = document.getElementById('product-cost-price'); if(cCostEl) cCostEl.value = product.costPrice || ''; let vStr = ""; if(product.variantsData) { vStr = product.variantsData.map(v => `${v.name}-${v.price}`).join(', '); } document.getElementById('product-variants').value = vStr; document.getElementById('edit-product-old-image').value = (product.images && product.images.length > 0) ? JSON.stringify(product.images) : (product.imageUrl || ''); document.getElementById('product-image-url').value = ''; let pvu = document.getElementById('product-video-url'); if(pvu) pvu.value = product.videoUrl || ''; document.getElementById('admin-product-title').innerHTML = '✏️ تعديل المنتج'; document.getElementById('btn-submit-product').textContent = 'تحديث'; document.getElementById('btn-cancel-edit').style.display = 'block'; window.showPanel('admin-add-product'); window.scrollTo(0,0); }
+        let cCostEl = document.getElementById('product-cost-price'); if(cCostEl) cCostEl.value = product.costPrice || ''; let vStr = ""; if(product.variantsData) { vStr = product.variantsData.map(v => v.stock !== undefined ? `${v.name}-${v.price}-${v.stock}` : `${v.name}-${v.price}`).join(', '); }
+        let sOrdEl = document.getElementById('product-sort-order'); if(sOrdEl) sOrdEl.value = product.sortOrder !== undefined ? product.sortOrder : '';
+        let dEndEl = document.getElementById('product-discount-end'); if(dEndEl) dEndEl.value = product.discountEndsAt || ''; document.getElementById('product-variants').value = vStr; document.getElementById('edit-product-old-image').value = (product.images && product.images.length > 0) ? JSON.stringify(product.images) : (product.imageUrl || ''); document.getElementById('product-image-url').value = ''; let pvu = document.getElementById('product-video-url'); if(pvu) pvu.value = product.videoUrl || ''; document.getElementById('admin-product-title').innerHTML = '✏️ تعديل المنتج'; document.getElementById('btn-submit-product').textContent = 'تحديث'; document.getElementById('btn-cancel-edit').style.display = 'block'; window.showPanel('admin-add-product'); window.scrollTo(0,0); }
         window.cancelEditProduct = function() { document.getElementById('add-product-form').reset(); document.getElementById('edit-product-id').value = ''; document.getElementById('edit-product-old-image').value = ''; document.getElementById('admin-product-title').innerHTML = '🛒 إضافة منتج جديد'; document.getElementById('btn-submit-product').textContent = 'حفظ'; document.getElementById('btn-cancel-edit').style.display = 'none'; }
 
         let addPForm = document.getElementById('add-product-form');
         if(addPForm) { addPForm.addEventListener('submit', async (e) => { e.preventDefault(); const btnSubmit = document.getElementById('btn-submit-product'); const statusLabel = document.getElementById('upload-status'); btnSubmit.disabled = true; const id = document.getElementById('edit-product-id').value; const name = document.getElementById('product-name').value; const price = Number(document.getElementById('product-price').value); const oldPrice = document.getElementById('product-old-price').value; const category = document.getElementById('product-category').value; const description = document.getElementById('product-desc').value; const stockVal = document.getElementById('product-stock').value; const vString = document.getElementById('product-variants').value.trim(); const variantsData = parseVariants(vString); let stock = stockVal === "" ? "" : Number(stockVal); let finalImages = []; let oldImgData = document.getElementById('edit-product-old-image').value; if(oldImgData) { try { finalImages = JSON.parse(oldImgData); } catch(err) { finalImages = [oldImgData]; } } const fileInput = document.getElementById('product-image-file'); const urlInput = document.getElementById('product-image-url').value.trim(); let videoUrl = ""; let pvu = document.getElementById('product-video-url'); if(pvu) videoUrl = pvu.value.trim(); try { if(fileInput.files.length > 0) { if(statusLabel) {statusLabel.style.display = 'block'; statusLabel.textContent = `⏳ جاري الرفع`;} const imgbbKey = "D37b01ec4b27dcce48777a7b229a1fdb"; let newUploads = []; let limit = Math.min(fileInput.files.length, 4); for(let i=0; i<limit; i++) { const formData = new FormData(); formData.append('image', fileInput.files[i]); const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { newUploads.push(data.data.url); } } if(newUploads.length > 0) finalImages = newUploads; } else if (urlInput) { finalImages = [urlInput]; } else if (finalImages.length === 0) { window.showToast('اختر صورة أو ضع رابط', 'error'); btnSubmit.disabled = false; return; } let specialBadge = document.getElementById('product-special-badge') ? document.getElementById('product-special-badge').value : '';
         let customSpecs = document.getElementById('product-custom-specs') ? document.getElementById('product-custom-specs').value.trim() : '';
         let costPrice = document.getElementById('product-cost-price') ? (Number(document.getElementById('product-cost-price').value) || 0) : 0;
-        let productPayload = { createdAt: new Date().toISOString(), name, price, oldPrice, costPrice, category, stock, description, images: finalImages, variantsData, imageUrl: finalImages[0], specialBadge, customSpecs }; if(videoUrl) productPayload.videoUrl = videoUrl; if(id) { await updateDoc(doc(db, 'products', id), productPayload); window.showToast('تم التحديث!', 'success'); } else { 
+        let sortOrderVal = document.getElementById('product-sort-order') && document.getElementById('product-sort-order').value !== '' ? Number(document.getElementById('product-sort-order').value) : 999;
+        let discountEndsAt = document.getElementById('product-discount-end') ? document.getElementById('product-discount-end').value : '';
+        let productPayload = { createdAt: new Date().toISOString(), name, price, oldPrice, costPrice, category, stock, description, images: finalImages, variantsData, imageUrl: finalImages[0], specialBadge, customSpecs, sortOrder: sortOrderVal, discountEndsAt }; if(videoUrl) productPayload.videoUrl = videoUrl; if(id) { await updateDoc(doc(db, 'products', id), productPayload); window.showToast('تم التحديث!', 'success'); } else { 
                 let fcEl = document.getElementById('product-fake-reviews-count');
                 let fCount = fcEl ? parseInt(fcEl.value) : 5;
                 productPayload.reviews = window.generateFakeReviews(name, fCount); 
@@ -10699,3 +10728,415 @@ window.showUserHistory = function(userId, userName) {
             } catch (e) {}
             await prevSaveSettingsV62();
         };
+
+
+        // =========================================================================
+        // === النسخة V65 المتكاملة: مخزون الأحجام + استيراد إكسيل + ملاحظات السلة + كشف المحفظة + تتبع الاسترجاع + إشعارات الهاتف ===
+        // =========================================================================
+
+        // 1. تحديث مخزون الحجم المختار داخل نافذة المنتج
+        const origUpdateModalVarPriceV64 = window.updateModalVariantPrice;
+        window.updateModalVariantPrice = function() {
+            origUpdateModalVarPriceV64();
+            if (!activeProductForReview || storeSettings.enableVariantStock === false) return;
+            const product = products.find(p => p.id === activeProductForReview);
+            let ms = document.getElementById('modal-variant-select');
+            let idx = ms ? ms.value : 0;
+            if (!product || !product.variantsData || !product.variantsData[idx]) return;
+            let selectedVar = product.variantsData[idx];
+            let stockEl = document.getElementById('modal-stock');
+            if (stockEl && selectedVar.stock !== undefined && selectedVar.stock !== '') {
+                stockEl.textContent = Number(selectedVar.stock) > 0
+                    ? `الكمية المتاحة من (${selectedVar.name}): ${selectedVar.stock} عبوة`
+                    : `نفدت كمية الحجم (${selectedVar.name}) ❌`;
+            }
+        };
+
+        // 2. حفظ ملاحظة خاصة على كل منتج في السلة + حفظ واسترجاع مسودة السلة الشهرية
+        window.updateCartItemCustomNote = function(cartItemId, noteVal) {
+            let item = cart.find(i => i.cartItemId === cartItemId);
+            if (item) {
+                item.customNote = String(noteVal || '').trim();
+                localStorage.setItem('cart', JSON.stringify(cart));
+                window.syncCartToCloud();
+            }
+        };
+
+        window.saveCartAsMonthlyDraft = function() {
+            if (!cart || cart.length === 0) {
+                window.showToast('السلة فارغة، أضف منتجات أولاً لحفظها كمسودة', 'error');
+                return;
+            }
+            localStorage.setItem('zait_saved_monthly_cart_draft', JSON.stringify(cart));
+            window.showToast('💾 تم حفظ سلتك الحالية كمسودة طلب شهري بنجاح!', 'success');
+        };
+
+        window.loadSavedCartDraft = function() {
+            let raw = localStorage.getItem('zait_saved_monthly_cart_draft');
+            if (!raw) {
+                window.showToast('لا توجد مسودة سلة محفوظة مسبقاً', 'info');
+                return;
+            }
+            try {
+                let savedDraft = JSON.parse(raw);
+                if (Array.isArray(savedDraft) && savedDraft.length > 0) {
+                    cart = savedDraft;
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    window.updateCartUI();
+                    window.showToast('📂 تم استرجاع مسودة سلتك المحفوظة بنجاح!', 'success');
+                }
+            } catch (e) {}
+        };
+
+        // 3. استيراد وتحديث المنتجات من ملف إكسيل (CSV Import)
+        window.importProductsFromCSV = function(inputEl) {
+            if (!inputEl || !inputEl.files || inputEl.files.length === 0) return;
+            let file = inputEl.files[0];
+            let reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    let text = e.target.result;
+                    let lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                    if (lines.length < 2) {
+                        window.showToast('ملف الـ CSV فارغ أو غير صالح', 'error');
+                        return;
+                    }
+                    let updatedCount = 0;
+                    let addedCount = 0;
+                    for (let i = 1; i < lines.length; i++) {
+                        let cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+                        let pid = cols[0] || '';
+                        let name = cols[1] || '';
+                        let price = Number(cols[2]) || 0;
+                        let oldPrice = cols[3] || '';
+                        let costPrice = Number(cols[4]) || 0;
+                        let category = cols[5] || 'زيت زيتون';
+                        let stock = cols[6] !== undefined && cols[6] !== '' ? Number(cols[6]) : '';
+                        let specialBadge = cols[7] || '';
+                        if (!name || !price) continue;
+
+                        let existing = products.find(p => p.id === pid || p.name === name);
+                        if (existing) {
+                            await updateDoc(doc(db, 'products', existing.id), {
+                                name, price, oldPrice, costPrice, category, stock, specialBadge
+                            });
+                            updatedCount++;
+                        } else {
+                            await addDoc(collection(db, 'products'), {
+                                createdAt: new Date().toISOString(),
+                                name, price, oldPrice, costPrice, category, stock, specialBadge,
+                                description: name,
+                                images: ['1000392409.jpeg'],
+                                imageUrl: '1000392409.jpeg',
+                                reviews: window.generateFakeReviews ? window.generateFakeReviews(name, 3) : []
+                            });
+                            addedCount++;
+                        }
+                    }
+                    window.recordAdminAuditLog(`استيراد ملف CSV (${updatedCount} تحديث، ${addedCount} جديد)`);
+                    window.showToast(`✅ تم استيراد الملف بنجاح! (تحديث: ${updatedCount} | إضافة: ${addedCount})`, 'success');
+                } catch (err) {
+                    window.showToast('حدث خطأ أثناء قراءة ملف CSV', 'error');
+                }
+                inputEl.value = '';
+            };
+            reader.readAsText(file);
+        };
+
+        // 4. كشف حساب النقاط والمحفظة التفصيلي داخل صفحة حساب العميل
+        window.renderCustomerWalletAndLoyaltyStatement = async function() {
+            let listEl = document.getElementById('profile-statement-list');
+            let boxEl = document.getElementById('profile-wallet-statement-box');
+            if (boxEl) boxEl.style.display = storeSettings.enableWalletStatement !== false ? 'block' : 'none';
+            if (!listEl || !currentUser || storeSettings.enableWalletStatement === false) return;
+
+            try {
+                let dSnap = await getDoc(doc(db, 'users', currentUser.uid));
+                let data = dSnap.exists() ? dSnap.data() : {};
+                let pts = Number(data.loyaltyPoints) || 0;
+                let wal = Number(data.walletBalance) || 0;
+                let notifs = Array.isArray(data.notifications) ? [...data.notifications] : [];
+                let pointEvents = notifs.filter(n => String(n.title || '').includes('نقاط') || String(n.title || '').includes('خصم') || String(n.message || '').includes('نقطة'));
+
+                let html = `
+                    <div style="display:flex; justify-content:space-between; background:var(--panel-bg); padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:8px;">
+                        <span>🎁 <strong>رصيد النقاط الحالي:</strong> <strong style="color:var(--secondary);">${pts} نقطة</strong></span>
+                        <span>💳 <strong>رصيد المحفظة النقدية:</strong> <strong style="color:#028090;">${wal} ج</strong></span>
+                    </div>
+                `;
+                if (pointEvents.length === 0) {
+                    html += `<p style="margin:0; color:var(--text-muted); font-size:0.8rem;">تُضاف النقاط وحركات المحفظة تلقائياً مع كل طلب مكتمل.</p>`;
+                } else {
+                    pointEvents.slice(-8).reverse().forEach(ev => {
+                        let dStr = ev.date ? new Date(window.parseSafeTimestamp(ev.date, Date.now())).toLocaleDateString('ar-EG') : '';
+                        html += `<div style="padding:5px 6px; border-bottom:1px dashed var(--border-color); display:flex; justify-content:space-between; gap:8px;">
+                            <span><strong>${window.escapeHTML(ev.title || '')}:</strong> ${window.escapeHTML(ev.message || '')}</span>
+                            <small style="color:var(--text-muted); white-space:nowrap;">${dStr}</small>
+                        </div>`;
+                    });
+                }
+                listEl.innerHTML = html;
+            } catch (e) {}
+        };
+
+        const origShowProfilePanelV64 = window.showProfilePanel;
+        window.showProfilePanel = function() {
+            origShowProfilePanelV64();
+            window.renderCustomerWalletAndLoyaltyStatement();
+        };
+
+        // 5. تطوير قسم الاسترجاع (اختيار القطع المسترجعة + طريقة التعويض + رفض بالسبب + إرجاع المخزون تلقائياً عند القبول)
+        window.submitReturnRequest = async function() {
+            let orderId = document.getElementById('return-order-id').value;
+            let reason = document.getElementById('return-reason').value;
+            let notes = document.getElementById('return-notes').value;
+            let itemsPart = (document.getElementById('return-items-part') || {}).value || 'كامل الطلب';
+            let refundMethod = (document.getElementById('return-refund-method') || {}).value || 'استبدال بعبوة جديدة';
+            let fileInput = document.getElementById('return-image-file');
+
+            if (!fileInput || fileInput.files.length === 0) {
+                window.showToast('يرجى إرفاق صورة توضح المشكلة', 'error');
+                return;
+            }
+            let btn = document.getElementById('btn-submit-return'); if (btn) btn.disabled = true;
+            let statusLabel = document.getElementById('return-upload-status'); if (statusLabel) statusLabel.style.display = 'block';
+            try {
+                const formData = new FormData();
+                formData.append('image', fileInput.files[0]);
+                const res = await fetch('https://api.imgbb.com/1/upload?key=D37b01ec4b27dcce48777a7b229a1fdb', { method: 'POST', body: formData });
+                const data = await res.json();
+                let returnImageUrl = (data && data.success) ? data.data.url : '';
+                await addDoc(collection(db, 'return_requests'), {
+                    orderId: orderId,
+                    customerEmail: currentUser ? (currentUser.email || currentUser.phoneNumber) : 'عميل',
+                    reason: reason,
+                    itemsPart: itemsPart,
+                    refundMethod: refundMethod,
+                    notes: notes,
+                    imageUrl: returnImageUrl,
+                    status: 'قيد المراجعة',
+                    date: new Date().toISOString()
+                });
+                await updateDoc(doc(db, 'orders', orderId), { status: 'طلب استرجاع قيد المراجعة 🔄' });
+                window.showToast('تم إرسال طلب الاسترجاع بنجاح 🔄', 'success');
+                let rm = document.getElementById('return-modal'); if (rm) rm.style.display = 'none';
+            } catch (e) {
+                window.showToast('فشل إرسال الطلب', 'error');
+            }
+            if (btn) btn.disabled = false;
+            if (statusLabel) statusLabel.style.display = 'none';
+        };
+
+        window.approveReturn = async function(returnId, orderId) {
+            if (!confirm('الموافقة على الاسترجاع وإرجاع كمية المنتجات للمخزون تلقائياً وإبلاغ العميل؟')) return;
+            try {
+                await updateDoc(doc(db, 'return_requests', returnId), { status: 'تمت الموافقة وجاري إرسال المندوب ✅' });
+                await updateDoc(doc(db, 'orders', orderId), { status: 'جاري الاسترجاع 🔄' });
+
+                let ord = (adminOrdersArray || []).find(o => o.id === orderId);
+                if (ord && Array.isArray(ord.items)) {
+                    for (let item of ord.items) {
+                        let prod = products.find(p => p.id === item.id);
+                        if (prod && prod.stock !== undefined && prod.stock !== '') {
+                            await updateDoc(doc(db, 'products', item.id), { stock: increment(Number(item.quantity) || 1) }).catch(() => {});
+                        }
+                    }
+                }
+                window.recordAdminAuditLog(`الموافقة على استرجاع الطلب #${orderId.slice(0,6).toUpperCase()} وإرجاع المخزون`);
+                window.showToast('تمت الموافقة على الاسترجاع وإرجاع الكمية للمخزون تلقائياً ✅', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ', 'error');
+            }
+        };
+
+        window.rejectReturnWithReason = async function(returnId, orderId) {
+            let reason = prompt('اكتب سبب رفض طلب الاسترجاع ليظهر للعميل:');
+            if (!reason) return;
+            try {
+                await updateDoc(doc(db, 'return_requests', returnId), { status: `تم الرفض ❌ (${reason.trim()})` });
+                if (orderId) await updateDoc(doc(db, 'orders', orderId), { status: `تم رفض الاسترجاع ❌ (${reason.trim()})` });
+                window.recordAdminAuditLog(`رفض استرجاع الطلب #${(orderId||'').slice(0,6).toUpperCase()}`);
+                window.showToast('تم رفض الاسترجاع وتوضيح السبب للعميل', 'info');
+            } catch (e) {
+                window.showToast('حدث خطأ', 'error');
+            }
+        };
+
+        window.loadAdminReturns = function() {
+            if (adminReturnsUnsubscribe) adminReturnsUnsubscribe();
+            adminReturnsUnsubscribe = onSnapshot(query(collection(db, 'return_requests'), orderBy('date', 'desc')), (snapshot) => {
+                adminReturnsArray = [];
+                let container = document.getElementById('admin-returns-container');
+                let html = '';
+                snapshot.forEach(docSnap => {
+                    let d = docSnap.data();
+                    adminReturnsArray.push({ id: docSnap.id, ...d });
+                    let imgHtml = d.imageUrl ? `<a href="${d.imageUrl}" target="_blank" style="display:inline-block; margin-top:8px; padding:5px 10px; background:#17a2b8; color:white; text-decoration:none; border-radius:6px; font-size:0.82rem;">📸 عرض صورة المنتج</a>` : '';
+                    let actionsHtml = d.status === 'قيد المراجعة'
+                        ? `<div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                            <button type="button" class="btn" style="flex:1; background:#28a745;" onclick="window.approveReturn('${docSnap.id}', '${d.orderId}')">✅ الموافقة وإرجاع المخزون</button>
+                            <button type="button" class="btn btn-danger" style="flex:1;" onclick="window.rejectReturnWithReason('${docSnap.id}', '${d.orderId}')">❌ رفض مع كتابة السبب</button>
+                           </div>`
+                        : `<div style="margin-top:10px; font-weight:bold; color:var(--primary); padding:6px; background:var(--input-bg); border-radius:6px; text-align:center;">الحالة: ${window.escapeHTML(d.status)}</div>`;
+
+                    html += `<div class="admin-msg-card" style="border-left:4px solid var(--danger);">
+                        <h4>🔄 طلب استرجاع للأوردر: #${(d.orderId || '').slice(0,6).toUpperCase()}</h4>
+                        <p style="margin:4px 0;"><strong>العميل:</strong> ${window.escapeHTML(d.customerEmail || '')}</p>
+                        <p style="margin:4px 0;"><strong>القطع المسترجعة:</strong> ${window.escapeHTML(d.itemsPart || 'كامل الطلب')} | <strong>طريقة التعويض:</strong> <span style="color:#028090; font-weight:bold;">${window.escapeHTML(d.refundMethod || 'استبدال')}</span></p>
+                        <p style="margin:4px 0;"><strong>السبب:</strong> ${window.escapeHTML(d.reason || '')}</p>
+                        <p style="margin:4px 0; color:var(--text-muted);"><strong>الملاحظات:</strong> ${window.escapeHTML(d.notes || '')}</p>
+                        <p style="margin:4px 0; font-size:0.82rem;"><strong>التاريخ:</strong> ${new Date(d.date).toLocaleString('ar-EG')}</p>
+                        ${imgHtml}
+                        ${actionsHtml}
+                    </div>`;
+                });
+                if (container) container.innerHTML = html || '<h3 style="text-align: center; color: var(--text-muted);">لا توجد طلبات استرجاع حالياً.</h3>';
+                if (window.checkWorkHubRealtimeChanges) window.checkWorkHubRealtimeChanges('returns');
+                if (window.renderAdminWorkHub) window.renderAdminWorkHub();
+            });
+        };
+
+        // 6. إرسال فاتورة دفع مباشر داخل الشات + توجيه المحادثة لموظف محدد
+        window.sendQuickInvoiceInChat = async function() {
+            if (!activeAdminChatId) return;
+            let itemsDesc = prompt('🧾 اكتب اسم العبوات في الفاتورة السريعة:', 'عبوة زيت زيتون سيناوي بكر ممتاز 1 لتر');
+            if (!itemsDesc) return;
+            let totalAmt = prompt('💰 اكتب المبلغ الإجمالي المطلوب دفعه شاملاً الشحن (بالجنيه):', '550');
+            if (!totalAmt) return;
+
+            let nowIso = new Date().toISOString();
+            let sName = (currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'الإدارة';
+            let walletNum = storeSettings.walletNumber || '01018631768';
+            let txt = `🧾 [فاتورة طلب مباشر من خدمة العملاء]\n🛍️ البيان: ${itemsDesc}\n💰 الإجمالي شامل التوصيل: ${totalAmt} ج\n📱 للدفع عبر فودافون كاش أو إنستاباي: ${walletNum} (أو كاش عند الاستلام)`;
+            let msg = {
+                sender: 'admin',
+                staffName: sName,
+                text: txt,
+                timestamp: nowIso,
+                isAutoReply: false
+            };
+            await updateDoc(doc(db, 'chats', activeAdminChatId), {
+                messages: arrayUnion(msg),
+                lastUpdate: nowIso,
+                adminReplied: true,
+                unreadByAdmin: false
+            });
+            window.showToast('تم إرسال الفاتورة المباشرة للعميل في الشات 🧾✅', 'success');
+        };
+
+        window.assignChatToStaffMember = async function() {
+            if (!activeAdminChatId) return;
+            let staffName = prompt('👨‍💼 اكتب اسم أو إيميل الموظف المسؤول عن متابعة هذه المحادثة:');
+            if (!staffName) return;
+            let currentNote = '';
+            try {
+                let cSnap = await getDoc(doc(db, 'chats', activeAdminChatId));
+                if (cSnap.exists()) currentNote = cSnap.data().internalAdminNote || '';
+            } catch (e) {}
+            let updatedNote = `👨‍💼 موجهة إلى: (${staffName.trim()}) ` + (currentNote ? `| ${currentNote}` : '');
+            await updateDoc(doc(db, 'chats', activeAdminChatId), {
+                assignedStaff: staffName.trim(),
+                internalAdminNote: updatedNote
+            });
+            window.showToast(`تم إسناد وتوجيه المحادثة إلى (${staffName.trim()}) بنجاح 👨‍💼`, 'success');
+        };
+
+        // 7. إحصائية أكثر المنتجات إضافة للسلال والمفضلة + إشعارات شاشة الهاتف الفورية
+        window.renderWishlistAndCartInterestAnalytics = async function() {
+            let body = document.getElementById('admin-wishlist-analytics-body');
+            let card = document.getElementById('admin-wishlist-analytics-card');
+            if (card) card.style.display = storeSettings.enableWalletStatement !== false ? 'block' : 'none';
+            if (!body || storeSettings.enableWalletStatement === false) return;
+
+            let interestMap = {};
+            (window.workHubAbandonedUsers || []).forEach(u => {
+                (u.cart || []).forEach(it => {
+                    let k = it.name || 'منتج';
+                    interestMap[k] = (interestMap[k] || 0) + Number(it.quantity || 1);
+                });
+                (u.savedForLater || []).forEach(it => {
+                    let k = it.name || 'منتج';
+                    interestMap[k] = (interestMap[k] || 0) + 1;
+                });
+            });
+            (wishlist || []).forEach(pid => {
+                let p = products.find(x => x.id === pid);
+                if (p) interestMap[p.name] = (interestMap[p.name] || 0) + 1;
+            });
+
+            let sorted = Object.entries(interestMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            if (sorted.length === 0) {
+                body.innerHTML = '<p style="margin:0; color:var(--text-muted);">لا توجد بيانات كافية في سلال ومفضلات العملاء حالياً.</p>';
+                return;
+            }
+            body.innerHTML = '<ol style="margin:0; padding-right:18px; line-height:1.9;">' +
+                sorted.map(([name, cnt]) => `<li><strong>${window.escapeHTML(name)}</strong>: <span style="color:#e11d48; font-weight:bold;">محفوظ ${cnt} مرات</span> في السلال والمفضلة</li>`).join('') +
+                '</ol>';
+        };
+
+        window.enableDevicePushNotifications = async function() {
+            if (!('Notification' in window)) {
+                window.showToast('متصفحك الحالي لا يدعم إشعارات الشاشة الخارجية', 'error');
+                return;
+            }
+            let perm = await Notification.requestPermission();
+            if (perm === 'granted') {
+                localStorage.setItem('zait_push_notif_enabled', 'true');
+                new Notification('🌿 متجر زيت الشجرة المباركة', {
+                    body: 'تم تفعيل إشعارات شاشة الهاتف الفورية بنجاح! ستصلك تنبيهات الطلبات والرسائل هنا.',
+                    icon: '1000392409.jpeg'
+                });
+                window.showToast('🔔 تم تفعيل إشعارات شاشة الهاتف بنجاح!', 'success');
+            } else {
+                window.showToast('يرجى السماح بالإشعارات من إعدادات المتصفح', 'info');
+            }
+        };
+
+        const origShowWorkPopupV64 = window.showWorkLivePopupAlert;
+        window.showWorkLivePopupAlert = function(title, subtitle) {
+            origShowWorkPopupV64(title, subtitle);
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                    new Notification(title, { body: subtitle, icon: '1000392409.jpeg' });
+                } catch (e) {}
+            }
+        };
+
+        const prevApplySettingsV64 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV64();
+            if (isCurrentUserAdmin) {
+                let setC = (id, val, def = true) => { let el = document.getElementById(id); if (el) el.checked = val !== undefined ? Boolean(val) : def; };
+                setC('setting-enable-variant-stock', storeSettings.enableVariantStock, true);
+                setC('setting-enable-cart-item-notes', storeSettings.enableCartItemNotes, true);
+                setC('setting-enable-wallet-statement', storeSettings.enableWalletStatement, true);
+                setC('setting-enable-advanced-returns', storeSettings.enableAdvancedReturns, true);
+                window.renderWishlistAndCartInterestAnalytics();
+            }
+        };
+
+        const prevSaveSettingsV64 = window.saveSettings;
+        window.saveSettings = async function() {
+            const getC = (id, def = true) => { let el = document.getElementById(id); return el ? el.checked : def; };
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    enableVariantStock: getC('setting-enable-variant-stock', true),
+                    enableCartItemNotes: getC('setting-enable-cart-item-notes', true),
+                    enableWalletStatement: getC('setting-enable-wallet-statement', true),
+                    enableAdvancedReturns: getC('setting-enable-advanced-returns', true)
+                });
+            } catch (e) {}
+            await prevSaveSettingsV64();
+        };
+
+        Object.assign(window.FULL_AR_TO_EN, {
+            "حفظ السلة كمسودة شهرية": "Save Cart as Monthly Draft",
+            "استرجاع المسودة": "Load Saved Draft",
+            "تفريغ السلة بالكامل": "Clear Entire Cart",
+            "نقل كل المفضلة إلى السلة بضغطة واحدة": "Move All Wishlist to Cart",
+            "كشف حساب نقاط الولاء ورصيد المحفظة التفصيلي": "Loyalty Points & Wallet Statement",
+            "كل المنتجات": "All Products",
+            "عروض الخصم": "Discount Deals",
+            "متوفر فوراً": "In Stock Now",
+            "أقل من 500 ج": "Under 500 EGP"
+        });

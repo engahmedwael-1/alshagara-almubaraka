@@ -1930,3 +1930,49 @@ html[dir="ltr"] .product-qa-box {
     padding: 12px 14px;
     margin-bottom: 14px;
 }
+
+
+/* === النسخة V65 الشاملة: مخزون الأحجام + استيراد إكسيل + ملاحظات السلة + كشف المحفظة + تتبع الاسترجاع === */
+.cart-item-note-inp {
+    margin-top: 6px !important;
+    margin-bottom: 0 !important;
+    padding: 5px 8px !important;
+    font-size: 0.78rem !important;
+    border-radius: 6px !important;
+    border: 1px dashed var(--border-color) !important;
+    background: var(--panel-bg) !important;
+    width: 100% !important;
+    max-width: 260px;
+}
+.wallet-statement-box {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    text-align: right;
+}
+html[dir="ltr"] .wallet-statement-box {
+    text-align: left;
+}
+.return-track-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel-bg);
+    border: 1px dashed var(--danger);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-top: 8px;
+    font-size: 0.76rem;
+    font-weight: bold;
+}
+.chat-invoice-embed {
+    background: #f0fdf4;
+    border: 1.5px solid #22c55e;
+    color: #166534;
+    border-radius: 10px;
+    padding: 10px;
+    margin-top: 6px;
+    text-align: right;
+}

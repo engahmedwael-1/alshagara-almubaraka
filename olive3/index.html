@@ -38,7 +38,7 @@
     <link rel="apple-touch-icon" href="1000392409.jpeg">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="style.css?v=64">
+    <link rel="stylesheet" href="style.css?v=65">
     <script type="application/ld+json" id="dynamic-json-ld-schema">
     {
       "@context": "https://schema.org",
@@ -909,6 +909,8 @@
             </div>
             <div id="cart-bundle-banner" class="bundle-offer-banner" style="display:none;"></div>
             <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+                <button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.78rem; border-color:var(--primary); color:var(--primary); margin-left:6px;" onclick="window.saveCartAsMonthlyDraft()">💾 <span class="translatable">حفظ السلة كمسودة شهرية</span></button>
+                <button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.78rem; border-color:#028090; color:#028090; margin-left:6px;" onclick="window.loadSavedCartDraft()">📂 <span class="translatable">استرجاع المسودة</span></button>
                 <button type="button" id="btn-clear-entire-cart" class="btn btn-outline" style="padding:4px 12px; font-size:0.8rem; border-color:var(--danger); color:var(--danger);" onclick="window.clearEntireCart()">🗑️ <span class="translatable">تفريغ السلة بالكامل</span></button>
             </div>
             <div id="cart-items-container"></div>
@@ -1142,7 +1144,14 @@
 
                 <form id="profile-form" style="background:var(--input-bg); padding:15px; border-radius:12px; border:1px solid var(--border-color); margin-top:20px;">
                     <h4 style="color:var(--primary); margin-top:0;" class="translatable">تحديث بياناتي وعنواني:</h4>
-                    <input type="text" id="prof-name" placeholder="الاسم بالكامل" required>
+                    <div id="profile-wallet-statement-box" class="wallet-statement-box">
+                    <div onclick="let el=document.getElementById('profile-statement-list'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                        <strong style="color:var(--primary); font-size:0.92rem;">📜 <span class="translatable">كشف حساب نقاط الولاء ورصيد المحفظة التفصيلي</span></strong>
+                        <span style="color:#028090; font-weight:bold;">▼</span>
+                    </div>
+                    <div id="profile-statement-list" style="display:block; margin-top:10px; padding-top:8px; border-top:1px dashed var(--border-color); font-size:0.83rem; max-height:190px; overflow-y:auto;"></div>
+                </div>
+                <input type="text" id="prof-name" placeholder="الاسم بالكامل" required>
                     <input type="tel" id="prof-phone1" placeholder="رقم الهاتف الأساسي" required>
                     <div class="form-row">
                         <select id="prof-gov" required><option value="" disabled selected>المحافظة...</option></select>
@@ -1307,6 +1316,13 @@
                         <span style="font-size:1.2rem; color:#028090; font-weight:bold;">▼</span>
                     </div>
                     <div id="admin-courier-custody-body" style="display:none; margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px; font-size:0.86rem;">جاري حساب عهدة التحصيل...</div>
+                </div>
+                <div class="dash-card" id="admin-wishlist-analytics-card" style="border-top-color: #e11d48; text-align:right;">
+                    <div onclick="let el=document.getElementById('admin-wishlist-analytics-body'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                        <h3 style="color:#e11d48; margin:0;">❤️ أكثر المنتجات طلباً في السلال والمفضلة</h3>
+                        <span style="font-size:1.2rem; color:#e11d48; font-weight:bold;">▼</span>
+                    </div>
+                    <div id="admin-wishlist-analytics-body" style="display:none; margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px; font-size:0.85rem;">جاري تحليل اهتمامات العملاء...</div>
                 </div>
             </div>
 
@@ -1482,6 +1498,8 @@
                     <button type="button" class="chat-media-btn" style="border-color:var(--secondary); color:var(--primary);" onclick="window.openSendProductInChatModal()">🛍️ إرسال بطاقة منتج للشراء بالشات</button>
                     <button type="button" class="chat-media-btn" style="border-color:#6f42c1; color:#6f42c1;" onclick="window.promptChatInternalNoteAndTag()">📝 ملاحظة سرية / تصنيف المحادثة</button>
                     <button type="button" class="chat-media-btn" style="border-color:#028090; color:#028090;" onclick="window.addCustomCannedResponsePrompt()">➕ حفظ رد جاهز جديد</button>
+                    <button type="button" class="chat-media-btn" style="border-color:#166534; color:#166534;" onclick="window.sendQuickInvoiceInChat()">🧾 إرسال فاتورة دفع مباشر بالشات</button>
+                    <button type="button" class="chat-media-btn" style="border-color:#d97706; color:#d97706;" onclick="window.assignChatToStaffMember()">👨‍💼 توجيه المحادثة لموظف</button>
                 </div>
                 <div id="admin-canned-responses-bar" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:8px;">
                     <button type="button" class="work-canned-chip" style="border-color:#28a745; color:#166534; font-weight:bold;" onclick="window.generateAndInsertChatCoupon()">🎫 إهداء كوبون خاص 5%</button>
@@ -1514,7 +1532,7 @@
                 <input type="text" id="product-name" placeholder="اسم المنتج" required>
                 <div style="background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px dashed var(--border-color); margin-bottom: 15px;">
                     <label style="font-weight: bold; color: var(--primary); display:block; margin-bottom:10px;">🏷️ التسعير والأحجام (Variants):</label>
-                    <input type="text" id="product-variants" placeholder="مثال: لتر-500, 5 لتر-2000" style="margin-bottom: 10px;">
+                    <input type="text" id="product-variants" placeholder="مثال: لتر-500-20, 5 لتر-2000-5 (الحجم-السعر-الكمية الاختيارية)" style="margin-bottom: 10px;">
                     <div class="form-row">
                         <input type="number" id="product-price" placeholder="السعر الأساسي للواجهة (بالجنيه)" required>
                         <input type="number" id="product-old-price" placeholder="السعر قبل الخصم (اختياري)">
@@ -1544,6 +1562,10 @@
                         <option value="⚡ كمية محدودة">⚡ كمية محدودة</option>
                     </select>
                     <input type="text" id="product-custom-specs" placeholder="مواصفات خاصة (مثال: الحموضة: أقل من 0.8% | المنشأ: سيناء)" style="margin-bottom:0;">
+                </div>
+                <div class="form-row" style="margin-bottom:10px;">
+                    <input type="number" id="product-sort-order" placeholder="🔢 ترتيب الظهور بالرئيسية (مثال: 1 يظهر بالأول)" style="margin-bottom:0;">
+                    <input type="datetime-local" id="product-discount-end" title="تاريخ انتهاء العرض المؤقت (اختياري)" style="margin-bottom:0;">
                 </div>
                 <textarea id="product-desc" placeholder="وصف وتفاصيل المنتج..." rows="3" required></textarea>
                 <div style="background: var(--input-bg); padding: 20px; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 20px;">
@@ -1721,6 +1743,33 @@
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                             <input type="checkbox" id="setting-enable-product-compare" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>⚖️ تفعيل مقارنة المنتجات السريعة وحاسبة التوفير للأحجام</span>
+                        </label>
+                        <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
+                        <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🚀 مخزون الأحجام واستيراد الإكسيل وكشف المحفظة وإشعارات الهاتف (V65):</h4>
+                        <div style="background:var(--panel-bg); padding:12px; border-radius:10px; border:2px solid #028090; margin-bottom:8px;">
+                            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+                                <label class="btn" style="background:#028090; color:white; padding:7px 14px; font-size:0.82rem; cursor:pointer; margin:0;">
+                                    📂 استيراد وتحديث المنتجات من شيت إكسيل (CSV Import)
+                                    <input type="file" accept=".csv" style="display:none;" onchange="window.importProductsFromCSV(this)">
+                                </label>
+                                <button type="button" class="btn btn-outline" style="padding:7px 14px; font-size:0.82rem; border-color:var(--primary); color:var(--primary);" onclick="window.enableDevicePushNotifications()">🔔 تفعيل إشعارات شاشة الهاتف الفورية</button>
+                            </div>
+                        </div>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-variant-stock" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📦 تفعيل (المخزون المستقل لكل حجم + ترتيب ظهور المنتجات + جدولة انتهاء الخصم)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-cart-item-notes" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📝 تفعيل (ملاحظة خاصة لكل منتج داخل السلة + حفظ السلة كمسودة طلب شهري)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-wallet-statement" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📜 تفعيل (كشف حساب النقاط والمحفظة التفصيلي للعميل + إحصائية المفضلة للمدير)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-advanced-returns" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🔄 تفعيل (شريط تتبع الاسترجاع + رفض الاسترجاع بالسبب + إرجاع المخزون تلقائياً عند القبول)</span>
                         </label>
                         <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
                         <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🔑 الدخول لحساب العميل (التصفح كالعميل) + إضافات الأقسام الشاملة (V64):</h4>
@@ -2276,6 +2325,6 @@
             <p class="dev-signature">تم الإنشاء بواسطة المهندس أحمد وائل</p>
         </div>
     </footer>
-    <script type="module" src="script.js?v=64"></script>
+    <script type="module" src="script.js?v=65"></script>
 </body>
 </html>
