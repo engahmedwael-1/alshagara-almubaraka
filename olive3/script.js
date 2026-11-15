@@ -8980,3 +8980,231 @@ window.showUserHistory = function(userId, userName) {
             "بطاقة بيانات الزائر وسجل تصفحه": "Visitor Profile & Browsing History",
             "تفاصيل الأوردرات وحساباتها": "Orders & Revenue Breakdown"
         });
+// === إصلاح شامل V62: الهيدر + البانر + الشريط المتحرك + القارئ الصوتي + سجل الزوار ===
+
+// 1. إلغاء زر الشغل من الشريط العلوي الثابت لإظهار الوضع الليلي وتبديل الحسابات بوضوح
+(function fixTopHeaderAndHero() {
+    let hdrWorkBtn = document.getElementById('header-work-hub-btn');
+    if (hdrWorkBtn) hdrWorkBtn.remove();
+
+    // إصلاح البانر العلوي ليحافظ على تناسقه
+    window.renderHeroSlider = function() {
+        let heroSec = document.getElementById('hero-section');
+        let sliderWrap = document.getElementById('hero-slider-wrapper');
+        let homePanel = document.getElementById('home-panel');
+        let isHomeActive = homePanel && homePanel.classList.contains('active');
+        if (!isHomeActive) {
+            if (heroSec) heroSec.style.display = 'none';
+            if (sliderWrap) sliderWrap.style.display = 'none';
+            return;
+        }
+        if (storeSettings.enableHeroSlider) {
+            if (heroSec) heroSec.style.display = 'none';
+            if (sliderWrap) sliderWrap.style.display = 'block';
+        } else {
+            if (heroSec) heroSec.style.display = '';
+            if (sliderWrap) sliderWrap.style.display = 'none';
+        }
+    };
+})();
+
+// 2. إصلاح الشريط المصور المتحرك ليظهر كل المنتجات والأقسام ويلف تلقائياً بدون توقف
+let v62ScrollTimer = null;
+window.renderVisualBar = function() {
+    let container = document.getElementById('visual-scroll-bar');
+    if (!container) return;
+    if (storeSettings.visualBarMode === 'none' || !isProductsLoaded || products.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    let itemsList = [];
+    // جمع المنتجات الظاهرة
+    products.filter(p => !p.isHidden).forEach(p => {
+        let img = (p.images && p.images[0]) ? p.images[0] : (p.imageUrl || '1000392409.jpeg');
+        itemsList.push({
+            title: p.name,
+            img: img,
+            action: `window.openProductModal('${p.id}')`
+        });
+    });
+    // إضافة الأقسام أيضاً إذا كان العدد قليلاً
+    (storeSettings.categories || []).forEach(cat => {
+        let catProd = products.find(p => p.category === cat && p.images && p.images[0]);
+        let img = catProd ? catProd.images[0] : '1000392409.jpeg';
+        itemsList.push({
+            title: `📂 ${cat}`,
+            img: img,
+            action: `window.showPanel('home'); window.filterProducts('${cat}')`
+        });
+    });
+
+    if (itemsList.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    // تكرار العناصر لضمان امتلاء الشريط ودورانه المستمر على جميع الشاشات
+    let loopList = [...itemsList];
+    while (loopList.length < 12) {
+        loopList = loopList.concat(itemsList);
+    }
+
+    container.innerHTML = loopList.map(it => `
+        <div class="visual-item" onclick="${it.action}">
+            <img loading="lazy" src="${it.img}" alt="${window.escapeHTML(it.title)}" onerror="this.src='1000392409.jpeg'">
+            <span>${window.escapeHTML(it.title)}</span>
+        </div>
+    `).join('');
+    container.style.display = 'flex';
+    window.startVisualAutoScroll();
+};
+
+window.startVisualAutoScroll = function() {
+    let bar = document.getElementById('visual-scroll-bar');
+    if (!bar) return;
+    if (v62ScrollTimer) clearInterval(v62ScrollTimer);
+    let dirStep = -1;
+    v62ScrollTimer = setInterval(() => {
+        if (bar.matches(':hover') || bar.matches(':active')) return;
+        let before = bar.scrollLeft;
+        bar.scrollLeft += dirStep;
+        if (bar.scrollLeft === before) {
+            dirStep = -dirStep; // عكس الاتجاه بسلاسة عند الوصول للنهاية
+            bar.scrollLeft += dirStep;
+        }
+    }, 30);
+};
+
+// 3. إصلاح القارئ الصوتي لوصف المنتج ليعمل على جميع الهواتف والمتصفحات 100%
+window.currentProductTtsAudio = null;
+window.toggleProductVoiceReader = function() {
+    let p = products.find(pr => pr.id === activeProductForReview);
+    if (!p) return;
+
+    if (window.currentProductTtsAudio) {
+        window.currentProductTtsAudio.pause();
+        window.currentProductTtsAudio = null;
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        window.showToast('⏹️ تم إيقاف القارئ الصوتي', 'info');
+        return;
+    }
+    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        window.showToast('⏹️ تم إيقاف القارئ الصوتي', 'info');
+        return;
+    }
+
+    let textToRead = `${p.name}، السعر ${p.price} جنيه. ${p.description || 'زيت زيتون سيناوي بكر ممتاز عصرة أولى على البارد طبيعي مئة بالمئة'}`;
+    window.showToast('🔊 جاري قراءة وصف المنتج صوتياً...', 'info');
+
+    let usedNative = false;
+    if ('speechSynthesis' in window) {
+        try {
+            window.speechSynthesis.cancel();
+            let voices = window.speechSynthesis.getVoices() || [];
+            let arVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ar'));
+            let utter = new SpeechSynthesisUtterance(textToRead);
+            utter.lang = arVoice ? arVoice.lang : 'ar-SA';
+            if (arVoice) utter.voice = arVoice;
+            utter.rate = 0.95;
+            window.speechSynthesis.speak(utter);
+            usedNative = true;
+        } catch (e) {}
+    }
+
+    // مشغل صوتي سحابي احتياطي للهواتف التي لا تحتوي على صوت عربي مدمج
+    if (!usedNative) {
+        let shortTxt = textToRead.slice(0, 180);
+        let ttsUrl = `https://translate.googleapis.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(shortTxt)}&tl=ar&client=tw-ob`;
+        let audio = new Audio(ttsUrl);
+        window.currentProductTtsAudio = audio;
+        audio.onended = () => { window.currentProductTtsAudio = null; };
+        audio.onerror = () => { window.currentProductTtsAudio = null; };
+        audio.play().catch(() => {});
+    }
+};
+
+// 4. إصلاح سجل وبطاقات الزوار ليعمل فوراً بدون انتظار أو خطأ صلاحيات في Firebase
+window.logDetailedStoreVisit = async function() {
+    try {
+        let vid = window.getOrCreateVisitorId();
+        let dev = window.detectVisitorDeviceDetails();
+        let nowIso = new Date().toISOString();
+        let email = (currentUser && currentUser.email) ? currentUser.email : 'غير مسجل الدخول';
+        let name = (currentUser && currentUser.displayName) ? currentUser.displayName : (localStorage.getItem('zait_wheel_saved_name') || 'زائر للمتجر');
+        let phone = (currentUser && currentUser.phoneNumber) ? currentUser.phoneNumber : (localStorage.getItem('zait_wheel_saved_phone') || 'غير مسجل');
+        let trafficSrc = window.getDetectedTrafficSource ? window.getDetectedTrafficSource() : 'مباشر (Direct)';
+
+        let statsRef = doc(db, 'settings', 'stats');
+        let snap = await getDoc(statsRef);
+        let vMap = (snap.exists() && snap.data().visitorsMap) ? { ...snap.data().visitorsMap } : {};
+        let existing = vMap[vid] || { firstVisit: nowIso, visitsHistory: [] };
+        let hist = Array.isArray(existing.visitsHistory) ? [...existing.visitsHistory] : [];
+        hist.push({ time: nowIso, source: trafficSrc, device: dev.deviceSummary, browser: dev.browserName });
+        if (hist.length > 25) hist = hist.slice(-25);
+
+        vMap[vid] = {
+            id: vid,
+            visitorId: vid,
+            name: name !== 'زائر للمتجر' ? name : (existing.name || 'زائر للمتجر'),
+            email: email !== 'غير مسجل الدخول' ? email : (existing.email || 'غير مسجل الدخول'),
+            phone: phone !== 'غير مسجل' ? phone : (existing.phone || 'غير مسجل'),
+            deviceSummary: dev.deviceSummary,
+            osName: dev.osName,
+            browserName: dev.browserName,
+            screenRes: dev.screenRes,
+            trafficSource: trafficSrc,
+            firstVisit: existing.firstVisit || nowIso,
+            lastVisit: nowIso,
+            visitsCount: hist.length,
+            visitsHistory: hist
+        };
+        await setDoc(statsRef, { visitorsMap: vMap }, { merge: true });
+    } catch (e) {}
+};
+
+window.loadSiteVisitorsRealtime = async function() {
+    let cont = document.getElementById('visitors-cards-container');
+    if (cont && (!window.allSiteVisitorsList || window.allSiteVisitorsList.length === 0)) {
+        cont.innerHTML = '<p style="text-align:center; color:var(--primary);">⏳ جاري جلب البطاقات...</p>';
+    }
+    try {
+        let combinedMap = new Map();
+        // 1. قراءة سجل الزوار من وثيقة الإحصائيات المسموحة دائماً
+        let statsSnap = await getDoc(doc(db, 'settings', 'stats'));
+        if (statsSnap.exists() && statsSnap.data().visitorsMap) {
+            let vMap = statsSnap.data().visitorsMap;
+            Object.values(vMap).forEach(v => {
+                if (v && v.id) combinedMap.set(v.id, v);
+            });
+        }
+        // 2. دمج جميع العملاء المسجلين من مجموعة users أيضاً
+        let usersSnap = await getDocs(collection(db, 'users'));
+        usersSnap.forEach(uDoc => {
+            let u = uDoc.data();
+            let uid = 'user_' + uDoc.id;
+            combinedMap.set(uid, {
+                id: uid,
+                visitorId: uid,
+                name: u.name || (u.email ? u.email.split('@')[0] : 'عميل مسجل'),
+                email: u.email || 'مسجل',
+                phone: u.phone1 || 'غير مسجل',
+                deviceSummary: u.deviceSummary || '📱 هاتف ذكي / متصفح العميل',
+                osName: u.osName || 'Android / iOS',
+                browserName: u.browserName || 'متصفح الموبايل',
+                screenRes: u.screenRes || '',
+                trafficSource: 'حساب مسجل بالمتجر',
+                firstVisit: u.lastLogin || new Date().toISOString(),
+                lastVisit: u.lastLogin || new Date().toISOString(),
+                visitsCount: u.visitsCount || 1,
+                visitsHistory: [{ time: u.lastLogin || new Date().toISOString(), source: 'تسجيل دخول', device: '📱 هاتف العميل' }]
+            });
+        });
+
+        window.allSiteVisitorsList = Array.from(combinedMap.values()).sort(
+            (a, b) => window.parseSafeTimestamp(b.lastVisit, 0) - window.parseSafeTimestamp(a.lastVisit, 0)
+        );
+        window.renderVisitorsCardsList();
+    } catch (e) {
+        window.renderVisitorsCardsList();
+    }
+};
