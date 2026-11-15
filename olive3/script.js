@@ -10019,908 +10019,683 @@ window.showUserHistory = function(userId, userName) {
         });
 
 
+        // =========================================================================
+        // === النسخة V64 المستقرة والسريعة: حل نهائي للتعليق + الكاميرا/المعرض + الصوت للعميل + الدخول لحساب العميل ===
+        // =========================================================================
 
-
-// =========================================================================
-// === النسخة الكاملة V63_Complete: الإصلاحات الـ 5 + ميزات الأقسام الـ 8 الشاملة ===
-// =========================================================================
-(function initZaitV63CompleteSuite() {
-    // 0. تنظيف الكاش القديم لضمان ظهور التحديثات فوراً
-    if ('caches' in window) {
-        caches.keys().then(keys => keys.forEach(k => {
-            if (!k.includes('v63')) caches.delete(k);
-        })).catch(() => {});
-    }
-
-    // 1. حقن تنسيقات CSS الخاصة بالنسخة V63
-    if (!document.getElementById('v63-complete-styles')) {
-        const st = document.createElement('style');
-        st.id = 'v63-complete-styles';
-        st.innerHTML = `
-            #admin-impersonation-banner {
-                position: fixed; top: 0; left: 0; right: 0; z-index: 999999;
-                background: linear-gradient(90deg, #b91c1c, #dc2626); color: #fff;
-                padding: 8px 14px; display: none; justify-content: space-between;
-                align-items: center; font-size: 0.84rem; font-weight: bold;
-                box-shadow: 0 4px 14px rgba(0,0,0,0.35); flex-wrap: wrap; gap: 8px;
-            }
-            #photo-source-chooser-modal {
-                position: fixed; inset: 0; background: rgba(0,0,0,0.65);
-                z-index: 999999; display: none; align-items: center; justify-content: center; padding: 15px;
-            }
-            .photo-chooser-box {
-                background: var(--panel-bg, #fff); color: var(--text-color, #222);
-                border-radius: 14px; max-width: 350px; width: 100%; padding: 20px;
-                text-align: center; border: 2px solid var(--secondary, #c59b27);
-                box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-            }
-            .quick-tag-filters-bar {
-                display: flex; gap: 7px; overflow-x: auto; padding: 6px 2px 10px 2px;
-                margin-bottom: 8px; scrollbar-width: none;
-            }
-            .quick-tag-chip {
-                background: var(--input-bg, #f8fafc); border: 1px solid var(--border-color, #ddd);
-                color: var(--text-color, #333); padding: 6px 12px; border-radius: 20px;
-                font-size: 0.8rem; font-weight: bold; white-space: nowrap; cursor: pointer;
-                transition: 0.2s;
-            }
-            .quick-tag-chip.active {
-                background: var(--primary, #1f3a13); color: #fff; border-color: var(--secondary, #c59b27);
-            }
-            .impersonate-user-btn {
-                background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
-                color: #fff !important; border: none !important; padding: 6px 12px !important;
-                border-radius: 8px !important; font-size: 0.8rem !important;
-                font-weight: bold !important; cursor: pointer !important;
-                display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-            }
-            .voice-rec-active-pulse {
-                background: #dc2626 !important; color: #fff !important;
-                animation: v63PulseAnim 1s infinite !important;
-            }
-            @keyframes v63PulseAnim {
-                0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); }
-            }
-            .membership-tier-card {
-                background: linear-gradient(135deg, rgba(197,155,39,0.15), rgba(31,58,19,0.1));
-                border: 2px solid var(--secondary, #c59b27); border-radius: 12px;
-                padding: 12px 15px; margin-bottom: 14px; text-align: center;
-            }
-            .live-product-preview-box {
-                background: var(--input-bg, #f8fafc); border: 2px dashed var(--secondary, #c59b27);
-                border-radius: 12px; padding: 14px; margin-bottom: 15px;
-            }
-        `;
-        document.head.appendChild(st);
-    }
-
-    // 2. إنشاء النوافذ المنبثقة (شريط التصفح كعميل + نافذة الكاميرا/المعرض)
-    if (!document.getElementById('admin-impersonation-banner')) {
-        const wrap = document.createElement('div');
-        wrap.innerHTML = `
-            <div id="admin-impersonation-banner">
-                <span id="impersonation-status-text">🕵️‍♂️ تتصفح المتجر الآن بحساب العميل</span>
-                <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                    <button type="button" onclick="window.showProfilePanel()" style="background:#fff; color:#b91c1c; border:none; padding:4px 10px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:0.78rem;">👤 حساب العميل</button>
-                    <button type="button" onclick="window.showPanel('customer-orders')" style="background:#fff; color:#b91c1c; border:none; padding:4px 10px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:0.78rem;">📦 طلباته</button>
-                    <button type="button" onclick="window.showPanel('cart')" style="background:#fff; color:#b91c1c; border:none; padding:4px 10px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:0.78rem;">🛒 سلته</button>
-                    <button type="button" onclick="window.showPanel('wishlist')" style="background:#fff; color:#b91c1c; border:none; padding:4px 10px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:0.78rem;">❤️ مفضلته</button>
-                    <button type="button" onclick="window.exitCustomerImpersonation()" style="background:#111827; color:#fff; border:1px solid #fff; padding:4px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:0.78rem;">🔙 العودة لحساب المدير</button>
-                </div>
-            </div>
-
-            <div id="photo-source-chooser-modal">
-                <div class="photo-chooser-box">
-                    <h3 style="margin:0 0 8px 0; color:var(--primary);">📸 إرسال صورة في المحادثة</h3>
-                    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:14px;">اختر طريقة إرسال الصورة:</p>
-                    <div style="display:flex; flex-direction:column; gap:10px;">
-                        <button type="button" class="btn btn-full" style="background:#028090; padding:10px;" onclick="window.triggerV63PhotoPicker('camera')">📷 التصوير بالكاميرا مباشرة</button>
-                        <button type="button" class="btn btn-full" style="background:var(--primary); padding:10px;" onclick="window.triggerV63PhotoPicker('gallery')">🖼️ الاختيار من معرض الصور</button>
-                        <button type="button" class="btn btn-outline" style="padding:8px;" onclick="document.getElementById('photo-source-chooser-modal').style.display='none'">إلغاء ✖</button>
-                    </div>
-                    <input type="file" id="v63-cam-file" accept="image/*" capture="environment" style="display:none;" onchange="window.uploadV63ChatPhoto(this)">
-                    <input type="file" id="v63-gal-file" accept="image/*" style="display:none;" onchange="window.uploadV63ChatPhoto(this)">
-                </div>
-            </div>
-        `;
-        document.body.appendChild(wrap);
-    }
-
-    // =========================================================================
-    // 1. إخفاء زر "📲 تثبيت التطبيق" تلقائياً للعملاء المثبت عندهم التطبيق
-    // =========================================================================
-    window.checkAndHidePwaInstallBtn = function() {
-        let btn = document.getElementById('sidebar-install-pwa-btn');
-        if (!btn) return;
-        let isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
-            || (window.navigator && window.navigator.standalone === true)
-            || localStorage.getItem('zait_pwa_installed') === 'true';
-        if (isStandalone || storeSettings.enablePwaInstallBtn === false) {
-            btn.style.display = 'none';
-        } else {
-            btn.style.display = 'block';
-        }
-    };
-    window.addEventListener('appinstalled', () => {
-        localStorage.setItem('zait_pwa_installed', 'true');
-        window.checkAndHidePwaInstallBtn();
-    });
-    setInterval(window.checkAndHidePwaInstallBtn, 1500);
-
-    // =========================================================================
-    // 2. إصلاح بانر العروض المتحرك الكبير أعلى المتجر (Hero Slider)
-    // =========================================================================
-    let v63SlideInterval = null;
-    let v63SlideIdx = 0;
-
-    window.renderHeroSlider = function() {
-        let heroSec = document.getElementById('hero-section');
-        let sliderWrap = document.getElementById('hero-slider-wrapper');
-        let slidesCont = document.getElementById('hero-slides-container');
-        let dotsCont = document.getElementById('hero-slider-dots');
-        let homePanel = document.getElementById('home-panel');
-        let isHomeActive = homePanel && homePanel.classList.contains('active');
-
-        let cbEl = document.getElementById('setting-enable-hero-slider');
-        let isSliderEnabled = Boolean(storeSettings.enableHeroSlider) || (isCurrentUserAdmin && cbEl && cbEl.checked);
-
-        if (isSliderEnabled && slidesCont) {
-            let txtArea = document.getElementById('setting-hero-slides-data');
-            let rawText = (txtArea && txtArea.value.trim()) ? txtArea.value.trim() : (storeSettings.heroSlidesData || (window.getDefaultHeroSlidesText ? window.getDefaultHeroSlidesText() : "زيت الشجرة المباركة البكر الممتاز | عصرة أولى على البارد 100% من قلب مزارع سيناء | تسوق الآن"));
-            let lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-            if (lines.length === 0) lines = ["زيت الشجرة المباركة | عصرة أولى على البارد 100% | تسوق الآن"];
-
-            let sHtml = '';
-            let dHtml = '';
-            lines.forEach((line, idx) => {
-                let parts = line.split('|').map(p => p.trim());
-                let title = parts[0] || 'زيت الشجرة المباركة';
-                let desc = parts[1] || 'زيت زيتون سيناوي بكر ممتاز على البارد 100%';
-                let btnTxt = parts[2] || 'تسوق الآن 🛒';
-                let prodImg = (products[idx] && products[idx].images && products[idx].images[0]) ? products[idx].images[0] : '1000392409.jpeg';
-                sHtml += `<div class="hero-slide ${idx === 0 ? 'active' : ''}">
-                    <div class="hero-slide-text">
-                        <h2>${window.escapeHTML(title)}</h2>
-                        <p>${window.escapeHTML(desc)}</p>
-                        <button type="button" class="btn" onclick="document.getElementById('products-container').scrollIntoView({behavior:'smooth'})">${window.escapeHTML(btnTxt)}</button>
-                    </div>
-                    <img loading="lazy" src="${prodImg}" class="hero-slide-img" onerror="this.src='1000392409.jpeg'" alt="Slide">
-                </div>`;
-                dHtml += `<span class="hero-dot ${idx === 0 ? 'active' : ''}" onclick="window.showHeroSlide(${idx})"></span>`;
-            });
-            slidesCont.innerHTML = sHtml;
-            if (dotsCont) dotsCont.innerHTML = lines.length > 1 ? dHtml : '';
-
-            if (v63SlideInterval) clearInterval(v63SlideInterval);
-            if (lines.length > 1) {
-                v63SlideInterval = setInterval(() => {
-                    v63SlideIdx = (v63SlideIdx + 1) % lines.length;
-                    window.showHeroSlide(v63SlideIdx);
-                }, 4500);
-            }
+        // 0. مسح أي كاش قديم في Service Worker تلقائياً لضمان عمل التعديلات فوراً
+        if ('caches' in window) {
+            caches.keys().then(keys => keys.forEach(k => {
+                if (!k.includes('v64')) caches.delete(k);
+            })).catch(() => {});
         }
 
-        if (!isHomeActive) {
-            if (heroSec) heroSec.style.display = 'none';
-            if (sliderWrap) sliderWrap.style.display = 'none';
-            return;
-        }
-
-        if (isSliderEnabled) {
-            if (heroSec) heroSec.style.display = 'none';
-            if (sliderWrap) sliderWrap.style.display = 'block';
-        } else {
-            if (heroSec) heroSec.style.display = '';
-            if (sliderWrap) sliderWrap.style.display = 'none';
-        }
-    };
-
-    document.addEventListener('change', (e) => {
-        if (e.target && e.target.id === 'setting-enable-hero-slider') {
-            storeSettings.enableHeroSlider = e.target.checked;
-            window.renderHeroSlider();
-        }
-    });
-
-    // =========================================================================
-    // 3. نافذة التخيير بين (الكاميرا / المعرض) عند الضغط على زر الصور في الشات
-    // =========================================================================
-    window.v63PhotoSenderRole = 'customer';
-
-    document.addEventListener('click', function(e) {
-        let target = e.target.closest('label[for="cust-chat-img-inp"], label[for="admin-chat-img-inp"], #cust-chat-img-inp, #admin-chat-img-inp');
-        if (!target) return;
-        e.preventDefault();
-        e.stopPropagation();
-        let isAdm = target.id.includes('admin') || (target.getAttribute('for') || '').includes('admin');
-        window.v63PhotoSenderRole = isAdm ? 'admin' : 'customer';
-        if (window.v63PhotoSenderRole === 'customer' && !currentUser) {
-            window.showToast('يرجى تسجيل الدخول أولاً', 'error');
-            window.showPanel('auth');
-            return;
-        }
-        if (window.v63PhotoSenderRole === 'admin' && !activeAdminChatId) {
-            window.showToast('اختر محادثة عميل أولاً', 'error');
-            return;
-        }
-        document.getElementById('photo-source-chooser-modal').style.display = 'flex';
-    }, true);
-
-    window.triggerV63PhotoPicker = function(mode) {
-        document.getElementById('photo-source-chooser-modal').style.display = 'none';
-        let fileInp = document.getElementById(mode === 'camera' ? 'v63-cam-file' : 'v63-gal-file');
-        if (fileInp) {
-            fileInp.value = '';
-            fileInp.click();
-        }
-    };
-
-    // دالة ضغط الصور تلقائياً لتسريع الرفع
-    window.compressImageFileV63 = function(file, maxW = 1000, quality = 0.78) {
-        return new Promise((resolve) => {
-            if (!file || !file.type.startsWith('image/')) { resolve(file); return; }
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const img = new Image();
-                img.onload = () => {
-                    let w = img.width, h = img.height;
-                    if (w > maxW) { h = Math.round((h * maxW) / w); w = maxW; }
-                    const canvas = document.createElement('canvas');
-                    canvas.width = w; canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
-                    canvas.toBlob((blob) => {
-                        resolve(blob ? new File([blob], file.name, { type: 'image/jpeg' }) : file);
-                    }, 'image/jpeg', quality);
-                };
-                img.onerror = () => resolve(file);
-                img.src = ev.target.result;
-            };
-            reader.onerror = () => resolve(file);
-            reader.readAsDataURL(file);
-        });
-    };
-
-    window.uploadV63ChatPhoto = async function(inputEl) {
-        if (!inputEl || !inputEl.files || inputEl.files.length === 0) return;
-        let rawFile = inputEl.files[0];
-        let file = await window.compressImageFileV63(rawFile);
-        let role = window.v63PhotoSenderRole || 'customer';
-        let targetChatId = role === 'customer'
-            ? (currentUser ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : '')
-            : activeAdminChatId;
-        if (!targetChatId) return;
-
-        window.showToast('⏳ جاري ضغط وإرسال الصورة في المحادثة...', 'info');
-        let uploadedUrl = '';
-        try {
-            const fd = new FormData();
-            fd.append('image', file);
-            const res = await fetch('https://api.imgbb.com/1/upload?key=D37b01ec4b27dcce48777a7b229a1fdb', { method: 'POST', body: fd });
-            const data = await res.json();
-            if (data && data.success) uploadedUrl = data.data.url;
-        } catch (err) {}
-
-        if (!uploadedUrl) {
-            uploadedUrl = await new Promise((resolve) => {
-                let r = new FileReader();
-                r.onload = () => resolve(r.result);
-                r.readAsDataURL(file);
-            });
-        }
-
-        let nowIso = new Date().toISOString();
-        let msgObj = {
-            sender: role === 'customer' ? 'customer' : 'admin',
-            text: '📸 مرفق صورة',
-            imageUrl: uploadedUrl,
-            timestamp: nowIso,
-            isAutoReply: false
+        // 1. إخفاء زر "📲 تثبيت تطبيق المتجر" تلقائياً للعملاء المثبت عندهم التطبيق
+        window.isStoreAppAlreadyInstalled = function() {
+            if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+            if (window.navigator && window.navigator.standalone === true) return true;
+            if (localStorage.getItem('zait_pwa_installed') === 'true') return true;
+            return false;
         };
 
-        try {
-            let chatRef = doc(db, 'chats', targetChatId);
-            let snap = await getDoc(chatRef);
-            if (snap.exists()) {
-                await updateDoc(chatRef, {
-                    messages: arrayUnion(msgObj),
-                    lastUpdate: nowIso,
-                    adminReplied: role === 'admin'
+        window.updateInstallPwaButtonVisibility = function() {
+            let btn = document.getElementById('sidebar-install-pwa-btn');
+            if (!btn) return;
+            btn.style.display = window.isStoreAppAlreadyInstalled() ? 'none' : 'block';
+        };
+
+        window.addEventListener('appinstalled', () => {
+            localStorage.setItem('zait_pwa_installed', 'true');
+            window.updateInstallPwaButtonVisibility();
+        });
+
+        const origTriggerInstallV62 = window.triggerInstallStoreApp;
+        window.triggerInstallStoreApp = async function() {
+            if (window.deferredPwaPrompt) {
+                window.deferredPwaPrompt.prompt();
+                let res = await window.deferredPwaPrompt.userChoice;
+                if (res && res.outcome === 'accepted') {
+                    localStorage.setItem('zait_pwa_installed', 'true');
+                    window.updateInstallPwaButtonVisibility();
+                    window.showToast('🎉 تم تثبيت تطبيق المتجر على هاتفك بنجاح!', 'success');
+                }
+                window.deferredPwaPrompt = null;
+            } else if (origTriggerInstallV62) {
+                origTriggerInstallV62();
+            }
+        };
+        setTimeout(window.updateInstallPwaButtonVisibility, 400);
+
+        // 2. إصلاح بانر العروض المتحرك الكبير أعلى المتجر (Hero Slider) ليظهر ويعمل فور تفعيله
+        let v64HeroTimer = null;
+        let v64HeroSlideIndex = 0;
+
+        window.renderHeroSlider = function() {
+            let heroSec = document.getElementById('hero-section');
+            let sliderWrap = document.getElementById('hero-slider-wrapper');
+            let slidesCont = document.getElementById('hero-slides-container');
+            let dotsCont = document.getElementById('hero-slider-dots');
+            let homePanel = document.getElementById('home-panel');
+            let isHomeActive = homePanel && homePanel.classList.contains('active');
+
+            let cbEl = document.getElementById('setting-enable-hero-slider');
+            let isSliderEnabled = Boolean(storeSettings.enableHeroSlider) || (isCurrentUserAdmin && cbEl && cbEl.checked);
+
+            if (isSliderEnabled && slidesCont) {
+                let txtArea = document.getElementById('setting-hero-slides-data');
+                let rawText = (txtArea && txtArea.value.trim())
+                    ? txtArea.value.trim()
+                    : (storeSettings.heroSlidesData || window.getDefaultHeroSlidesText());
+                let lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+                if (lines.length === 0) lines = [window.getDefaultHeroSlidesText().split('\n')[0]];
+
+                let sHtml = '';
+                let dHtml = '';
+                lines.forEach((line, idx) => {
+                    let parts = line.split('|').map(p => p.trim());
+                    let title = parts[0] || 'زيت الشجرة المباركة';
+                    let desc = parts[1] || 'زيت زيتون سيناوي بكر ممتاز على البارد 100%';
+                    let btnTxt = parts[2] || 'تسوق الآن 🛒';
+                    let prodImg = (products && products[idx] && products[idx].images && products[idx].images[0])
+                        ? products[idx].images[0]
+                        : '1000392409.jpeg';
+                    sHtml += `<div class="hero-slide ${idx === 0 ? 'active' : ''}">
+                        <div class="hero-slide-text">
+                            <h2>${window.escapeHTML(title)}</h2>
+                            <p>${window.escapeHTML(desc)}</p>
+                            <button type="button" class="btn" onclick="document.getElementById('products-container').scrollIntoView({behavior:'smooth'})">${window.escapeHTML(btnTxt)}</button>
+                        </div>
+                        <img loading="lazy" src="${prodImg}" class="hero-slide-img" onerror="this.src='1000392409.jpeg'" alt="Slide">
+                    </div>`;
+                    dHtml += `<span class="hero-dot ${idx === 0 ? 'active' : ''}" onclick="window.showHeroSlide(${idx})"></span>`;
                 });
+                slidesCont.innerHTML = sHtml;
+                if (dotsCont) dotsCont.innerHTML = lines.length > 1 ? dHtml : '';
+                v64HeroSlideIndex = 0;
+                if (v64HeroTimer) clearInterval(v64HeroTimer);
+                if (lines.length > 1) {
+                    v64HeroTimer = setInterval(() => {
+                        v64HeroSlideIndex = (v64HeroSlideIndex + 1) % lines.length;
+                        window.showHeroSlide(v64HeroSlideIndex);
+                    }, 4500);
+                }
+            } else if (v64HeroTimer) {
+                clearInterval(v64HeroTimer);
+            }
+
+            if (!isHomeActive) {
+                if (heroSec) heroSec.style.display = 'none';
+                if (sliderWrap) sliderWrap.style.display = 'none';
+                return;
+            }
+
+            if (isSliderEnabled) {
+                if (heroSec) heroSec.style.display = 'none';
+                if (sliderWrap) sliderWrap.style.display = 'block';
             } else {
-                let dName = currentUser.displayName || (targetChatId.includes('@') ? targetChatId.split('@')[0] : targetChatId);
-                await setDoc(chatRef, {
-                    customerName: dName,
-                    messages: [msgObj],
-                    lastUpdate: nowIso,
-                    adminReplied: false
-                }, { merge: true });
+                if (heroSec) heroSec.style.display = '';
+                if (sliderWrap) sliderWrap.style.display = 'none';
             }
-            window.showToast('تم إرسال الصورة بنجاح 📸', 'success');
-        } catch (e) {
-            window.showToast('حدث خطأ أثناء إرسال الصورة', 'error');
-        }
-    };
+        };
 
-    // =========================================================================
-    // 4. إصلاح تسجيل المقطع الصوتي (🎙️) للعميل والمدير
-    // =========================================================================
-    let v63MediaRecorder = null;
-    let v63Chunks = [];
-    let v63Timer = null;
-    let v63Secs = 0;
-    let v63VoiceRole = 'customer';
-
-    window.toggleChatVoiceNote = async function(role, btnEl) {
-        if (role === 'customer' && !currentUser) {
-            window.showToast('يرجى تسجيل الدخول أولاً لإرسال رسالة صوتية', 'error');
-            window.showPanel('auth');
-            return;
-        }
-        if (role === 'admin' && !activeAdminChatId) {
-            window.showToast('اختر محادثة عميل أولاً', 'error');
-            return;
-        }
-
-        if (v63MediaRecorder && v63MediaRecorder.state === 'recording') {
-            v63MediaRecorder.stop();
-            return;
-        }
-
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            window.showToast('متصفحك لا يدعم تسجيل الصوت المباشر', 'error');
-            return;
-        }
-
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            v63Chunks = [];
-            v63Secs = 0;
-            v63VoiceRole = role;
-
-            let opts = {};
-            if (typeof MediaRecorder !== 'undefined') {
-                if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) opts = { mimeType: 'audio/webm;codecs=opus' };
-                else if (MediaRecorder.isTypeSupported('audio/mp4')) opts = { mimeType: 'audio/mp4' };
-                else if (MediaRecorder.isTypeSupported('audio/webm')) opts = { mimeType: 'audio/webm' };
+        // 3. نافذة التخيير بين (📷 الكاميرا / 🖼️ المعرض) + إصلاح رفع الصورة للعميل والمدير
+        window.currentChatPhotoRole = 'customer';
+        window.openChatPhotoChooser = function(role) {
+            window.currentChatPhotoRole = role || 'customer';
+            if (window.currentChatPhotoRole === 'customer' && !currentUser) {
+                window.showToast('يرجى تسجيل الدخول أولاً لإرسال صورة', 'error');
+                window.showPanel('auth');
+                return;
             }
-
-            v63MediaRecorder = new MediaRecorder(stream, opts);
-            v63MediaRecorder.ondataavailable = (e) => {
-                if (e.data && e.data.size > 0) v63Chunks.push(e.data);
-            };
-
-            if (btnEl) {
-                btnEl.classList.add('voice-rec-active-pulse');
-                btnEl.innerHTML = '⏹️ 0ث';
+            if (window.currentChatPhotoRole === 'admin' && !activeAdminChatId) {
+                window.showToast('اختر محادثة عميل أولاً', 'error');
+                return;
             }
-            v63Timer = setInterval(() => {
-                v63Secs++;
-                if (btnEl) btnEl.innerHTML = `⏹️ ${v63Secs}ث`;
-                if (v63Secs >= 45 && v63MediaRecorder && v63MediaRecorder.state === 'recording') {
-                    v63MediaRecorder.stop();
-                }
-            }, 1000);
+            let modal = document.getElementById('chat-photo-chooser-modal');
+            if (modal) modal.style.display = 'flex';
+        };
 
-            window.showToast('🎙️ جاري التسجيل الصوتي... اضغط مرة أخرى للإرسال', 'info');
+        window.pickChatPhotoSource = function(sourceType) {
+            let modal = document.getElementById('chat-photo-chooser-modal');
+            if (modal) modal.style.display = 'none';
+            let inp = document.getElementById(sourceType === 'camera' ? 'chat-photo-camera-inp' : 'chat-photo-gallery-inp');
+            if (inp) {
+                inp.value = '';
+                inp.click();
+            }
+        };
 
-            v63MediaRecorder.onstop = () => {
-                clearInterval(v63Timer);
-                if (btnEl) {
-                    btnEl.classList.remove('voice-rec-active-pulse');
-                    btnEl.innerHTML = '🎙️';
-                }
-                stream.getTracks().forEach(t => t.stop());
-
-                let blob = new Blob(v63Chunks, { type: v63MediaRecorder.mimeType || 'audio/webm' });
-                let reader = new FileReader();
-                reader.onloadend = async () => {
-                    let base64Audio = reader.result;
-                    let targetChatId = v63VoiceRole === 'customer'
-                        ? (currentUser.email || currentUser.phoneNumber || currentUser.uid)
-                        : activeAdminChatId;
-                    if (!targetChatId || !base64Audio) return;
-
-                    let nowIso = new Date().toISOString();
-                    let msgObj = {
-                        sender: v63VoiceRole === 'customer' ? 'customer' : 'admin',
-                        text: `🎙️ مقطع صوتي (${v63Secs || 1} ثانية)`,
-                        audioData: base64Audio,
-                        timestamp: nowIso,
-                        isAutoReply: false
-                    };
-
-                    try {
-                        let chatRef = doc(db, 'chats', targetChatId);
-                        let snap = await getDoc(chatRef);
-                        if (snap.exists()) {
-                            await updateDoc(chatRef, {
-                                messages: arrayUnion(msgObj),
-                                lastUpdate: nowIso,
-                                adminReplied: v63VoiceRole === 'admin'
-                            });
-                        } else {
-                            let dName = currentUser.displayName || (targetChatId.includes('@') ? targetChatId.split('@')[0] : targetChatId);
-                            await setDoc(chatRef, {
-                                customerName: dName,
-                                messages: [msgObj],
-                                lastUpdate: nowIso,
-                                adminReplied: false
-                            }, { merge: true });
-                        }
-                        window.showToast('تم إرسال المقطع الصوتي بنجاح 🎙️', 'success');
-                    } catch (err) {
-                        window.showToast('تعذر إرسال المقطع الصوتي', 'error');
-                    }
-                };
-                reader.readAsDataURL(blob);
-            };
-
-            v63MediaRecorder.start();
-        } catch (err) {
-            window.showToast('يرجى السماح بصلاحية الميكروفون من المتصفح 🎙️', 'error');
-        }
-    };
-
-    // =========================================================================
-    // 5. ميزة "🔑 الدخول لحساب العميل (التصفح كالعميل)" مع التحكم في إظهارها/إخفائها
-    // =========================================================================
-    window.adminBackupSession = null;
-
-    window.loginAsCustomerAccount = async function(identifier, nameHint = '') {
-        if (!isCurrentUserAdmin && !window.adminBackupSession) {
-            window.showToast('مخصص للمدير فقط', 'error');
-            return;
-        }
-        try {
-            let cleanId = String(identifier || '').trim();
-            let foundDocId = null;
-            let foundData = {};
-
+        // إصلاح sendChatImageAttachment لعدم إرسال staffName: undefined فيفشل عند العميل!
+        window.sendChatImageAttachment = async function(senderRole, fileInp) {
+            if (!fileInp || !fileInp.files || fileInp.files.length === 0) return;
+            let file = fileInp.files[0];
+            let targetChatId = senderRole === 'customer'
+                ? (currentUser ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
+                : activeAdminChatId;
+            if (!targetChatId) {
+                window.showToast('يرجى تسجيل الدخول أولاً', 'error');
+                return;
+            }
+            window.showToast('⏳ جاري رفع وإرسال الصورة في المحادثة...', 'info');
+            let uploadedUrl = '';
             try {
-                let dSnap = await getDoc(doc(db, 'users', cleanId));
-                if (dSnap.exists()) {
-                    foundDocId = dSnap.id;
-                    foundData = dSnap.data();
-                }
+                const formData = new FormData();
+                formData.append('image', file);
+                const res = await fetch('https://api.imgbb.com/1/upload?key=D37b01ec4b27dcce48777a7b229a1fdb', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data && data.success) uploadedUrl = data.data.url;
             } catch (e) {}
 
-            if (!foundDocId) {
-                let allSnap = await getDocs(collection(db, 'users'));
-                allSnap.forEach(d => {
-                    let u = d.data();
-                    if (
-                        d.id === cleanId ||
-                        (u.email && u.email.toLowerCase() === cleanId.toLowerCase()) ||
-                        (u.phone1 && String(u.phone1).includes(cleanId))
-                    ) {
-                        foundDocId = d.id;
-                        foundData = u;
-                    }
+            if (!uploadedUrl) {
+                uploadedUrl = await new Promise((resolve) => {
+                    let r = new FileReader();
+                    r.onload = () => resolve(r.result);
+                    r.readAsDataURL(file);
                 });
             }
 
-            if (!window.adminBackupSession) {
-                window.adminBackupSession = {
-                    user: currentUser,
-                    cart: JSON.parse(localStorage.getItem('cart') || '[]'),
-                    savedForLater: JSON.parse(localStorage.getItem('savedForLater') || '[]')
+            try {
+                let nowIso = new Date().toISOString();
+                let sName = senderRole === 'admin'
+                    ? ((currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'الإدارة')
+                    : ((currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'عميل');
+
+                let msg = {
+                    sender: senderRole,
+                    staffName: sName,
+                    text: '📸 مرفق صورة',
+                    imageUrl: uploadedUrl,
+                    timestamp: nowIso
                 };
+                let updateObj = { messages: arrayUnion(msg), lastUpdate: nowIso };
+                if (senderRole === 'customer') {
+                    updateObj.customerName = sName;
+                    updateObj.lastCustomerMsgAt = nowIso;
+                    updateObj.unreadByAdmin = true;
+                } else {
+                    updateObj.adminReplied = true;
+                    updateObj.unreadByAdmin = false;
+                }
+                await setDoc(doc(db, 'chats', targetChatId), updateObj, { merge: true });
+                window.showToast('تم إرسال الصورة في المحادثة بنجاح 📸✅', 'success');
+            } catch (e) {
+                window.showToast('تعذر إرسال الصورة، حاول مرة أخرى', 'error');
+            }
+            fileInp.value = '';
+        };
+
+        // 4. إصلاح تسجيل الرسالة الصوتية (🎙️) للعميل والمدير (حل خطأ Firestore undefined + دعم كل صيغ الصوت)
+        window.activeVoiceRecorder = null;
+        window.activeVoiceChunks = [];
+        window.voiceRecTimer = null;
+        window.voiceRecSecs = 0;
+
+        window.toggleChatVoiceNoteRecording = async function(senderRole, btnEl) {
+            let targetChatId = senderRole === 'customer'
+                ? (currentUser ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
+                : activeAdminChatId;
+            if (!targetChatId) {
+                window.showToast('يرجى تسجيل الدخول أولاً لإرسال رسالة صوتية', 'error');
+                if (senderRole === 'customer') window.showPanel('auth');
+                return;
             }
 
-            let targetEmail = foundData.email || (cleanId.includes('@') ? cleanId : '');
-            let targetPhone = foundData.phone1 || (!cleanId.includes('@') ? cleanId : '');
-            let targetName = foundData.name || nameHint || (targetEmail ? targetEmail.split('@')[0] : 'عميل');
-
-            currentUser = {
-                uid: foundDocId || ('cust_' + cleanId.replace(/\W/g, '')),
-                email: targetEmail || targetPhone,
-                phoneNumber: targetPhone,
-                displayName: targetName
-            };
-
-            if (Array.isArray(foundData.cart)) {
-                cart = foundData.cart;
-                localStorage.setItem('cart', JSON.stringify(cart));
+            if (window.activeVoiceRecorder && window.activeVoiceRecorder.state === 'recording') {
+                window.activeVoiceRecorder.stop();
+                return;
             }
-            window.updateCartUI();
-            window.loadCustomerOrders();
-            window.loadCustomerChat();
-            window.loadUserNotifications();
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                window.showToast('متصفحك لا يدعم تسجيل الصوت المباشر', 'error');
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                window.activeVoiceChunks = [];
+                window.voiceRecSecs = 0;
+
+                let mimeOpts = {};
+                if (typeof MediaRecorder !== 'undefined') {
+                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) mimeOpts = { mimeType: 'audio/webm;codecs=opus' };
+                    else if (MediaRecorder.isTypeSupported('audio/mp4')) mimeOpts = { mimeType: 'audio/mp4' };
+                    else if (MediaRecorder.isTypeSupported('audio/webm')) mimeOpts = { mimeType: 'audio/webm' };
+                }
+
+                const recorder = new MediaRecorder(stream, mimeOpts);
+                window.activeVoiceRecorder = recorder;
+
+                if (btnEl) {
+                    btnEl.classList.add('recording-audio');
+                    btnEl.innerHTML = '⏹️ جاري التسجيل (0ث) - اضغط للإرسال';
+                }
+                window.voiceRecTimer = setInterval(() => {
+                    window.voiceRecSecs++;
+                    if (btnEl) btnEl.innerHTML = `⏹️ جاري التسجيل (${window.voiceRecSecs}ث) - اضغط للإرسال`;
+                    if (window.voiceRecSecs >= 35 && recorder.state === 'recording') {
+                        recorder.stop();
+                    }
+                }, 1000);
+
+                window.showToast('🎙️ جاري تسجيل رسالتك الصوتية.. اضغط الزر الأحمر للإرسال', 'info');
+
+                recorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) window.activeVoiceChunks.push(e.data);
+                };
+
+                recorder.onstop = () => {
+                    clearInterval(window.voiceRecTimer);
+                    if (btnEl) {
+                        btnEl.classList.remove('recording-audio');
+                        btnEl.innerHTML = '🎙️ تسجيل رسالة صوتية';
+                    }
+                    stream.getTracks().forEach(t => t.stop());
+
+                    const blob = new Blob(window.activeVoiceChunks, { type: recorder.mimeType || 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        let base64Audio = reader.result;
+                        if (!base64Audio) return;
+                        let nowIso = new Date().toISOString();
+                        let sName = senderRole === 'admin'
+                            ? ((currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'الإدارة')
+                            : ((currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'عميل');
+
+                        let msg = {
+                            sender: senderRole,
+                            staffName: sName,
+                            text: `🎙️ رسالة صوتية (${window.voiceRecSecs || 1} ثانية)`,
+                            audioDataUrl: base64Audio,
+                            timestamp: nowIso
+                        };
+                        let updateObj = { messages: arrayUnion(msg), lastUpdate: nowIso };
+                        if (senderRole === 'customer') {
+                            updateObj.customerName = sName;
+                            updateObj.lastCustomerMsgAt = nowIso;
+                            updateObj.unreadByAdmin = true;
+                        } else {
+                            updateObj.adminReplied = true;
+                            updateObj.unreadByAdmin = false;
+                        }
+                        try {
+                            await setDoc(doc(db, 'chats', targetChatId), updateObj, { merge: true });
+                            window.showToast('تم إرسال الرسالة الصوتية بنجاح 🎙️✅', 'success');
+                        } catch (err) {
+                            window.showToast('تعذر إرسال المقطع الصوتي، حاول بمقطع أقصر', 'error');
+                        }
+                    };
+                    reader.readAsDataURL(blob);
+                };
+
+                recorder.start();
+            } catch (e) {
+                window.showToast('يرجى السماح بصلاحية الميكروفون لتسجيل الرسالة الصوتية', 'error');
+            }
+        };
+
+        // 5. ميزة "🔑 الدخول لحساب العميل (التصفح والتحكم كأنك العميل)" للمدير بدون أي تعليق!
+        window.adminSavedSessionBackup = null;
+
+        window.loginAsCustomerAccount = async function(identifier, customerNameHint = '') {
+            if (!isCurrentUserAdmin && !window.adminSavedSessionBackup) {
+                window.showToast('هذه الميزة مخصصة للمدير فقط', 'error');
+                return;
+            }
+            try {
+                let cleanId = String(identifier || '').trim();
+                let foundDocId = null;
+                let foundData = {};
+
+                try {
+                    let dSnap = await getDoc(doc(db, 'users', cleanId));
+                    if (dSnap.exists()) {
+                        foundDocId = dSnap.id;
+                        foundData = dSnap.data();
+                    }
+                } catch (e) {}
+
+                if (!foundDocId) {
+                    let allSnap = await getDocs(collection(db, 'users'));
+                    allSnap.forEach(d => {
+                        let u = d.data();
+                        if (
+                            d.id === cleanId ||
+                            (u.email && u.email.toLowerCase() === cleanId.toLowerCase()) ||
+                            (u.phone1 && String(u.phone1).includes(cleanId))
+                        ) {
+                            foundDocId = d.id;
+                            foundData = u;
+                        }
+                    });
+                }
+
+                if (!window.adminSavedSessionBackup) {
+                    window.adminSavedSessionBackup = {
+                        user: currentUser,
+                        cart: JSON.parse(localStorage.getItem('cart') || '[]'),
+                        savedForLater: JSON.parse(localStorage.getItem('savedForLater') || '[]')
+                    };
+                }
+
+                let targetEmail = foundData.email || (cleanId.includes('@') ? cleanId : '');
+                let targetPhone = foundData.phone1 || (!cleanId.includes('@') ? cleanId : '');
+                let targetName = foundData.name || customerNameHint || (targetEmail ? targetEmail.split('@')[0] : 'عميل');
+
+                currentUser = {
+                    uid: foundDocId || ('cust_' + cleanId.replace(/\W/g, '')),
+                    email: targetEmail || targetPhone,
+                    phoneNumber: targetPhone,
+                    displayName: targetName
+                };
+
+                if (Array.isArray(foundData.cart)) {
+                    cart = foundData.cart;
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                }
+                window.updateCartUI();
+                window.loadCustomerOrders();
+                window.loadCustomerChat();
+                window.loadUserNotifications();
+
+                let banner = document.getElementById('admin-impersonation-banner');
+                let statusTxt = document.getElementById('impersonation-status-text');
+                if (banner) banner.style.display = 'flex';
+                if (statusTxt) statusTxt.textContent = `🕵️‍♂️ تتصفح الآن بحساب العميل: ${targetName} (${targetEmail || targetPhone || cleanId})`;
+
+                let ud = document.getElementById('user-email-display');
+                if (ud) ud.textContent = `👤 ${targetName}`;
+
+                window.showProfilePanel();
+                window.showToast(`🔑 تم الدخول لحساب العميل (${targetName}) بنجاح! يمكنك التصفح والتحكم كأنك العميل.`, 'success');
+            } catch (err) {
+                console.error(err);
+                window.showToast('حدث خطأ أثناء فتح حساب العميل', 'error');
+            }
+        };
+
+        window.exitCustomerImpersonation = function() {
+            if (!window.adminSavedSessionBackup) return;
+            currentUser = window.adminSavedSessionBackup.user;
+            cart = window.adminSavedSessionBackup.cart || [];
+            savedForLater = window.adminSavedSessionBackup.savedForLater || [];
+            localStorage.setItem('cart', JSON.stringify(cart));
+            localStorage.setItem('savedForLater', JSON.stringify(savedForLater));
+            window.adminSavedSessionBackup = null;
 
             let banner = document.getElementById('admin-impersonation-banner');
-            let txt = document.getElementById('impersonation-status-text');
-            if (banner) banner.style.display = 'flex';
-            if (txt) txt.textContent = `🕵️‍♂️ تتصفح الآن بحساب العميل: ${targetName} (${targetEmail || targetPhone || cleanId})`;
+            if (banner) banner.style.display = 'none';
 
-            let ud = document.getElementById('user-email-display');
-            if (ud) ud.textContent = `👤 ${targetName}`;
-
-            window.showProfilePanel();
-            window.showToast(`🔑 تم الدخول لحساب العميل (${targetName}) بالكامل!`, 'success');
-        } catch (err) {
-            console.error(err);
-            window.showToast('حدث خطأ أثناء فتح حساب العميل', 'error');
-        }
-    };
-
-    window.exitCustomerImpersonation = function() {
-        if (!window.adminBackupSession) return;
-        currentUser = window.adminBackupSession.user;
-        cart = window.adminBackupSession.cart || [];
-        savedForLater = window.adminBackupSession.savedForLater || [];
-        localStorage.setItem('cart', JSON.stringify(cart));
-        localStorage.setItem('savedForLater', JSON.stringify(savedForLater));
-        window.adminBackupSession = null;
-
-        let banner = document.getElementById('admin-impersonation-banner');
-        if (banner) banner.style.display = 'none';
-
-        window.updateCartUI();
-        window.updateAdminUI();
-        window.showPanel('admin-work');
-        window.showToast('🔙 عدت الآن إلى حساب المدير بنجاح', 'info');
-    };
-
-    // =========================================================================
-    // 6. إضافات الأقسام الـ 8 الشاملة (الجزء الأول + الجزء الثاني بالكامل)
-    // =========================================================================
-
-    // أ. قسم إضافة منتج: نسخ منتج بضغطة واحدة + معاينة حية للكارت أثناء الكتابة
-    window.duplicateCurrentProductForm = function() {
-        let idEl = document.getElementById('edit-product-id');
-        let nameEl = document.getElementById('product-name');
-        if (!nameEl || !nameEl.value.trim()) {
-            window.showToast('اختر منتجاً للتعديل أولاً أو اكتب بيانات المنتج لنسخه', 'info');
-            return;
-        }
-        if (idEl) idEl.value = '';
-        nameEl.value = nameEl.value.trim() + ' (نسخة جديدة)';
-        let titleEl = document.getElementById('admin-product-title');
-        if (titleEl) titleEl.innerHTML = '📑 نسخ كمنتج جديد (اضغط حفظ للإضافة)';
-        let subBtn = document.getElementById('btn-submit-product');
-        if (subBtn) subBtn.textContent = 'حفظ النسخة الجديدة ➕';
-        window.showToast('📑 تم تجهيز نسخة من المنتج! عدّل السعر أو الحجم ثم اضغط حفظ.', 'success');
-    };
-
-    window.updateLiveProductPreviewV63 = function() {
-        let box = document.getElementById('v63-live-prod-preview');
-        if (!box) return;
-        let name = (document.getElementById('product-name') || {}).value || 'اسم المنتج سيظهر هنا';
-        let price = (document.getElementById('product-price') || {}).value || '250';
-        let oldPrice = (document.getElementById('product-old-price') || {}).value || '';
-        let cat = (document.getElementById('product-category') || {}).value || 'زيت زيتون';
-        let badge = (document.getElementById('product-special-badge') || {}).value || '';
-        box.innerHTML = `
-            <div style="font-size:0.8rem; color:var(--secondary); font-weight:bold; margin-bottom:6px;">👁️ معاينة مباشرة لشكل كارت المنتج:</div>
-            <div style="display:flex; align-items:center; gap:12px; background:var(--panel-bg); padding:10px; border-radius:10px; border:1px solid var(--border-color);">
-                <img src="1000392409.jpeg" style="width:60px; height:60px; border-radius:8px; object-fit:cover;">
-                <div style="flex:1;">
-                    <span style="font-size:0.72rem; background:var(--primary); color:#fff; padding:2px 8px; border-radius:10px;">${window.escapeHTML(cat)}</span>
-                    ${badge ? `<span style="font-size:0.72rem; background:var(--secondary); color:#fff; padding:2px 8px; border-radius:10px; margin-right:4px;">${window.escapeHTML(badge)}</span>` : ''}
-                    <h4 style="margin:5px 0 3px 0; color:var(--primary);">${window.escapeHTML(name)}</h4>
-                    <div style="font-weight:bold; color:var(--secondary);">
-                        ${oldPrice && Number(oldPrice) > Number(price) ? `<del style="color:#888; font-size:0.8rem; margin-left:5px;">${oldPrice} ج</del>` : ''}
-                        <span>${price} ج</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    };
-
-    // ب. قسم الاسترجاع: رفض الاسترجاع مع ذكر السبب للمدير
-    window.rejectReturnWithReason = async function(returnId, orderId) {
-        let reason = prompt('اكتب سبب رفض طلب الاسترجاع ليظهر للعميل:');
-        if (!reason) return;
-        try {
-            await updateDoc(doc(db, 'return_requests', returnId), { status: `مرفوض ❌ (${reason})` });
-            if (orderId) await updateDoc(doc(db, 'orders', orderId), { status: 'تم التوصيل ✅' });
-            window.showToast('تم رفض طلب الاسترجاع وإبلاغ العميل بالسبب', 'info');
-        } catch (e) {
-            window.showToast('حدث خطأ أثناء التحديث', 'error');
-        }
-    };
-
-    // ج. قسم الحساب الشخصي: حساب مستوى عضوية العميل (فضي / ذهبي / VIP)
-    window.renderCustomerMembershipTier = function() {
-        let profContent = document.getElementById('profile-content');
-        if (!profContent) return;
-        let tierBox = document.getElementById('v63-membership-tier-box');
-        if (!tierBox) {
-            tierBox = document.createElement('div');
-            tierBox.id = 'v63-membership-tier-box';
-            tierBox.className = 'membership-tier-card';
-            profContent.insertBefore(tierBox, profContent.firstChild);
-        }
-        let orders = window.customerOrdersArray || [];
-        let totalSpent = orders.filter(o => !String(o.status || '').includes('لغى') && !String(o.status || '').includes('رفض'))
-            .reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
-
-        let tierName = '🥈 عضوية فضية (عميل مميز)';
-        let nextMsg = `باقي لك ${Math.max(0, 1500 - totalSpent)} ج للترقية إلى 🥇 العضوية الذهبية!`;
-        if (totalSpent >= 3000) {
-            tierName = '💎 عضوية الماس VIP (أعلى مستوى بالمتجر)';
-            nextMsg = '🎉 تتمتع بأولوية الشحن السريع والهدايا الحصرية!';
-        } else if (totalSpent >= 1500) {
-            tierName = '🥇 عضوية ذهبية';
-            nextMsg = `باقي لك ${Math.max(0, 3000 - totalSpent)} ج للترقية إلى 💎 عضوية VIP!`;
-        }
-        tierBox.innerHTML = `
-            <div style="font-size:1.05rem; font-weight:900; color:var(--primary);">${tierName}</div>
-            <div style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;">إجمالي مشترياتك: <strong>${totalSpent} ج</strong> • ${nextMsg}</div>
-        `;
-    };
-
-    // د. قسم السلة والمفضلة: تفريغ السلة + نقل كل المفضلة للسلة
-    window.clearEntireCartV63 = function() {
-        if (!cart || cart.length === 0) return;
-        if (!confirm('هل تريد تفريغ سلة المشتريات بالكامل؟')) return;
-        cart = [];
-        localStorage.setItem('cart', JSON.stringify(cart));
-        window.updateCartUI();
-        window.showToast('🗑️ تم تفريغ السلة بنجاح', 'info');
-    };
-
-    window.moveAllWishlistToCartV63 = function() {
-        if (!wishlist || wishlist.length === 0) {
-            window.showToast('قائمة المفضلة فارغة حالياً', 'info');
-            return;
-        }
-        let count = 0;
-        wishlist.forEach(pid => {
-            let p = products.find(x => x.id === pid);
-            if (p && (p.stock === undefined || p.stock === "" || Number(p.stock) > 0)) {
-                let img = (p.images && p.images[0]) ? p.images[0] : (p.imageUrl || '1000392409.jpeg');
-                window.addToCart(p.id, p.name, p.price, img, '');
-                count++;
+            if (currentUser) {
+                let ud = document.getElementById('user-email-display');
+                if (ud) ud.textContent = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'المدير');
             }
-        });
-        if (count > 0) {
-            window.showToast(`🛒 تم نقل ${count} منتجات إلى السلة بنجاح!`, 'success');
-            window.showPanel('cart');
-        }
-    };
+            window.updateCartUI();
+            window.updateAdminUI();
+            window.showPanel('admin-work');
+            window.showToast('🔙 تمت العودة لحساب المدير بنجاح', 'info');
+        };
 
-    // هـ. قسم الشات: بحث داخل المحادثة + إرسال موقع GPS + إرسال ملخص طلب بالشات
-    window.sendCustomerGpsInChatV63 = function() {
-        if (!currentUser) { window.showToast('يرجى تسجيل الدخول أولاً', 'error'); return; }
-        if (!navigator.geolocation) { window.showToast('الجهاز لا يدعم تحديد الموقع', 'error'); return; }
-        window.showToast('📍 جاري إرسال موقعك في الشات...', 'info');
-        navigator.geolocation.getCurrentPosition((pos) => {
-            let url = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-            let inp = document.getElementById('support-message');
-            if (inp) {
-                inp.value = `📍 موقعي الجغرافي للتوصيل: ${url}`;
-                let f = document.getElementById('support-form');
-                if (f) f.requestSubmit();
+        // ربط زر (🔑 الدخول لحساب العميل) داخل الشات، وصفحة العملاء، وتفاصيل الطلبات، وغرفة العمل مباشرةً بدون MutationObserver!
+        const origLoadCustCtrlInChatV62 = window.loadCustomerAccountControlInChat;
+        window.loadCustomerAccountControlInChat = async function(chatId, customerName) {
+            await origLoadCustCtrlInChatV62(chatId, customerName);
+            if (storeSettings.enableImpersonateInChat === false) return;
+            let body = document.getElementById('admin-chat-cust-control-body');
+            if (body && !document.getElementById('btn-impersonate-chat-direct')) {
+                let safeId = String(chatId || '').replace(/'/g, "\\'");
+                let safeName = String(customerName || '').replace(/'/g, "\\'");
+                body.insertAdjacentHTML('afterbegin', `
+                    <button type="button" id="btn-impersonate-chat-direct" class="impersonate-user-btn" style="width:100%; margin-bottom:10px; padding:9px !important;" onclick="window.loginAsCustomerAccount('${safeId}', '${safeName}')">
+                        🔑 الدخول لحساب العميل (${window.escapeHTML(customerName || chatId)}) والتصفح والتحكم كأنك العميل
+                    </button>
+                `);
             }
-        }, () => window.showToast('يرجى تفعيل الـ GPS في هاتفك', 'error'));
-    };
+        };
 
-    window.filterChatMessagesV63 = function(queryStr, containerId) {
-        let cont = document.getElementById(containerId);
-        if (!cont) return;
-        let q = String(queryStr || '').trim().toLowerCase();
-        cont.querySelectorAll('.chat-msg-wrapper').forEach(w => {
-            let txt = (w.innerText || '').toLowerCase();
-            w.style.display = (!q || txt.includes(q)) ? '' : 'none';
-        });
-    };
+        window.loadAdminUsers = function() {
+            if (adminUsersUnsubscribe) adminUsersUnsubscribe();
+            adminUsersUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+                let container = document.getElementById('admin-users-container');
+                if (!container) return;
+                let usersList = [];
+                snapshot.forEach(docSnap => { usersList.push({ id: docSnap.id, ...docSnap.data() }); });
+                usersList.sort((a, b) => new Date(b.lastLogin || 0) - new Date(a.lastLogin || 0));
 
-    // و. قسم الإعدادات: تصدير المنتجات لملف Excel CSV + محرر ألوان المتجر الحي
-    window.exportProductsToCSVV63 = function() {
-        if (!products || products.length === 0) { window.showToast('لا توجد منتجات لتصديرها', 'error'); return; }
-        let csv = "ID,اسم المنتج,السعر,السعر قبل الخصم,التكلفة,القسم,المخزون,الشارة\n";
-        products.forEach(p => {
-            csv += `"${p.id}","${String(p.name || '').replace(/"/g, '""')}","${p.price || 0}","${p.oldPrice || ''}","${p.costPrice || 0}","${p.category || ''}","${p.stock !== undefined ? p.stock : ''}","${p.specialBadge || ''}"\n`;
-        });
-        const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `Products_Export_${new Date().toISOString().slice(0,10)}.csv`;
-        a.click();
-        window.showToast('📥 تم تحميل شيت إكسيل لجميع المنتجات بنجاح!', 'success');
-    };
-
-    window.applyCustomBrandColorV63 = function(primaryHex, secondaryHex) {
-        if (primaryHex) document.documentElement.style.setProperty('--primary', primaryHex);
-        if (secondaryHex) document.documentElement.style.setProperty('--secondary', secondaryHex);
-    };
-
-    // =========================================================================
-    // 7. المراقب الذكي لحقن كافة الأزرار الجديدة في الواجهة تلقائياً
-    // =========================================================================
-    function injectAllV63Elements() {
-        // 1. شريط الفلاتر السريعة أعلى المنتجات
-        let cfc = document.getElementById('category-filters-container');
-        if (cfc && !document.getElementById('v63-quick-tags-bar')) {
-            cfc.insertAdjacentHTML('afterend', `
-                <div id="v63-quick-tags-bar" class="quick-tag-filters-bar">
-                    <button type="button" class="quick-tag-chip active" onclick="window.filterByQuickTagV63('all', this)">🌐 كل المنتجات</button>
-                    <button type="button" class="quick-tag-chip" onclick="window.filterByQuickTagV63('discount', this)">🔥 عروض الخصم</button>
-                    <button type="button" class="quick-tag-chip" onclick="window.filterByQuickTagV63('instock', this)">✅ متوفر فوراً</button>
-                    <button type="button" class="quick-tag-chip" onclick="window.filterByQuickTagV63('under500', this)">💰 أقل من 500 ج</button>
-                </div>
-            `);
-        }
-
-        // 2. زر نسخ المنتج + المعاينة الحية في صفحة إضافة منتج
-        let addForm = document.getElementById('add-product-form');
-        if (addForm && !document.getElementById('v63-live-prod-preview')) {
-            addForm.insertAdjacentHTML('afterbegin', `
-                <div id="v63-live-prod-preview" class="live-product-preview-box"></div>
-                <button type="button" class="btn btn-outline" style="width:100%; margin-bottom:12px; border-color:var(--secondary); color:var(--primary);" onclick="window.duplicateCurrentProductForm()">📑 نسخ بيانات المنتج الحالي كمنتج جديد</button>
-            `);
-            ['product-name', 'product-price', 'product-old-price', 'product-category', 'product-special-badge'].forEach(id => {
-                let el = document.getElementById(id);
-                if (el) el.addEventListener('input', window.updateLiveProductPreviewV63);
+                if (usersList.length === 0) {
+                    container.innerHTML = '<h3 style="text-align:center; color:var(--text-muted);">لا يوجد عملاء مسجلين.</h3>';
+                    return;
+                }
+                let showImpBtn = storeSettings.enableImpersonateInUsers !== false;
+                let html = '';
+                usersList.forEach(u => {
+                    let loginDate = u.lastLogin ? new Date(u.lastLogin).toLocaleString('ar-EG') : 'غير محدد';
+                    let safeName = (u.name || 'عميل').replace(/'/g, "\\'");
+                    let impBtnHtml = showImpBtn
+                        ? `<button type="button" class="impersonate-user-btn" style="margin-top:8px;" onclick="event.stopPropagation(); window.loginAsCustomerAccount('${u.id}', '${safeName}')">🔑 دخول لحساب العميل وتصفحه كأنك العميل</button>`
+                        : '';
+                    html += `<div class="admin-msg-card" style="border-right: 4px solid #6f42c1; cursor:pointer;" onclick="window.showUserHistory('${u.id}', '${safeName}')">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                <h4 style="margin:0 0 5px 0; color:var(--primary);">👤 ${window.escapeHTML(u.name || 'عميل بدون اسم')}</h4>
+                                <p style="margin: 3px 0;"><strong>التواصل:</strong> ${window.escapeHTML(u.email || u.phone1 || 'غير متوفر')}</p>
+                                <p style="margin: 3px 0;"><strong>المحافظة:</strong> ${window.escapeHTML(u.gov || 'غير محدد')} - ${window.escapeHTML(u.city || '')}</p>
+                                <p style="margin: 3px 0; color:var(--text-muted); font-size:0.85rem;"><strong>آخر دخول:</strong> ${loginDate}</p>
+                            </div>
+                            ${impBtnHtml}
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = html;
             });
-            window.updateLiveProductPreviewV63();
-        }
+        };
 
-        // 3. زر نقل كل المفضلة للسلة
-        let wishPanel = document.getElementById('wishlist-panel');
-        if (wishPanel && !document.getElementById('btn-v63-wish-to-cart')) {
-            let h2 = wishPanel.querySelector('h2');
-            if (h2) {
-                h2.insertAdjacentHTML('afterend', `<div style="text-align:center; margin-bottom:14px;"><button type="button" id="btn-v63-wish-to-cart" class="btn" style="background:var(--secondary); padding:8px 18px;" onclick="window.moveAllWishlistToCartV63()">🛒 نقل كل المفضلة إلى السلة بضغطة واحدة</button></div>`);
-            }
-        }
+        const origOpenAdminOrderModalV62 = window.openAdminOrderModal;
+        window.openAdminOrderModal = function(id) {
+            origOpenAdminOrderModalV62(id);
+            if (storeSettings.enableImpersonateInUsers === false) return;
+            let aom = document.getElementById('aom-content');
+            let ord = (adminOrdersArray || []).find(o => o.id === id);
+            if (!aom || !ord) return;
+            let targetId = ord.userId || ord.customerEmail || (ord.phones && ord.phones.primary) || '';
+            if (!targetId) return;
+            let safeTarget = String(targetId).replace(/'/g, "\\'");
+            let safeName = String(ord.customerName || '').replace(/'/g, "\\'");
+            aom.insertAdjacentHTML('beforeend', `<button type="button" class="impersonate-user-btn" style="width:100%; margin-top:8px; padding:10px !important;" onclick="document.getElementById('admin-order-modal').style.display='none'; window.loginAsCustomerAccount('${safeTarget}', '${safeName}')">🔑 الدخول لحساب هذا العميل (${window.escapeHTML(ord.customerName || '')})</button>`);
+        };
 
-        // 4. زر تفريغ السلة بالكامل
-        let cartCont = document.getElementById('cart-items-container');
-        if (cartCont && !document.getElementById('btn-v63-clear-cart')) {
-            cartCont.insertAdjacentHTML('beforebegin', `<div style="display:flex; justify-content:flex-end; margin-bottom:8px;"><button type="button" id="btn-v63-clear-cart" class="btn btn-outline" style="padding:4px 10px; font-size:0.78rem; border-color:var(--danger); color:var(--danger);" onclick="window.clearEntireCartV63()">🗑️ تفريغ السلة</button></div>`);
-        }
-
-        // 5. زر مشاركة موقع GPS + بحث داخل شات العميل
-        let supForm = document.getElementById('support-form');
-        if (supForm && !document.getElementById('btn-v63-chat-gps')) {
-            let gpsBtn = document.createElement('button');
-            gpsBtn.type = 'button';
-            gpsBtn.id = 'btn-v63-chat-gps';
-            gpsBtn.className = 'btn btn-outline';
-            gpsBtn.style.cssText = 'padding:8px 10px; font-size:0.85rem;';
-            gpsBtn.title = 'إرسال موقعي GPS';
-            gpsBtn.innerHTML = '📍';
-            gpsBtn.onclick = window.sendCustomerGpsInChatV63;
-            supForm.insertBefore(gpsBtn, supForm.firstChild);
-        }
-        let supHist = document.getElementById('support-history-container');
-        if (supHist && !document.getElementById('v63-cust-chat-search')) {
-            supHist.insertAdjacentHTML('beforebegin', `<input type="search" id="v63-cust-chat-search" placeholder="🔍 ابحث داخل رسائل المحادثة..." style="margin-bottom:8px; padding:7px 12px; font-size:0.82rem;" oninput="window.filterChatMessagesV63(this.value, 'support-history-container')">`);
-        }
-
-        // 6. لوحة إعدادات V63 داخل الإعدادات المحمية للمدير
-        let rolesSec = document.getElementById('roles-content-section');
-        if (rolesSec && !document.getElementById('v63-imp-settings-box')) {
-            rolesSec.insertAdjacentHTML('afterbegin', `
-                <div id="v63-imp-settings-box" style="background:var(--panel-bg); padding:15px; border-radius:10px; margin-bottom:15px; border:2px solid #4f46e5;">
-                    <h4 style="margin-top:0; color:#4f46e5;">🔑 إضافات وتحكم النسخة V63 (الدخول لحساب العميل + أدوات المتجر)</h4>
-                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:bold; margin-bottom:8px;">
-                        <input type="checkbox" checked style="width:18px; height:18px; margin:0; accent-color:#4f46e5;" onchange="storeSettings.enableImpersonateInChat = this.checked; if(!this.checked){let b=document.getElementById('btn-v63-imp-active-chat'); if(b)b.remove();}">
-                        <span>إظهار زر "🔑 دخول لحساب العميل" في قسم خدمة العملاء (الشات) 💬</span>
-                    </label>
-                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:bold; margin-bottom:10px;">
-                        <input type="checkbox" checked style="width:18px; height:18px; margin:0; accent-color:#4f46e5;" onchange="storeSettings.enableImpersonateInUsers = this.checked; window.loadAdminUsers();">
-                        <span>إظهار زر "🔑 دخول لحساب العميل" في قسم العملاء وكروت الطلبات 👥</span>
-                    </label>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding-top:8px; border-top:1px dashed var(--border-color);">
-                        <button type="button" class="btn btn-outline" style="padding:6px 12px; font-size:0.82rem;" onclick="window.exportProductsToCSVV63()">📊 تصدير كل المنتجات لملف Excel (CSV)</button>
-                        <label style="font-size:0.82rem; font-weight:bold; display:flex; align-items:center; gap:5px; margin:0;">
-                            🎨 لون المتجر الأساسي:
-                            <input type="color" value="#1f3a13" style="width:36px; height:28px; padding:0; border:none; cursor:pointer;" onchange="window.applyCustomBrandColorV63(this.value, null)">
-                        </label>
-                        <label style="font-size:0.82rem; font-weight:bold; display:flex; align-items:center; gap:5px; margin:0;">
-                            ✨ اللون الذهبي:
-                            <input type="color" value="#c59b27" style="width:36px; height:28px; padding:0; border:none; cursor:pointer;" onchange="window.applyCustomBrandColorV63(null, this.value)">
-                        </label>
-                    </div>
-                </div>
-            `);
-        }
-    }
-
-    window.filterByQuickTagV63 = function(tag, btnEl) {
-        document.querySelectorAll('#v63-quick-tags-bar .quick-tag-chip').forEach(b => b.classList.remove('active'));
-        if (btnEl) btnEl.classList.add('active');
-        window.renderProducts(false);
-        document.querySelectorAll('#products-container .product-card').forEach(card => {
-            let txt = card.innerText || '';
-            if (tag === 'discount' && !card.querySelector('.discount-badge')) card.style.display = 'none';
-            if (tag === 'instock' && txt.includes('نفدت الكمية')) card.style.display = 'none';
-            if (tag === 'under500') {
-                let pEl = card.querySelector('.price');
-                let num = pEl ? parseInt(pEl.innerText.replace(/\D/g, '')) : 9999;
-                if (num >= 500) card.style.display = 'none';
-            }
-        });
-    };
-
-    const domV63Observer = new MutationObserver(() => {
-        injectAllV63Elements();
-        window.renderCustomerMembershipTier();
-
-        if (!isCurrentUserAdmin && !window.adminBackupSession) return;
-
-        // 1. زر الدخول لحساب العميل داخل الشات النشط
-        if (storeSettings.enableImpersonateInChat !== false && activeAdminChatId) {
-            let chatHeader = document.getElementById('active-chat-user');
-            if (chatHeader && !document.getElementById('btn-v63-imp-active-chat')) {
-                let cname = chatHeader.textContent || '';
-                chatHeader.insertAdjacentHTML('afterend', `<button type="button" id="btn-v63-imp-active-chat" class="impersonate-user-btn" style="margin-right:8px;" onclick="window.loginAsCustomerAccount('${window.escapeHTML(activeAdminChatId)}', '${window.escapeHTML(cname)}')">🔑 دخول لحساب العميل</button>`);
-            }
-        }
-
-        // 2. زر الدخول لحساب العميل داخل صفحة العملاء (👥)
-        if (storeSettings.enableImpersonateInUsers !== false) {
-            document.querySelectorAll('#admin-users-container .admin-msg-card').forEach(card => {
-                if (card.querySelector('.impersonate-user-btn')) return;
-                let oc = card.getAttribute('onclick') || '';
-                let m = oc.match(/showUserHistory\('([^']+)',\s*'([^']*)'\)/);
-                if (m) {
-                    let btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'impersonate-user-btn';
-                    btn.style.marginTop = '8px';
-                    btn.innerHTML = '🔑 دخول لحساب العميل وتصفحه بالكامل';
-                    btn.onclick = (ev) => {
-                        ev.stopPropagation();
-                        window.loginAsCustomerAccount(m[1], m[2]);
-                    };
-                    card.appendChild(btn);
+        // 6. إضافات الأقسام الـ 8 (الفلاتر السريعة + نسخ المنتج والمعاينة + مستوى العضوية + المفضلة والسلة + الشات + الإعدادات)
+        window.filterByQuickTag = function(tag, btnEl) {
+            document.querySelectorAll('#v64-quick-tags-bar .quick-tag-chip').forEach(b => b.classList.remove('active'));
+            if (btnEl) btnEl.classList.add('active');
+            window.renderProducts(false);
+            document.querySelectorAll('#products-container .product-card').forEach(card => {
+                let txt = card.innerText || '';
+                if (tag === 'discount' && !card.querySelector('.discount-badge')) card.style.display = 'none';
+                if (tag === 'instock' && txt.includes('نفدت الكمية')) card.style.display = 'none';
+                if (tag === 'under500') {
+                    let pEl = card.querySelector('.price');
+                    let num = pEl ? parseInt(pEl.innerText.replace(/\D/g, '')) : 9999;
+                    if (num >= 500) card.style.display = 'none';
                 }
             });
-        }
+        };
 
-        // 3. زر الدخول لحساب العميل داخل كروت غرفة العمل (💼 العمل)
-        document.querySelectorAll('#admin-work-stream-container .work-event-card').forEach(card => {
-            if (card.querySelector('.impersonate-user-btn')) return;
-            let actionsBar = card.querySelector('.work-inline-actions');
-            if (!actionsBar) return;
-
-            let replyInp = card.querySelector('input[id^="wk-reply-inp-"]');
-            if (replyInp && storeSettings.enableImpersonateInChat !== false) {
-                let chatId = replyInp.id.replace('wk-reply-inp-', '');
-                let b = document.createElement('button');
-                b.type = 'button';
-                b.className = 'impersonate-user-btn';
-                b.innerHTML = '🔑 دخول لحساب العميل';
-                b.onclick = () => window.loginAsCustomerAccount(chatId, '');
-                actionsBar.appendChild(b);
-            } else if (storeSettings.enableImpersonateInUsers !== false) {
-                let modalBtn = card.querySelector('button[onclick*="openAdminOrderModal"]');
-                if (modalBtn) {
-                    let m = (modalBtn.getAttribute('onclick') || '').match(/openAdminOrderModal\('([^']+)'\)/);
-                    if (m) {
-                        let ord = adminOrdersArray.find(o => o.id === m[1]);
-                        if (ord) {
-                            let targetId = ord.userId || ord.customerEmail || (ord.phones && ord.phones.primary) || '';
-                            let b = document.createElement('button');
-                            b.type = 'button';
-                            b.className = 'impersonate-user-btn';
-                            b.innerHTML = '🔑 دخول لحساب العميل';
-                            b.onclick = () => window.loginAsCustomerAccount(targetId, ord.customerName || '');
-                            actionsBar.appendChild(b);
-                        }
-                    }
-                }
+        window.duplicateCurrentProductForm = function() {
+            let idEl = document.getElementById('edit-product-id');
+            let nameEl = document.getElementById('product-name');
+            if (!nameEl || !nameEl.value.trim()) {
+                window.showToast('اختر منتجاً للتعديل أولاً أو اكتب بيانات المنتج لنسخه', 'info');
+                return;
             }
+            if (idEl) idEl.value = '';
+            nameEl.value = nameEl.value.trim() + ' (نسخة جديدة)';
+            let titleEl = document.getElementById('admin-product-title');
+            if (titleEl) titleEl.innerHTML = '📑 نسخ كمنتج جديد (اضغط حفظ للإضافة)';
+            let subBtn = document.getElementById('btn-submit-product');
+            if (subBtn) subBtn.textContent = 'حفظ النسخة الجديدة ➕';
+            window.updateLiveProductPreview();
+            window.showToast('📑 تم تجهيز نسخة من المنتج! عدّل السعر أو الحجم ثم اضغط حفظ.', 'success');
+        };
+
+        window.updateLiveProductPreview = function() {
+            let cont = document.getElementById('live-product-preview-content');
+            if (!cont) return;
+            let name = (document.getElementById('product-name') || {}).value || 'اسم المنتج';
+            let price = (document.getElementById('product-price') || {}).value || '250';
+            let oldPrice = (document.getElementById('product-old-price') || {}).value || '';
+            let cat = (document.getElementById('product-category') || {}).value || 'زيت زيتون';
+            let badge = (document.getElementById('product-special-badge') || {}).value || '';
+            cont.innerHTML = `
+                <div style="display:flex; align-items:center; gap:12px; background:var(--panel-bg); padding:10px; border-radius:10px; border:1px solid var(--border-color);">
+                    <img src="1000392409.jpeg" style="width:55px; height:55px; border-radius:8px; object-fit:cover;">
+                    <div style="flex:1;">
+                        <span style="font-size:0.72rem; background:var(--primary); color:#fff; padding:2px 8px; border-radius:10px;">${window.escapeHTML(cat)}</span>
+                        ${badge ? `<span style="font-size:0.72rem; background:var(--secondary); color:#fff; padding:2px 8px; border-radius:10px; margin-right:4px;">${window.escapeHTML(badge)}</span>` : ''}
+                        <h4 style="margin:4px 0 2px 0; color:var(--primary);">${window.escapeHTML(name)}</h4>
+                        <div style="font-weight:bold; color:var(--secondary);">
+                            ${oldPrice && Number(oldPrice) > Number(price) ? `<del style="color:#888; font-size:0.8rem; margin-left:5px;">${oldPrice} ج</del>` : ''}
+                            <span>${price} ج</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+        ['product-name', 'product-price', 'product-old-price', 'product-category', 'product-special-badge'].forEach(id => {
+            let el = document.getElementById(id);
+            if (el) el.addEventListener('input', window.updateLiveProductPreview);
         });
 
-        // 4. زر رفض الاسترجاع مع ذكر السبب في كروت الاسترجاع
-        document.querySelectorAll('#admin-returns-container .admin-msg-card').forEach(card => {
-            if (card.querySelector('.v63-reject-return-btn')) return;
-            let appBtn = card.querySelector('button[onclick*="approveReturn"]');
-            if (appBtn) {
-                let m = (appBtn.getAttribute('onclick') || '').match(/approveReturn\('([^']+)',\s*'([^']*)'\)/);
-                if (m) {
-                    appBtn.insertAdjacentHTML('afterend', `<button type="button" class="btn btn-danger v63-reject-return-btn" style="margin-top:6px; width:100%;" onclick="window.rejectReturnWithReason('${m[1]}', '${m[2]}')">❌ رفض الاسترجاع مع ذكر السبب</button>`);
-                }
+        // مستوى عضوية العميل داخل صفحة حسابه الشخصي (يُحسب عند فتح صفحة الحساب فقط بدون أي حلقات تكرار!)
+        const origShowProfilePanelV62 = window.showProfilePanel;
+        window.showProfilePanel = function() {
+            origShowProfilePanelV62();
+            let profContent = document.getElementById('profile-content');
+            if (!profContent || storeSettings.enableMembershipTiers === false) return;
+            let tierBox = document.getElementById('v64-membership-tier-box');
+            if (!tierBox) {
+                tierBox = document.createElement('div');
+                tierBox.id = 'v64-membership-tier-box';
+                tierBox.className = 'membership-tier-card';
+                profContent.insertBefore(tierBox, profContent.firstChild);
             }
-        });
-    });
+            let orders = window.customerOrdersArray || [];
+            let totalSpent = orders.filter(o => !String(o.status || '').includes('لغى') && !String(o.status || '').includes('رفض'))
+                .reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
 
-    domV63Observer.observe(document.body, { childList: true, subtree: true });
-    injectAllV63Elements();
-})();
+            let tierName = '🥈 عضوية فضية (عميل مميز)';
+            let nextMsg = `باقي لك ${Math.max(0, 1500 - totalSpent)} ج للترقية إلى 🥇 العضوية الذهبية!`;
+            if (totalSpent >= 3000) {
+                tierName = '💎 عضوية الماس VIP (أعلى مستوى بالمتجر)';
+                nextMsg = '🎉 تتمتع بأولوية الشحن السريع والهدايا الحصرية!';
+            } else if (totalSpent >= 1500) {
+                tierName = '🥇 عضوية ذهبية';
+                nextMsg = `باقي لك ${Math.max(0, 3000 - totalSpent)} ج للترقية إلى 💎 عضوية VIP!`;
+            }
+            tierBox.innerHTML = `
+                <div style="font-size:1.02rem; font-weight:900; color:var(--primary);">${tierName}</div>
+                <div style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;">إجمالي مشترياتك: <strong>${totalSpent} ج</strong> • ${nextMsg}</div>
+            `;
+        };
+
+        window.moveAllWishlistToCart = function() {
+            if (!wishlist || wishlist.length === 0) {
+                window.showToast('قائمة المفضلة فارغة حالياً', 'info');
+                return;
+            }
+            let count = 0;
+            wishlist.forEach(pid => {
+                let p = products.find(x => x.id === pid);
+                if (p && (p.stock === undefined || p.stock === "" || Number(p.stock) > 0)) {
+                    let img = (p.images && p.images[0]) ? p.images[0] : (p.imageUrl || '1000392409.jpeg');
+                    window.addToCart(p.id, p.name, p.price, img, '');
+                    count++;
+                }
+            });
+            if (count > 0) {
+                window.showToast(`🛒 تم نقل ${count} منتجات من المفضلة إلى السلة بنجاح!`, 'success');
+                window.showPanel('cart');
+            }
+        };
+
+        window.clearEntireCart = function() {
+            if (!cart || cart.length === 0) return;
+            if (!confirm('هل تريد تفريغ سلة المشتريات بالكامل؟')) return;
+            cart = [];
+            localStorage.setItem('cart', JSON.stringify(cart));
+            window.updateCartUI();
+            window.showToast('🗑️ تم تفريغ السلة بنجاح', 'info');
+        };
+
+        window.sendCustomerGpsInChat = function() {
+            if (!currentUser) { window.showToast('يرجى تسجيل الدخول أولاً', 'error'); return; }
+            if (!navigator.geolocation) { window.showToast('الجهاز لا يدعم مشاركة الموقع', 'error'); return; }
+            window.showToast('📍 جاري تحديد موقعك لإرساله في المحادثة...', 'info');
+            navigator.geolocation.getCurrentPosition((pos) => {
+                let url = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                let inp = document.getElementById('support-message');
+                if (inp) {
+                    inp.value = `📍 موقعي الجغرافي للتوصيل: ${url}`;
+                    let f = document.getElementById('support-form');
+                    if (f) f.requestSubmit();
+                }
+            }, () => window.showToast('يرجى تفعيل الـ GPS في هاتفك', 'error'));
+        };
+
+        window.filterChatMessages = function(queryStr, containerId) {
+            let cont = document.getElementById(containerId);
+            if (!cont) return;
+            let q = String(queryStr || '').trim().toLowerCase();
+            cont.querySelectorAll('.chat-msg-wrapper').forEach(w => {
+                let txt = (w.innerText || '').toLowerCase();
+                w.style.display = (!q || txt.includes(q)) ? '' : 'none';
+            });
+        };
+
+        window.exportAllProductsCSV = function() {
+            if (!products || products.length === 0) { window.showToast('لا توجد منتجات لتصديرها', 'error'); return; }
+            let csv = "ID,اسم المنتج,السعر,السعر قبل الخصم,التكلفة,القسم,المخزون,الشارة\n";
+            products.forEach(p => {
+                csv += `"${p.id}","${String(p.name || '').replace(/"/g, '""')}","${p.price || 0}","${p.oldPrice || ''}","${p.costPrice || 0}","${p.category || ''}","${p.stock !== undefined ? p.stock : ''}","${p.specialBadge || ''}"\n`;
+            });
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Products_Export_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+            window.showToast('📊 تم تحميل شيت إكسيل لجميع المنتجات بنجاح!', 'success');
+        };
+
+        window.applyCustomBrandColors = function(primaryHex, secondaryHex) {
+            if (primaryHex) document.documentElement.style.setProperty('--primary', primaryHex);
+            if (secondaryHex) document.documentElement.style.setProperty('--secondary', secondaryHex);
+        };
+
+        const prevApplySettingsV62 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV62();
+            window.updateInstallPwaButtonVisibility();
+            window.renderHeroSlider();
+            if (isCurrentUserAdmin) {
+                let setC = (id, val, def = true) => { let el = document.getElementById(id); if (el) el.checked = val !== undefined ? Boolean(val) : def; };
+                setC('setting-enable-impersonate-chat', storeSettings.enableImpersonateInChat, true);
+                setC('setting-enable-impersonate-users', storeSettings.enableImpersonateInUsers, true);
+                setC('setting-enable-quick-tag-filters', storeSettings.enableQuickTagFilters, true);
+                setC('setting-enable-membership-tiers', storeSettings.enableMembershipTiers, true);
+            }
+            let qBar = document.getElementById('v64-quick-tags-bar');
+            if (qBar) qBar.style.display = storeSettings.enableQuickTagFilters !== false ? 'flex' : 'none';
+        };
+
+        const prevSaveSettingsV62 = window.saveSettings;
+        window.saveSettings = async function() {
+            const getC = (id, def = true) => { let el = document.getElementById(id); return el ? el.checked : def; };
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    enableImpersonateInChat: getC('setting-enable-impersonate-chat', true),
+                    enableImpersonateInUsers: getC('setting-enable-impersonate-users', true),
+                    enableQuickTagFilters: getC('setting-enable-quick-tag-filters', true),
+                    enableMembershipTiers: getC('setting-enable-membership-tiers', true)
+                });
+            } catch (e) {}
+            await prevSaveSettingsV62();
+        };
