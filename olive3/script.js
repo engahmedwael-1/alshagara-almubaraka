@@ -8359,3 +8359,624 @@ window.showUserHistory = function(userId, userName) {
             "الفترة المفضلة لاستلام الطلب:": "Preferred Delivery Time Slot:",
             "تغليف الطلب كهدية فاخرة مع كارت إهداء مطبوع": "Wrap Order as a Luxury Gift with Printed Card"
         });
+
+
+        // =========================================================================
+        // === النسخة V61: تفاصيل وتصفير الإحصائيات المربوطة + بطاقات الزوار + الحماية والـ SEO ===
+        // =========================================================================
+
+        // 1. التصفير المستقل لكل بطاقة إحصائية (الشهر / اليوم / الزيارات / الطلبات / الأرباح)
+        window.verifyFounderPinOrConfirm = async function(actionLabel) {
+            let pin = prompt(`أدخل رمز الأمان للمؤسس لـ (${actionLabel}) 🔄:`);
+            if (!pin) return false;
+            let hashed = await window.hashString(window.toEngDigits(pin.trim()));
+            if (hashed === "7a2ec40ff8a1247c532309355f798a779e00acff579c63eec3636ffb2902c1ac") {
+                return true;
+            }
+            window.showToast('رمز الأمان غير صحيح!', 'error');
+            return false;
+        };
+
+        window.resetAdminMonthlyComparison = async function() {
+            if (!(await window.verifyFounderPinOrConfirm('تصفير مبيعات وأرباح هذا الشهر فقط'))) return;
+            try {
+                let newResetDate = new Date().toISOString();
+                storeSettings.monthlyComparisonResetDate = newResetDate;
+                await setDoc(doc(db, 'settings', 'main'), { monthlyComparisonResetDate: newResetDate }, { merge: true });
+                window.renderGrowthComparisonReport();
+                window.recordAdminAuditLog('تصفير عداد مبيعات هذا الشهر');
+                window.showToast('تم تصفير مبيعات هذا الشهر وتبدأ من الصفر الآن 🔄', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء التصفير', 'error');
+            }
+        };
+
+        window.resetAdminDailyComparison = async function() {
+            if (!(await window.verifyFounderPinOrConfirm('تصفير مبيعات اليوم فقط'))) return;
+            try {
+                let newResetDate = new Date().toISOString();
+                storeSettings.dailyComparisonResetDate = newResetDate;
+                await setDoc(doc(db, 'settings', 'main'), { dailyComparisonResetDate: newResetDate }, { merge: true });
+                window.renderGrowthComparisonReport();
+                window.recordAdminAuditLog('تصفير عداد مبيعات اليوم');
+                window.showToast('تم تصفير مبيعات اليوم وتبدأ من الصفر الآن 🔄', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء التصفير', 'error');
+            }
+        };
+
+        window.resetAdminVisitsCount = async function() {
+            if (!(await window.verifyFounderPinOrConfirm('تصفير عداد الزيارات فقط'))) return;
+            try {
+                await setDoc(doc(db, 'settings', 'stats'), { visits: 0, visitsResetAt: new Date().toISOString() }, { merge: true });
+                let sEl = document.getElementById('stat-visits');
+                if (sEl) sEl.textContent = '0';
+                window.recordAdminAuditLog('تصفير عداد الزيارات');
+                window.showToast('تم تصفير عداد الزيارات بنجاح 🔄', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء التصفير', 'error');
+            }
+        };
+
+        // تحديث دالة حساب المقارنة اليومية والشهرية لتحترم تاريخ التصفير المستقل لكل بطاقة!
+        window.renderGrowthComparisonReport = function() {
+            let box = document.getElementById('admin-growth-comparison-box');
+            if (box) box.style.display = storeSettings.enableGrowthReport !== false ? 'grid' : 'none';
+            if (storeSettings.enableGrowthReport === false) return;
+
+            let dailyEl = document.getElementById('stat-daily-comparison');
+            let monthlyEl = document.getElementById('stat-monthly-comparison');
+            if (!dailyEl || !monthlyEl) return;
+
+            let now = new Date();
+            let startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            let startOfYesterday = startOfToday - 86400000;
+            let startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+            let startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+
+            let dailyResetMs = window.parseSafeTimestamp(storeSettings.dailyComparisonResetDate, 0);
+            let monthlyResetMs = window.parseSafeTimestamp(storeSettings.monthlyComparisonResetDate, 0);
+
+            let effectiveTodayStart = Math.max(startOfToday, dailyResetMs);
+            let effectiveMonthStart = Math.max(startOfThisMonth, monthlyResetMs);
+
+            let todayRev = 0, todayCnt = 0;
+            let yestRev = 0, yestCnt = 0;
+            let thisMonthRev = 0, thisMonthCnt = 0;
+            let lastMonthRev = 0, lastMonthCnt = 0;
+
+            (adminOrdersArray || []).forEach(o => {
+                let st = String(o.status || '');
+                if (st.includes('لغى') || st.includes('رفض')) return;
+                let t = window.parseSafeTimestamp(o.orderDate, 0);
+                let amt = Number(o.totalAmount) || 0;
+
+                if (t >= effectiveTodayStart) { todayRev += amt; todayCnt++; }
+                else if (t >= startOfYesterday && t < startOfToday) { yestRev += amt; yestCnt++; }
+
+                if (t >= effectiveMonthStart) { thisMonthRev += amt; thisMonthCnt++; }
+                else if (t >= startOfLastMonth && t < startOfThisMonth) { lastMonthRev += amt; lastMonthCnt++; }
+            });
+
+            dailyEl.innerHTML = `اليوم: <span style="color:#166534;">${todayRev.toLocaleString()} ج</span> (${todayCnt} طلب) <small style="color:var(--text-muted); font-weight:normal;">| الأمس: ${yestRev.toLocaleString()} ج (${yestCnt} طلب)</small>`;
+            monthlyEl.innerHTML = `هذا الشهر: <span style="color:#028090;">${thisMonthRev.toLocaleString()} ج</span> (${thisMonthCnt} طلب) <small style="color:var(--text-muted); font-weight:normal;">| الماضي: ${lastMonthRev.toLocaleString()} ج (${lastMonthCnt} طلب)</small>`;
+        };
+
+        // =========================================================================
+        // === 2. نافذة "📋 التفاصيل" الموحدة للأوردرات وحساباتها مع الحذف الفوري المربوط ===
+        // =========================================================================
+        window.currentDrilldownMode = 'monthly';
+
+        window.getFilteredOrdersForDrilldown = function(mode) {
+            let now = new Date();
+            let startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            let startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+            let revResetMs = window.parseSafeTimestamp(storeSettings.revenueResetDate, 0);
+            let ordResetMs = window.parseSafeTimestamp(storeSettings.ordersResetDate, 0);
+            let monResetMs = window.parseSafeTimestamp(storeSettings.monthlyComparisonResetDate, 0);
+            let dayResetMs = window.parseSafeTimestamp(storeSettings.dailyComparisonResetDate, 0);
+
+            return (adminOrdersArray || []).filter(o => {
+                let st = String(o.status || '');
+                if (st.includes('لغى') || st.includes('رفض')) return false;
+                let t = window.parseSafeTimestamp(o.orderDate, 0);
+
+                if (mode === 'monthly') return t >= Math.max(startOfThisMonth, monResetMs);
+                if (mode === 'daily') return t >= Math.max(startOfToday, dayResetMs);
+                if (mode === 'orders') return t >= ordResetMs;
+                if (mode === 'revenue' || mode === 'net_profit') return t >= revResetMs;
+                return true;
+            });
+        };
+
+        window.openAnalyticsOrdersDrilldown = function(mode) {
+            window.currentDrilldownMode = mode || 'monthly';
+            let modal = document.getElementById('analytics-orders-drilldown-modal');
+            let searchInp = document.getElementById('drilldown-orders-search');
+            if (searchInp) searchInp.value = '';
+            window.renderAnalyticsOrdersDrilldownList();
+            if (modal) modal.style.display = 'flex';
+        };
+
+        window.renderAnalyticsOrdersDrilldownList = function() {
+            let mode = window.currentDrilldownMode || 'monthly';
+            let titleEl = document.getElementById('drilldown-modal-title');
+            let sumEl = document.getElementById('drilldown-modal-summary');
+            let listEl = document.getElementById('drilldown-orders-list');
+            let searchInp = document.getElementById('drilldown-orders-search');
+            if (!listEl) return;
+
+            let titlesMap = {
+                monthly: '📆 تفاصيل أوردرات ومبيعات هذا الشهر',
+                daily: '📅 تفاصيل أوردرات ومبيعات اليوم',
+                orders: '📦 تفاصيل جميع الطلبات المسجلة في العداد',
+                revenue: '💰 تفاصيل الأوردرات المحسوبة في الأرباح',
+                net_profit: '💎 تفاصيل الأوردرات المحسوبة في صافي الربح'
+            };
+            if (titleEl) titleEl.textContent = titlesMap[mode] || '📋 تفاصيل الأوردرات';
+
+            let ordersList = window.getFilteredOrdersForDrilldown(mode);
+            let q = searchInp ? searchInp.value.trim().toLowerCase() : '';
+            if (q) {
+                ordersList = ordersList.filter(o => {
+                    let s = `${o.customerName || ''} ${(o.phones && o.phones.primary) || ''} ${o.totalAmount || ''} ${o.id || ''}`.toLowerCase();
+                    return s.includes(q);
+                });
+            }
+
+            let totalMoney = ordersList.reduce((acc, o) => acc + (Number(o.totalAmount) || 0), 0);
+            if (sumEl) {
+                sumEl.innerHTML = `إجمالي العدد: <strong>${ordersList.length} أوردر</strong> &nbsp;|&nbsp; إجمالي المبلغ المحسوب: <strong>${totalMoney.toLocaleString()} ج</strong>`;
+            }
+
+            if (ordersList.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted);">📭 لا توجد أوردرات مسجلة في هذا العداد حالياً.</div>';
+                return;
+            }
+
+            let html = '';
+            ordersList.forEach(o => {
+                let dObj = new Date(window.parseSafeTimestamp(o.orderDate, Date.now()));
+                let dStr = dObj.toLocaleDateString('ar-EG') + ' — ' + dObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                let itemsTxt = (o.items || []).map(i => `${window.escapeHTML(i.name)} (${i.quantity})`).join(' + ');
+                let phone = (o.phones && o.phones.primary) || '';
+
+                html += `
+                <div class="drilldown-order-row" id="drilldown-row-${o.id}">
+                    <div style="flex:1; min-width:200px;">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <strong style="color:var(--primary); font-size:0.96rem;">👤 ${window.escapeHTML(o.customerName || 'عميل')}</strong>
+                            <span style="background:var(--panel-bg); border:1px solid var(--border-color); padding:1px 7px; border-radius:6px; font-size:0.75rem;">#${o.id.slice(0,6).toUpperCase()}</span>
+                            <span style="font-size:0.78rem; color:#028090; font-weight:bold;">(${window.escapeHTML(o.status || '')})</span>
+                        </div>
+                        <div style="font-size:0.82rem; color:var(--text-muted); margin:4px 0;">
+                            📞 ${window.escapeHTML(phone)} | 📅 ${dStr}
+                        </div>
+                        <div style="font-size:0.82rem; color:var(--text-color);">🛍️ ${itemsTxt}</div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+                        <strong style="color:#166534; font-size:1.1rem; background:#dcfce7; padding:3px 10px; border-radius:8px;">${Number(o.totalAmount || 0).toLocaleString()} ج</strong>
+                        <div style="display:flex; gap:5px;">
+                            <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" onclick="window.openAdminOrderModal('${o.id}')">👁️ عرض</button>
+                            <button type="button" class="btn btn-danger" style="padding:4px 10px; font-size:0.75rem;" onclick="window.deleteOrderFromAnalyticsDrilldown('${o.id}')">🗑️ حذف الأوردر</button>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            listEl.innerHTML = html;
+        };
+
+        // حذف الأوردر من نافذة التفاصيل -> يخصم فلوسه وعدده فوراً من (مبيعات الشهر + الطلبات + الأرباح + صافي الربح) معاً!
+        window.deleteOrderFromAnalyticsDrilldown = async function(orderId) {
+            let ord = (adminOrdersArray || []).find(o => o.id === orderId);
+            let amt = ord ? Number(ord.totalAmount || 0) : 0;
+            let cName = ord ? ord.customerName : '';
+            if (!confirm(`هل أنت متأكد من حذف أوردر (${cName}) بقيمة (${amt} ج) نهائياً؟\nسيتم خصم المبلغ والعدد فوراً من (مبيعات الشهر والطلبات والأرباح) معاً.`)) return;
+
+            try {
+                await deleteDoc(doc(db, 'orders', orderId));
+                adminOrdersArray = (adminOrdersArray || []).filter(o => o.id !== orderId);
+
+                let revResetDate = new Date(storeSettings.revenueResetDate || "2000-01-01T00:00:00.000Z");
+                let ordResetDate = new Date(storeSettings.ordersResetDate || "2000-01-01T00:00:00.000Z");
+                totalGlobalRevenue = 0;
+                totalGlobalOrders = 0;
+                adminOrdersArray.forEach(d => {
+                    if (d.status !== "تم الرفض" && d.status !== "ملغى من العميل ❌" && d.status !== "تم الرفض ❌") {
+                        let orderDate = new Date(d.orderDate);
+                        if (orderDate >= revResetDate) totalGlobalRevenue += Number(d.totalAmount || 0);
+                        if (orderDate >= ordResetDate) totalGlobalOrders++;
+                    }
+                });
+                let so = document.getElementById('stat-orders'); if (so) so.textContent = totalGlobalOrders;
+                let sr = document.getElementById('stat-revenue'); if (sr) sr.textContent = totalGlobalRevenue.toLocaleString() + ' ج';
+
+                window.renderAdminOrdersUI();
+                window.renderGrowthComparisonReport();
+                window.renderNetProfitStat();
+                window.renderAnalyticsOrdersDrilldownList();
+                window.recordAdminAuditLog(`حذف أوردر #${orderId.slice(0,6).toUpperCase()} بقيمة ${amt} ج`);
+                window.showToast(`تم حذف الأوردر وخصم (${amt} ج) من الشهر والطلبات والأرباح معاً ✅`, 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء حذف الأوردر', 'error');
+            }
+        };
+
+        // =========================================================================
+        // === 3. نظام تتبع الزوار التفصيلي وبطاقات الزوار (نوع الهاتف + البريد + السجل بالساعة) ===
+        // =========================================================================
+        window.detectVisitorDeviceDetails = function() {
+            let ua = navigator.userAgent || '';
+            let deviceType = '📱 هاتف ذكي';
+            let modelName = '';
+            let osName = 'غير محدد';
+            let browserName = 'متصفح ويب';
+
+            if (/android/i.test(ua)) {
+                osName = 'Android';
+                let match = ua.match(/Android\s+([\d.]+);\s*([^;)]+)/i);
+                if (match && match[2]) {
+                    modelName = match[2].replace(/Build\/.*$/i, '').trim();
+                }
+                if (/samsung|sm-|gt-/i.test(ua)) deviceType = `📱 هاتف Samsung (${modelName || 'Galaxy'})`;
+                else if (/redmi|xiaomi|mi |poco/i.test(ua)) deviceType = `📱 هاتف Xiaomi/Redmi (${modelName || ''})`;
+                else if (/oppo|cph|rmx|realme/i.test(ua)) deviceType = `📱 هاتف Oppo/Realme (${modelName || ''})`;
+                else if (/huawei|honor/i.test(ua)) deviceType = `📱 هاتف Huawei/Honor (${modelName || ''})`;
+                else if (/infinix|tecno|itel/i.test(ua)) deviceType = `📱 هاتف Infinix/Tecno (${modelName || ''})`;
+                else if (/vivo/i.test(ua)) deviceType = `📱 هاتف Vivo (${modelName || ''})`;
+                else deviceType = `📱 هاتف أندرويد (${modelName || 'Android'})`;
+            } else if (/iPad|iPhone|iPod/.test(ua)) {
+                osName = 'iOS';
+                deviceType = /iPad/.test(ua) ? '📱 جهاز لوحي iPad (Apple)' : '📱 هاتف iPhone (Apple iOS)';
+            } else if (/Windows NT/i.test(ua)) {
+                osName = 'Windows';
+                deviceType = '💻 كمبيوتر / لابتوب (Windows)';
+            } else if (/Macintosh|Mac OS X/i.test(ua)) {
+                osName = 'macOS';
+                deviceType = '💻 كمبيوتر Mac (Apple)';
+            } else if (/Linux/i.test(ua)) {
+                osName = 'Linux';
+                deviceType = '💻 جهاز Linux';
+            }
+
+            if (/Edg\//i.test(ua)) browserName = 'Microsoft Edge';
+            else if (/OPR\/|Opera/i.test(ua)) browserName = 'Opera';
+            else if (/SamsungBrowser/i.test(ua)) browserName = 'متصفح سامسونج';
+            else if (/Chrome\//i.test(ua)) browserName = 'Google Chrome';
+            else if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) browserName = 'Apple Safari';
+            else if (/Firefox\//i.test(ua)) browserName = 'Mozilla Firefox';
+
+            let screenRes = `${window.screen ? window.screen.width : 0}×${window.screen ? window.screen.height : 0}`;
+            return {
+                deviceSummary: deviceType,
+                osName,
+                browserName,
+                screenRes,
+                rawUA: ua.slice(0, 180)
+            };
+        };
+
+        window.getOrCreateVisitorId = function() {
+            let vid = localStorage.getItem('zait_visitor_uid');
+            if (!vid) {
+                vid = 'vis_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+                localStorage.setItem('zait_visitor_uid', vid);
+            }
+            return vid;
+        };
+
+        window.logDetailedStoreVisit = async function(isAuthUpdate = false) {
+            if (storeSettings.enableVisitorTracking === false) return;
+            try {
+                let vid = window.getOrCreateVisitorId();
+                let dev = window.detectVisitorDeviceDetails();
+                let nowIso = new Date().toISOString();
+
+                let email = (currentUser && currentUser.email) ? currentUser.email : '';
+                let name = (currentUser && currentUser.displayName) ? currentUser.displayName : (localStorage.getItem('zait_wheel_saved_name') || (document.getElementById('order-name') && document.getElementById('order-name').value) || 'زائر للمتجر');
+                let phone = (currentUser && currentUser.phoneNumber) ? currentUser.phoneNumber : (localStorage.getItem('zait_wheel_saved_phone') || (document.getElementById('order-phone1') && document.getElementById('order-phone1').value) || '');
+                let trafficSrc = window.getDetectedTrafficSource ? window.getDetectedTrafficSource() : 'مباشر (Direct)';
+
+                let visRef = doc(db, 'site_visitors', vid);
+                let snap = await getDoc(visRef);
+                let existingHistory = (snap.exists() && Array.isArray(snap.data().visitsHistory)) ? snap.data().visitsHistory : [];
+
+                if (!isAuthUpdate || existingHistory.length === 0) {
+                    existingHistory.push({
+                        time: nowIso,
+                        source: trafficSrc,
+                        device: dev.deviceSummary,
+                        browser: dev.browserName
+                    });
+                    if (existingHistory.length > 50) existingHistory = existingHistory.slice(-50);
+                }
+
+                let payload = {
+                    visitorId: vid,
+                    name: name || (snap.exists() ? snap.data().name : 'زائر للمتجر'),
+                    email: email || (snap.exists() ? snap.data().email : 'غير مسجل الدخول'),
+                    phone: phone || (snap.exists() ? snap.data().phone : 'غير مسجل'),
+                    deviceSummary: dev.deviceSummary,
+                    osName: dev.osName,
+                    browserName: dev.browserName,
+                    screenRes: dev.screenRes,
+                    trafficSource: trafficSrc,
+                    lastVisit: nowIso,
+                    visitsCount: existingHistory.length,
+                    visitsHistory: existingHistory
+                };
+                if (!snap.exists()) {
+                    payload.firstVisit = nowIso;
+                }
+                await setDoc(visRef, payload, { merge: true });
+            } catch (e) {}
+        };
+
+        setTimeout(() => {
+            if (!sessionStorage.getItem('zait_detailed_visit_logged')) {
+                sessionStorage.setItem('zait_detailed_visit_logged', 'true');
+                window.logDetailedStoreVisit(false);
+            } else {
+                window.logDetailedStoreVisit(true);
+            }
+        }, 1800);
+
+        onAuthStateChanged(auth, (u) => {
+            if (u) setTimeout(() => window.logDetailedStoreVisit(true), 1000);
+        });
+
+        window.allSiteVisitorsList = [];
+        window.adminVisitorsUnsub = null;
+
+        window.openVisitorsLogModal = function() {
+            let modal = document.getElementById('visitors-log-modal');
+            if (modal) modal.style.display = 'flex';
+            window.loadSiteVisitorsRealtime();
+        };
+
+        window.loadSiteVisitorsRealtime = function() {
+            if (window.adminVisitorsUnsub) return;
+            window.adminVisitorsUnsub = onSnapshot(collection(db, 'site_visitors'), (snap) => {
+                let arr = [];
+                snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+                arr.sort((a, b) => window.parseSafeTimestamp(b.lastVisit, 0) - window.parseSafeTimestamp(a.lastVisit, 0));
+                window.allSiteVisitorsList = arr;
+                window.renderVisitorsCardsList();
+            });
+        };
+
+        window.renderVisitorsCardsList = function() {
+            let cont = document.getElementById('visitors-cards-container');
+            let searchInp = document.getElementById('visitors-log-search');
+            if (!cont) return;
+            let q = searchInp ? searchInp.value.trim().toLowerCase() : '';
+
+            let filtered = (window.allSiteVisitorsList || []).filter(v => {
+                if (!q) return true;
+                let s = `${v.name || ''} ${v.email || ''} ${v.phone || ''} ${v.deviceSummary || ''} ${v.browserName || ''}`.toLowerCase();
+                return s.includes(q);
+            });
+
+            if (filtered.length === 0) {
+                cont.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted);">📭 لا توجد بطاقات زوار مطابقة حالياً.</div>';
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(v => {
+                let dObj = new Date(window.parseSafeTimestamp(v.lastVisit, Date.now()));
+                let dayName = dObj.toLocaleDateString('ar-EG', { weekday: 'long' });
+                let dateStr = dObj.toLocaleDateString('ar-EG');
+                let timeStr = dObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                let isRegistered = v.email && v.email !== 'غير مسجل الدخول';
+
+                html += `
+                <div class="visitor-profile-card" onclick="window.openVisitorProfileDetails('${v.id}')">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+                        <div>
+                            <strong style="color:var(--primary); font-size:0.98rem; text-decoration:underline;">👤 ${window.escapeHTML(v.name || 'زائر للمتجر')}</strong>
+                            <span style="background:${isRegistered ? '#dcfce7' : 'var(--panel-bg)'}; color:${isRegistered ? '#166534' : 'var(--text-muted)'}; padding:2px 8px; border-radius:10px; font-size:0.74rem; font-weight:bold; margin-right:6px;">
+                                ${isRegistered ? '✅ مسجل بالإيميل' : '👀 زائر'}
+                            </span>
+                        </div>
+                        <span style="background:var(--secondary); color:white; padding:2px 9px; border-radius:12px; font-size:0.75rem; font-weight:bold;">
+                            🔄 ${v.visitsCount || 1} زيارة
+                        </span>
+                    </div>
+                    <div style="margin-top:6px; font-size:0.83rem; color:var(--text-color); line-height:1.6;">
+                        <div>${window.escapeHTML(v.deviceSummary || '📱 هاتف ذكي')} • 🌐 ${window.escapeHTML(v.browserName || '')}</div>
+                        <div>📧 <strong>البريد:</strong> ${window.escapeHTML(v.email || 'غير مسجل الدخول')} ${v.phone && v.phone !== 'غير مسجل' ? ` | 📞 <strong>الهاتف:</strong> ${window.escapeHTML(v.phone)}` : ''}</div>
+                        <div style="color:var(--text-muted); font-size:0.79rem;">🕒 <strong>آخر فتح للموقع:</strong> يوم ${dayName} (${dateStr}) — الساعة <strong style="color:var(--danger);">${timeStr}</strong></div>
+                    </div>
+                </div>`;
+            });
+            cont.innerHTML = html;
+        };
+
+        window.openVisitorProfileDetails = function(visId) {
+            let v = (window.allSiteVisitorsList || []).find(x => x.id === visId);
+            if (!v) return;
+            let modal = document.getElementById('visitor-profile-details-modal');
+            let body = document.getElementById('visitor-profile-details-body');
+            if (!modal || !body) return;
+
+            let historyArr = Array.isArray(v.visitsHistory) ? [...v.visitsHistory].reverse() : [];
+            let historyHtml = historyArr.map((h, idx) => {
+                let d = new Date(window.parseSafeTimestamp(h.time, Date.now()));
+                let dayStr = d.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+                let tStr = d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                return `<li style="margin-bottom:6px; padding-bottom:5px; border-bottom:1px dashed var(--border-color);">
+                    <strong>زيارة #${historyArr.length - idx}:</strong> يوم ${dayStr} — ⏰ الساعة <strong style="color:#028090;">${tStr}</strong><br>
+                    <small style="color:var(--text-muted);">${window.escapeHTML(h.device || v.deviceSummary || '')} | المصدر: ${window.escapeHTML(h.source || v.trafficSource || 'مباشر')}</small>
+                </li>`;
+            }).join('');
+
+            let firstD = v.firstVisit ? new Date(window.parseSafeTimestamp(v.firstVisit, Date.now())).toLocaleString('ar-EG') : 'غير محدد';
+            let lastD = v.lastVisit ? new Date(window.parseSafeTimestamp(v.lastVisit, Date.now())).toLocaleString('ar-EG') : 'غير محدد';
+
+            body.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--border-color); padding-bottom:8px; margin-bottom:10px;">
+                    <strong style="font-size:1.05rem; color:var(--primary);">👤 ${window.escapeHTML(v.name || 'زائر للمتجر')}</strong>
+                    <button type="button" class="btn btn-danger" style="padding:4px 10px; font-size:0.75rem;" onclick="window.deleteVisitorProfileCard('${v.id}')">🗑️ حذف البطاقة</button>
+                </div>
+                <div>📧 <strong>البريد الإلكتروني:</strong> <span style="color:#028090; font-weight:bold;">${window.escapeHTML(v.email || 'غير مسجل الدخول')}</span></div>
+                <div>📞 <strong>رقم الهاتف المسجل:</strong> <span style="font-weight:bold;">${window.escapeHTML(v.phone || 'غير متوفر')}</span></div>
+                <div>📱 <strong>نوع الهاتف / الجهاز:</strong> <strong style="color:var(--secondary);">${window.escapeHTML(v.deviceSummary || 'غير محدد')}</strong></div>
+                <div>⚙️ <strong>نظام التشغيل والمتصفح:</strong> ${window.escapeHTML(v.osName || '')} — ${window.escapeHTML(v.browserName || '')} (الشاشة: ${window.escapeHTML(v.screenRes || '')})</div>
+                <div>🌐 <strong>مصدر الدخول للمتجر:</strong> ${window.escapeHTML(v.trafficSource || 'مباشر (Direct)')}</div>
+                <div>🔢 <strong>إجمالي مرات فتح الموقع:</strong> <strong style="color:#166534;">${v.visitsCount || historyArr.length || 1} مرة</strong></div>
+                <div>🕒 <strong>أول زيارة للمتجر:</strong> ${firstD}</div>
+                <div>🕒 <strong>آخر زيارة للمتجر:</strong> <strong style="color:var(--danger);">${lastD}</strong></div>
+                <hr style="border:0; border-top:1px dashed var(--border-color); margin:10px 0;">
+                <strong style="color:var(--primary); display:block; margin-bottom:6px;">📜 سجل كل زيارات هذا العميل بالتاريخ والساعة (${historyArr.length}):</strong>
+                <ul style="margin:0; padding-right:18px; max-height:200px; overflow-y:auto; font-size:0.84rem;">
+                    ${historyHtml || '<li>تم تسجيل الزيارة الحالية</li>'}
+                </ul>
+            `;
+            modal.style.display = 'flex';
+        };
+
+        window.deleteVisitorProfileCard = async function(visId) {
+            if (!confirm('هل تريد حذف بطاقة وسجل هذا الزائر؟')) return;
+            try {
+                await deleteDoc(doc(db, 'site_visitors', visId));
+                document.getElementById('visitor-profile-details-modal').style.display = 'none';
+                window.showToast('تم حذف بطاقة الزائر بنجاح', 'info');
+            } catch (e) {}
+        };
+
+        // =========================================================================
+        // === 4. أكواد الـ SEO المتقدمة (JSON-LD Schema + Dynamic Sitemap) والحماية ===
+        // =========================================================================
+        window.updateDynamicJsonLdSchema = function() {
+            let scriptEl = document.getElementById('dynamic-json-ld-schema');
+            if (!scriptEl || !products || products.length === 0) return;
+            let visibleProds = products.filter(p => !p.isHidden).slice(0, 20);
+            let schemaObj = {
+                "@context": "https://schema.org",
+                "@type": "ItemList",
+                "name": "منتجات متجر زيت الشجرة المباركة - زيت زيتون سيناوي بكر ممتاز",
+                "itemListElement": visibleProds.map((p, idx) => ({
+                    "@type": "ListItem",
+                    "position": idx + 1,
+                    "item": {
+                        "@type": "Product",
+                        "name": p.name,
+                        "description": p.description || "زيت زيتون سيناوي بكر ممتاز عصره أولى على البارد طبيعي 100%",
+                        "image": (p.images && p.images[0]) || p.imageUrl || "1000392409.jpeg",
+                        "brand": { "@type": "Brand", "name": "زيت الشجرة المباركة" },
+                        "offers": {
+                            "@type": "Offer",
+                            "priceCurrency": "EGP",
+                            "price": Number(p.price) || 0,
+                            "availability": (p.stock !== undefined && p.stock !== "" && Number(p.stock) <= 0) ? "https://schema.org/OutOfStock" : "https://schema.org/InStock"
+                        },
+                        "aggregateRating": {
+                            "@type": "AggregateRating",
+                            "ratingValue": "4.9",
+                            "reviewCount": (p.reviews && p.reviews.length > 0) ? p.reviews.length : 15
+                        }
+                    }
+                }))
+            };
+            scriptEl.textContent = JSON.stringify(schemaObj);
+        };
+
+        window.downloadDynamicSitemapXML = function() {
+            let baseUrl = window.location.origin + window.location.pathname.replace(/index\.html$/i, '');
+            if (!baseUrl.endsWith('/')) baseUrl += '/';
+            let today = new Date().toISOString().slice(0, 10);
+            let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+            xml += `  <url>\n    <loc>${baseUrl}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
+            (products || []).filter(p => !p.isHidden).forEach(p => {
+                let safeSlug = p.name.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9\u0600-\u06FF-]/g, '');
+                let pUrl = `${baseUrl}?item=${encodeURIComponent(safeSlug)}&amp;id=${encodeURIComponent(p.id)}`;
+                xml += `  <url>\n    <loc>${pUrl}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.85</priority>\n  </url>\n`;
+            });
+            xml += `</urlset>`;
+            let blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
+            let a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'sitemap.xml';
+            a.click();
+            window.showToast('تم توليد وتحميل ملف sitemap.xml المحدث بجميع منتجاتك 🗺️✅', 'success');
+        };
+
+        // حماية الطلبات من السبام والطلبات الوهمية المتكررة (Anti-Spam Rate Limiter)
+        const origProcessOrderV60 = window.processOrder;
+        window.processOrder = async function(method) {
+            if (storeSettings.enableAntiSpam !== false) {
+                let lastOrdTs = Number(localStorage.getItem('zait_last_order_submit_ts') || 0);
+                if (Date.now() - lastOrdTs < 35000) {
+                    window.showToast('⏳ تم استلام طلبك بالفعل! يرجى الانتظار قليلاً قبل إرسال طلب آخر.', 'error');
+                    return;
+                }
+                let p1 = (document.getElementById('order-phone1') || {}).value || '';
+                let cleanP1 = window.toEngDigits(p1).replace(/\D/g, '');
+                if (cleanP1.length < 10 || cleanP1.length > 14) {
+                    window.showToast('📞 يرجى إدخال رقم هاتف صحيح مكون من 11 رقماً لتأكيد التوصيل', 'error');
+                    return;
+                }
+                localStorage.setItem('zait_last_order_submit_ts', String(Date.now()));
+            }
+            window.logDetailedStoreVisit(true);
+            return await origProcessOrderV60(method);
+        };
+
+        // القفل التلقائي للإعدادات المحمية بعد 15 دقيقة من عدم النشاط
+        window.adminInactivityTimer = null;
+        window.resetAdminInactivityWatchdog = function() {
+            if (window.adminInactivityTimer) clearTimeout(window.adminInactivityTimer);
+            if (storeSettings.enableAutoLockAdmin === false) return;
+            window.adminInactivityTimer = setTimeout(() => {
+                let rContent = document.getElementById('roles-content-section');
+                let rAuth = document.getElementById('roles-auth-section');
+                if (rContent && rAuth && rContent.style.display === 'block') {
+                    rContent.style.display = 'none';
+                    rAuth.style.display = 'block';
+                    window.showToast('🔒 تم قفل الإعدادات المحمية تلقائياً للأمان لعدم النشاط', 'info');
+                }
+            }, 15 * 60 * 1000);
+        };
+        ['click', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, window.resetAdminInactivityWatchdog, { passive: true }));
+
+        const origRenderProductsV60 = window.renderProducts;
+        window.renderProducts = function(scrollToTop = true) {
+            origRenderProductsV60(scrollToTop);
+            window.updateDynamicJsonLdSchema();
+        };
+
+        const prevApplySettingsV60 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV60();
+            if (isCurrentUserAdmin) {
+                let setC = (id, val, def = true) => { let el = document.getElementById(id); if (el) el.checked = val !== undefined ? Boolean(val) : def; };
+                setC('setting-enable-visitor-tracking', storeSettings.enableVisitorTracking, true);
+                setC('setting-enable-anti-spam', storeSettings.enableAntiSpam, true);
+                setC('setting-enable-auto-lock-admin', storeSettings.enableAutoLockAdmin, true);
+                window.loadSiteVisitorsRealtime();
+            }
+        };
+
+        const prevSaveSettingsV60 = window.saveSettings;
+        window.saveSettings = async function() {
+            const getC = (id, def = true) => { let el = document.getElementById(id); return el ? el.checked : def; };
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    enableVisitorTracking: getC('setting-enable-visitor-tracking', true),
+                    enableAntiSpam: getC('setting-enable-anti-spam', true),
+                    enableAutoLockAdmin: getC('setting-enable-auto-lock-admin', true)
+                });
+            } catch (e) {}
+            await prevSaveSettingsV60();
+        };
+
+        Object.assign(window.FULL_AR_TO_EN, {
+            "🔄 تصفير اليوم": "🔄 Reset Today",
+            "🔄 تصفير أرباح الشهر": "🔄 Reset Month",
+            "🔄 تصفير": "🔄 Reset",
+            "بطاقات وسجل زوار المتجر بالتفصيل": "Store Visitors Profiles & Activity Log",
+            "بطاقة بيانات الزائر وسجل تصفحه": "Visitor Profile & Browsing History",
+            "تفاصيل الأوردرات وحساباتها": "Orders & Revenue Breakdown"
+        });

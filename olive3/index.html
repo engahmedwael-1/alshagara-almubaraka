@@ -39,6 +39,23 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="style.css">
+    <script type="application/ld+json" id="dynamic-json-ld-schema">
+    {
+      "@context": "https://schema.org",
+      "@type": "Store",
+      "name": "متجر زيت الشجرة المباركة",
+      "description": "أفضل زيت زيتون سيناوي بكر ممتاز عصره أولى على البارد طبيعي 100% من مزارع سيناء",
+      "image": "1000392409.jpeg",
+      "priceRange": "$$"
+    }
+    </script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(() => {});
+        });
+      }
+    </script>
 </head>
 <body class="compact-ui">
     <div id="social-proof-toast" class="social-proof-toast">
@@ -462,6 +479,39 @@
             <label style="font-size:0.84rem; font-weight:bold; color:var(--primary);">🏠 العنوان التفصيلي أو ملاحظات التوصيل:</label>
             <textarea id="edit-ord-addr" rows="2" style="margin-bottom:10px;"></textarea>
             <button type="button" class="btn btn-full" style="background:#028090;" onclick="window.saveCustomerOrderEdits()">💾 <span class="translatable">حفظ التعديلات على الطلب</span></button>
+        </div>
+    </div>
+
+    <!-- نافذة تفاصيل الأوردرات المربوطة بالإحصائيات (الطلبات / الأرباح / مبيعات الشهر) مع الحذف الفوري المربوط -->
+    <div id="analytics-orders-drilldown-modal" class="modal-overlay" style="z-index: 5900;">
+        <div class="modal-content" style="max-width: 620px; text-align: right; border: 2px solid var(--secondary); padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('analytics-orders-drilldown-modal').style.display='none'">X</button>
+            <h2 id="drilldown-modal-title" style="color:var(--primary); margin:0 0 6px 0; text-align:center;">📋 تفاصيل الأوردرات وحساباتها</h2>
+            <div id="drilldown-modal-summary" style="background:linear-gradient(90deg, #dcfce7, #bbf7d0); color:#166534; padding:10px 14px; border-radius:10px; font-weight:900; text-align:center; margin-bottom:12px; font-size:0.95rem;"></div>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:0 0 10px 0; text-align:center;">💡 عند حذف أي أوردر من هنا يتم خصم قيمته فوراً من (مبيعات الشهر + الطلبات + الأرباح) معاً:</p>
+            <input type="text" id="drilldown-orders-search" placeholder="🔍 ابحث باسم العميل أو رقم الهاتف أو القيمة..." oninput="window.renderAnalyticsOrdersDrilldownList()" style="margin-bottom:10px;">
+            <div id="drilldown-orders-list" style="max-height: 370px; overflow-y: auto; padding-right: 4px;"></div>
+        </div>
+    </div>
+
+    <!-- نافذة سجل وبطاقات جميع الزوار الذين فتحوا الموقع (Visitors Log Modal) -->
+    <div id="visitors-log-modal" class="modal-overlay" style="z-index: 5910;">
+        <div class="modal-content" style="max-width: 620px; text-align: right; border: 2px solid #028090; padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('visitors-log-modal').style.display='none'">X</button>
+            <h2 style="color:#028090; margin:0 0 6px 0; text-align:center;">👥 بطاقات وسجل زوار المتجر بالتفصيل</h2>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin:0 0 10px 0; text-align:center;">اضغط على بطاقة أي عميل أو زائر لعرض صفحته الكاملة (نوع الهاتف، البريد، وسجل كل مرة فتح فيها الموقع بالساعة والدقيقة):</p>
+            <input type="text" id="visitors-log-search" placeholder="🔍 ابحث في الزوار (بالاسم، الإيميل، رقم الهاتف، أو نوع الموبايل)..." oninput="window.renderVisitorsCardsList()" style="margin-bottom:10px;">
+            <div id="visitors-cards-container" style="max-height: 390px; overflow-y: auto; padding-right: 4px;">جاري تحميل بطاقات الزوار...</div>
+        </div>
+    </div>
+
+    <!-- نافذة بطاقة وصفحة تفاصيل الزائر الكاملة وسجل زياراته (Visitor Profile Details Page) -->
+    <div id="visitor-profile-details-modal" class="modal-overlay" style="z-index: 5920;">
+        <div class="modal-content" style="max-width: 520px; text-align: right; border: 3px solid var(--primary); padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('visitor-profile-details-modal').style.display='none'">X</button>
+            <h2 style="color:var(--primary); margin:0 0 10px 0; text-align:center;">🪪 بطاقة بيانات الزائر وسجل تصفحه</h2>
+            <div id="visitor-profile-details-body" style="background:var(--input-bg); padding:14px; border-radius:12px; border:1px solid var(--border-color); line-height:1.85; font-size:0.9rem;"></div>
+            <button type="button" class="btn btn-outline" style="width:100%; margin-top:12px;" onclick="document.getElementById('visitor-profile-details-modal').style.display='none'">🔙 العودة لقائمة الزوار</button>
         </div>
     </div>
 
@@ -1183,22 +1233,58 @@
                     <div id="admin-traffic-sources-list" style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:10px; font-size:0.88rem;">جاري الحساب...</div>
                 </div>
             </div>
-            <!-- تقرير المقارنة اليومي والشهري (Daily & Monthly Growth Comparison) -->
+            <!-- تقرير المقارنة اليومي والشهري (مع أزرار التفاصيل والتصفير المستقل) -->
             <div id="admin-growth-comparison-box" class="growth-comparison-grid">
                 <div class="growth-card">
                     <span style="font-size:0.8rem; color:var(--text-muted); font-weight:bold;">📅 مبيعات اليوم مقارنة بالأمس</span>
                     <div id="stat-daily-comparison" style="font-size:1.05rem; font-weight:900; color:var(--primary); margin-top:4px;">جاري الحساب...</div>
+                    <div class="stat-card-actions" style="justify-content:flex-start;">
+                        <button type="button" class="stat-mini-btn" onclick="window.openAnalyticsOrdersDrilldown('daily')">📋 التفاصيل</button>
+                        <button type="button" class="stat-mini-btn reset-btn" onclick="window.resetAdminDailyComparison()">🔄 تصفير اليوم</button>
+                    </div>
                 </div>
                 <div class="growth-card" style="border-right-color: var(--secondary);">
                     <span style="font-size:0.8rem; color:var(--text-muted); font-weight:bold;">📆 مبيعات هذا الشهر مقارنة بالشهر الماضي</span>
                     <div id="stat-monthly-comparison" style="font-size:1.05rem; font-weight:900; color:var(--secondary); margin-top:4px;">جاري الحساب...</div>
+                    <div class="stat-card-actions" style="justify-content:flex-start;">
+                        <button type="button" class="stat-mini-btn" onclick="window.openAnalyticsOrdersDrilldown('monthly')">📋 التفاصيل</button>
+                        <button type="button" class="stat-mini-btn reset-btn" onclick="window.resetAdminMonthlyComparison()">🔄 تصفير أرباح الشهر</button>
+                    </div>
                 </div>
             </div>
             <div class="dashboard-grid">
-                <div class="dash-card"><h3>👥 الزيارات</h3><div class="stat" id="stat-visits">0</div></div>
-                <div class="dash-card"><h3>📦 الطلبات</h3><div class="stat" id="stat-orders">0</div></div>
-                <div class="dash-card"><h3>💰 الأرباح</h3><div class="stat" id="stat-revenue" style="color: #28a745;">0 ج</div></div>
-                <div class="dash-card" id="admin-net-profit-card"><h3>💎 صافي الربح الفعلي</h3><div class="stat" id="stat-net-profit" style="color: #028090;">0 ج</div></div>
+                <div class="dash-card">
+                    <h3>👥 الزيارات</h3>
+                    <div class="stat" id="stat-visits">0</div>
+                    <div class="stat-card-actions">
+                        <button type="button" class="stat-mini-btn" onclick="window.openVisitorsLogModal()">📋 التفاصيل</button>
+                        <button type="button" class="stat-mini-btn reset-btn" onclick="window.resetAdminVisitsCount()">🔄 تصفير</button>
+                    </div>
+                </div>
+                <div class="dash-card">
+                    <h3>📦 الطلبات</h3>
+                    <div class="stat" id="stat-orders">0</div>
+                    <div class="stat-card-actions">
+                        <button type="button" class="stat-mini-btn" onclick="window.openAnalyticsOrdersDrilldown('orders')">📋 التفاصيل</button>
+                        <button type="button" class="stat-mini-btn reset-btn" onclick="window.resetAdminOrdersCount()">🔄 تصفير</button>
+                    </div>
+                </div>
+                <div class="dash-card">
+                    <h3>💰 الأرباح</h3>
+                    <div class="stat" id="stat-revenue" style="color: #28a745;">0 ج</div>
+                    <div class="stat-card-actions">
+                        <button type="button" class="stat-mini-btn" onclick="window.openAnalyticsOrdersDrilldown('revenue')">📋 التفاصيل</button>
+                        <button type="button" class="stat-mini-btn reset-btn" onclick="window.resetAdminRevenue()">🔄 تصفير</button>
+                    </div>
+                </div>
+                <div class="dash-card" id="admin-net-profit-card">
+                    <h3>💎 صافي الربح الفعلي</h3>
+                    <div class="stat" id="stat-net-profit" style="color: #028090;">0 ج</div>
+                    <div class="stat-card-actions">
+                        <button type="button" class="stat-mini-btn" onclick="window.openAnalyticsOrdersDrilldown('net_profit')">📋 التفاصيل</button>
+                        <button type="button" class="stat-mini-btn reset-btn" onclick="window.resetAdminRevenue()">🔄 تصفير</button>
+                    </div>
+                </div>
             </div>
             <div class="dash-card" id="admin-expenses-card" style="border-top-color: #dc3545; text-align:right; margin-top:15px;">
                 <div onclick="let el=document.getElementById('admin-expenses-body'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
@@ -1228,6 +1314,7 @@
             <h3 style="color: var(--primary); margin-top: 30px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">📥 تصدير</h3>
             <button type="button" class="btn" style="background: #107c41; width: 100%; font-size: 1.1rem;" onclick="window.exportOrdersCSV()">📊 تحميل الطلبات (CSV)</button>
             <button type="button" id="btn-export-courier-csv" class="btn" style="background: #d39e00; width: 100%; font-size: 1.05rem; margin-top: 10px;" onclick="window.exportCourierCSV()">🚚 تحميل شيت شركات الشحن (Bosta / Mylerz CSV)</button>
+            <button type="button" class="btn btn-outline" style="width: 100%; font-size: 0.98rem; margin-top: 10px; border-color:var(--primary); color:var(--primary);" onclick="window.downloadDynamicSitemapXML()">🗺️ توليد وتحميل خريطة جوجل المحدثة بالمنتجات (Dynamic Sitemap.xml)</button>
             <div id="admin-backup-restore-box" style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
                 <button type="button" class="btn btn-info" style="flex:1; min-width:180px;" onclick="window.downloadStoreBackup()">💾 تحميل نسخة احتياطية شاملة (Backup)</button>
                 <label class="btn btn-outline" style="flex:1; min-width:180px; text-align:center; cursor:pointer; margin:0; display:flex; align-items:center; justify-content:center;">
@@ -1511,6 +1598,20 @@
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                             <input type="checkbox" id="setting-enable-product-compare" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>⚖️ تفعيل مقارنة المنتجات السريعة وحاسبة التوفير للأحجام</span>
+                        </label>
+                        <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
+                        <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🛡️ أدوات الحماية القصوى وتتبع الزوار وأرشفة جوجل (V61):</h4>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-visitor-tracking" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🪪 تفعيل نظام تسجيل بطاقات الزوار التفصيلي (نوع الهاتف، البريد، وسجل الزيارات بالساعة)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-anti-spam" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🛡️ تفعيل حماية الطلبات من السبام والطلبات الوهمية المتكررة + فحص رقم الهاتف</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-auto-lock-admin" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🔒 تفعيل القفل التلقائي للإعدادات المحمية بعد 15 دقيقة من عدم النشاط</span>
                         </label>
                         <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
                         <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🎁 كود السلة المتروكة الحقيقي (3%) وميزات (V60) الشاملة:</h4>

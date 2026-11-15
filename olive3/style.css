@@ -1720,3 +1720,72 @@ html[dir="ltr"] .product-qa-box {
     text-align: center;
     padding: 25px;
 }
+
+
+/* === النسخة V61: تفاصيل وتصفير الإحصائيات المستقل + بطاقات وسجل الزوار + الحماية والـ SEO === */
+.stat-card-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-color);
+}
+.stat-mini-btn {
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--primary);
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.stat-mini-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+.stat-mini-btn.reset-btn {
+    color: var(--danger);
+    border-color: rgba(220, 53, 69, 0.35);
+}
+.stat-mini-btn.reset-btn:hover {
+    background: var(--danger);
+    color: white;
+}
+.visitor-profile-card {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-right: 4px solid #028090;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    text-align: right;
+}
+.visitor-profile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: var(--secondary);
+}
+.drilldown-order-row {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-right: 4px solid var(--secondary);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    text-align: right;
+}
