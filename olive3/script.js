@@ -380,7 +380,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         window.initMagnifier = function() { const container = document.getElementById('magnifier-container'); const img = document.getElementById('modal-img-main'); if(!container || !img) return; container.addEventListener('mousemove', function(e) { const {left, top, width, height} = container.getBoundingClientRect(); const x = (e.clientX - left) / width * 100; const y = (e.clientY - top) / height * 100; img.style.transformOrigin = `${x}% ${y}%`; img.style.transform = 'scale(2)'; }); container.addEventListener('mouseleave', function() { img.style.transformOrigin = 'center center'; img.style.transform = 'scale(1)'; }); }
 
         let lastScrollY = window.scrollY;
-        window.addEventListener('scroll', () => { const nav = document.getElementById('smart-nav'); if(nav) { if (!isCurrentUserAdmin && window.scrollY > lastScrollY && window.scrollY > 100) nav.classList.add('hidden'); else nav.classList.remove('hidden'); } lastScrollY = window.scrollY; let homePanel = document.getElementById('home-panel'); if (homePanel && homePanel.classList.contains('active')) { if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) { let totalFiltered = window.getFilteredProductsCount(); if(currentRenderedProducts < totalFiltered) { let indicator = document.getElementById('loading-more-indicator'); if(indicator) indicator.style.display = 'block'; setTimeout(() => { currentRenderedProducts += productsPerPage; window.renderProducts(false); window.renderVisualBar(); if(indicator) indicator.style.display = 'none'; }, 500); } } } });
+        window.addEventListener('scroll', () => { const nav = document.getElementById('smart-nav'); if(nav) { if (window.scrollY > lastScrollY + 4 && window.scrollY > 70) nav.classList.add('hidden'); else if (window.scrollY < lastScrollY - 3 || window.scrollY <= 70) nav.classList.remove('hidden'); } lastScrollY = window.scrollY; let homePanel = document.getElementById('home-panel'); if (homePanel && homePanel.classList.contains('active')) { if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) { let totalFiltered = window.getFilteredProductsCount(); if(currentRenderedProducts < totalFiltered) { let indicator = document.getElementById('loading-more-indicator'); if(indicator) indicator.style.display = 'block'; setTimeout(() => { currentRenderedProducts += productsPerPage; window.renderProducts(false); window.renderVisualBar(); if(indicator) indicator.style.display = 'none'; }, 500); } } } });
 
         window.updateOfferTimer = function() { let endTime = localStorage.getItem('offer_end_time'); let now = new Date().getTime(); if(!endTime || now > endTime) { endTime = now + (72 * 60 * 60 * 1000); localStorage.setItem('offer_end_time', endTime); } setInterval(() => { now = new Date().getTime(); let distance = endTime - now; if(distance < 0) { endTime = now + (72 * 60 * 60 * 1000); localStorage.setItem('offer_end_time', endTime); distance = endTime - now; } let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)); let seconds = Math.floor((distance % (1000 * 60)) / 1000); let tStr = (hours < 10 ? "0"+hours : hours) + ":" + (minutes < 10 ? "0"+minutes : minutes) + ":" + (seconds < 10 ? "0"+seconds : seconds); let timerEl = document.getElementById('offer-timer'); if(timerEl) timerEl.innerText = tStr; }, 1000); }
         window.updateOfferTimer();
@@ -3517,7 +3517,7 @@ window.showUserHistory = function(userId, userName) {
                     let tag = parent.tagName;
                     if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA') continue;
                     // لا نترجم داخل لوحة الإعدادات المحمية الخاصة بالمدير حتى لا تتغير نصوص الإعدادات المحفوظة
-                    if (parent.closest('#roles-content-section') || parent.closest('#admin-dashboard-panel') || parent.closest('#admin-orders-panel')) continue;
+                    // ترجمة شاملة لكافة أقسام المتجر والإدارة
 
                     let val = node.nodeValue;
                     if (arRegex.test(val)) {
@@ -7029,3 +7029,710 @@ window.showUserHistory = function(userId, userName) {
             "فاحص تاريخ العصرة ورقم التشغيلة": "Harvest & Batch Authenticity Tracker",
             "فحص الآن": "Verify Now"
         });
+
+
+        // =========================================================================
+        // === النسخة V59: حماية المحتوى + عجلة الحظ الذكية بالاسم والتفاصيل + المرحلة 2 ===
+        // =========================================================================
+
+        // 1. منع نسخ الكلام والصور وحماية المحتوى (Anti-Copy & Image Protection)
+        window.applyContentProtectionMode = function() {
+            let protect = storeSettings.enableContentProtection !== false;
+            document.body.classList.toggle('protect-content-mode', protect);
+        };
+
+        ['copy', 'cut', 'contextmenu', 'dragstart'].forEach(evtName => {
+            document.addEventListener(evtName, function(e) {
+                if (storeSettings.enableContentProtection === false) return;
+                let t = e.target;
+                // السماح بالحقول النصية فقط عند الكتابة فيها
+                if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
+                    if (evtName === 'contextmenu' || evtName === 'copy') return;
+                }
+                e.preventDefault();
+            });
+        });
+
+        // 2. تحديث ظهور زر عجلة الحظ العائم بالرئيسية:
+        // يظل ظاهراً للعميل، ويختفي تلقائياً بمجرد أن يلف العجلة في هذا الأسبوع، ويعود للظهور تلقائياً عند تجديد الفرصة!
+        window.hasCustomerSpunThisWeek = function() {
+            let info = window.getThursdayCycleInfo ? window.getThursdayCycleInfo() : { cycleId: '' };
+            return localStorage.getItem('zait_wheel_last_cycle') === info.cycleId;
+        };
+
+        window.updateSpinWheelVisibility = function() {
+            let enabled = storeSettings.enableSpinWheel !== false;
+            let fab = document.getElementById('spin-wheel-fab');
+            let sideBtn = document.getElementById('sidebar-spin-wheel-btn');
+            // القسم في القائمة الجانبية يظل متاحاً طالما الميزة مفعلة
+            if (sideBtn) sideBtn.style.display = enabled ? 'block' : 'none';
+            // أما الزر العائم في الصفحة الرئيسية فيختفي فور لف العجلة هذا الأسبوع ويظهر مجدداً عند تجديد الفرصة!
+            if (fab) {
+                let alreadySpun = window.hasCustomerSpunThisWeek();
+                fab.style.display = (enabled && !alreadySpun) ? 'flex' : 'none';
+            }
+        };
+
+        // 3. تحديث نافذة عجلة الحظ لتسجيل (اسم العميل + رقم الواتساب) لأول مرة فقط + إخفاء الزر بعد اللف
+        window.renderWheelModalContent = function(highlightIdx = -1) {
+            window.updateWheelThursdayCountdown();
+            let prizes = window.getWheel7Prizes();
+            let legendEl = document.getElementById('wheel-prizes-legend');
+            if (legendEl) {
+                legendEl.innerHTML = prizes.map((p, idx) => `
+                    <div class="wheel-prize-pill ${highlightIdx === idx ? 'winner-highlight' : ''}" id="wheel-pill-${idx}">
+                        <span style="background:var(--secondary); color:white; border-radius:50%; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem;">${idx + 1}</span>
+                        <span>${window.escapeHTML(p.label)}</span>
+                    </div>
+                `).join('');
+            }
+
+            let savedName = localStorage.getItem('zait_wheel_saved_name') || '';
+            let savedPhone = localStorage.getItem('zait_wheel_saved_phone') || '';
+            let nameInp = document.getElementById('wheel-name-input');
+            let phoneInp = document.getElementById('wheel-phone-input');
+            let savedBar = document.getElementById('wheel-saved-phone-bar');
+
+            if (savedName && savedPhone && nameInp && phoneInp && savedBar) {
+                nameInp.value = savedName;
+                phoneInp.value = savedPhone;
+                nameInp.style.display = 'none';
+                phoneInp.style.display = 'none';
+                savedBar.style.display = 'block';
+                savedBar.innerHTML = window.currentLang === 'en'
+                    ? `✅ Welcome <strong>${window.escapeHTML(savedName)}</strong> (${window.escapeHTML(savedPhone)}) <a href="#" onclick="event.preventDefault(); window.changeWheelSavedPhone();" style="color:var(--secondary); margin-left:6px;">(Edit)</a>`
+                    : `✅ أهلاً <strong>${window.escapeHTML(savedName)}</strong> (واتساب: <strong>${window.escapeHTML(savedPhone)}</strong>) <a href="#" onclick="event.preventDefault(); window.changeWheelSavedPhone();" style="color:var(--secondary); margin-right:6px;">(تعديل البيانات)</a>`;
+            } else if (nameInp && phoneInp && savedBar) {
+                nameInp.style.display = 'block';
+                phoneInp.style.display = 'block';
+                if (savedName) nameInp.value = savedName;
+                if (savedPhone) phoneInp.value = savedPhone;
+                savedBar.style.display = 'none';
+            }
+
+            let info = window.getThursdayCycleInfo();
+            let lastCycle = localStorage.getItem('zait_wheel_last_cycle');
+            let lastPrizeJson = localStorage.getItem('zait_wheel_last_prize');
+            let btn = document.getElementById('btn-spin-now');
+            let resArea = document.getElementById('wheel-result-area');
+
+            if (lastCycle === info.cycleId && lastPrizeJson) {
+                try {
+                    let won = JSON.parse(lastPrizeJson);
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = window.currentLang === 'en' ? '✅ Used this week (Resets Thursday)' : '✅ حصلت على هديتك هذا الأسبوع (تتجدد الخميس)';
+                        btn.style.opacity = '0.65';
+                    }
+                    if (resArea) {
+                        resArea.style.display = 'block';
+                        resArea.innerHTML = window.currentLang === 'en'
+                            ? `🎁 Your Prize This Week: <strong>${window.escapeHTML(won.label)}</strong> (Code: <strong>${window.escapeHTML(won.code)}</strong>)<br><small>Come back on Thursday for a new spin!</small>`
+                            : `🎁 هديتك في هذا الأسبوع: <strong>${window.escapeHTML(won.label)}</strong> (الكود: <strong>${window.escapeHTML(won.code)}</strong>)<br><small>انتظر تجديد الفرصة يوم الخميس القادم لتلف العجلة من جديد!</small>`;
+                    }
+                } catch (e) {}
+            } else {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = window.currentLang === 'en' ? '🎲 Spin the Wheel Now!' : '🎲 لف العجلة الآن!';
+                    btn.style.opacity = '1';
+                }
+                if (resArea && highlightIdx === -1) {
+                    resArea.style.display = 'none';
+                }
+            }
+            window.updateSpinWheelVisibility();
+        };
+
+        window.changeWheelSavedPhone = function() {
+            localStorage.removeItem('zait_wheel_saved_name');
+            localStorage.removeItem('zait_wheel_saved_phone');
+            let nameInp = document.getElementById('wheel-name-input');
+            let phoneInp = document.getElementById('wheel-phone-input');
+            let savedBar = document.getElementById('wheel-saved-phone-bar');
+            if (nameInp) { nameInp.style.display = 'block'; nameInp.value = ''; nameInp.focus(); }
+            if (phoneInp) { phoneInp.style.display = 'block'; phoneInp.value = ''; }
+            if (savedBar) savedBar.style.display = 'none';
+        };
+
+        window.spinTheWheelNow = async function() {
+            let info = window.getThursdayCycleInfo();
+            if (localStorage.getItem('zait_wheel_last_cycle') === info.cycleId) {
+                window.showToast(window.currentLang === 'en' ? 'You already spun this week! Next spin is on Thursday.' : 'لقد استخدمت فرصتك لهذا الأسبوع! تتجدد الفرصة يوم الخميس القادم.', 'info');
+                window.renderWheelModalContent(-1);
+                return;
+            }
+
+            let savedName = localStorage.getItem('zait_wheel_saved_name') || '';
+            let savedPhone = localStorage.getItem('zait_wheel_saved_phone') || '';
+            let nameInp = document.getElementById('wheel-name-input');
+            let phoneInp = document.getElementById('wheel-phone-input');
+
+            let custName = savedName || (nameInp ? nameInp.value.trim() : '');
+            let phone = savedPhone || (phoneInp ? phoneInp.value.trim() : '');
+
+            if (!custName || custName.length < 2) {
+                window.showToast(window.currentLang === 'en' ? 'Please enter your name first!' : 'يرجى إدخال اسمك أولاً!', 'error');
+                if (nameInp) { nameInp.style.display = 'block'; nameInp.focus(); }
+                return;
+            }
+            if (!phone || phone.replace(/\D/g, '').length < 9) {
+                window.showToast(window.currentLang === 'en' ? 'Please enter your WhatsApp phone number first!' : 'يرجى إدخال رقم الواتساب الخاص بك أولاً!', 'error');
+                if (phoneInp) { phoneInp.style.display = 'block'; phoneInp.focus(); }
+                return;
+            }
+
+            // حفظ الاسم ورقم الواتساب حتى لا يكتبهما العميل مرة أخرى في الأسابيع القادمة
+            localStorage.setItem('zait_wheel_saved_name', custName);
+            localStorage.setItem('zait_wheel_saved_phone', phone);
+
+            let prizes = window.getWheel7Prizes();
+            let allowedIndices = [];
+            prizes.forEach((p, idx) => { if (p.allowed) allowedIndices.push(idx); });
+            if (allowedIndices.length === 0) allowedIndices = [0];
+
+            let winningIndex = allowedIndices[Math.floor(Math.random() * allowedIndices.length)];
+            let winningPrize = { ...prizes[winningIndex] };
+
+            let baseCode = String(winningPrize.code || 'WIN').trim().toUpperCase();
+            let uniqueCode = storeSettings.enableUniqueWheelCodes !== false
+                ? window.generateUniqueSingleUseCode(baseCode)
+                : baseCode;
+            winningPrize.code = uniqueCode;
+
+            let btn = document.getElementById('btn-spin-now');
+            let wheel = document.getElementById('wheel-visual-circle');
+            let resArea = document.getElementById('wheel-result-area');
+            if (btn) btn.disabled = true;
+
+            let sliceDeg = 360 / 7;
+            let targetSliceCenter = (winningIndex * sliceDeg) + (sliceDeg / 2);
+            let extraSpins = 5 * 360;
+            let finalDeg = extraSpins + (360 - targetSliceCenter);
+            if (wheel) {
+                wheel.style.transition = 'none';
+                wheel.style.transform = 'rotate(0deg)';
+                setTimeout(() => {
+                    wheel.style.transition = 'transform 3.6s cubic-bezier(0.15, 0.85, 0.15, 1)';
+                    wheel.style.transform = `rotate(${finalDeg}deg)`;
+                }, 30);
+            }
+
+            setTimeout(async () => {
+                let winDisc = Number(winningPrize.discount) || 0;
+                let spinIso = new Date().toISOString();
+
+                if (winDisc > 0 && storeSettings.enableUniqueWheelCodes !== false) {
+                    try {
+                        await addDoc(collection(db, 'promoCodes'), {
+                            code: uniqueCode,
+                            discount: winDisc,
+                            singleUse: true,
+                            used: false,
+                            ownerName: custName,
+                            ownerPhone: phone,
+                            createdAt: spinIso
+                        });
+                    } catch (e) {}
+                }
+
+                if (winDisc > 0) {
+                    currentDiscountPercent = winDisc;
+                    appliedPromoCode = uniqueCode;
+                } else if (baseCode === 'FREESHIP') {
+                    currentShippingCost = 0;
+                    appliedPromoCode = uniqueCode;
+                } else {
+                    appliedPromoCode = `${uniqueCode} (${winningPrize.label})`;
+                }
+                window.updateInvoiceUI();
+
+                localStorage.setItem('zait_wheel_last_cycle', info.cycleId);
+                localStorage.setItem('zait_wheel_last_prize', JSON.stringify(winningPrize));
+
+                window.renderWheelModalContent(winningIndex);
+                window.updateSpinWheelVisibility(); // إخفاء الزر العائم من الرئيسية بعد لف العجلة
+
+                if (resArea) {
+                    resArea.style.display = 'block';
+                    resArea.innerHTML = window.currentLang === 'en'
+                        ? `🎉 <strong>Congrats ${window.escapeHTML(custName)}! You won Prize #${winningIndex + 1}:</strong><br><span style="font-size:1.05rem; font-weight:900;">${window.escapeHTML(winningPrize.label)}</span><br>Your Unique Single-Use Code: <strong style="background:white; padding:2px 8px; border-radius:6px; border:1px dashed #166534;">${window.escapeHTML(uniqueCode)}</strong><br><small style="color:#b45309;">⚠️ Valid for 1 order only & applied to your cart!</small>`
+                        : `🎉 <strong>مبروك يا ${window.escapeHTML(custName)}! فزت بالهدية رقم (${winningIndex + 1}):</strong><br><span style="font-size:1.05rem; font-weight:900;">${window.escapeHTML(winningPrize.label)}</span><br>كودك الخاص (يُستخدم لمرة واحدة فقط): <strong style="background:white; padding:2px 8px; border-radius:6px; border:1px dashed #166534;">${window.escapeHTML(uniqueCode)}</strong><br><small style="color:#b45309;">⚠️ تم تفعيل الكود في سلتك، وتنتهي صلاحيته فور استخدامه!</small>`;
+                }
+
+                try {
+                    await addDoc(collection(db, 'wheel_leads'), {
+                        customerName: custName,
+                        phone: phone,
+                        prizeLabel: winningPrize.label,
+                        prizeCode: uniqueCode,
+                        discount: winDisc,
+                        date: spinIso
+                    });
+                } catch (e) {}
+            }, 3700);
+        };
+
+        // 4. عرض قائمة عملاء عجلة الحظ في الإحصائيات بالاسم والهاتف + نافذة تفاصيل كاملة عند الضغط على الاسم
+        window.allWheelLeadsRawList = [];
+        window.loadAdminWheelLeads = function() {
+            if (window.adminWheelLeadsUnsubscribe) window.adminWheelLeadsUnsubscribe();
+            window.adminWheelLeadsUnsubscribe = onSnapshot(collection(db, 'wheel_leads'), (snap) => {
+                let cont = document.getElementById('admin-wheel-leads-list');
+                let badge = document.getElementById('wheel-leads-count-badge');
+                if (!cont) return;
+                let list = [];
+                snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+                list.sort((a, b) => window.parseSafeTimestamp(b.date, 0) - window.parseSafeTimestamp(a.date, 0));
+                window.allWheelLeadsRawList = list;
+
+                if (badge) badge.textContent = list.length;
+                if (list.length === 0) {
+                    cont.innerHTML = '<p style="color:var(--text-muted); font-size:0.88rem; margin:0;">لا يوجد عملاء مسجلون في عجلة الحظ بعد.</p>';
+                    return;
+                }
+                let html = '';
+                list.forEach(item => {
+                    let cName = item.customerName || 'عميل عجلة الحظ';
+                    let dObj = new Date(window.parseSafeTimestamp(item.date, Date.now()));
+                    let dayName = dObj.toLocaleDateString('ar-EG', { weekday: 'long' });
+                    let dateStr = dObj.toLocaleDateString('ar-EG');
+                    let timeStr = dObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                    let prizeDisplay = item.prizeLabel ? `${item.prizeLabel} (${item.prizeCode})` : item.prizeCode;
+
+                    let pureWa = String(item.phone || '').replace(/\D/g, '');
+                    if (pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
+                    let waMsg = `مرحباً ${cName} من متجر زيت الشجرة المباركة 🌿 مبروك فوزك في عجلة الحظ بهدية (${prizeDisplay})! هل تحب نساعدك في إتمام طلبك بالهدية اليوم؟`;
+                    let waBtn = pureWa.length >= 10
+                        ? `<a href="https://wa.me/${pureWa}?text=${encodeURIComponent(waMsg)}" onclick="event.stopPropagation();" target="_blank" class="btn btn-outline" style="border-color:#25D366; color:#25D366; padding:4px 10px; font-size:0.78rem; text-decoration:none;">💬 واتساب</a>`
+                        : '';
+
+                    html += `<div onclick="window.openWheelLeadDetailsModal('${item.id}')" style="background:var(--input-bg); padding:10px 12px; border:1px solid var(--border-color); border-right:4px solid #ff6b00; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; cursor:pointer; transition:0.2s;" title="اضغط لعرض كل تفاصيل العميل والوقت والهدية">
+                        <div>
+                            <strong style="color:var(--primary); font-size:0.95rem; text-decoration:underline;">👤 ${window.escapeHTML(cName)}</strong>
+                            <span style="font-size:0.82rem; color:var(--text-muted); margin-right:6px;">(📞 ${window.escapeHTML(item.phone || '')})</span><br>
+                            <span style="font-size:0.8rem; color:var(--secondary); font-weight:bold;">🎁 الهدية: ${window.escapeHTML(prizeDisplay || '')}</span>
+                            <span style="font-size:0.76rem; color:var(--text-muted); display:block;">📅 يوم ${dayName} (${dateStr}) — ⏰ الساعة ${timeStr}</span>
+                        </div>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <button type="button" class="btn btn-info" style="padding:4px 8px; font-size:0.76rem;" onclick="event.stopPropagation(); window.openWheelLeadDetailsModal('${item.id}')">📋 التفاصيل</button>
+                            ${waBtn}
+                            <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.76rem;" onclick="event.stopPropagation(); window.deleteWheelLead('${item.id}')">🗑️</button>
+                        </div>
+                    </div>`;
+                });
+                cont.innerHTML = html;
+            });
+        };
+
+        window.openWheelLeadDetailsModal = function(leadId) {
+            let item = (window.allWheelLeadsRawList || []).find(x => x.id === leadId);
+            if (!item) return;
+            let modal = document.getElementById('wheel-lead-details-modal');
+            let body = document.getElementById('wheel-lead-details-body');
+            if (!modal || !body) return;
+
+            let cName = item.customerName || 'عميل عجلة الحظ';
+            let dObj = new Date(window.parseSafeTimestamp(item.date, Date.now()));
+            let dayName = dObj.toLocaleDateString('ar-EG', { weekday: 'long' });
+            let fullDate = dObj.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+            let exactTime = dObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            let prizeDisplay = item.prizeLabel ? item.prizeLabel : (item.prizeCode || '');
+
+            // جمع كل سجل لفات نفس العميل (برقم الهاتف)
+            let samePhoneSpins = (window.allWheelLeadsRawList || []).filter(x => x.phone === item.phone);
+            let historyHtml = samePhoneSpins.map((s, idx) => {
+                let sd = new Date(window.parseSafeTimestamp(s.date, Date.now()));
+                return `<li><strong>${sd.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'short' })} (${sd.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}):</strong> ${window.escapeHTML(s.prizeLabel || s.prizeCode)} — كود: <code>${window.escapeHTML(s.prizeCode)}</code></li>`;
+            }).join('');
+
+            let pureWa = String(item.phone || '').replace(/\D/g, '');
+            if (pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
+            let waMsg = `مرحباً أستاذ ${cName} 🌿 نتواصل معك من متجر زيت الشجرة المباركة بخصوص فوزك في عجلة الحظ بهدية (${prizeDisplay}) بكود (${item.prizeCode})!`;
+
+            body.innerHTML = `
+                <div>👤 <strong>اسم العميل:</strong> <span style="color:var(--primary); font-weight:bold;">${window.escapeHTML(cName)}</span></div>
+                <div>📞 <strong>رقم الواتساب:</strong> <span style="color:#028090; font-weight:bold;">${window.escapeHTML(item.phone || '')}</span></div>
+                <div>📅 <strong>اليوم والتاريخ:</strong> يوم <strong>${dayName}</strong> الموافق ${fullDate}</div>
+                <div>⏰ <strong>الساعة بالضبط:</strong> <strong style="color:var(--danger);">${exactTime}</strong></div>
+                <div>🎁 <strong>الهدية التي ظهرت له:</strong> <strong style="color:#166534;">${window.escapeHTML(prizeDisplay)}</strong></div>
+                <div>🏷️ <strong>كود الخصم الفريد (لمرة واحدة):</strong> <strong style="background:white; padding:2px 8px; border-radius:6px; border:1px dashed var(--secondary);">${window.escapeHTML(item.prizeCode || '')}</strong></div>
+                <hr style="border:0; border-top:1px dashed var(--border-color); margin:10px 0;">
+                <strong>📜 إجمالي مرات لف العجلة لهذا الرقم (${samePhoneSpins.length}):</strong>
+                <ul style="margin:6px 0 12px; padding-right:18px; font-size:0.84rem;">${historyHtml}</ul>
+                ${pureWa.length >= 10 ? `<a href="https://wa.me/${pureWa}?text=${encodeURIComponent(waMsg)}" target="_blank" class="btn btn-full" style="background:#25D366; text-decoration:none; display:block; text-align:center;">💬 مراسلة ${window.escapeHTML(cName)} عبر واتساب</a>` : ''}
+            `;
+            modal.style.display = 'flex';
+        };
+
+        // =========================================================================
+        // === 5. ميزات الجزء الثاني (حاسبة الخزين + الوصفات + المندوب + الموظفين + المقارنة) ===
+        // =========================================================================
+
+        // أ) حاسبة الخزين السنوي وشهر رمضان (Annual & Ramadan Stock Calculator)
+        window.openAnnualCalcModal = function() {
+            let m = document.getElementById('annual-calc-modal');
+            if (m) {
+                m.style.display = 'flex';
+                window.calculateAnnualStockNeed();
+            }
+        };
+
+        window.calculateAnnualStockNeed = function() {
+            let members = Math.max(1, Number((document.getElementById('calc-family-members') || {}).value) || 4);
+            let months = Math.max(1, Number((document.getElementById('calc-period-months') || {}).value) || 12);
+            let resBox = document.getElementById('annual-calc-result-box');
+            if (!resBox) return;
+
+            // متوسط استهلاك الفرد الصحي من زيت الزيتون ~ 0.45 لتر شهرياً
+            let litersNeeded = Math.max(1, Math.ceil(members * months * 0.45));
+            let extraDisc = months >= 12 ? 15 : (months >= 6 ? 12 : (months >= 3 ? 10 : 8));
+            let isEn = window.currentLang === 'en';
+
+            resBox.style.display = 'block';
+            resBox.innerHTML = isEn
+                ? `<div>🏺 <strong>Recommended Quantity:</strong> <strong style="color:var(--secondary); font-size:1.1rem;">${litersNeeded} Liters</strong> (for ${members} members / ${months} months)</div>
+                   <div>🎁 <strong>Stock Bundle Discount:</strong> Instant <strong>${extraDisc}% OFF</strong> with code <code>STOCK${extraDisc}</code></div>
+                   <button type="button" class="btn btn-full" style="margin-top:8px; background:#028090;" onclick="window.applyStockCalculatorOffer(${extraDisc})">🛒 Activate ${extraDisc}% Stock Discount & Shop Now</button>`
+                : `<div>🏺 <strong>الكمية الموصى بها لأسرتك:</strong> <strong style="color:var(--secondary); font-size:1.1rem;">${litersNeeded} لتر تقريباً</strong> (لعدد ${members} أفراد لمدة ${months} شهر)</div>
+                   <div>🎁 <strong>هدية الخزين الخاصة بك:</strong> خصم فوري <strong>${extraDisc}%</strong> بكود الخزين <code>STOCK${extraDisc}</code></div>
+                   <button type="button" class="btn btn-full" style="margin-top:8px; background:#028090;" onclick="window.applyStockCalculatorOffer(${extraDisc})">🛒 تفعيل خصم الخزين (${extraDisc}%) واختيار العبوات الآن</button>`;
+        };
+
+        window.applyStockCalculatorOffer = function(discPct) {
+            currentDiscountPercent = Math.max(currentDiscountPercent, Number(discPct) || 10);
+            appliedPromoCode = `STOCK${discPct}`;
+            window.updateInvoiceUI();
+            document.getElementById('annual-calc-modal').style.display = 'none';
+            window.showToast(`🎉 تم تفعيل خصم الخزين (${discPct}%) في سلتك! اختر العبوات المطلوبة الآن`, 'success');
+            window.showPanel('home');
+        };
+
+        // ب) بطاقات الوصفات الصحية القابلة للتسوق بضغطة زر (Shoppable Recipes)
+        window.shopRecipeQuickAdd = function(recipeIdx) {
+            let available = products.filter(p => !p.isHidden && (p.stock === undefined || p.stock === "" || Number(p.stock) > 0));
+            if (available.length === 0) return;
+            let target = available[recipeIdx % available.length] || available[0];
+            let safeName = target.name.replace(/'/g, "\\'");
+            window.executeAddToCart(null, target.id, safeName);
+        };
+
+        // ج) تقرير المقارنة اليومي والشهري (Daily vs Yesterday & Monthly vs Last Month)
+        window.renderGrowthComparisonReport = function() {
+            let box = document.getElementById('admin-growth-comparison-box');
+            if (box) box.style.display = storeSettings.enableGrowthReport !== false ? 'grid' : 'none';
+            if (storeSettings.enableGrowthReport === false) return;
+
+            let dailyEl = document.getElementById('stat-daily-comparison');
+            let monthlyEl = document.getElementById('stat-monthly-comparison');
+            if (!dailyEl || !monthlyEl) return;
+
+            let now = new Date();
+            let startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            let startOfYesterday = startOfToday - 86400000;
+            let startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+            let startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+
+            let todayRev = 0, todayCnt = 0;
+            let yestRev = 0, yestCnt = 0;
+            let thisMonthRev = 0, thisMonthCnt = 0;
+            let lastMonthRev = 0, lastMonthCnt = 0;
+
+            (adminOrdersArray || []).forEach(o => {
+                let st = String(o.status || '');
+                if (st.includes('لغى') || st.includes('رفض')) return;
+                let t = window.parseSafeTimestamp(o.orderDate, 0);
+                let amt = Number(o.totalAmount) || 0;
+
+                if (t >= startOfToday) { todayRev += amt; todayCnt++; }
+                else if (t >= startOfYesterday && t < startOfToday) { yestRev += amt; yestCnt++; }
+
+                if (t >= startOfThisMonth) { thisMonthRev += amt; thisMonthCnt++; }
+                else if (t >= startOfLastMonth && t < startOfThisMonth) { lastMonthRev += amt; lastMonthCnt++; }
+            });
+
+            dailyEl.innerHTML = `اليوم: <span style="color:#166534;">${todayRev.toLocaleString()} ج</span> (${todayCnt} طلب) <small style="color:var(--text-muted); font-weight:normal;">| الأمس: ${yestRev.toLocaleString()} ج (${yestCnt} طلب)</small>`;
+            monthlyEl.innerHTML = `هذا الشهر: <span style="color:#028090;">${thisMonthRev.toLocaleString()} ج</span> (${thisMonthCnt} طلب) <small style="color:var(--text-muted); font-weight:normal;">| الماضي: ${lastMonthRev.toLocaleString()} ج (${lastMonthCnt} طلب)</small>`;
+        };
+
+        // د) بطاقة المندوب السريعة (Courier Quick Dispatch Sheet & WhatsApp Share)
+        window.openCourierDispatchModal = function(orderId) {
+            let o = (adminOrdersArray || []).find(ord => ord.id === orderId);
+            if (!o) return;
+            let modal = document.getElementById('courier-dispatch-modal');
+            let body = document.getElementById('courier-dispatch-body');
+            if (!modal || !body) return;
+
+            let cod = (o.paymentMethod === 'محفظة إلكترونية') ? '0 ج (مدفوع مسبقاً)' : `${o.totalAmount} ج`;
+            let itemsStr = (o.items || []).map(i => `${i.name} (عدد ${i.quantity})`).join(' + ');
+            let courierWaText = `🛵 *بوليصة توصيل للمندوب - متجر زيت الشجرة المباركة*\n📦 رقم الطلب: #${o.id.slice(0,6).toUpperCase()}\n👤 العميل: ${o.customerName}\n📞 هاتف 1: ${(o.phones && o.phones.primary) || ''}\n📞 هاتف 2: ${(o.phones && o.phones.secondary) || 'لا يوجد'}\n📍 العنوان: ${(o.location && o.location.governorate) || ''} - ${(o.location && o.location.city) || ''} (${(o.location && o.location.details) || ''})\n🗺️ لوكيشن GPS: ${(o.location && o.location.mapLink) || 'غير مرفق'}\n🛍️ المحتويات: ${itemsStr}\n💰 *المبلغ المطلوب تحصيله: ${cod}*`;
+
+            body.innerHTML = `
+                <div>📦 <strong>رقم الطلب:</strong> #${o.id.slice(0,6).toUpperCase()}</div>
+                <div>👤 <strong>اسم المستلم:</strong> ${window.escapeHTML(o.customerName)}</div>
+                <div>📞 <strong>أرقام الهاتف:</strong> <a href="tel:${(o.phones && o.phones.primary) || ''}" style="color:#028090; font-weight:bold;">${window.escapeHTML((o.phones && o.phones.primary) || '')}</a></div>
+                <div>📍 <strong>العنوان:</strong> ${window.escapeHTML((o.location && o.location.governorate) || '')} - ${window.escapeHTML((o.location && o.location.city) || '')} (${window.escapeHTML((o.location && o.location.details) || '')})</div>
+                <div>🛍️ <strong>العبوات:</strong> ${window.escapeHTML(itemsStr)}</div>
+                <div style="background:#fef3c7; color:#92400e; padding:8px 10px; border-radius:8px; font-weight:900; margin:8px 0; text-align:center;">💰 التحصيل المطلوب من العميل: ${cod}</div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                    ${(o.location && o.location.mapLink) ? `<a href="${o.location.mapLink}" target="_blank" class="btn btn-info" style="flex:1; text-align:center; text-decoration:none;">🗺️ فتح موقع GPS</a>` : ''}
+                    <a href="https://wa.me/?text=${encodeURIComponent(courierWaText)}" target="_blank" class="btn" style="flex:1; background:#25D366; text-align:center; text-decoration:none;">📲 إرسال للمندوب واتساب</a>
+                </div>
+                <button type="button" class="btn btn-full" style="margin-top:8px; background:#28a745;" onclick="window.updateOrderStatus('${o.id}', 'تم التوصيل ✅'); document.getElementById('courier-dispatch-modal').style.display='none';">✅ تأكيد التسليم وتحصيل المبلغ</button>
+            `;
+            modal.style.display = 'flex';
+        };
+
+        const origOpenAdminOrderModalV58 = window.openAdminOrderModal;
+        window.openAdminOrderModal = function(id) {
+            origOpenAdminOrderModalV58(id);
+            if (storeSettings.enableCourierDispatch === false) return;
+            let aom = document.getElementById('aom-content');
+            if (aom) {
+                aom.innerHTML += `<button type="button" class="btn" style="width:100%; margin-top:8px; background:#028090;" onclick="window.openCourierDispatchModal('${id}')">🛵 فتح بطاقة تسليم المندوب السريعة وإرسالها واتساب</button>`;
+            }
+        };
+
+        // هـ) نظام صلاحيات الموظفين المحدودة (Staff Permissions Mode)
+        window.isCurrentUserStaffOnly = false;
+        window.checkAndApplyStaffPermissions = function() {
+            if (!currentUser || !storeSettings.enableStaffPermissions) {
+                window.isCurrentUserStaffOnly = false;
+                return;
+            }
+            let email = (currentUser.email || '').toLowerCase().trim();
+            let staffList = String(storeSettings.staffEmailsList || '')
+                .split(',')
+                .map(s => s.trim().toLowerCase())
+                .filter(Boolean);
+
+            if (email && staffList.includes(email) && !SUPER_ADMINS.includes(email)) {
+                window.isCurrentUserStaffOnly = true;
+                isCurrentUserAdmin = true;
+                let sNav = document.getElementById('smart-nav');
+                if (sNav) sNav.style.display = 'flex';
+                let hdrWork = document.getElementById('header-work-hub-btn');
+                if (hdrWork) hdrWork.style.display = 'inline-flex';
+                // إظهار تبويبات العمل والطلبات والرسائل والاسترجاع فقط وإخفاء الإعدادات والإحصائيات المالية
+                document.querySelectorAll('.admin-tab').forEach(tab => {
+                    let oc = tab.getAttribute('onclick') || '';
+                    if (oc.includes('admin-work') || oc.includes('admin-orders') || oc.includes('admin-messages') || oc.includes('admin-returns')) {
+                        tab.style.display = 'inline-block';
+                    } else {
+                        tab.style.display = 'none';
+                    }
+                });
+            } else {
+                window.isCurrentUserStaffOnly = false;
+            }
+        };
+
+        const origRenderAdminOrdersV58 = window.renderAdminOrdersUI;
+        window.renderAdminOrdersUI = function() {
+            origRenderAdminOrdersV58();
+            if (isCurrentUserAdmin) window.renderGrowthComparisonReport();
+        };
+
+        const prevApplySettingsV58 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV58();
+            window.applyContentProtectionMode();
+            window.checkAndApplyStaffPermissions();
+            window.updateSpinWheelVisibility();
+
+            if (isCurrentUserAdmin) {
+                let setC = (id, val, def = true) => { let el = document.getElementById(id); if (el) el.checked = val !== undefined ? Boolean(val) : def; };
+                let setV = (id, val, def = '') => { let el = document.getElementById(id); if (el) el.value = val !== undefined ? val : def; };
+                setC('setting-enable-content-protection', storeSettings.enableContentProtection, true);
+                setC('setting-enable-annual-calc', storeSettings.enableAnnualCalc, true);
+                setC('setting-enable-shoppable-recipes', storeSettings.enableShoppableRecipes, true);
+                setC('setting-enable-growth-report', storeSettings.enableGrowthReport, true);
+                setC('setting-enable-courier-dispatch', storeSettings.enableCourierDispatch, true);
+                setC('setting-enable-staff-permissions', storeSettings.enableStaffPermissions, true);
+                setV('setting-staff-emails', storeSettings.staffEmailsList, '');
+                window.renderGrowthComparisonReport();
+            }
+
+            let acBtn1 = document.getElementById('btn-open-annual-calc');
+            let acBtn2 = document.getElementById('sidebar-annual-calc-btn');
+            let showAc = storeSettings.enableAnnualCalc !== false;
+            if (acBtn1) acBtn1.style.display = showAc ? 'flex' : 'none';
+            if (acBtn2) acBtn2.style.display = showAc ? 'block' : 'none';
+
+            let recSec = document.getElementById('home-shoppable-recipes-section');
+            if (recSec) recSec.style.display = storeSettings.enableShoppableRecipes !== false ? 'block' : 'none';
+
+            if (window.currentLang === 'en') window.translateDOM(document.body);
+        };
+
+        const prevSaveSettingsV58 = window.saveSettings;
+        window.saveSettings = async function() {
+            const getC = (id, def = true) => { let el = document.getElementById(id); return el ? el.checked : def; };
+            const getV = (id, def = '') => { let el = document.getElementById(id); return el ? el.value.trim() : def; };
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    enableContentProtection: getC('setting-enable-content-protection', true),
+                    enableAnnualCalc: getC('setting-enable-annual-calc', true),
+                    enableShoppableRecipes: getC('setting-enable-shoppable-recipes', true),
+                    enableGrowthReport: getC('setting-enable-growth-report', true),
+                    enableCourierDispatch: getC('setting-enable-courier-dispatch', true),
+                    enableStaffPermissions: getC('setting-enable-staff-permissions', true),
+                    staffEmailsList: getV('setting-staff-emails', '')
+                });
+            } catch (e) {}
+            await prevSaveSettingsV58();
+        };
+
+        // =========================================================================
+        // === 6. قاموس الترجمة الشامل للعميل والمدير وغرفة العمل والإحصائيات (100% EN) ===
+        // =========================================================================
+        Object.assign(window.FULL_AR_TO_EN, {
+            // شريط الإدارة وغرفة العمل
+            "💼 العمل": "💼 Work Hub",
+            "الشغل": "Work Hub",
+            "💼 غرفة متابعة العمل والشغل المباشرة": "💼 Live Work & Operations Center",
+            "🟢 متابعة لحظية لكل الطلبات، الرسائل، الإلغاءات، والتنبيهات في شاشة واحدة": "🟢 Real-time stream of all orders, messages, cancellations & alerts in one screen",
+            "🔊 الصوت: مفعل": "🔊 Sound: ON",
+            "🔇 الصوت: صامت": "🔇 Sound: OFF",
+            "🔔 تجربة الصوت": "🔔 Test Sound",
+            "👁️ إخفاء المكتمل القديم": "👁️ Hide Completed",
+            "👁️ إظهار كل السجل": "👁️ Show All History",
+            "🔄 تحديث": "🔄 Refresh",
+            "📥 الوارد النشط": "📥 Active Inbox",
+            "📖 المقروء": "📖 Read",
+            "🏆 المنجز": "🏆 Completed",
+            "🗑️ المحذوف": "🗑️ Trash",
+            "🌐 كل الشغل": "🌐 All Work",
+            "📦 طلبات نشطة": "📦 Active Orders",
+            "💬 رسائل العملاء": "💬 Customer Chats",
+            "🚨 إلغاء واسترجاع": "🚨 Cancels & Returns",
+            "🔔 سلال وتنبيهات": "🔔 Carts & Alerts",
+            "📖 تمت القراءة": "📖 Mark Read",
+            "✅ منجز": "✅ Mark Done",
+            "🗑️ حذف": "🗑️ Delete",
+            "📥 إرجاع للوارد النشط": "📥 Restore to Inbox",
+            "📖 نقل للمقروء": "📖 Move to Read",
+            "✅ نقل للمنجز": "✅ Move to Done",
+            "🗑️ نقل للمحذوف": "🗑️ Move to Trash",
+            "📦 تم التجهيز": "📦 Mark Prepared",
+            "🚚 تم الشحن": "🚚 Mark Shipped",
+            "✅ تم التوصيل": "✅ Mark Delivered",
+            "📲 واتساب": "📲 WhatsApp",
+            "🖨️ بوليصة الشحن": "🖨️ Shipping Label",
+            "📋 التفاصيل": "📋 Details",
+            "إرسال الرد 🚀": "Send Reply 🚀",
+            "فتح الشات 💬": "Open Chat 💬",
+            "👋 ترحيب": "👋 Greeting",
+            "🚚 حالة الشحن": "🚚 Shipping Info",
+            "🌿 ضمان الزيت": "🌿 Quality Guarantee",
+            "📦 تأكيد التجهيز": "📦 Confirm Prep",
+            "🌿 ضمان الجودة": "🌿 Quality Guarantee",
+            // لوحة الإحصائيات والطلبات والإعدادات للمدير
+            "📊 الإحصائيات (للإدارة)": "📊 Admin Analytics & Reports",
+            "⚠️ تنبيهات المخزون (أقل من 5 قطع)": "⚠️ Low Stock Alerts (< 5 units)",
+            "المخزون ممتاز، لا توجد منتجات أوشكت على النفاد.": "Stock levels are great! No low-stock items.",
+            "🛒 السلال المتروكة (عملاء لم يكملوا الدفع)": "🛒 Abandoned Carts (Unfinished Checkouts)",
+            "🔔 طلبات (بلغني عند التوفر)": "🔔 Back-in-Stock Requests",
+            "🎡 أرقام عملاء عجلة الحظ": "🎡 Spin & Win Customer Leads",
+            "🏆 الأكثر مبيعاً وربحاً": "🏆 Top Selling Products",
+            "📍 أكثر المحافظات طلباً": "📍 Top Governorates",
+            "📊 مصادر الزيارات والمبيعات": "📊 Traffic & Sales Sources",
+            "📅 مبيعات اليوم مقارنة بالأمس": "📅 Today's Sales vs Yesterday",
+            "📆 مبيعات هذا الشهر مقارنة بالشهر الماضي": "📆 This Month's Sales vs Last Month",
+            "👥 الزيارات": "👥 Visits",
+            "📦 الطلبات": "📦 Orders",
+            "💰 الأرباح": "💰 Revenue",
+            "💎 صافي الربح الفعلي": "💎 Net Profit",
+            "تصفير الأرباح 🔄": "Reset Revenue 🔄",
+            "تصفير الطلبات 🔄": "Reset Orders 🔄",
+            "🔔 إرسال إشعار للعملاء": "🔔 Send Global Notification",
+            "إرسال للجميع 🚀": "Broadcast to All 🚀",
+            "📥 تصدير": "📥 Export Data",
+            "📊 تحميل الطلبات (CSV)": "📊 Export Orders (CSV)",
+            "🚚 تحميل شيت شركات الشحن (Bosta / Mylerz CSV)": "🚚 Export Courier Sheet (Bosta / Mylerz CSV)",
+            "💾 تحميل نسخة احتياطية شاملة (Backup)": "💾 Download Full Backup (JSON)",
+            "📂 استعادة نسخة احتياطية (Restore)": "📂 Restore Backup (JSON)",
+            "📦 طلبات العملاء": "📦 Customer Orders Management",
+            "قيد المراجعة": "Under Review",
+            "تم التجهيز": "Prepared",
+            "تم الشحن": "Shipped",
+            "تم التوصيل ✅": "Delivered ✅",
+            "☑️ تحديد / إلغاء تحديد الكل": "☑️ Select / Deselect All",
+            "تحويل المحدد إلى: تم التجهيز 📦": "Set Selected to: Prepared 📦",
+            "تحويل المحدد إلى: تم الشحن 🚚": "Set Selected to: Shipped 🚚",
+            "تحويل المحدد إلى: تم التوصيل ✅": "Set Selected to: Delivered ✅",
+            "تطبيق على المحدد 🚀": "Apply to Selected 🚀",
+            "📩 رسائل العملاء": "📩 Customer Support Messages",
+            "🔙 رجوع": "🔙 Back",
+            "🔄 طلبات الاسترجاع": "🔄 Return Requests",
+            "🛒 إضافة / تعديل منتج": "🛒 Add / Edit Product",
+            "🏷️ التسعير والأحجام (Variants):": "🏷️ Pricing & Sizes (Variants):",
+            "🖼️ صور وفيديو المنتج:": "🖼️ Product Images & Video:",
+            "💬 التقييمات التلقائية للمنتج:": "💬 Initial Product Reviews:",
+            "حفظ المنتج": "Save Product",
+            "إلغاء": "Cancel",
+            "⚙️ الإعدادات (محمية)": "⚙️ Protected Store Settings",
+            "فتح 🔓": "Unlock 🔓",
+            "نسيت رمز الأمان؟": "Forgot Security PIN?",
+            "⚙️ مركز التحكم الاحترافي الشامل": "⚙️ Professional Admin Control Center",
+            "جميع إعدادات ومميزات المتجر منظمة في تبويبات سريعة بدون حذف أي عنصر": "All store features & settings organized into clean tabs",
+            "💾 حفظ كل الإعدادات الآن": "💾 Save All Settings Now",
+            "🌐 كل الإعدادات": "🌐 All Settings",
+            "🎨 الواجهة والبانرات والثيمات": "🎨 UI, Banners & Themes",
+            "🚚 الشحن والباقات والمحافظ": "🚚 Shipping, Bundles & Wallets",
+            "🎡 عجلة الحظ والعروض والتسويق": "🎡 Spin Wheel, Deals & Marketing",
+            "💬 الشات والولاء والعمل": "💬 Chat, Loyalty & Work Hub",
+            "📂 الأقسام والكوبونات والمديرين": "📂 Categories, Coupons & Admins",
+            "قفل الإعدادات 🔒": "Lock Settings 🔒",
+            "حفظ": "Save",
+            "تعديل": "Edit",
+            "حذف": "Delete",
+            "📌 تثبيت بالأول": "📌 Pin to Top",
+            "📌 إلغاء التثبيت": "📌 Unpin",
+            "🙈 إخفاء مؤقت": "🙈 Hide Product",
+            "👁️ إظهار للعملاء": "👁️ Show to Customers",
+            // إضافات V59
+            "عجلة الحظ الأسبوعية": "Weekly Spin & Win",
+            "حاسبة الخزين السنوي ورمضان": "Annual & Ramadan Stock Calculator",
+            "ركن الوصفات الصحية والخلطات الطبيعية (اطلب مكوناتها بضغطة زر)": "Healthy Olive Oil Recipes (1-Tap Shop Ingredients)",
+            "وصفة المناعة الصباحية الذهبية": "Golden Morning Immunity Recipe",
+            "ملعقة كبيرة من زيت الزيتون السيناوي البكر على الريق مع قطرات الليمون لتنشيط الكبد والمناعة طوال اليوم.": "One tablespoon of Extra Virgin Sinai Olive Oil on an empty stomach with lemon drops to boost immunity.",
+            "تتبيلة السلطة المتوسطية الفاخرة": "Premium Mediterranean Salad Dressing",
+            "3 ملاعق زيت زيتون عصرة أولى على البارد مع الزعتر البري السيناوي والخل البلسمي لطعم أصلي وصحة للقلب.": "3 tablespoons of cold-pressed olive oil with Sinai wild thyme for authentic flavor and heart health.",
+            "حمام الزيت الدافئ لتكثيف الشعر": "Warm Olive Oil Hair Growth Mask",
+            "تدليك فروة الرأس بزيت الزيتون السيناوي الخام الغني بفيتامين E لمدة 45 دقيقة أسبوعياً لمنع التساقط ولمعان فوري.": "Massage scalp with raw Vitamin-E rich Sinai olive oil for 45 mins weekly for instant shine & strength.",
+            "أضف العبوة المناسبة للوصفة": "Add Recipe Bottle to Cart",
+            "بطاقة بيانات عميل عجلة الحظ": "Spin & Win Customer Profile",
+            "حاسبة الخزين السنوي وشهر رمضان": "Annual & Ramadan Stock Calculator",
+            "احسب احتياج أسرتك الفعلي من زيت الزيتون السيناوي الأصلي واحصل على خصم الخزين:": "Calculate your family's olive oil needs and unlock a special stock discount:",
+            "عدد أفراد الأسرة:": "Number of Family Members:",
+            "فترة الخزين المطلوبة:": "Stock Duration:",
+            "احسب الكمية والتوفير الآن": "Calculate Quantity & Discount Now",
+            "بطاقة تسليم المندوب السريعة": "Courier Quick Dispatch Sheet"
+        });
+
+        Object.assign(window.PLACEHOLDER_AR_TO_EN, {
+            "أدخل اسمك الثلاثي أو الثنائي (لأول مرة فقط)...": "Enter your full name (first time only)...",
+            "🔍 ابحث في غرفة العمل (باسم العميل، رقم الهاتف، نص الرسالة، أو رقم الطلب)...": "🔍 Search Work Hub (Customer name, phone, message, or order ID)...",
+            "🔍 ابحث في الطلبات (باسم العميل، رقم الهاتف، المحافظة، أو رقم الطلب)...": "🔍 Search Orders (Customer name, phone, governorate, or ID)...",
+            "🔍 ابحث بسرعة عن أي ميزة أو إعداد داخل لوحة التحكم (مثال: شحن، عجلة، واتساب، ثيم)...": "🔍 Quick search any setting in Control Center...",
+            "اكتب ردك المباشر للعميل هنا...": "Type your direct reply to customer here..."
+        });
+
+        // توسيع المترجم الديناميكي ليشمل عبارات الإدارة وغرفة العمل والإحصائيات
+        const origTranslateTextToEnV58 = window.translateTextToEn;
+        window.translateTextToEn = function(str) {
+            let out = origTranslateTextToEnV58(str);
+            out = out.replace(/📦 طلب #/g, '📦 Order #');
+            out = out.replace(/🚨 طلب ملغى #/g, '🚨 Canceled Order #');
+            out = out.replace(/🔄 طلب استرجاع #/g, '🔄 Return Request #');
+            out = out.replace(/🔴 \((\d+)\) رسالة عميل جديدة تنتظر ردك/g, '🔴 ($1) New Customer Message(s) Waiting');
+            out = out.replace(/💬 محادثة خدمة عملاء/g, '💬 Support Chat');
+            out = out.replace(/🛒 سلة متروكة نشطة/g, '🛒 Active Abandoned Cart');
+            out = out.replace(/منذ (\d+) دقيقة/g, '$1 mins ago');
+            out = out.replace(/منذ (\d+) ساعة/g, '$1 hrs ago');
+            out = out.replace(/منذ (\d+) يوم/g, '$1 days ago');
+            out = out.replace(/الآن/g, 'Just now');
+            out = out.replace(/عاجل/g, 'Urgent');
+            return out;
+        };

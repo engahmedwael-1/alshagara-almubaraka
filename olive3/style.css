@@ -1602,3 +1602,61 @@ html[dir="ltr"] .subscribe-save-box {
     padding: 8px;
     border-radius: 8px;
 }
+
+
+/* === النسخة V59: حماية النسخ والصور + المرحلة الثانية كاملة + تفاصيل عميل العجلة === */
+body.protect-content-mode,
+body.protect-content-mode *:not(input):not(textarea):not([contenteditable="true"]) {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-touch-callout: none !important;
+}
+body.protect-content-mode img {
+    -webkit-user-drag: none !important;
+    user-drag: none !important;
+    pointer-events: auto;
+}
+
+/* بطاقات الوصفات الصحية القابلة للتسوق */
+.recipes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+.recipe-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-top: 4px solid var(--secondary);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+html[dir="ltr"] .recipe-card {
+    text-align: left;
+}
+
+/* شريط مقارنة النمو اليومي والشهري */
+.growth-comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 15px;
+}
+.growth-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-right: 4px solid #028090;
+    border-radius: 12px;
+    padding: 12px 14px;
+    text-align: right;
+}
+html[dir="ltr"] .growth-card {
+    text-align: left;
+}

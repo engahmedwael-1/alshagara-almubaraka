@@ -59,6 +59,8 @@
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.showPanel('home'); window.closeSidebar();">🏠 <span class="translatable">الرئيسية</span></button>
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.showPanel('support'); window.closeSidebar();">💬 <span class="translatable">خدمة العملاء</span></button>
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.loadAllReviews(); window.closeSidebar();">⭐️ <span class="translatable">آراء العملاء</span></button>
+            <button type="button" id="sidebar-spin-wheel-btn" class="btn btn-outline" style="width: 100%; border-color: #ff6b00; color: #ff6b00; text-align: right; font-weight:bold;" onclick="window.openSpinWheelModal(); window.closeSidebar();">🎡 <span class="translatable">عجلة الحظ الأسبوعية</span></button>
+            <button type="button" id="sidebar-annual-calc-btn" class="btn btn-outline" style="width: 100%; border-color: var(--secondary); color: var(--primary); text-align: right; font-weight:bold;" onclick="window.openAnnualCalcModal(); window.closeSidebar();">🧮 <span class="translatable">حاسبة الخزين السنوي ورمضان</span></button>
             <button type="button" id="sidebar-track-order-btn" class="btn btn-outline" style="width: 100%; border-color: #028090; color: #028090; text-align: right; font-weight:bold;" onclick="window.showPanel('customer-orders'); window.closeSidebar();">🚚 <span class="translatable">تتبع طلبي برقم الهاتف</span></button>
             <div id="sidebar-account-section" style="display:none; margin-top:10px;">
                 <h4 style="margin: 0 0 10px 0; color: var(--primary);" class="translatable">👤 حسابي:</h4>
@@ -206,6 +208,7 @@
             <div id="wheel-prizes-legend" class="wheel-prizes-legend"></div>
             <div id="wheel-saved-phone-bar" style="display:none; font-size:0.82rem; color:var(--primary); margin-bottom:8px; background:var(--input-bg); padding:6px 10px; border-radius:8px;"></div>
             <div id="wheel-form-area">
+                <input type="text" id="wheel-name-input" placeholder="أدخل اسمك الثلاثي أو الثنائي (لأول مرة فقط)..." style="margin-bottom:8px; text-align:center;">
                 <input type="tel" id="wheel-phone-input" placeholder="أدخل رقم هاتفك (واتساب) لأول مرة فقط..." style="margin-bottom:10px; text-align:center;">
                 <button type="button" class="btn btn-full" id="btn-spin-now" onclick="window.spinTheWheelNow()" style="background:linear-gradient(90deg, #ff6b00, #c59b27); font-size:1.05rem;">🎲 <span class="translatable">لف العجلة الآن!</span></button>
             </div>
@@ -371,6 +374,46 @@
         </div>
     </div>
 
+    <!-- نافذة التفاصيل الكاملة لعميل عجلة الحظ (Wheel Lead Full Details Modal) -->
+    <div id="wheel-lead-details-modal" class="modal-overlay" style="z-index: 5860;">
+        <div class="modal-content" style="max-width: 460px; text-align: right; border: 2px solid #ff6b00; padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('wheel-lead-details-modal').style.display='none'">X</button>
+            <h2 style="color:#ff6b00; margin:0 0 10px 0; text-align:center;">🎡 <span class="translatable">بطاقة بيانات عميل عجلة الحظ</span></h2>
+            <div id="wheel-lead-details-body" style="background:var(--input-bg); padding:14px; border-radius:10px; border:1px solid var(--border-color); line-height:1.9; font-size:0.92rem;"></div>
+        </div>
+    </div>
+
+    <!-- نافذة حاسبة الخزين السنوي وشهر رمضان (Annual & Ramadan Stock Calculator) -->
+    <div id="annual-calc-modal" class="modal-overlay" style="z-index: 5850;">
+        <div class="modal-content" style="max-width: 460px; text-align: center; border: 2px solid var(--secondary); padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('annual-calc-modal').style.display='none'">X</button>
+            <h2 style="color:var(--primary); margin:0 0 6px 0;">🏺 <span class="translatable">حاسبة الخزين السنوي وشهر رمضان</span></h2>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin:0 0 12px 0;" class="translatable">احسب احتياج أسرتك الفعلي من زيت الزيتون السيناوي الأصلي واحصل على خصم الخزين:</p>
+            <div style="text-align:right; margin-bottom:12px;">
+                <label style="font-weight:bold; font-size:0.88rem; color:var(--primary); display:block; margin-bottom:5px;" class="translatable">عدد أفراد الأسرة:</label>
+                <input type="number" id="calc-family-members" value="4" min="1" max="30" style="margin-bottom:10px;">
+                <label style="font-weight:bold; font-size:0.88rem; color:var(--primary); display:block; margin-bottom:5px;" class="translatable">فترة الخزين المطلوبة:</label>
+                <select id="calc-period-months" style="margin-bottom:10px;">
+                    <option value="1">🌙 خزين شهر رمضان المبارك (شهر كامل)</option>
+                    <option value="3">🍂 خزين ربع سنوي (3 شهور)</option>
+                    <option value="6">🌤️ خزين نصف سنوي (6 شهور - توفير مضاعف)</option>
+                    <option value="12" selected>🏺 الخزين السنوي الكامل (12 شهراً - أعلى توفير)</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-full" style="background:var(--primary);" onclick="window.calculateAnnualStockNeed()">🧮 <span class="translatable">احسب الكمية والتوفير الآن</span></button>
+            <div id="annual-calc-result-box" style="display:none; margin-top:14px; padding:12px; background:var(--input-bg); border:1px dashed var(--secondary); border-radius:10px; text-align:right; line-height:1.8;"></div>
+        </div>
+    </div>
+
+    <!-- نافذة بطاقة المندوب السريعة (Courier Quick Dispatch Sheet) -->
+    <div id="courier-dispatch-modal" class="modal-overlay" style="z-index: 5870;">
+        <div class="modal-content" style="max-width: 450px; text-align: right; border: 2px solid #028090; padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('courier-dispatch-modal').style.display='none'">X</button>
+            <h2 style="color:#028090; margin:0 0 10px 0; text-align:center;">🛵 <span class="translatable">بطاقة تسليم المندوب السريعة</span></h2>
+            <div id="courier-dispatch-body" style="background:var(--input-bg); padding:14px; border-radius:10px; border:1px solid var(--border-color); line-height:1.8; font-size:0.92rem;"></div>
+        </div>
+    </div>
+
     <div id="policy-info-modal" class="modal-overlay" style="z-index: 5600;">
         <div class="modal-content" style="max-width: 550px; text-align: right; border: 2px solid var(--secondary); padding-bottom: 25px;">
             <button type="button" class="modal-close" onclick="document.getElementById('policy-info-modal').style.display='none'">X</button>
@@ -494,6 +537,9 @@
                 <button type="button" id="btn-open-b2b-modal" class="smart-tool-pill" onclick="window.openB2BWholesaleModal()">
                     <span>🏢</span> <span class="translatable">طلبات الجملة والمطاعم</span>
                 </button>
+                <button type="button" id="btn-open-annual-calc" class="smart-tool-pill" onclick="window.openAnnualCalcModal()">
+                    <span>🏺</span> <span class="translatable">حاسبة الخزين السنوي ورمضان</span>
+                </button>
                 <button type="button" id="btn-open-batch-tracker" class="smart-tool-pill" onclick="window.openBatchTrackerModal()">
                     <span>🌾</span> <span class="translatable">فاحص تاريخ العصرة والنقاء</span>
                 </button>
@@ -528,6 +574,37 @@
             <div class="filter-btns" id="category-filters-container"></div>
             <div class="products-grid" id="products-container"><h3 style="text-align: center; grid-column: 1 / -1; color: var(--primary);" class="translatable">جاري تحميل المنتجات... ⏳</h3></div>
             <div id="loading-more-indicator" style="text-align:center; padding:20px; color:var(--primary); font-weight:bold; display:none;" class="translatable">جاري تحميل المزيد من المنتجات... ⏳</div>
+            <div id="home-shoppable-recipes-section" class="seo-benefits-section" style="display:none; margin-top:18px;">
+                <div onclick="let el=document.getElementById('home-recipes-body'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                    <h3 style="margin:0; color:var(--primary); font-size:1.02rem;">🥗 <span class="translatable">ركن الوصفات الصحية والخلطات الطبيعية (اطلب مكوناتها بضغطة زر)</span></h3>
+                    <span style="color:var(--secondary); font-weight:bold;">▼</span>
+                </div>
+                <div id="home-recipes-body" style="display:none; margin-top:10px;">
+                    <div class="recipes-grid">
+                        <div class="recipe-card">
+                            <div>
+                                <strong style="color:var(--primary); font-size:0.95rem; display:block; margin-bottom:4px;">🍯 <span class="translatable">وصفة المناعة الصباحية الذهبية</span></strong>
+                                <p style="font-size:0.82rem; color:var(--text-muted); margin:0 0 10px 0; line-height:1.5;" class="translatable">ملعقة كبيرة من زيت الزيتون السيناوي البكر على الريق مع قطرات الليمون لتنشيط الكبد والمناعة طوال اليوم.</p>
+                            </div>
+                            <button type="button" class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem; width:100%;" onclick="window.shopRecipeQuickAdd(0)">🛒 <span class="translatable">أضف العبوة المناسبة للوصفة</span></button>
+                        </div>
+                        <div class="recipe-card">
+                            <div>
+                                <strong style="color:var(--primary); font-size:0.95rem; display:block; margin-bottom:4px;">🥗 <span class="translatable">تتبيلة السلطة المتوسطية الفاخرة</span></strong>
+                                <p style="font-size:0.82rem; color:var(--text-muted); margin:0 0 10px 0; line-height:1.5;" class="translatable">3 ملاعق زيت زيتون عصرة أولى على البارد مع الزعتر البري السيناوي والخل البلسمي لطعم أصلي وصحة للقلب.</p>
+                            </div>
+                            <button type="button" class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem; width:100%;" onclick="window.shopRecipeQuickAdd(1)">🛒 <span class="translatable">أضف العبوة المناسبة للوصفة</span></button>
+                        </div>
+                        <div class="recipe-card">
+                            <div>
+                                <strong style="color:var(--primary); font-size:0.95rem; display:block; margin-bottom:4px;">💆‍♀️ <span class="translatable">حمام الزيت الدافئ لتكثيف الشعر</span></strong>
+                                <p style="font-size:0.82rem; color:var(--text-muted); margin:0 0 10px 0; line-height:1.5;" class="translatable">تدليك فروة الرأس بزيت الزيتون السيناوي الخام الغني بفيتامين E لمدة 45 دقيقة أسبوعياً لمنع التساقط ولمعان فوري.</p>
+                            </div>
+                            <button type="button" class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem; width:100%;" onclick="window.shopRecipeQuickAdd(2)">🛒 <span class="translatable">أضف العبوة المناسبة للوصفة</span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div id="home-seo-benefits-section" class="seo-benefits-section" style="display:none;">
                 <div onclick="let el=document.getElementById('home-seo-benefits-body'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
                     <h3 style="margin:0; color:var(--primary); font-size:1.02rem;">📖 <span class="translatable">فوائد زيت الزيتون السيناوي البكر وطريقة الاستخدام الصحيحة</span></h3>
@@ -956,6 +1033,17 @@
                     <div id="admin-traffic-sources-list" style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:10px; font-size:0.88rem;">جاري الحساب...</div>
                 </div>
             </div>
+            <!-- تقرير المقارنة اليومي والشهري (Daily & Monthly Growth Comparison) -->
+            <div id="admin-growth-comparison-box" class="growth-comparison-grid">
+                <div class="growth-card">
+                    <span style="font-size:0.8rem; color:var(--text-muted); font-weight:bold;">📅 مبيعات اليوم مقارنة بالأمس</span>
+                    <div id="stat-daily-comparison" style="font-size:1.05rem; font-weight:900; color:var(--primary); margin-top:4px;">جاري الحساب...</div>
+                </div>
+                <div class="growth-card" style="border-right-color: var(--secondary);">
+                    <span style="font-size:0.8rem; color:var(--text-muted); font-weight:bold;">📆 مبيعات هذا الشهر مقارنة بالشهر الماضي</span>
+                    <div id="stat-monthly-comparison" style="font-size:1.05rem; font-weight:900; color:var(--secondary); margin-top:4px;">جاري الحساب...</div>
+                </div>
+            </div>
             <div class="dashboard-grid">
                 <div class="dash-card"><h3>👥 الزيارات</h3><div class="stat" id="stat-visits">0</div></div>
                 <div class="dash-card"><h3>📦 الطلبات</h3><div class="stat" id="stat-orders">0</div></div>
@@ -1273,6 +1361,39 @@
                             <input type="checkbox" id="setting-enable-product-compare" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>⚖️ تفعيل مقارنة المنتجات السريعة وحاسبة التوفير للأحجام</span>
                         </label>
+                        <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
+                        <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🛡️ حماية المحتوى وصلاحيات الموظفين والمرحلة الثانية (V59):</h4>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-content-protection" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🔒 تفعيل حماية المحتوى (منع نسخ النصوص والكلام ومنع سحب أو حفظ الصور)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-annual-calc" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🏺 تفعيل (حاسبة الخزين السنوي وشهر رمضان) في الرئيسية والقائمة الجانبية</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-shoppable-recipes" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🥗 تفعيل ركن (الوصفات الصحية القابلة للتسوق بضغطة زر) في الرئيسية</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-growth-report" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📈 تفعيل تقرير المقارنة اليومي والشهري (اليوم بالأمس والشهر بالماضي) في الإحصائيات</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-courier-dispatch" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🛵 تفعيل زر (بطاقة المندوب السريعة وإرسالها عبر واتساب للمندوب) في الطلبات والعمل</span>
+                        </label>
+
+                        <div style="background:var(--panel-bg); padding:10px; border-radius:8px; border:1px solid #6f42c1; margin-top:6px;">
+                            <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem; margin-bottom:6px;">
+                                <input type="checkbox" id="setting-enable-staff-permissions" style="width:18px; height:18px; margin:0; accent-color:#6f42c1;" onchange="window.saveSettings()">
+                                <span>👨‍💼 تفعيل نظام صلاحيات الموظفين المحدودة (يفتح لهم العمل والطلبات والرسائل فقط بدون الإعدادات أو الحذف)</span>
+                            </label>
+                            <div class="form-row" style="align-items:center; margin-bottom:0;">
+                                <input type="text" id="setting-staff-emails" placeholder="إيميلات الموظفين مفصولة بفاصلة (مثال: staff1@gmail.com, staff2@gmail.com)" style="margin-bottom:0; flex:1; font-size:0.82rem;">
+                                <button type="button" class="btn" style="padding:6px 12px; font-size:0.8rem; background:#6f42c1;" onclick="window.saveSettings()">حفظ الموظفين</button>
+                            </div>
+                        </div>
                         <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
                         <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🏢 طلبات الجملة وفاحص العصرة وأكواد العجلة الفريدة (V58):</h4>
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
