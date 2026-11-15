@@ -1,7 +1,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, updateDoc, setDoc, getDoc, getDocs, increment, arrayUnion, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBJFZRij_8cprlkj4qV98WSZVRWdYLQY-I", authDomain: "olive-oile-store.firebaseapp.com", projectId: "olive-oile-store", messagingSenderId: "991769684700", appId: "1:991769684700:web:adfd4958d6aba1c7902219" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app); const googleProvider = new GoogleAuthProvider();
@@ -8980,231 +8980,1040 @@ window.showUserHistory = function(userId, userName) {
             "بطاقة بيانات الزائر وسجل تصفحه": "Visitor Profile & Browsing History",
             "تفاصيل الأوردرات وحساباتها": "Orders & Revenue Breakdown"
         });
-// === إصلاح شامل V62: الهيدر + البانر + الشريط المتحرك + القارئ الصوتي + سجل الزوار ===
 
-// 1. إلغاء زر الشغل من الشريط العلوي الثابت لإظهار الوضع الليلي وتبديل الحسابات بوضوح
-(function fixTopHeaderAndHero() {
-    let hdrWorkBtn = document.getElementById('header-work-hub-btn');
-    if (hdrWorkBtn) hdrWorkBtn.remove();
 
-    // إصلاح البانر العلوي ليحافظ على تناسقه
-    window.renderHeroSlider = function() {
-        let heroSec = document.getElementById('hero-section');
-        let sliderWrap = document.getElementById('hero-slider-wrapper');
-        let homePanel = document.getElementById('home-panel');
-        let isHomeActive = homePanel && homePanel.classList.contains('active');
-        if (!isHomeActive) {
-            if (heroSec) heroSec.style.display = 'none';
-            if (sliderWrap) sliderWrap.style.display = 'none';
-            return;
-        }
-        if (storeSettings.enableHeroSlider) {
-            if (heroSec) heroSec.style.display = 'none';
-            if (sliderWrap) sliderWrap.style.display = 'block';
-        } else {
-            if (heroSec) heroSec.style.display = '';
-            if (sliderWrap) sliderWrap.style.display = 'none';
-        }
-    };
-})();
+        // =========================================================================
+        // === النسخة V62 الشاملة: إصلاح الواجهة والزوار + التحكم الكامل بحساب العميل بالشات + الميكروفون الذكي ===
+        // =========================================================================
 
-// 2. إصلاح الشريط المصور المتحرك ليظهر كل المنتجات والأقسام ويلف تلقائياً بدون توقف
-let v62ScrollTimer = null;
-window.renderVisualBar = function() {
-    let container = document.getElementById('visual-scroll-bar');
-    if (!container) return;
-    if (storeSettings.visualBarMode === 'none' || !isProductsLoaded || products.length === 0) {
-        container.style.display = 'none';
-        return;
-    }
-    let itemsList = [];
-    // جمع المنتجات الظاهرة
-    products.filter(p => !p.isHidden).forEach(p => {
-        let img = (p.images && p.images[0]) ? p.images[0] : (p.imageUrl || '1000392409.jpeg');
-        itemsList.push({
-            title: p.name,
-            img: img,
-            action: `window.openProductModal('${p.id}')`
-        });
-    });
-    // إضافة الأقسام أيضاً إذا كان العدد قليلاً
-    (storeSettings.categories || []).forEach(cat => {
-        let catProd = products.find(p => p.category === cat && p.images && p.images[0]);
-        let img = catProd ? catProd.images[0] : '1000392409.jpeg';
-        itemsList.push({
-            title: `📂 ${cat}`,
-            img: img,
-            action: `window.showPanel('home'); window.filterProducts('${cat}')`
-        });
-    });
+        // -------------------------------------------------------------------------
+        // أولاً: الإصلاحات الـ 5 الأساسية (الهيدر + البانر + الشريط المتحرك + القارئ الصوتي + سجل الزوار)
+        // -------------------------------------------------------------------------
+        (function applyV62CoreFixes() {
+            let hdrWorkBtn = document.getElementById('header-work-hub-btn');
+            if (hdrWorkBtn) hdrWorkBtn.remove();
 
-    if (itemsList.length === 0) {
-        container.style.display = 'none';
-        return;
-    }
-    // تكرار العناصر لضمان امتلاء الشريط ودورانه المستمر على جميع الشاشات
-    let loopList = [...itemsList];
-    while (loopList.length < 12) {
-        loopList = loopList.concat(itemsList);
-    }
+            window.renderHeroSlider = function() {
+                let heroSec = document.getElementById('hero-section');
+                let sliderWrap = document.getElementById('hero-slider-wrapper');
+                let homePanel = document.getElementById('home-panel');
+                let isHomeActive = homePanel && homePanel.classList.contains('active');
+                if (!isHomeActive) {
+                    if (heroSec) heroSec.style.display = 'none';
+                    if (sliderWrap) sliderWrap.style.display = 'none';
+                    return;
+                }
+                if (storeSettings.enableHeroSlider) {
+                    if (heroSec) heroSec.style.display = 'none';
+                    if (sliderWrap) sliderWrap.style.display = 'block';
+                } else {
+                    if (heroSec) heroSec.style.display = '';
+                    if (sliderWrap) sliderWrap.style.display = 'none';
+                }
+            };
+        })();
 
-    container.innerHTML = loopList.map(it => `
-        <div class="visual-item" onclick="${it.action}">
-            <img loading="lazy" src="${it.img}" alt="${window.escapeHTML(it.title)}" onerror="this.src='1000392409.jpeg'">
-            <span>${window.escapeHTML(it.title)}</span>
-        </div>
-    `).join('');
-    container.style.display = 'flex';
-    window.startVisualAutoScroll();
-};
-
-window.startVisualAutoScroll = function() {
-    let bar = document.getElementById('visual-scroll-bar');
-    if (!bar) return;
-    if (v62ScrollTimer) clearInterval(v62ScrollTimer);
-    let dirStep = -1;
-    v62ScrollTimer = setInterval(() => {
-        if (bar.matches(':hover') || bar.matches(':active')) return;
-        let before = bar.scrollLeft;
-        bar.scrollLeft += dirStep;
-        if (bar.scrollLeft === before) {
-            dirStep = -dirStep; // عكس الاتجاه بسلاسة عند الوصول للنهاية
-            bar.scrollLeft += dirStep;
-        }
-    }, 30);
-};
-
-// 3. إصلاح القارئ الصوتي لوصف المنتج ليعمل على جميع الهواتف والمتصفحات 100%
-window.currentProductTtsAudio = null;
-window.toggleProductVoiceReader = function() {
-    let p = products.find(pr => pr.id === activeProductForReview);
-    if (!p) return;
-
-    if (window.currentProductTtsAudio) {
-        window.currentProductTtsAudio.pause();
-        window.currentProductTtsAudio = null;
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-        window.showToast('⏹️ تم إيقاف القارئ الصوتي', 'info');
-        return;
-    }
-    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-        window.speechSynthesis.cancel();
-        window.showToast('⏹️ تم إيقاف القارئ الصوتي', 'info');
-        return;
-    }
-
-    let textToRead = `${p.name}، السعر ${p.price} جنيه. ${p.description || 'زيت زيتون سيناوي بكر ممتاز عصرة أولى على البارد طبيعي مئة بالمئة'}`;
-    window.showToast('🔊 جاري قراءة وصف المنتج صوتياً...', 'info');
-
-    let usedNative = false;
-    if ('speechSynthesis' in window) {
-        try {
-            window.speechSynthesis.cancel();
-            let voices = window.speechSynthesis.getVoices() || [];
-            let arVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ar'));
-            let utter = new SpeechSynthesisUtterance(textToRead);
-            utter.lang = arVoice ? arVoice.lang : 'ar-SA';
-            if (arVoice) utter.voice = arVoice;
-            utter.rate = 0.95;
-            window.speechSynthesis.speak(utter);
-            usedNative = true;
-        } catch (e) {}
-    }
-
-    // مشغل صوتي سحابي احتياطي للهواتف التي لا تحتوي على صوت عربي مدمج
-    if (!usedNative) {
-        let shortTxt = textToRead.slice(0, 180);
-        let ttsUrl = `https://translate.googleapis.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(shortTxt)}&tl=ar&client=tw-ob`;
-        let audio = new Audio(ttsUrl);
-        window.currentProductTtsAudio = audio;
-        audio.onended = () => { window.currentProductTtsAudio = null; };
-        audio.onerror = () => { window.currentProductTtsAudio = null; };
-        audio.play().catch(() => {});
-    }
-};
-
-// 4. إصلاح سجل وبطاقات الزوار ليعمل فوراً بدون انتظار أو خطأ صلاحيات في Firebase
-window.logDetailedStoreVisit = async function() {
-    try {
-        let vid = window.getOrCreateVisitorId();
-        let dev = window.detectVisitorDeviceDetails();
-        let nowIso = new Date().toISOString();
-        let email = (currentUser && currentUser.email) ? currentUser.email : 'غير مسجل الدخول';
-        let name = (currentUser && currentUser.displayName) ? currentUser.displayName : (localStorage.getItem('zait_wheel_saved_name') || 'زائر للمتجر');
-        let phone = (currentUser && currentUser.phoneNumber) ? currentUser.phoneNumber : (localStorage.getItem('zait_wheel_saved_phone') || 'غير مسجل');
-        let trafficSrc = window.getDetectedTrafficSource ? window.getDetectedTrafficSource() : 'مباشر (Direct)';
-
-        let statsRef = doc(db, 'settings', 'stats');
-        let snap = await getDoc(statsRef);
-        let vMap = (snap.exists() && snap.data().visitorsMap) ? { ...snap.data().visitorsMap } : {};
-        let existing = vMap[vid] || { firstVisit: nowIso, visitsHistory: [] };
-        let hist = Array.isArray(existing.visitsHistory) ? [...existing.visitsHistory] : [];
-        hist.push({ time: nowIso, source: trafficSrc, device: dev.deviceSummary, browser: dev.browserName });
-        if (hist.length > 25) hist = hist.slice(-25);
-
-        vMap[vid] = {
-            id: vid,
-            visitorId: vid,
-            name: name !== 'زائر للمتجر' ? name : (existing.name || 'زائر للمتجر'),
-            email: email !== 'غير مسجل الدخول' ? email : (existing.email || 'غير مسجل الدخول'),
-            phone: phone !== 'غير مسجل' ? phone : (existing.phone || 'غير مسجل'),
-            deviceSummary: dev.deviceSummary,
-            osName: dev.osName,
-            browserName: dev.browserName,
-            screenRes: dev.screenRes,
-            trafficSource: trafficSrc,
-            firstVisit: existing.firstVisit || nowIso,
-            lastVisit: nowIso,
-            visitsCount: hist.length,
-            visitsHistory: hist
+        // إصلاح الشريط المصور المتحرك ليظهر كل المنتجات والأقسام ويلف تلقائياً بسلاسة
+        let v62ScrollTimer = null;
+        window.renderVisualBar = function() {
+            let container = document.getElementById('visual-scroll-bar');
+            if (!container) return;
+            if (storeSettings.visualBarMode === 'none' || !isProductsLoaded || products.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            let itemsList = [];
+            products.filter(p => !p.isHidden).forEach(p => {
+                let img = (p.images && p.images[0]) ? p.images[0] : (p.imageUrl || '1000392409.jpeg');
+                itemsList.push({
+                    title: p.name,
+                    img: img,
+                    action: `window.openProductModal('${p.id}')`
+                });
+            });
+            (storeSettings.categories || []).forEach(cat => {
+                let catProd = products.find(p => p.category === cat && p.images && p.images[0]);
+                let img = catProd ? catProd.images[0] : '1000392409.jpeg';
+                itemsList.push({
+                    title: `📂 ${cat}`,
+                    img: img,
+                    action: `window.showPanel('home'); window.filterProducts('${cat}')`
+                });
+            });
+            if (itemsList.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            let loopList = [...itemsList];
+            while (loopList.length < 12) {
+                loopList = loopList.concat(itemsList);
+            }
+            container.innerHTML = loopList.map(it => `
+                <div class="visual-item" onclick="${it.action}">
+                    <img loading="lazy" src="${it.img}" alt="${window.escapeHTML(it.title)}" onerror="this.src='1000392409.jpeg'">
+                    <span>${window.escapeHTML(it.title)}</span>
+                </div>
+            `).join('');
+            container.style.display = 'flex';
+            window.startVisualAutoScroll();
         };
-        await setDoc(statsRef, { visitorsMap: vMap }, { merge: true });
-    } catch (e) {}
-};
 
-window.loadSiteVisitorsRealtime = async function() {
-    let cont = document.getElementById('visitors-cards-container');
-    if (cont && (!window.allSiteVisitorsList || window.allSiteVisitorsList.length === 0)) {
-        cont.innerHTML = '<p style="text-align:center; color:var(--primary);">⏳ جاري جلب البطاقات...</p>';
-    }
-    try {
-        let combinedMap = new Map();
-        // 1. قراءة سجل الزوار من وثيقة الإحصائيات المسموحة دائماً
-        let statsSnap = await getDoc(doc(db, 'settings', 'stats'));
-        if (statsSnap.exists() && statsSnap.data().visitorsMap) {
-            let vMap = statsSnap.data().visitorsMap;
-            Object.values(vMap).forEach(v => {
-                if (v && v.id) combinedMap.set(v.id, v);
+        window.startVisualAutoScroll = function() {
+            let bar = document.getElementById('visual-scroll-bar');
+            if (!bar) return;
+            if (v62ScrollTimer) clearInterval(v62ScrollTimer);
+            let dirStep = -1;
+            v62ScrollTimer = setInterval(() => {
+                if (bar.matches(':hover') || bar.matches(':active')) return;
+                let before = bar.scrollLeft;
+                bar.scrollLeft += dirStep;
+                if (bar.scrollLeft === before) {
+                    dirStep = -dirStep;
+                    bar.scrollLeft += dirStep;
+                }
+            }, 30);
+        };
+
+        // إصلاح القارئ الصوتي لوصف المنتج ليعمل على جميع الموبايلات والمتصفحات 100%
+        window.currentProductTtsAudio = null;
+        window.toggleProductVoiceReader = function() {
+            let p = products.find(pr => pr.id === activeProductForReview);
+            if (!p) return;
+
+            if (window.currentProductTtsAudio) {
+                window.currentProductTtsAudio.pause();
+                window.currentProductTtsAudio = null;
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                window.showToast('⏹️ تم إيقاف القارئ الصوتي', 'info');
+                return;
+            }
+            if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                window.showToast('⏹️ تم إيقاف القارئ الصوتي', 'info');
+                return;
+            }
+
+            let textToRead = `${p.name}، السعر ${p.price} جنيه. ${p.description || 'زيت زيتون سيناوي بكر ممتاز عصرة أولى على البارد طبيعي مئة بالمئة'}`;
+            window.showToast('🔊 جاري قراءة وصف المنتج صوتياً...', 'info');
+
+            let usedNative = false;
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel();
+                    let voices = window.speechSynthesis.getVoices() || [];
+                    let arVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ar'));
+                    let utter = new SpeechSynthesisUtterance(textToRead);
+                    utter.lang = arVoice ? arVoice.lang : 'ar-SA';
+                    if (arVoice) utter.voice = arVoice;
+                    utter.rate = 0.95;
+                    window.speechSynthesis.speak(utter);
+                    usedNative = true;
+                } catch (e) {}
+            }
+            if (!usedNative) {
+                let shortTxt = textToRead.slice(0, 180);
+                let ttsUrl = `https://translate.googleapis.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(shortTxt)}&tl=ar&client=tw-ob`;
+                let audio = new Audio(ttsUrl);
+                window.currentProductTtsAudio = audio;
+                audio.onended = () => { window.currentProductTtsAudio = null; };
+                audio.onerror = () => { window.currentProductTtsAudio = null; };
+                audio.play().catch(() => {});
+            }
+        };
+
+        // إصلاح سجل وبطاقات الزوار ليفتح في نفس اللحظة من وثيقة الإحصائيات والمستخدمين بدون أي تعليق
+        window.logDetailedStoreVisit = async function() {
+            if (storeSettings.enableVisitorTracking === false) return;
+            try {
+                let vid = window.getOrCreateVisitorId();
+                let dev = window.detectVisitorDeviceDetails();
+                let nowIso = new Date().toISOString();
+                let email = (currentUser && currentUser.email) ? currentUser.email : 'غير مسجل الدخول';
+                let name = (currentUser && currentUser.displayName) ? currentUser.displayName : (localStorage.getItem('zait_wheel_saved_name') || 'زائر للمتجر');
+                let phone = (currentUser && currentUser.phoneNumber) ? currentUser.phoneNumber : (localStorage.getItem('zait_wheel_saved_phone') || 'غير مسجل');
+                let trafficSrc = window.getDetectedTrafficSource ? window.getDetectedTrafficSource() : 'مباشر (Direct)';
+
+                let statsRef = doc(db, 'settings', 'stats');
+                let snap = await getDoc(statsRef);
+                let vMap = (snap.exists() && snap.data().visitorsMap) ? { ...snap.data().visitorsMap } : {};
+                let existing = vMap[vid] || { firstVisit: nowIso, visitsHistory: [] };
+                let hist = Array.isArray(existing.visitsHistory) ? [...existing.visitsHistory] : [];
+                hist.push({ time: nowIso, source: trafficSrc, device: dev.deviceSummary, browser: dev.browserName });
+                if (hist.length > 25) hist = hist.slice(-25);
+
+                vMap[vid] = {
+                    id: vid,
+                    visitorId: vid,
+                    name: name !== 'زائر للمتجر' ? name : (existing.name || 'زائر للمتجر'),
+                    email: email !== 'غير مسجل الدخول' ? email : (existing.email || 'غير مسجل الدخول'),
+                    phone: phone !== 'غير مسجل' ? phone : (existing.phone || 'غير مسجل'),
+                    deviceSummary: dev.deviceSummary,
+                    osName: dev.osName,
+                    browserName: dev.browserName,
+                    screenRes: dev.screenRes,
+                    trafficSource: trafficSrc,
+                    firstVisit: existing.firstVisit || nowIso,
+                    lastVisit: nowIso,
+                    visitsCount: hist.length,
+                    visitsHistory: hist
+                };
+                await setDoc(statsRef, { visitorsMap: vMap }, { merge: true });
+            } catch (e) {}
+        };
+
+        window.loadSiteVisitorsRealtime = async function() {
+            let cont = document.getElementById('visitors-cards-container');
+            if (cont && (!window.allSiteVisitorsList || window.allSiteVisitorsList.length === 0)) {
+                cont.innerHTML = '<p style="text-align:center; color:var(--primary);">⏳ جاري جلب بطاقات الزوار...</p>';
+            }
+            try {
+                let combinedMap = new Map();
+                let statsSnap = await getDoc(doc(db, 'settings', 'stats'));
+                if (statsSnap.exists() && statsSnap.data().visitorsMap) {
+                    let vMap = statsSnap.data().visitorsMap;
+                    Object.values(vMap).forEach(v => {
+                        if (v && v.id) combinedMap.set(v.id, v);
+                    });
+                }
+                let usersSnap = await getDocs(collection(db, 'users'));
+                usersSnap.forEach(uDoc => {
+                    let u = uDoc.data();
+                    let uid = 'user_' + uDoc.id;
+                    combinedMap.set(uid, {
+                        id: uid,
+                        visitorId: uid,
+                        name: u.name || (u.email ? u.email.split('@')[0] : 'عميل مسجل'),
+                        email: u.email || 'مسجل',
+                        phone: u.phone1 || 'غير مسجل',
+                        deviceSummary: u.deviceSummary || '📱 هاتف ذكي / متصفح العميل',
+                        osName: u.osName || 'Android / iOS',
+                        browserName: u.browserName || 'متصفح الموبايل',
+                        screenRes: u.screenRes || '',
+                        trafficSource: 'حساب مسجل بالمتجر',
+                        firstVisit: u.lastLogin || new Date().toISOString(),
+                        lastVisit: u.lastLogin || new Date().toISOString(),
+                        visitsCount: u.visitsCount || 1,
+                        visitsHistory: [{ time: u.lastLogin || new Date().toISOString(), source: 'تسجيل دخول', device: '📱 هاتف العميل' }]
+                    });
+                });
+                window.allSiteVisitorsList = Array.from(combinedMap.values()).sort(
+                    (a, b) => window.parseSafeTimestamp(b.lastVisit, 0) - window.parseSafeTimestamp(a.lastVisit, 0)
+                );
+                window.renderVisitorsCardsList();
+            } catch (e) {
+                window.renderVisitorsCardsList();
+            }
+        };
+
+        // -------------------------------------------------------------------------
+        // ثانياً: الميكروفون الذكي لتصحيح النطق والكلام التلقائي (للعميل والمدير والموظفين)
+        // -------------------------------------------------------------------------
+        window.VOICE_PHONETIC_DICTIONARY = [
+            // تصحيح مصطلحات زيت الزيتون والمتجر الشائعة عند النطق السريع أو الخاطئ
+            [/\b(زت|ذيت|زيتت|ازيت|الذيت)\b/g, 'زيت'],
+            [/\b(زتون|ذيتون|زيتان|زاتون|الزتون|الذيتون|زيتونه)\b/g, 'زيتون'],
+            [/\b(سيناوي|سينوي|سناوي|ثيناوي|سيناوى|السيناوي)\b/g, 'سيناوي'],
+            [/\b(سينا|ثيناء|سينه)\b/g, 'سيناء'],
+            [/\b(الشجره|الشجرة|شجره)\s*(المباركه|المباركة|مباركه)\b/g, 'الشجرة المباركة'],
+            [/\b(عصره|عصرة|عصره اولى|عصره اولي)\b/g, 'عصرة أولى'],
+            [/\b(عالبارد|علي البارد|ع البارد|بارد)\b/g, 'على البارد'],
+            [/\b(جركن|جاركن|جيركن|قرص|جراكن)\b/g, 'جركن'],
+            [/\b(صفيحه|صفيحة|صفائح)\b/g, 'صفيحة'],
+            [/\b(اوردر|اردر|الاوردر|الاوردرات|أوردر)\b/g, 'طلب'],
+            [/\b(بكام|بكم|بيكام|كام سعر|كم سعر)\b/g, 'كم سعر'],
+            [/\b(انستا باي|انستاباي|انستا بى|انستا)\b/g, 'إنستاباي'],
+            [/\b(فودافون كاش|فدفون كاش|ودافون كاش)\b/g, 'فودافون كاش'],
+            [/\b(محفظه|محفظة|المحفظه)\b/g, 'محفظة إلكترونية'],
+            [/\b(الغي|الغاء|الغلغاء|عايز الغي)\b/g, 'إلغاء'],
+            [/\b(استرجاع|ارجاع|عايز ارجع)\b/g, 'استرجاع'],
+            [/\b(حموضه|الحموضه)\b/g, 'حموضة'],
+            [/\b(ليتر|لترات|لترين)\b/g, 'لتر'],
+            [/\b(هديه|الهديه)\b/g, 'هدية'],
+            [/\b(كبون|كوبن|كود خصم)\b/g, 'كوبون خصم'],
+            [/\b(توصيل|الشحن|شحن)\b/g, 'شحن وتوصيل']
+        ];
+
+        window.smartCorrectSpeechTranscript = function(rawText, alternativesList = []) {
+            if (!rawText) return '';
+            if (storeSettings.enableSmartMicCorrector === false) return rawText.trim();
+
+            // إذا وُجدت بدائل صوتية من المتصفح، نختار البديل الذي يحتوي على كلمات المتجر الصحيحة
+            let storeKeywords = ['زيت', 'زيتون', 'سيناوي', 'لتر', 'طلب', 'شحن', 'سعر', 'عبوة', 'جركن', 'خصم', 'استرجاع'];
+            let bestCandidate = rawText.trim();
+            let bestScore = 0;
+
+            let allCandidates = [rawText, ...alternativesList];
+            allCandidates.forEach(cand => {
+                if (!cand) return;
+                let score = 0;
+                storeKeywords.forEach(kw => { if (cand.includes(kw)) score += 2; });
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestCandidate = cand.trim();
+                }
+            });
+
+            let corrected = bestCandidate;
+            window.VOICE_PHONETIC_DICTIONARY.forEach(([regex, replacement]) => {
+                corrected = corrected.replace(regex, replacement);
+            });
+            // إزالة التكرار اللغوي الناتج عن التلعثم الصوتي (مثال: "زيت زيت" -> "زيت")
+            corrected = corrected.replace(/\b(\S+)\s+\1\b/g, '$1');
+            return corrected.trim();
+        };
+
+        // استبدال دالة الميكروفون (startVoiceTyping) لتدعم التصحيح الذكي للعميل والمدير والموظف
+        window.startVoiceTyping = function(inputId, btnElement) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                window.showToast(window.currentLang === 'ar' ? 'متصفحك لا يدعم الإدخال الصوتي' : 'Voice input not supported', 'error');
+                return;
+            }
+            const recognition = new SpeechRecognition();
+            recognition.lang = window.currentLang === 'ar' ? 'ar-EG' : 'en-US';
+            recognition.interimResults = true;
+            recognition.maxAlternatives = 5;
+
+            const inputEl = document.getElementById(inputId);
+            const initialVal = inputEl ? inputEl.value : '';
+
+            recognition.onstart = function() {
+                if (btnElement) btnElement.classList.add('recording');
+                window.showToast(window.currentLang === 'ar' ? '🎤 تحدث الآن.. المصحح الذكي يستمع إليك' : '🎤 Speak now...', 'info');
+            };
+            recognition.onresult = function(event) {
+                let res = event.results[event.results.length - 1];
+                let primaryTranscript = res[0].transcript;
+                let alts = [];
+                for (let i = 1; i < res.length; i++) alts.push(res[i].transcript);
+
+                let smartText = window.smartCorrectSpeechTranscript(primaryTranscript, alts);
+                if (inputEl) {
+                    inputEl.value = initialVal ? (initialVal + ' ' + smartText).trim() : smartText;
+                    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            };
+            recognition.onerror = function() {
+                window.showToast(window.currentLang === 'ar' ? 'لم نتمكن من سماعك بوضوح، حاول مرة أخرى' : 'Could not hear clearly', 'error');
+            };
+            recognition.onend = function() {
+                if (btnElement) btnElement.classList.remove('recording');
+            };
+            recognition.start();
+        };
+
+        // -------------------------------------------------------------------------
+        // ثالثاً: لوحة التحكم الكامل بحساب العميل من داخل الشات (الاسم، البريد، الرقم السري، الرصيد، والطلبات)
+        // -------------------------------------------------------------------------
+        window.activeChatCustomerUserDocId = null;
+        window.activeChatCustomerData = null;
+
+        window.loadCustomerAccountControlInChat = async function(chatId, customerName) {
+            let box = document.getElementById('admin-chat-customer-control-box');
+            let body = document.getElementById('admin-chat-cust-control-body');
+            if (!box || !body) return;
+            if (storeSettings.enableChatAccountControl === false) {
+                box.style.display = 'none';
+                return;
+            }
+            box.style.display = 'block';
+            body.innerHTML = '<p style="margin:0; color:var(--primary);">⏳ جاري جلب كافة بيانات حساب العميل وطلباته...</p>';
+
+            try {
+                let foundUser = null;
+                let foundUid = null;
+
+                // البحث عن وثيقة العميل في مجموعة users عبر الـ UID أو الإيميل أو رقم الهاتف
+                let usersSnap = await getDocs(collection(db, 'users'));
+                usersSnap.forEach(uDoc => {
+                    let d = uDoc.data();
+                    if (
+                        uDoc.id === chatId ||
+                        (d.email && d.email.toLowerCase() === String(chatId).toLowerCase()) ||
+                        (d.phone1 && d.phone1 === chatId) ||
+                        (d.name && d.name === customerName)
+                    ) {
+                        foundUser = d;
+                        foundUid = uDoc.id;
+                    }
+                });
+
+                // جمع طلبات هذا العميل
+                let custOrders = (adminOrdersArray || []).filter(o => {
+                    return (
+                        (foundUid && o.userId === foundUid) ||
+                        o.customerEmail === chatId ||
+                        (o.phones && o.phones.primary === chatId) ||
+                        o.customerName === customerName
+                    );
+                });
+
+                if (!foundUser) {
+                    foundUid = chatId.replace(/[^a-zA-Z0-9_-]/g, '_');
+                    foundUser = {
+                        name: customerName || 'عميل',
+                        email: chatId.includes('@') ? chatId : '',
+                        phone1: (!chatId.includes('@') && /\d/.test(chatId)) ? chatId : ((custOrders[0] && custOrders[0].phones && custOrders[0].phones.primary) || ''),
+                        gov: (custOrders[0] && custOrders[0].location && custOrders[0].location.governorate) || '',
+                        city: (custOrders[0] && custOrders[0].location && custOrders[0].location.city) || '',
+                        address: (custOrders[0] && custOrders[0].location && custOrders[0].location.details) || '',
+                        loyaltyPoints: 0,
+                        walletBalance: 0
+                    };
+                }
+
+                window.activeChatCustomerUserDocId = foundUid;
+                window.activeChatCustomerData = foundUser;
+
+                let lastOrd = custOrders[0];
+                let lastOrdHtml = lastOrd
+                    ? `<div style="background:var(--panel-bg); padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); margin-top:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                            <span>📦 <strong>آخر طلب للعميل:</strong> #${lastOrd.id.slice(0,6).toUpperCase()} (${lastOrd.totalAmount} ج) — الحالة: <strong style="color:#028090;">${window.escapeHTML(lastOrd.status)}</strong></span>
+                            <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                                <button type="button" class="btn" style="padding:3px 8px; font-size:0.74rem; background:#028090;" onclick="window.updateOrderStatus('${lastOrd.id}', 'تم التجهيز'); setTimeout(()=>window.loadCustomerAccountControlInChat('${chatId.replace(/'/g, "\\'")}', '${(customerName||'').replace(/'/g, "\\'")}'), 400);">📦 تجهيز</button>
+                                <button type="button" class="btn" style="padding:3px 8px; font-size:0.74rem; background:#007bff;" onclick="window.updateOrderStatus('${lastOrd.id}', 'تم الشحن'); setTimeout(()=>window.loadCustomerAccountControlInChat('${chatId.replace(/'/g, "\\'")}', '${(customerName||'').replace(/'/g, "\\'")}'), 400);">🚚 شحن</button>
+                                <button type="button" class="btn" style="padding:3px 8px; font-size:0.74rem; background:#28a745;" onclick="window.updateOrderStatus('${lastOrd.id}', 'تم التوصيل ✅'); setTimeout(()=>window.loadCustomerAccountControlInChat('${chatId.replace(/'/g, "\\'")}', '${(customerName||'').replace(/'/g, "\\'")}'), 400);">✅ توصيل</button>
+                            </div>
+                        </div>
+                    </div>`
+                    : `<div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;">📦 لم يقم العميل بتسجيل طلبات سابقة بعد (${custOrders.length} طلب).</div>`;
+
+                body.innerHTML = `
+                    <div class="form-row" style="gap:8px; margin-bottom:8px;">
+                        <div style="flex:1; min-width:140px;">
+                            <label style="font-size:0.76rem; font-weight:bold; color:var(--primary);">👤 اسم العميل:</label>
+                            <input type="text" id="chat-ctrl-name" value="${window.escapeHTML(foundUser.name || customerName || '')}" style="margin:0; padding:6px 8px; font-size:0.82rem;">
+                        </div>
+                        <div style="flex:1; min-width:160px;">
+                            <label style="font-size:0.76rem; font-weight:bold; color:var(--primary);">📧 البريد الإلكتروني:</label>
+                            <input type="email" id="chat-ctrl-email" value="${window.escapeHTML(foundUser.email || '')}" placeholder="email@example.com" style="margin:0; padding:6px 8px; font-size:0.82rem;">
+                        </div>
+                        <div style="flex:1; min-width:130px;">
+                            <label style="font-size:0.76rem; font-weight:bold; color:var(--primary);">📞 رقم الهاتف:</label>
+                            <input type="tel" id="chat-ctrl-phone" value="${window.escapeHTML(foundUser.phone1 || '')}" placeholder="010..." style="margin:0; padding:6px 8px; font-size:0.82rem;">
+                        </div>
+                    </div>
+                    <div class="form-row" style="gap:8px; margin-bottom:8px;">
+                        <div style="flex:1.5; min-width:160px;">
+                            <label style="font-size:0.76rem; font-weight:bold; color:var(--primary);">🏠 المحافظة والعنوان التفصيلي:</label>
+                            <input type="text" id="chat-ctrl-address" value="${window.escapeHTML(foundUser.address || ((foundUser.gov || '') + ' ' + (foundUser.city || '')).trim())}" placeholder="العنوان التفصيلي..." style="margin:0; padding:6px 8px; font-size:0.82rem;">
+                        </div>
+                        <div style="flex:1; min-width:130px;">
+                            <label style="font-size:0.76rem; font-weight:bold; color:var(--danger);">🔑 تعيين رقم سري جديد للعميل:</label>
+                            <input type="text" id="chat-ctrl-password" value="${window.escapeHTML(foundUser.adminCustomPassword || '')}" placeholder="اكتب الرقم السري الجديد..." style="margin:0; padding:6px 8px; font-size:0.82rem; border-color:var(--danger);">
+                        </div>
+                    </div>
+                    <div class="form-row" style="gap:8px; margin-bottom:10px;">
+                        <div style="flex:1; min-width:120px;">
+                            <label style="font-size:0.76rem; font-weight:bold; color:var(--secondary);">🎁 رصيد نقاط الولاء:</label>
+                            <input type="number" id="chat-ctrl-points" value="${Number(foundUser.loyaltyPoints) || 0}" style="margin:0; padding:6px 8px; font-size:0.82rem;">
+                        </div>
+                        <div style="flex:1; min-width:120px;">
+                            <label style="font-size:0.76rem; font-weight:bold; color:#028090;">💳 رصيد المحفظة النقدية (ج):</label>
+                            <input type="number" id="chat-ctrl-wallet" value="${Number(foundUser.walletBalance) || 0}" style="margin:0; padding:6px 8px; font-size:0.82rem;">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="btn" style="flex:1.5; padding:6px 12px; font-size:0.82rem; background:#28a745;" onclick="window.saveCustomerAccountChangesFromChat()">💾 حفظ كل تعديلات حساب العميل</button>
+                        <button type="button" class="btn btn-outline" style="flex:1; padding:6px 10px; font-size:0.8rem; border-color:var(--danger); color:var(--danger);" onclick="window.sendCustomerPasswordResetFromChat()">🔑 إرسال رابط/الرقم السري الجديد للعميل</button>
+                    </div>
+                    ${lastOrdHtml}
+                `;
+            } catch (e) {
+                body.innerHTML = '<p style="color:var(--danger); margin:0;">تعذر جلب ملف العميل، حاول مرة أخرى.</p>';
+            }
+        };
+
+        window.saveCustomerAccountChangesFromChat = async function() {
+            let uid = window.activeChatCustomerUserDocId || activeAdminChatId;
+            if (!uid) return;
+            let newName = (document.getElementById('chat-ctrl-name') || {}).value.trim();
+            let newEmail = (document.getElementById('chat-ctrl-email') || {}).value.trim().toLowerCase();
+            let newPhone = (document.getElementById('chat-ctrl-phone') || {}).value.trim();
+            let newAddr = (document.getElementById('chat-ctrl-address') || {}).value.trim();
+            let newPass = (document.getElementById('chat-ctrl-password') || {}).value.trim();
+            let newPts = Number((document.getElementById('chat-ctrl-points') || {}).value) || 0;
+            let newWallet = Number((document.getElementById('chat-ctrl-wallet') || {}).value) || 0;
+
+            let updatePayload = {
+                name: newName,
+                email: newEmail,
+                phone1: newPhone,
+                address: newAddr,
+                loyaltyPoints: newPts,
+                walletBalance: newWallet,
+                updatedByAdminAt: new Date().toISOString()
+            };
+            if (newPass) {
+                updatePayload.adminCustomPassword = newPass;
+            }
+
+            try {
+                await setDoc(doc(db, 'users', uid), updatePayload, { merge: true });
+                if (activeAdminChatId && newName) {
+                    await updateDoc(doc(db, 'chats', activeAdminChatId), { customerName: newName }).catch(() => {});
+                    let acu = document.getElementById('active-chat-user');
+                    if (acu) acu.textContent = newName;
+                }
+                window.recordAdminAuditLog(`تحديث حساب العميل (${newName}) من داخل الشات`);
+                window.showToast('✅ تم حفظ وتحديث كافة بيانات حساب العميل بنجاح!', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء حفظ بيانات العميل', 'error');
+            }
+        };
+
+        window.sendCustomerPasswordResetFromChat = async function() {
+            let email = ((document.getElementById('chat-ctrl-email') || {}).value || '').trim();
+            let newPass = ((document.getElementById('chat-ctrl-password') || {}).value || '').trim();
+            let name = ((document.getElementById('chat-ctrl-name') || {}).value || 'عميلنا العزيز').trim();
+
+            await window.saveCustomerAccountChangesFromChat();
+
+            if (email && email.includes('@')) {
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                } catch (e) {}
+            }
+
+            if (activeAdminChatId) {
+                let credMsg = newPass
+                    ? `🔐 أهلاً أستاذ ${name}، تم تحديث بيانات حسابك من قِبل الإدارة بنجاح:\n📧 البريد الإلكتروني: ${email || 'المسجل لديكم'}\n🔑 الرقم السري الجديد: ${newPass}`
+                    : `🔐 أهلاً أستاذ ${name}، تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني (${email}) بنجاح.`;
+                window.insertCannedAdminReply(credMsg);
+                window.showToast('تم حفظ الرقم السري الجديد وإدراجه في صندوق الرد لإرساله للعميل 🔑', 'success');
+            }
+        };
+
+        // السماح للعميل بتسجيل الدخول بالرقم السري الذي عينه له المدير من الشات أيضاً!
+        let origAuForm = document.getElementById('auth-form');
+        if (origAuForm) {
+            origAuForm.addEventListener('submit', async (e) => {
+                // إذا فشل الدخول العادي لأن المدير غيّر الإيميل أو الرقم السري من الشات، نتحقق من adminCustomPassword
             });
         }
-        // 2. دمج جميع العملاء المسجلين من مجموعة users أيضاً
-        let usersSnap = await getDocs(collection(db, 'users'));
-        usersSnap.forEach(uDoc => {
-            let u = uDoc.data();
-            let uid = 'user_' + uDoc.id;
-            combinedMap.set(uid, {
-                id: uid,
-                visitorId: uid,
-                name: u.name || (u.email ? u.email.split('@')[0] : 'عميل مسجل'),
-                email: u.email || 'مسجل',
-                phone: u.phone1 || 'غير مسجل',
-                deviceSummary: u.deviceSummary || '📱 هاتف ذكي / متصفح العميل',
-                osName: u.osName || 'Android / iOS',
-                browserName: u.browserName || 'متصفح الموبايل',
-                screenRes: u.screenRes || '',
-                trafficSource: 'حساب مسجل بالمتجر',
-                firstVisit: u.lastLogin || new Date().toISOString(),
-                lastVisit: u.lastLogin || new Date().toISOString(),
-                visitsCount: u.visitsCount || 1,
-                visitsHistory: [{ time: u.lastLogin || new Date().toISOString(), source: 'تسجيل دخول', device: '📱 هاتف العميل' }]
+
+        // -------------------------------------------------------------------------
+        // رابعاً: تطوير الشات (إرسال الصور، الرسائل الصوتية، بطاقات المنتجات، الطلبات، اسم الموظف، والملاحظات)
+        // -------------------------------------------------------------------------
+        window.formatRichChatMessageHtml = function(m, viewMode = 'customer') {
+            let isCust = m.sender === 'customer';
+            let alignClass = (viewMode === 'customer')
+                ? (isCust ? 'chat-msg-customer' : 'chat-msg-admin')
+                : (!isCust ? 'chat-msg-customer' : 'chat-msg-admin');
+            let bubbleClass = (viewMode === 'customer')
+                ? (isCust ? 'bubble-customer' : 'bubble-admin')
+                : (!isCust ? 'bubble-customer' : 'bubble-admin');
+
+            let senderLabel = '';
+            if (viewMode === 'customer' && !isCust) {
+                senderLabel = `<strong style="color:var(--secondary);font-size:0.78rem;">🛡️ ${window.escapeHTML(m.staffName || 'خدمة العملاء')}:</strong><br>`;
+            } else if (viewMode === 'admin') {
+                senderLabel = isCust
+                    ? `<strong style="color:var(--secondary);font-size:0.78rem;">👤 العميل:</strong><br>`
+                    : `<strong style="color:#a7f3d0;font-size:0.75rem;">👨‍💼 ${window.escapeHTML(m.staffName || 'الإدارة')}:</strong><br>`;
+            }
+
+            let mediaHtml = '';
+            if (m.imageUrl) {
+                mediaHtml += `<div style="margin-top:6px;"><img src="${m.imageUrl}" style="max-width:210px; max-height:210px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,0.3);" onclick="window.open('${m.imageUrl}', '_blank')"></div>`;
+            }
+            if (m.audioDataUrl) {
+                mediaHtml += `<div style="margin-top:6px;"><audio controls src="${m.audioDataUrl}" style="height:34px; max-width:220px;"></audio></div>`;
+            }
+            if (m.productEmbed) {
+                let pe = m.productEmbed;
+                mediaHtml += `<div class="chat-product-embed-card">
+                    <img src="${pe.img || '1000392409.jpeg'}" style="width:45px; height:45px; border-radius:8px; object-fit:cover;">
+                    <div style="flex:1; text-align:right;">
+                        <strong style="font-size:0.84rem; color:var(--primary); display:block;">${window.escapeHTML(pe.name)}</strong>
+                        <span style="color:var(--secondary); font-weight:bold; font-size:0.82rem;">${pe.price} ج</span>
+                    </div>
+                    <button type="button" class="btn" style="padding:4px 10px; font-size:0.76rem;" onclick="window.openProductModal('${pe.id}')">عرض وشراء 🛒</button>
+                </div>`;
+            }
+
+            let timeStr = m.timestamp ? new Date(window.parseSafeTimestamp(m.timestamp, Date.now())).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
+            let readTick = (isCust && viewMode === 'customer') ? `<span style="font-size:0.7rem; margin-right:5px; opacity:0.85;">✔✔</span>` : '';
+
+            return `<div class="chat-msg-wrapper ${alignClass}">
+                <div class="chat-bubble ${bubbleClass}">
+                    ${senderLabel}
+                    <span>${window.escapeHTML(m.text || '')}</span>
+                    ${mediaHtml}
+                    <div style="font-size:0.68rem; opacity:0.75; margin-top:3px; text-align:left;">${timeStr} ${readTick}</div>
+                </div>
+            </div>`;
+        };
+
+        // ترقية loadCustomerChat و openAdminChat لعرض الوسائط وصور الإيصالات والرسائل الصوتية ولوحة حساب العميل
+        window.loadCustomerChat = function() {
+            if (!currentUser) return;
+            let chatId = currentUser.email || currentUser.phoneNumber || currentUser.uid;
+            if (!chatId) return;
+            if (unsubscribeUserChat) unsubscribeUserChat();
+            unsubscribeUserChat = onSnapshot(doc(db, 'chats', chatId), (docSnap) => {
+                const container = document.getElementById('support-history-container');
+                let statusInd = document.getElementById('customer-chat-status-indicator');
+                if (!container) return;
+                if (docSnap.exists()) {
+                    let data = docSnap.data();
+                    if (statusInd) {
+                        statusInd.textContent = data.adminReplied ? '🟢 تمت قراءة رسالتك والرد من خدمة العملاء ✔✔' : '';
+                    }
+                    let html = '';
+                    (data.messages || []).forEach(m => {
+                        html += window.formatRichChatMessageHtml(m, 'customer');
+                    });
+                    container.innerHTML = html;
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    let msg = window.currentLang === 'ar' ? 'ابدأ المحادثة الآن وسنرد عليك في أقرب وقت!' : 'Start the conversation now!';
+                    container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">${msg}</p>`;
+                }
             });
+        };
+
+        window.openAdminChat = function(id, name) {
+            let acl = document.getElementById('admin-chat-list'); if (acl) acl.style.display = 'none';
+            let aac = document.getElementById('admin-active-chat'); if (aac) aac.style.display = 'block';
+            let acu = document.getElementById('active-chat-user'); if (acu) acu.textContent = name;
+            activeAdminChatId = id;
+            window.loadCustomerAccountControlInChat(id, name);
+
+            if (unsubscribeActiveAdminChat) unsubscribeActiveAdminChat();
+            unsubscribeActiveAdminChat = onSnapshot(doc(db, 'chats', id), (docSnap) => {
+                let container = document.getElementById('admin-chat-messages');
+                if (!container) return;
+                if (docSnap.exists()) {
+                    let data = docSnap.data();
+                    let noteBar = data.internalAdminNote
+                        ? `<div style="background:#fef3c7; color:#92400e; padding:6px 10px; border-radius:8px; font-size:0.8rem; font-weight:bold; margin-bottom:8px;">📝 ملاحظة الإدارة السرية: ${window.escapeHTML(data.internalAdminNote)} ${data.chatTag ? `| 🏷️ ${window.escapeHTML(data.chatTag)}` : ''}</div>`
+                        : '';
+                    let html = noteBar;
+                    (data.messages || []).forEach(m => {
+                        html += window.formatRichChatMessageHtml(m, 'admin');
+                    });
+                    container.innerHTML = html;
+                    container.scrollTop = container.scrollHeight;
+                }
+            });
+        };
+
+        // تحديث sendAdminMessage ليسجل اسم وإيميل الموظف/المدير الذي رد على العميل
+        window.sendAdminMessage = async function() {
+            let input = document.getElementById('admin-chat-input');
+            let txt = input ? input.value.trim() : "";
+            if (!txt || !activeAdminChatId) return;
+            input.value = '';
+            let staffName = (currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'الإدارة';
+            let msg = {
+                sender: 'admin',
+                staffName: staffName,
+                text: txt,
+                timestamp: new Date().toISOString(),
+                isAutoReply: false
+            };
+            await updateDoc(doc(db, 'chats', activeAdminChatId), {
+                messages: arrayUnion(msg),
+                lastUpdate: msg.timestamp,
+                adminReplied: true,
+                unreadByAdmin: false
+            });
+        };
+
+        // أ) إرسال صورة أو إيصال داخل الشات (للعميل والمدير والموظف)
+        window.sendChatImageAttachment = async function(senderRole, fileInp) {
+            if (!fileInp || !fileInp.files || fileInp.files.length === 0) return;
+            let file = fileInp.files[0];
+            let targetChatId = senderRole === 'customer'
+                ? (currentUser ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
+                : activeAdminChatId;
+            if (!targetChatId) {
+                window.showToast('يرجى تسجيل الدخول أولاً', 'error');
+                return;
+            }
+            window.showToast('⏳ جاري رفع وإرسال الصورة في المحادثة...', 'info');
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                const res = await fetch('https://api.imgbb.com/1/upload?key=D37b01ec4b27dcce48777a7b229a1fdb', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data && data.success) {
+                    let nowIso = new Date().toISOString();
+                    let msg = {
+                        sender: senderRole,
+                        staffName: senderRole === 'admin' && currentUser ? (currentUser.displayName || (currentUser.email || '').split('@')[0]) : undefined,
+                        text: '📸 مرفق صورة',
+                        imageUrl: data.data.url,
+                        timestamp: nowIso
+                    };
+                    let updateObj = { messages: arrayUnion(msg), lastUpdate: nowIso };
+                    if (senderRole === 'customer') {
+                        updateObj.lastCustomerMsgAt = nowIso;
+                        updateObj.unreadByAdmin = true;
+                    } else {
+                        updateObj.adminReplied = true;
+                        updateObj.unreadByAdmin = false;
+                    }
+                    await setDoc(doc(db, 'chats', targetChatId), updateObj, { merge: true });
+                    window.showToast('تم إرسال الصورة في المحادثة ✅', 'success');
+                }
+            } catch (e) {
+                window.showToast('تعذر رفع الصورة، حاول مرة أخرى', 'error');
+            }
+            fileInp.value = '';
+        };
+
+        // ب) تسجيل وإرسال رسالة صوتية حقيقية (Voice Note) داخل الشات
+        window.activeVoiceRecorder = null;
+        window.activeVoiceChunks = [];
+        window.toggleChatVoiceNoteRecording = async function(senderRole, btnEl) {
+            let targetChatId = senderRole === 'customer'
+                ? (currentUser ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
+                : activeAdminChatId;
+            if (!targetChatId) {
+                window.showToast('يرجى تسجيل الدخول أولاً', 'error');
+                return;
+            }
+
+            if (window.activeVoiceRecorder && window.activeVoiceRecorder.state === 'recording') {
+                window.activeVoiceRecorder.stop();
+                if (btnEl) {
+                    btnEl.classList.remove('recording-audio');
+                    btnEl.innerHTML = '🎙️ إرسال رسالة صوتية';
+                }
+                return;
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                window.showToast('متصفحك لا يدعم تسجيل المقاطع الصوتية المباشرة', 'error');
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                window.activeVoiceChunks = [];
+                const recorder = new MediaRecorder(stream);
+                window.activeVoiceRecorder = recorder;
+
+                if (btnEl) {
+                    btnEl.classList.add('recording-audio');
+                    btnEl.innerHTML = '⏹️ اضغط لإيقاف وإرسال الصوت...';
+                }
+                window.showToast('🎙️ جاري تسجيل رسالتك الصوتية.. اضغط الزر مرة أخرى للإرسال', 'info');
+
+                recorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) window.activeVoiceChunks.push(e.data);
+                };
+                recorder.onstop = () => {
+                    stream.getTracks().forEach(t => t.stop());
+                    const blob = new Blob(window.activeVoiceChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        let base64Audio = reader.result;
+                        let nowIso = new Date().toISOString();
+                        let msg = {
+                            sender: senderRole,
+                            staffName: senderRole === 'admin' && currentUser ? (currentUser.displayName || (currentUser.email || '').split('@')[0]) : undefined,
+                            text: '🎙️ رسالة صوتية مسجلة',
+                            audioDataUrl: base64Audio,
+                            timestamp: nowIso
+                        };
+                        let updateObj = { messages: arrayUnion(msg), lastUpdate: nowIso };
+                        if (senderRole === 'customer') {
+                            updateObj.lastCustomerMsgAt = nowIso;
+                            updateObj.unreadByAdmin = true;
+                        } else {
+                            updateObj.adminReplied = true;
+                            updateObj.unreadByAdmin = false;
+                        }
+                        await setDoc(doc(db, 'chats', targetChatId), updateObj, { merge: true });
+                        window.showToast('تم إرسال الرسالة الصوتية بنجاح 🎙️✅', 'success');
+                    };
+                    reader.readAsDataURL(blob);
+                };
+                recorder.start();
+                // إيقاف تلقائي بعد 25 ثانية لحفظ حجم الوثيقة
+                setTimeout(() => {
+                    if (recorder.state === 'recording') {
+                        recorder.stop();
+                        if (btnEl) {
+                            btnEl.classList.remove('recording-audio');
+                            btnEl.innerHTML = '🎙️ تسجيل رسالة صوتية';
+                        }
+                    }
+                }, 25000);
+            } catch (e) {
+                window.showToast('يرجى السماح بصلاحية الميكروفون لتسجيل الرسالة الصوتية', 'error');
+            }
+        };
+
+        // ج) إرفاق طلب محدد للعميل في الشات + إرسال بطاقة منتج من الموظف للعميل
+        window.openAttachOrderToChatModal = function() {
+            let listEl = document.getElementById('chat-attach-order-list');
+            let modal = document.getElementById('chat-attach-order-modal');
+            if (!listEl || !modal) return;
+            let ords = window.customerOrdersArray || [];
+            if (ords.length === 0) {
+                listEl.innerHTML = '<p style="text-align:center; color:var(--text-muted);">لا توجد طلبات مسجلة في حسابك حالياً.</p>';
+            } else {
+                listEl.innerHTML = ords.map(o => `
+                    <div style="padding:8px 10px; background:var(--input-bg); border:1px solid var(--border-color); border-radius:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong>📦 طلب #${o.id.slice(0,6).toUpperCase()}</strong> (${o.totalAmount} ج)<br>
+                            <small style="color:var(--text-muted);">الحالة: ${window.escapeHTML(o.status)}</small>
+                        </div>
+                        <button type="button" class="btn" style="padding:4px 10px; font-size:0.78rem;" onclick="window.sendAttachedOrderToChat('${o.id}')">إرفاق بالشات 📤</button>
+                    </div>
+                `).join('');
+            }
+            modal.style.display = 'flex';
+        };
+
+        window.sendAttachedOrderToChat = async function(orderId) {
+            let o = (window.customerOrdersArray || []).find(x => x.id === orderId);
+            if (!o || !currentUser) return;
+            let chatId = currentUser.email || currentUser.phoneNumber || currentUser.uid;
+            let itemsStr = (o.items || []).map(i => `${i.name} (${i.quantity})`).join(' + ');
+            let nowIso = new Date().toISOString();
+            let msg = {
+                sender: 'customer',
+                text: `📦 [استفسار بخصوص طلبي رقم #${o.id.slice(0,6).toUpperCase()}] — المحتويات: ${itemsStr} — الإجمالي: ${o.totalAmount} ج — الحالة: (${o.status})`,
+                timestamp: nowIso
+            };
+            await setDoc(doc(db, 'chats', chatId), {
+                customerName: currentUser.displayName || chatId.split('@')[0],
+                messages: arrayUnion(msg),
+                lastUpdate: nowIso,
+                lastCustomerMsgAt: nowIso,
+                unreadByAdmin: true
+            }, { merge: true });
+            document.getElementById('chat-attach-order-modal').style.display = 'none';
+            window.showToast('تم إرفاق تفاصيل الطلب في المحادثة 📦✅', 'success');
+        };
+
+        window.openSendProductInChatModal = function() {
+            let sel = document.getElementById('chat-embed-product-select');
+            let modal = document.getElementById('chat-select-product-modal');
+            if (!sel || !modal) return;
+            sel.innerHTML = products.map(p => `<option value="${p.id}">${window.escapeHTML(p.name)} — ${p.price} ج</option>`).join('');
+            modal.style.display = 'flex';
+        };
+
+        window.sendSelectedProductCardInChat = async function() {
+            if (!activeAdminChatId) return;
+            let pid = document.getElementById('chat-embed-product-select').value;
+            let p = products.find(pr => pr.id === pid);
+            if (!p) return;
+            let nowIso = new Date().toISOString();
+            let staffName = (currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'الإدارة';
+            let msg = {
+                sender: 'admin',
+                staffName: staffName,
+                text: `🛍️ نرشح لحضرتك هذا المنتج المميز من مزارعنا في سيناء:`,
+                productEmbed: {
+                    id: p.id,
+                    name: p.name,
+                    price: p.price,
+                    img: (p.images && p.images[0]) || p.imageUrl || '1000392409.jpeg'
+                },
+                timestamp: nowIso,
+                isAutoReply: false
+            };
+            await updateDoc(doc(db, 'chats', activeAdminChatId), {
+                messages: arrayUnion(msg),
+                lastUpdate: nowIso,
+                adminReplied: true,
+                unreadByAdmin: false
+            });
+            document.getElementById('chat-select-product-modal').style.display = 'none';
+            window.showToast('تم إرسال بطاقة المنتج للعميل في الشات 🛍️✅', 'success');
+        };
+
+        window.promptChatInternalNoteAndTag = async function() {
+            if (!activeAdminChatId) return;
+            let note = prompt('📝 اكتب ملاحظة إدارية سرية للمدير أو الموظفين حول هذه المحادثة (لا تظهر للعميل):');
+            if (note === null) return;
+            let tag = prompt('🏷️ تصنيف المحادثة (مثال: مشكلة شحن / استفسار جملة / عميل VIP / تم الحل):', 'عميل مهم');
+            await updateDoc(doc(db, 'chats', activeAdminChatId), {
+                internalAdminNote: note.trim(),
+                chatTag: (tag || '').trim()
+            });
+            window.showToast('تم حفظ الملاحظة السرية وتصنيف المحادثة 📝✅', 'success');
+        };
+
+        window.addCustomCannedResponsePrompt = async function() {
+            let title = prompt('اسم زر الرد السريع (مثال: 🌿 فحص الحموضة):');
+            if (!title) return;
+            let body = prompt('النص الكامل للرد السريع:');
+            if (!body) return;
+            let list = Array.isArray(storeSettings.customCannedReplies) ? [...storeSettings.customCannedReplies] : [];
+            list.push({ title: title.trim(), body: body.trim() });
+            await updateDoc(doc(db, 'settings', 'main'), { customCannedReplies: list });
+            window.renderCustomCannedRepliesInChat();
+            window.showToast('تمت إضافة زر الرد الجاهز بنجاح ✅', 'success');
+        };
+
+        window.renderCustomCannedRepliesInChat = function() {
+            let bar = document.getElementById('admin-canned-responses-bar');
+            if (!bar) return;
+            bar.querySelectorAll('.custom-canned-dyn').forEach(e => e.remove());
+            let list = Array.isArray(storeSettings.customCannedReplies) ? storeSettings.customCannedReplies : [];
+            list.forEach(item => {
+                let b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'work-canned-chip custom-canned-dyn';
+                b.textContent = item.title;
+                b.onclick = () => window.insertCannedAdminReply(item.body);
+                bar.appendChild(b);
+            });
+        };
+
+        window.openRateSupportModal = function() {
+            let m = document.getElementById('support-rating-modal');
+            if (m) m.style.display = 'flex';
+        };
+
+        window.submitSupportChatRating = async function() {
+            let stars = Number((document.getElementById('support-rating-stars') || {}).value) || 5;
+            let note = ((document.getElementById('support-rating-note') || {}).value || '').trim();
+            if (currentUser) {
+                let chatId = currentUser.email || currentUser.phoneNumber || currentUser.uid;
+                try {
+                    await setDoc(doc(db, 'chats', chatId), { supportRating: stars, supportRatingNote: note }, { merge: true });
+                } catch (e) {}
+            }
+            document.getElementById('support-rating-modal').style.display = 'none';
+            window.showToast('شكراً لتقييمك لخدمة العملاء! ⭐', 'success');
+        };
+
+        // -------------------------------------------------------------------------
+        // خامساً: تثبيت التطبيق (PWA Install) + محفظة العميل النقدية + مشاركة السلة + عهدة المناديب
+        // -------------------------------------------------------------------------
+        window.deferredPwaPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            window.deferredPwaPrompt = e;
         });
 
-        window.allSiteVisitorsList = Array.from(combinedMap.values()).sort(
-            (a, b) => window.parseSafeTimestamp(b.lastVisit, 0) - window.parseSafeTimestamp(a.lastVisit, 0)
-        );
-        window.renderVisitorsCardsList();
-    } catch (e) {
-        window.renderVisitorsCardsList();
-    }
-};
+        window.triggerInstallStoreApp = async function() {
+            if (window.deferredPwaPrompt) {
+                window.deferredPwaPrompt.prompt();
+                await window.deferredPwaPrompt.userChoice;
+                window.deferredPwaPrompt = null;
+            } else {
+                window.showToast(window.currentLang === 'en' ? '📲 Tap browser menu (⋮) then choose "Add to Home Screen / Install App"' : '📲 لتثبيت التطبيق فوراً: اضغط على قائمة المتصفح العلوية (⋮) ثم اختر (إضافة إلى الشاشة الرئيسية / تثبيت التطبيق)', 'info');
+            }
+        };
+
+        // محفظة رصيد العميل النقدية (Store Wallet)
+        window.currentUserWalletBalance = 0;
+        onAuthStateChanged(auth, async (u) => {
+            if (u) {
+                try {
+                    let uSnap = await getDoc(doc(db, 'users', u.uid));
+                    if (uSnap.exists()) {
+                        window.currentUserWalletBalance = Number(uSnap.data().walletBalance) || 0;
+                        let nw = document.getElementById('nav-wallet-balance'); if (nw) nw.textContent = window.currentUserWalletBalance;
+                        let cw = document.getElementById('cart-wallet-balance-val'); if (cw) cw.textContent = window.currentUserWalletBalance;
+                        let cBox = document.getElementById('cart-store-wallet-box');
+                        if (cBox) cBox.style.display = (storeSettings.enableStoreWallet !== false && window.currentUserWalletBalance > 0) ? 'flex' : 'none';
+                    }
+                } catch (e) {}
+            }
+        });
+
+        window.applyStoreWalletBalanceToCart = function() {
+            if (window.currentUserWalletBalance <= 0) return;
+            window.loyaltyDiscountFixed = (window.loyaltyDiscountFixed || 0) + window.currentUserWalletBalance;
+            window.updateInvoiceUI();
+            let cBox = document.getElementById('cart-store-wallet-box');
+            if (cBox) cBox.style.display = 'none';
+            window.showToast(`🎉 تم خصم رصيد محفظتك (${window.currentUserWalletBalance} ج) من إجمالي الفاتورة!`, 'success');
+        };
+
+        // مشاركة سلة المشتريات عبر واتساب
+        window.shareCartViaWhatsApp = function() {
+            if (cart.length === 0) {
+                window.showToast('السلة فارغة حالياً', 'error');
+                return;
+            }
+            let itemsLines = cart.map(i => `• ${i.name} (الكمية: ${i.quantity}) — ${i.price * i.quantity} ج`).join('\n');
+            let msg = `🛒 *سلة مشترياتي من متجر زيت الشجرة المباركة* 🌿\n\n${itemsLines}\n\n💰 *الإجمالي:* ${currentSubtotal} ج\n🔗 رابط المتجر لإتمام الطلب: ${window.location.origin + window.location.pathname}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+        };
+
+        // عهدة وتحصيل المناديب في الإحصائيات
+        window.renderCourierCustodySummary = function() {
+            let body = document.getElementById('admin-courier-custody-body');
+            let card = document.getElementById('admin-courier-custody-card');
+            if (card) card.style.display = storeSettings.enableStoreWallet !== false ? 'block' : 'none';
+            if (!body) return;
+
+            let shippedOrders = (adminOrdersArray || []).filter(o => String(o.status || '').includes('شحن'));
+            let deliveredToday = (adminOrdersArray || []).filter(o => String(o.status || '').includes('توصيل'));
+
+            let custodyTotal = shippedOrders.reduce((acc, o) => acc + ((o.paymentMethod === 'محفظة إلكترونية') ? 0 : (Number(o.totalAmount) || 0)), 0);
+            let collectedTotal = deliveredToday.reduce((acc, o) => acc + ((o.paymentMethod === 'محفظة إلكترونية') ? 0 : (Number(o.totalAmount) || 0)), 0);
+
+            body.innerHTML = `
+                <div style="display:flex; justify-content:space-between; padding:8px; background:var(--input-bg); border-radius:8px; margin-bottom:6px;">
+                    <span>🚚 <strong>عهدة تحت التحصيل مع المناديب حالياً (${shippedOrders.length} طلب مشحون):</strong></span>
+                    <strong style="color:#d97706; font-size:1rem;">${custodyTotal.toLocaleString()} ج</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:8px; background:#f0fdf4; border-radius:8px; color:#166534;">
+                    <span>✅ <strong>إجمالي نقدية تم تسليمها وتحصيلها (${deliveredToday.length} طلب مكتمل):</strong></span>
+                    <strong style="font-size:1rem;">${collectedTotal.toLocaleString()} ج</strong>
+                </div>
+            `;
+        };
+
+        const origRenderAdminOrdersV61 = window.renderAdminOrdersUI;
+        window.renderAdminOrdersUI = function() {
+            origRenderAdminOrdersV61();
+            if (isCurrentUserAdmin) window.renderCourierCustodySummary();
+        };
+
+        const prevApplySettingsV61 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV61();
+            window.renderCustomCannedRepliesInChat();
+            if (isCurrentUserAdmin) {
+                let setC = (id, val, def = true) => { let el = document.getElementById(id); if (el) el.checked = val !== undefined ? Boolean(val) : def; };
+                setC('setting-enable-chat-account-control', storeSettings.enableChatAccountControl, true);
+                setC('setting-enable-smart-mic-corrector', storeSettings.enableSmartMicCorrector, true);
+                setC('setting-enable-chat-media', storeSettings.enableChatMedia, true);
+                setC('setting-enable-store-wallet', storeSettings.enableStoreWallet, true);
+                window.renderCourierCustodySummary();
+            }
+            let showEl = (id, cond, disp = 'flex') => { let el = document.getElementById(id); if (el) el.style.display = cond ? disp : 'none'; };
+            showEl('customer-chat-media-toolbar', storeSettings.enableChatMedia !== false, 'flex');
+            showEl('admin-chat-media-toolbar', storeSettings.enableChatMedia !== false, 'flex');
+            showEl('btn-share-cart-wa', storeSettings.enableStoreWallet !== false, 'block');
+        };
+
+        const prevSaveSettingsV61 = window.saveSettings;
+        window.saveSettings = async function() {
+            const getC = (id, def = true) => { let el = document.getElementById(id); return el ? el.checked : def; };
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    enableChatAccountControl: getC('setting-enable-chat-account-control', true),
+                    enableSmartMicCorrector: getC('setting-enable-smart-mic-corrector', true),
+                    enableChatMedia: getC('setting-enable-chat-media', true),
+                    enableStoreWallet: getC('setting-enable-store-wallet', true)
+                });
+            } catch (e) {}
+            await prevSaveSettingsV61();
+        };
+
+        Object.assign(window.FULL_AR_TO_EN, {
+            "تثبيت تطبيق المتجر على هاتفك": "Install Store App on Phone",
+            "رصيد محفظتك:": "Wallet Balance:",
+            "مشاركة سلة المشتريات عبر واتساب (لإتمام الدفع مع العائلة أو الأصدقاء)": "Share Shopping Cart via WhatsApp",
+            "إرسال صورة / إيصال": "Send Image / Receipt",
+            "تسجيل رسالة صوتية": "Record Voice Note",
+            "إرفاق طلب محدد": "Attach Order",
+            "تقييم الخدمة": "Rate Support",
+            "ما رأيك في خدمة العملاء اليوم؟": "How was our customer support today?"
+        });

@@ -78,6 +78,7 @@
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.loadAllReviews(); window.closeSidebar();">⭐️ <span class="translatable">آراء العملاء</span></button>
             <div style="background:var(--input-bg); padding:10px; border-radius:10px; border:1px solid var(--border-color); display:flex; flex-direction:column; gap:8px;">
                 <strong style="color:var(--primary); font-size:0.85rem; display:block; margin-bottom:2px;">🛠️ <span class="translatable">أدوات التوفير والخدمات الذكية:</span></strong>
+                <button type="button" id="sidebar-install-pwa-btn" class="btn" style="width: 100%; background: linear-gradient(90deg, #3c521e, #028090); color: white; text-align: center; font-weight:bold; padding:8px 10px; font-size:0.86rem;" onclick="window.triggerInstallStoreApp()">📲 <span class="translatable">تثبيت تطبيق المتجر على هاتفك</span></button>
                 <button type="button" class="btn btn-outline" style="width: 100%; border-color: #28a745; color: #28a745; text-align: right; font-weight:bold; padding:7px 10px; font-size:0.86rem;" onclick="window.showPanel('recipes'); window.closeSidebar();">🥗 <span class="translatable">ركن الوصفات والفوائد الصحية</span></button>
                 <button type="button" id="sidebar-box-builder-btn" class="btn btn-outline" style="width: 100%; border-color: var(--secondary); color: var(--primary); text-align: right; font-weight:bold; padding:7px 10px; font-size:0.86rem;" onclick="window.openCustomBoxModal(); window.closeSidebar();">📦 <span class="translatable">كوّن كرتونة التوفير بخصم خاص!</span></button>
                 <button type="button" id="sidebar-product-quiz-btn" class="btn btn-outline" style="width: 100%; border-color: #028090; color: #028090; text-align: right; font-weight:bold; padding:7px 10px; font-size:0.86rem;" onclick="window.openProductQuizModal(); window.closeSidebar();">🧭 <span class="translatable">محتار؟ مساعد الاختيار الذكي</span></button>
@@ -154,10 +155,6 @@
         </div>
         <div class="header-actions">
             <!-- الإشعارات الأساسية -->
-            <button type="button" id="header-work-hub-btn" onclick="window.showPanel('admin-work')" style="display:none; background:linear-gradient(135deg, #28a745, #028090); color:white; border:1px solid rgba(255,255,255,0.6); padding:5px 11px; border-radius:20px; font-size:0.82rem; font-weight:900; cursor:pointer; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(0,0,0,0.2);">
-                <span>💼</span> <span class="translatable">الشغل</span>
-                <span class="work-hub-live-badge" style="background:#dc3545; color:white; padding:1px 6px; border-radius:10px; font-size:0.74rem; font-weight:900;">0</span>
-            </button>
             <button type="button" class="notification-bell" id="btn-notifications-main" onclick="window.showPanel('global-notifications-panel')" style="display:none; position:relative;">
                 🔔<span class="notification-badge" id="notif-badge-main" style="top:-5px; right:-5px;">0</span>
             </button>
@@ -174,6 +171,7 @@
                     <div style="background:var(--input-bg); padding:10px 15px; text-align:center; border-bottom:1px solid var(--border-color);">
                         <span style="font-size:0.85rem; color:var(--text-muted);" class="translatable">رصيد نقاط الولاء</span><br>
                         <strong style="color:var(--secondary); font-size:1.2rem;" id="nav-loyalty-points">0</strong> <span style="font-size:0.8rem; color:var(--text-color);" class="translatable">نقطة</span>
+                        <div style="margin-top:4px; font-size:0.8rem; color:#028090; font-weight:bold;">💳 <span class="translatable">رصيد محفظتك:</span> <span id="nav-wallet-balance">0</span> ج</div>
                     </div>
                     <button type="button" class="dropdown-item" onclick="window.showPanel('loyalty'); window.closeDropdown()">🎁 <span class="translatable">نقاط الولاء</span></button>
                     <button type="button" class="dropdown-item" onclick="window.showPanel('customer-orders'); window.closeDropdown()">📦 <span class="translatable">طلباتي</span></button>
@@ -512,6 +510,40 @@
             <h2 style="color:var(--primary); margin:0 0 10px 0; text-align:center;">🪪 بطاقة بيانات الزائر وسجل تصفحه</h2>
             <div id="visitor-profile-details-body" style="background:var(--input-bg); padding:14px; border-radius:12px; border:1px solid var(--border-color); line-height:1.85; font-size:0.9rem;"></div>
             <button type="button" class="btn btn-outline" style="width:100%; margin-top:12px;" onclick="document.getElementById('visitor-profile-details-modal').style.display='none'">🔙 العودة لقائمة الزوار</button>
+        </div>
+    </div>
+
+    <!-- نافذة التحكم الشامل بحساب العميل + إرسال منتج أو طلب بالشات + تقييم الدعم -->
+    <div id="chat-select-product-modal" class="modal-overlay" style="z-index: 5930;">
+        <div class="modal-content" style="max-width: 440px; text-align: right; border: 2px solid var(--secondary); padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('chat-select-product-modal').style.display='none'">X</button>
+            <h3 style="color:var(--primary); margin:0 0 10px 0; text-align:center;">🛍️ اختر منتجاً لإرساله كبطاقة داخل الشات</h3>
+            <select id="chat-embed-product-select" style="margin-bottom:12px;"></select>
+            <button type="button" class="btn btn-full" onclick="window.sendSelectedProductCardInChat()">🚀 إرسال بطاقة المنتج للعميل الآن</button>
+        </div>
+    </div>
+
+    <div id="chat-attach-order-modal" class="modal-overlay" style="z-index: 5935;">
+        <div class="modal-content" style="max-width: 440px; text-align: right; border: 2px solid #007bff; padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('chat-attach-order-modal').style.display='none'">X</button>
+            <h3 style="color:#007bff; margin:0 0 10px 0; text-align:center;">📦 اختر الطلب لإرفاقه في المحادثة</h3>
+            <div id="chat-attach-order-list" style="max-height:260px; overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <div id="support-rating-modal" class="modal-overlay" style="z-index: 5940;">
+        <div class="modal-content" style="max-width: 400px; text-align: center; border: 2px solid var(--secondary); padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('support-rating-modal').style.display='none'">X</button>
+            <h3 style="color:var(--primary); margin:0 0 8px 0;">⭐ <span class="translatable">ما رأيك في خدمة العملاء اليوم؟</span></h3>
+            <select id="support-rating-stars" style="margin-bottom:10px;">
+                <option value="5">⭐⭐⭐⭐⭐ ممتازة وسريعة جداً</option>
+                <option value="4">⭐⭐⭐⭐ جيدة جداً</option>
+                <option value="3">⭐⭐⭐ مقبولة</option>
+                <option value="2">⭐⭐ تحتاج لتحسين</option>
+                <option value="1">⭐ غير راضٍ</option>
+            </select>
+            <input type="text" id="support-rating-note" placeholder="ملاحظتك لتحسين خدمتنا (اختياري)..." style="margin-bottom:12px;">
+            <button type="button" class="btn btn-full" onclick="window.submitSupportChatRating()">🚀 <span class="translatable">إرسال التقييم</span></button>
         </div>
     </div>
 
@@ -869,7 +901,12 @@
                 <div class="invoice-line total"><span class="translatable">الإجمالي النهائي:</span><span><span class="invoice-total-val">0</span> ج</span></div>
             </div>
             <div id="cart-total-savings-banner" class="total-savings-banner" style="display:none;"></div>
+            <div id="cart-store-wallet-box" style="display:none; background:rgba(2,128,144,0.08); border:1px dashed #028090; padding:10px 12px; border-radius:10px; margin-bottom:12px; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div>💳 <strong>رصيد محفظتك النقدية بالمتجر:</strong> <strong id="cart-wallet-balance-val" style="color:#028090;">0</strong> ج</div>
+                <button type="button" class="btn" style="background:#028090; padding:5px 12px; font-size:0.8rem;" onclick="window.applyStoreWalletBalanceToCart()">خصم الرصيد من الفاتورة ✅</button>
+            </div>
             <button type="button" class="btn btn-full" onclick="window.goToCheckout()" style="font-size: 1.1rem; margin-top: 10px;"><span class="translatable">المتابعة للدفع والتوصيل</span></button>
+            <button type="button" id="btn-share-cart-wa" class="btn btn-outline" style="width:100%; margin-top:10px; border-color:#25D366; color:#25D366; font-size:0.9rem;" onclick="window.shareCartViaWhatsApp()">🔗 <span class="translatable">مشاركة سلة المشتريات عبر واتساب (لإتمام الدفع مع العائلة أو الأصدقاء)</span></button>
             <div id="saved-for-later-section" style="display:none; margin-top: 40px; border-top: 2px dashed var(--border-color); padding-top: 20px;">
                 <h3 style="color: var(--secondary); margin-top: 0;" class="translatable">📦 محفوظة لوقت لاحق</h3>
                 <div id="saved-for-later-container"></div>
@@ -1012,6 +1049,16 @@
                     <button type="button" class="smart-chat-chip" onclick="window.triggerSmartBotChip('quality')">🌿 <span class="translatable">كيف أتأكد أن الزيت أصلي؟</span></button>
                     <button type="button" class="smart-chat-chip" onclick="window.triggerSmartBotChip('payment')">💳 <span class="translatable">ما طرق الدفع المتاحة؟</span></button>
                     <button type="button" class="smart-chat-chip" onclick="window.triggerSmartBotChip('offers')">🎁 <span class="translatable">ما هي العروض والهدايا الحالية؟</span></button>
+                </div>
+                <div id="customer-chat-status-indicator" style="font-size:0.78rem; color:#028090; font-weight:bold; margin-bottom:6px; min-height:18px;"></div>
+                <div id="customer-chat-media-toolbar" class="chat-media-toolbar">
+                    <label class="chat-media-btn" style="margin:0;">
+                        📸 <span class="translatable">إرسال صورة / إيصال</span>
+                        <input type="file" id="chat-cust-image-inp" accept="image/*" style="display:none;" onchange="window.sendChatImageAttachment('customer', this)">
+                    </label>
+                    <button type="button" id="btn-cust-voice-note" class="chat-media-btn" onclick="window.toggleChatVoiceNoteRecording('customer', this)">🎙️ <span class="translatable">تسجيل رسالة صوتية</span></button>
+                    <button type="button" id="btn-cust-attach-order" class="chat-media-btn" onclick="window.openAttachOrderToChatModal()">📦 <span class="translatable">إرفاق طلب محدد</span></button>
+                    <button type="button" id="btn-cust-rate-support" class="chat-media-btn" style="border-color:var(--secondary); color:#b45309;" onclick="window.openRateSupportModal()">⭐ <span class="translatable">تقييم الخدمة</span></button>
                 </div>
                 <form id="support-form" style="display: flex; gap: 10px; position:relative; align-items:center;">
                     <div style="flex:1; display:flex; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; overflow:hidden; position:relative;">
@@ -1208,6 +1255,13 @@
                     </div>
                     <div id="admin-audit-log-list" style="display:none; margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px; max-height:220px; overflow-y:auto; font-size:0.83rem;">لا توجد حركات مسجلة بعد.</div>
                 </div>
+                <div class="dash-card" id="admin-courier-custody-card" style="border-top-color: #028090; text-align:right;">
+                    <div onclick="let el=document.getElementById('admin-courier-custody-body'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                        <h3 style="color:#028090; margin:0;">🛵 نظام عهدة وتحصيل المناديب والطلبات المشحونة</h3>
+                        <span style="font-size:1.2rem; color:#028090; font-weight:bold;">▼</span>
+                    </div>
+                    <div id="admin-courier-custody-body" style="display:none; margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px; font-size:0.86rem;">جاري حساب عهدة التحصيل...</div>
+                </div>
             </div>
 
                         <div id="admin-advanced-analytics-box" class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top:15px;">
@@ -1364,7 +1418,27 @@
                         <button type="button" class="btn btn-danger" onclick="window.deleteAdminChat()" style="padding:5px 10px;">حذف 🗑️</button>
                     </div>
                 </div>
+                <!-- لوحة عرض والتحكم الكامل في حساب العميل من داخل الشات (للمدير والموظفين) -->
+                <div id="admin-chat-customer-control-box" class="chat-customer-control-card">
+                    <div onclick="let el=document.getElementById('admin-chat-cust-control-body'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                        <strong style="color:var(--primary); font-size:0.95rem;">👤 بيانات العميل والتحكم الكامل في حسابه (الاسم، البريد، الرقم السري، الرصيد، والطلبات)</strong>
+                        <span style="color:#028090; font-weight:bold;">▼ فتح / طي</span>
+                    </div>
+                    <div id="admin-chat-cust-control-body" style="display:block; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color); font-size:0.85rem;">
+                        جاري تحميل ملف العميل الكامل...
+                    </div>
+                </div>
                 <div id="admin-chat-messages" style="height: 350px; overflow-y: auto; margin-bottom: 15px; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column;"></div>
+                <div id="admin-chat-media-toolbar" class="chat-media-toolbar">
+                    <label class="chat-media-btn" style="margin:0;">
+                        📸 إرسال صورة
+                        <input type="file" id="chat-admin-image-inp" accept="image/*" style="display:none;" onchange="window.sendChatImageAttachment('admin', this)">
+                    </label>
+                    <button type="button" id="btn-admin-voice-note" class="chat-media-btn" onclick="window.toggleChatVoiceNoteRecording('admin', this)">🎙️ تسجيل رسالة صوتية</button>
+                    <button type="button" class="chat-media-btn" style="border-color:var(--secondary); color:var(--primary);" onclick="window.openSendProductInChatModal()">🛍️ إرسال بطاقة منتج للشراء بالشات</button>
+                    <button type="button" class="chat-media-btn" style="border-color:#6f42c1; color:#6f42c1;" onclick="window.promptChatInternalNoteAndTag()">📝 ملاحظة سرية / تصنيف المحادثة</button>
+                    <button type="button" class="chat-media-btn" style="border-color:#028090; color:#028090;" onclick="window.addCustomCannedResponsePrompt()">➕ حفظ رد جاهز جديد</button>
+                </div>
                 <div id="admin-canned-responses-bar" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:8px;">
                     <button type="button" class="work-canned-chip" style="border-color:#28a745; color:#166534; font-weight:bold;" onclick="window.generateAndInsertChatCoupon()">🎫 إهداء كوبون خاص 5%</button>
                     <button type="button" class="work-canned-chip" onclick="window.insertCannedAdminReply('أهلاً بحضرتك في متجر زيت الشجرة المباركة 🌿 تحت أمرك، كيف يمكنني مساعدتك؟')">👋 ترحيب</button>
@@ -1598,6 +1672,24 @@
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                             <input type="checkbox" id="setting-enable-product-compare" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>⚖️ تفعيل مقارنة المنتجات السريعة وحاسبة التوفير للأحجام</span>
+                        </label>
+                        <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
+                        <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">💬 التحكم الكامل بحساب العميل بالشات + الميكروفون الذكي + المحفظة (V62):</h4>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-chat-account-control" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>👤 تفعيل (لوحة التحكم الكامل بحساب العميل داخل الشات: تغيير الاسم، البريد، الرقم السري، والرصيد)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-smart-mic-corrector" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🎤 تفعيل (المصحح الصوتي الذكي للميكروفون: تحويل النطق الخاطئ والعامي إلى كلام صحيح تلقائياً)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-chat-media" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📸 تفعيل (إرسال الصور، الرسائل الصوتية، إرفاق الطلبات، وبطاقات المنتجات داخل الشات)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-store-wallet" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>💳 تفعيل (محفظة رصيد العميل النقدية + مشاركة السلة عبر واتساب + عهدة المناديب)</span>
                         </label>
                         <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
                         <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🛡️ أدوات الحماية القصوى وتتبع الزوار وأرشفة جوجل (V61):</h4>
