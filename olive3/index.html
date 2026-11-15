@@ -338,6 +338,39 @@
         <button type="button" style="background:transparent; border:none; color:var(--danger); font-weight:bold; cursor:pointer; font-size:0.85rem; padding:0 4px;" onclick="window.dismissLastViewedBar()">✖</button>
     </div>
 
+    <!-- نافذة طلبات الجملة والمطاعم والعطارات (B2B Wholesale Portal) -->
+    <div id="b2b-wholesale-modal" class="modal-overlay" style="z-index: 5830;">
+        <div class="modal-content" style="max-width: 480px; text-align: right; border: 2px solid var(--primary); padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('b2b-wholesale-modal').style.display='none'">X</button>
+            <h2 style="color:var(--primary); margin:0 0 6px 0; text-align:center;">🏢 <span class="translatable">بوابة طلبات الجملة والتوريد</span></h2>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin:0 0 12px 0; text-align:center;" class="translatable">أسعار خاصة لأصحاب المطاعم، الفنادق، السوبرماركت، وتجار الجملة مباشرة من مزارعنا في سيناء:</p>
+            <div style="background:var(--input-bg); padding:10px; border-radius:8px; margin-bottom:12px; font-size:0.82rem; line-height:1.7; border:1px dashed var(--secondary);">
+                <div>📦 <strong>من 10 إلى 25 لتر:</strong> خصم جملة <strong>12%</strong> + شحن مخفض</div>
+                <div>📦 <strong>من 25 إلى 50 لتر:</strong> خصم جملة <strong>18%</strong> + أولوية التوريد</div>
+                <div>📦 <strong>أكثر من 50 لتر:</strong> سعر المزرعة الخاص للتوريد التجاري</div>
+            </div>
+            <input type="text" id="b2b-org-name" placeholder="اسم العميل / المطعم / الشركة..." style="margin-bottom:8px;">
+            <input type="tel" id="b2b-phone" placeholder="رقم الهاتف (واتساب)..." style="margin-bottom:8px;">
+            <input type="text" id="b2b-qty" placeholder="الكمية المطلوبة تقريباً (مثال: 30 لتر / 20 عبوة)..." style="margin-bottom:8px;">
+            <textarea id="b2b-notes" rows="2" placeholder="تفاصيل إضافية أو المحافظة..." style="margin-bottom:10px;"></textarea>
+            <button type="button" class="btn btn-full" id="btn-submit-b2b" onclick="window.submitB2BWholesaleRequest()">🚀 <span class="translatable">إرسال طلب الجملة للإدارة فوراً</span></button>
+        </div>
+    </div>
+
+    <!-- نافذة فاحص رقم التشغيلة وتاريخ العصرة (Harvest Batch Tracker) -->
+    <div id="batch-tracker-modal" class="modal-overlay" style="z-index: 5835;">
+        <div class="modal-content" style="max-width: 440px; text-align: center; border: 2px solid var(--secondary); padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('batch-tracker-modal').style.display='none'">X</button>
+            <h2 style="color:var(--primary); margin:0 0 6px 0;">🌾 <span class="translatable">فاحص تاريخ العصرة ورقم التشغيلة</span></h2>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin:0 0 12px 0;" class="translatable">افحص شهادة منشأ عبوتك وتاريخ قطف وعصر الزيتون من مزارع سيناء:</p>
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+                <input type="text" id="batch-code-inp" placeholder="أدخل كود التشغيلة (أو اضغط فحص آخر عصرة)..." value="SINAI-2026-B1" style="margin:0; flex:1; text-align:center; font-weight:bold;">
+                <button type="button" class="btn" style="background:#028090;" onclick="window.inspectHarvestBatch()">🔍 <span class="translatable">فحص الآن</span></button>
+            </div>
+            <div id="batch-tracker-result" style="text-align:right; background:var(--input-bg); padding:12px; border-radius:10px; border:1px solid #22c55e; font-size:0.86rem; line-height:1.8;"></div>
+        </div>
+    </div>
+
     <div id="policy-info-modal" class="modal-overlay" style="z-index: 5600;">
         <div class="modal-content" style="max-width: 550px; text-align: right; border: 2px solid var(--secondary); padding-bottom: 25px;">
             <button type="button" class="modal-close" onclick="document.getElementById('policy-info-modal').style.display='none'">X</button>
@@ -457,6 +490,12 @@
                 </button>
                 <button type="button" id="btn-open-gift-card" class="smart-tool-pill" onclick="window.openGiftCardModal()">
                     <span>🎟️</span> <span class="translatable">إهداء بطاقة هدية رقمية</span>
+                </button>
+                <button type="button" id="btn-open-b2b-modal" class="smart-tool-pill" onclick="window.openB2BWholesaleModal()">
+                    <span>🏢</span> <span class="translatable">طلبات الجملة والمطاعم</span>
+                </button>
+                <button type="button" id="btn-open-batch-tracker" class="smart-tool-pill" onclick="window.openBatchTrackerModal()">
+                    <span>🌾</span> <span class="translatable">فاحص تاريخ العصرة والنقاء</span>
                 </button>
             </div>
             <div class="compact-search-wrapper" style="background:var(--input-bg); padding:10px 12px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:12px;">
@@ -814,6 +853,25 @@
                 </div>
             </div>
 
+            <!-- صفحات مجلدات غرفة العمل (الوارد النشط / المقروء / المنجز / المحذوف) -->
+            <div class="work-folder-tabs">
+                <button type="button" class="work-folder-btn active" id="wf-btn-inbox" onclick="window.switchWorkFolder('inbox')">
+                    <span>📥 الوارد النشط</span>
+                    <span class="work-folder-badge" id="wf-count-inbox" style="background:#dc3545;">0</span>
+                </button>
+                <button type="button" class="work-folder-btn" id="wf-btn-read" onclick="window.switchWorkFolder('read')">
+                    <span>📖 المقروء</span>
+                    <span class="work-folder-badge" id="wf-count-read" style="background:#007bff;">0</span>
+                </button>
+                <button type="button" class="work-folder-btn" id="wf-btn-done" onclick="window.switchWorkFolder('done')">
+                    <span>🏆 المنجز</span>
+                    <span class="work-folder-badge" id="wf-count-done" style="background:#28a745;">0</span>
+                </button>
+                <button type="button" class="work-folder-btn" id="wf-btn-trash" onclick="window.switchWorkFolder('trash')">
+                    <span>🗑️ المحذوف</span>
+                    <span class="work-folder-badge" id="wf-count-trash" style="background:#6c757d;">0</span>
+                </button>
+            </div>
             <!-- كروت الفلترة السريعة لأحداث الشغل -->
             <div class="work-kpi-grid">
                 <div class="work-kpi-card active" id="wk-tab-all" onclick="window.filterWorkHub('all')">
@@ -1056,7 +1114,22 @@
             <h2 style="color: #028090; margin-top: 0;">⚙️ الإعدادات (محمية)</h2>
             <div id="roles-auth-section"><div class="form-row"><input type="password" id="roles-pin" placeholder="رمز الأمان للمؤسس" style="margin-bottom:0;" autocomplete="new-password"><button type="button" class="btn" id="btn-unlock-roles" style="background-color: #028090; width: 30%;">فتح 🔓</button></div></div>
             <div id="roles-content-section" style="display: none;">
-                <p style="color: #2a9d8f; margin-bottom: 20px; font-weight: bold; text-align: center;">✅ تم فتح قفل الإعدادات بنجاح! يمكنك تشغيل أو إيقاف أي عنصر والتحكم فيه:</p>
+                <div style="background:linear-gradient(135deg, var(--primary), #028090); color:white; padding:14px 16px; border-radius:12px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <h3 style="margin:0; font-size:1.1rem; color:white;">⚙️ مركز التحكم الاحترافي الشامل</h3>
+                        <small style="opacity:0.9;">جميع إعدادات ومميزات المتجر منظمة في تبويبات سريعة بدون حذف أي عنصر</small>
+                    </div>
+                    <button type="button" class="btn" style="background:var(--secondary); color:white; padding:7px 16px; font-size:0.88rem;" onclick="window.saveSettings()">💾 حفظ كل الإعدادات الآن</button>
+                </div>
+                <input type="text" id="admin-settings-quick-search" placeholder="🔍 ابحث بسرعة عن أي ميزة أو إعداد داخل لوحة التحكم (مثال: شحن، عجلة، واتساب، ثيم)..." oninput="window.filterAdminSettingsCards()" style="margin-bottom:10px;">
+                <div class="admin-pro-tabs-bar" id="admin-pro-tabs-bar">
+                    <button type="button" class="admin-pro-tab-btn active" onclick="window.switchAdminProTab('all', this)">🌐 كل الإعدادات</button>
+                    <button type="button" class="admin-pro-tab-btn" onclick="window.switchAdminProTab('ui', this)">🎨 الواجهة والبانرات والثيمات</button>
+                    <button type="button" class="admin-pro-tab-btn" onclick="window.switchAdminProTab('shipping', this)">🚚 الشحن والباقات والمحافظ</button>
+                    <button type="button" class="admin-pro-tab-btn" onclick="window.switchAdminProTab('marketing', this)">🎡 عجلة الحظ والعروض والتسويق</button>
+                    <button type="button" class="admin-pro-tab-btn" onclick="window.switchAdminProTab('support', this)">💬 الشات والولاء والعمل</button>
+                    <button type="button" class="admin-pro-tab-btn" onclick="window.switchAdminProTab('catalog', this)">📂 الأقسام والكوبونات والمديرين</button>
+                </div>
 
                 <!-- ميزات المرحلة العالمية (الجزء الأول V49) -->
                 <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); border: 2px solid var(--secondary); margin-bottom: 18px;">
@@ -1199,6 +1272,20 @@
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                             <input type="checkbox" id="setting-enable-product-compare" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>⚖️ تفعيل مقارنة المنتجات السريعة وحاسبة التوفير للأحجام</span>
+                        </label>
+                        <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
+                        <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🏢 طلبات الجملة وفاحص العصرة وأكواد العجلة الفريدة (V58):</h4>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-unique-wheel-codes" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🔐 توليد كود خصم مختلف وفريد لكل عميل في عجلة الحظ صالح للاستخدام مرة واحدة فقط</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-b2b-portal" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🏢 تفعيل بوابة (طلبات الجملة والمطاعم والفنادق B2B) وإرسالها لغرفة العمل</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-batch-tracker" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🌾 تفعيل نافذة (فاحص رقم التشغيلة وتاريخ العصرة والنقاء) بالرئيسية</span>
                         </label>
                         <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
                         <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🌟 صفقة اليوم والاشتراك الشهري وبطاقات الهدايا والـ QR (V57):</h4>

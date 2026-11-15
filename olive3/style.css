@@ -1500,3 +1500,105 @@ html[dir="ltr"] .subscribe-save-box {
     object-fit: cover;
     border: 1px solid var(--secondary);
 }
+
+
+/* === النسخة V58: التصميم الاحترافي المنظم للوحة التحكم + مجلدات غرفة العمل (المقروء/المنجز/المحذوف) === */
+.admin-pro-tabs-bar {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px 4px;
+    margin-bottom: 14px;
+    border-bottom: 2px solid var(--border-color);
+    scrollbar-width: none;
+}
+.admin-pro-tabs-bar::-webkit-scrollbar { display: none; }
+.admin-pro-tab-btn {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 0.84rem;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+.admin-pro-tab-btn.active, .admin-pro-tab-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 3px 10px rgba(60, 82, 30, 0.25);
+}
+
+#roles-content-section .admin-setting-card-pro {
+    background: var(--panel-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-right: 4px solid var(--secondary) !important;
+    border-radius: 12px !important;
+    padding: 14px 16px !important;
+    margin-bottom: 14px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+#roles-content-section .admin-setting-card-pro:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+/* شريط صفحات الحالة داخل غرفة العمل (الوارد النشط | المقروء | المنجز | المحذوف) */
+.work-folder-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+    background: var(--input-bg);
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+@media (max-width: 550px) {
+    .work-folder-tabs {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+.work-folder-btn {
+    background: var(--panel-bg);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 9px 10px;
+    font-weight: bold;
+    font-size: 0.85rem;
+    color: var(--text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+.work-folder-btn.active {
+    border-color: var(--primary);
+    background: rgba(60, 82, 30, 0.1);
+    color: var(--primary);
+    transform: translateY(-1px);
+}
+.work-folder-badge {
+    background: var(--secondary);
+    color: white;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+.work-status-bar-btns {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+    background: rgba(0,0,0,0.015);
+    padding: 8px;
+    border-radius: 8px;
+}
