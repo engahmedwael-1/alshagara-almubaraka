@@ -357,7 +357,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
 
         window.showToast = function(message, type = 'info') { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type}`; let icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️'); toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`; container.appendChild(toast); setTimeout(() => toast.classList.add('show'), 10); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000); };
 
-        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'global-notifications-panel': document.getElementById('global-notifications-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel'), 'profile': document.getElementById('profile-panel'), 'admin-work': document.getElementById('admin-work-panel') };
+        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'global-notifications-panel': document.getElementById('global-notifications-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel'), 'profile': document.getElementById('profile-panel'), 'admin-work': document.getElementById('admin-work-panel'), 'admin-add-product': document.getElementById('admin-add-product-panel'), 'recipes': document.getElementById('recipes-panel') };
         let checkoutMap = null, userMarker = null;
 
         window.openSidebar = function() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('show'); }
@@ -510,7 +510,12 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         };
         
         window.executePromoLogic = function(inputCode, source) {
+            let abCode = String(storeSettings.abandonedCartCode || 'COMEBACK').trim().toUpperCase();
+            let abDisc = Number(storeSettings.abandonedCartDiscount) || 3;
             let promo = promoCodesList.find(p => p.code === inputCode);
+            if (!promo && inputCode === abCode) {
+                promo = { code: abCode, discount: abDisc, singleUse: false };
+            }
             if (promo && promo.singleUse && promo.used) {
                 currentDiscountPercent = 0; appliedPromoCode = "";
                 let errTxt = window.currentLang === 'en' ? '❌ This single-use coupon has already been used!' : '❌ هذا الكود مخصص لاستخدام مرة واحدة فقط وتم استخدامه مسبقاً!';
@@ -831,7 +836,7 @@ let adminUsersUnsubscribe = null;
                 isCurrentUserAdmin = SUPER_ADMINS.includes((currentUser.email || '').toLowerCase()) || dynamicAdmins.includes((currentUser.email || '').toLowerCase()) || (currentUser.phoneNumber && SUPER_ADMINS.includes(currentUser.phoneNumber)); 
                 document.querySelectorAll('.admin-tab').forEach(tab => tab.style.display = isCurrentUserAdmin ? 'inline-block' : 'none'); 
                 let activePanel = document.querySelector('.panel.active');
-                if(!isCurrentUserAdmin && activePanel && ['admin', 'admin-work', 'admin-orders', 'admin-messages', 'admin-dashboard', 'admin-returns', 'admin-users'].includes(activePanel.id.replace('-panel',''))) { window.showPanel('home'); }
+                if(!isCurrentUserAdmin && activePanel && ['admin', 'admin-add-product', 'admin-work', 'admin-orders', 'admin-messages', 'admin-dashboard', 'admin-returns', 'admin-users'].includes(activePanel.id.replace('-panel',''))) { window.showPanel('home'); }
                 if(isCurrentUserAdmin) { window.loadAdminOrders(); window.loadAdminReturns(); window.loadAdminUsers(); if(window.loadAdminAbandonedCarts) window.loadAdminAbandonedCarts(); if(window.renderLowStockAlerts) window.renderLowStockAlerts(); }
             } else { 
                 isCurrentUserAdmin = false; document.querySelectorAll('.admin-tab').forEach(tab => tab.style.display = 'none'); 
@@ -1139,7 +1144,7 @@ try {
         window.editProduct = function(id) { const product = products.find(p => p.id === id); if(!product) return; document.getElementById('edit-product-id').value = product.id; document.getElementById('product-name').value = product.name; document.getElementById('product-price').value = product.price; document.getElementById('product-old-price').value = product.oldPrice || ''; document.getElementById('product-category').value = product.category || 'أخرى'; document.getElementById('product-stock').value = product.stock !== undefined ? product.stock : ''; document.getElementById('product-desc').value = product.description || '';
         let spBadgeEl = document.getElementById('product-special-badge'); if(spBadgeEl) spBadgeEl.value = product.specialBadge || '';
         let cSpecsEl = document.getElementById('product-custom-specs'); if(cSpecsEl) cSpecsEl.value = product.customSpecs || '';
-        let cCostEl = document.getElementById('product-cost-price'); if(cCostEl) cCostEl.value = product.costPrice || ''; let vStr = ""; if(product.variantsData) { vStr = product.variantsData.map(v => `${v.name}-${v.price}`).join(', '); } document.getElementById('product-variants').value = vStr; document.getElementById('edit-product-old-image').value = (product.images && product.images.length > 0) ? JSON.stringify(product.images) : (product.imageUrl || ''); document.getElementById('product-image-url').value = ''; let pvu = document.getElementById('product-video-url'); if(pvu) pvu.value = product.videoUrl || ''; document.getElementById('admin-product-title').innerHTML = '✏️ تعديل المنتج'; document.getElementById('btn-submit-product').textContent = 'تحديث'; document.getElementById('btn-cancel-edit').style.display = 'block'; window.showPanel('admin'); window.scrollTo(0,0); }
+        let cCostEl = document.getElementById('product-cost-price'); if(cCostEl) cCostEl.value = product.costPrice || ''; let vStr = ""; if(product.variantsData) { vStr = product.variantsData.map(v => `${v.name}-${v.price}`).join(', '); } document.getElementById('product-variants').value = vStr; document.getElementById('edit-product-old-image').value = (product.images && product.images.length > 0) ? JSON.stringify(product.images) : (product.imageUrl || ''); document.getElementById('product-image-url').value = ''; let pvu = document.getElementById('product-video-url'); if(pvu) pvu.value = product.videoUrl || ''; document.getElementById('admin-product-title').innerHTML = '✏️ تعديل المنتج'; document.getElementById('btn-submit-product').textContent = 'تحديث'; document.getElementById('btn-cancel-edit').style.display = 'block'; window.showPanel('admin-add-product'); window.scrollTo(0,0); }
         window.cancelEditProduct = function() { document.getElementById('add-product-form').reset(); document.getElementById('edit-product-id').value = ''; document.getElementById('edit-product-old-image').value = ''; document.getElementById('admin-product-title').innerHTML = '🛒 إضافة منتج جديد'; document.getElementById('btn-submit-product').textContent = 'حفظ'; document.getElementById('btn-cancel-edit').style.display = 'none'; }
 
         let addPForm = document.getElementById('add-product-form');
@@ -1183,7 +1188,9 @@ try {
 
                 document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true); let waBtnInfo = storeSettings.floatingButtons ? storeSettings.floatingButtons.find(b => b.icon === '📱' || b.link.includes('wa.me')) : null; let pureWa = waBtnInfo ? waBtnInfo.link.split('/').pop() : "201018631768"; if(pureWa && !pureWa.startsWith('20') && pureWa.length === 10) pureWa = '20' + pureWa; let custEmail = currentUser ? (currentUser.email || currentUser.phoneNumber) : "غير مسجل";
                 
-                let orderPayload = { usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0, userId: currentUser ? currentUser.uid : "", customerEmail: custEmail || "", customerName: name || "", phones: { primary: phone1 || "", secondary: phone2 || "" }, location: { governorate: gov || "", city: city || "", mapAddress: mapAddress || "", details: addressDetails || "", lat: lat || 0, lng: lng || 0, mapLink: mapLink || "" }, items: selectedItems, subtotal: currentSubtotal || 0, discount: discountVal || 0, promoCode: appliedPromoCode || "", shippingCost: finalShippingCost || 0, totalAmount: finalTotal || 0, orderMethod: method || "", trafficSource: window.getDetectedTrafficSource ? window.getDetectedTrafficSource() : 'مباشر (Direct)', freeGiftUnlocked: window.getUnlockedFreeGiftName ? window.getUnlockedFreeGiftName() : '', paymentMethod: payMethod || "", receiptUrl: receiptUrl || "", status: "قيد المراجعة", orderDate: new Date().toISOString() };
+                let orderPayload = { usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0, userId: currentUser ? currentUser.uid : "", customerEmail: custEmail || "", customerName: name || "", phones: { primary: phone1 || "", secondary: phone2 || "" }, location: { governorate: gov || "", city: city || "", mapAddress: mapAddress || "", details: addressDetails || "", lat: lat || 0, lng: lng || 0, mapLink: mapLink || "" }, items: selectedItems, subtotal: currentSubtotal || 0, discount: discountVal || 0, promoCode: appliedPromoCode || "", shippingCost: finalShippingCost || 0, totalAmount: finalTotal || 0, orderMethod: method || "", trafficSource: window.getDetectedTrafficSource ? window.getDetectedTrafficSource() : 'مباشر (Direct)', freeGiftUnlocked: window.getUnlockedFreeGiftName ? window.getUnlockedFreeGiftName() : '',
+                deliveryTimeSlot: (storeSettings.enableDeliverySlot !== false && document.getElementById('order-delivery-slot')) ? document.getElementById('order-delivery-slot').value : '',
+                giftWrapInfo: (storeSettings.enableGiftWrap !== false && document.getElementById('order-gift-wrap-cb') && document.getElementById('order-gift-wrap-cb').checked) ? (document.getElementById('order-gift-wrap-msg').value.trim() || 'تغليف كهدية فاخرة 🎀') : '', paymentMethod: payMethod || "", receiptUrl: receiptUrl || "", status: "قيد المراجعة", orderDate: new Date().toISOString() };
                 await addDoc(collection(db, 'orders'), orderPayload);
                 if (appliedPromoCode) {
                     let usedPromoObj = promoCodesList.find(p => p.code === String(appliedPromoCode).split(' ')[0].trim());
@@ -1854,7 +1861,7 @@ window.showUserHistory = function(userId, userName) {
                 let stockNum = Number(p.stock);
                 let color = stockNum <= 0 ? 'var(--danger)' : '#e0a800';
                 let txt = stockNum <= 0 ? 'نفدت الكمية تماماً ❌' : `متبقي ${stockNum} قطع فقط ⚠️`;
-                html += `<li style="margin-bottom:8px; font-size:0.9rem;"><strong>${window.escapeHTML(p.name)}</strong> - <span style="color:${color};">${txt}</span> <button type="button" onclick="window.showPanel('admin'); window.editProduct('${p.id}')" style="background:transparent; border:1px solid #ccc; padding:2px 8px; cursor:pointer; border-radius:4px; font-size:0.75rem; margin-right:10px;">تحديث</button></li>`;
+                html += `<li style="margin-bottom:8px; font-size:0.9rem;"><strong>${window.escapeHTML(p.name)}</strong> - <span style="color:${color};">${txt}</span> <button type="button" onclick="window.showPanel('admin-add-product'); window.editProduct('${p.id}')" style="background:transparent; border:1px solid #ccc; padding:2px 8px; cursor:pointer; border-radius:4px; font-size:0.75rem; margin-right:10px;">تحديث</button></li>`;
             });
             html += '</ul>';
             container.innerHTML = html;
@@ -7736,3 +7743,619 @@ window.showUserHistory = function(userId, userName) {
             out = out.replace(/عاجل/g, 'Urgent');
             return out;
         };
+
+
+        // =========================================================================
+        // === النسخة V60: إخفاء الكل للإشعارات + كود السلة الحقيقي 3% + الوصفات + الـ 12 ميزة ===
+        // =========================================================================
+
+        // 1. زر "✖ إخفاء الكل" لإشعارات الشغل والتوست + منع تكرار إشعارات الطلبات القديمة عند فتح المتجر
+        window.adminStartupTimestamp = Date.now();
+
+        window.ensureDismissAllToastsButton = function() {
+            let container = document.getElementById('toast-container');
+            if (!container) return;
+            let toasts = container.querySelectorAll('.toast');
+            let existingBtn = document.getElementById('btn-dismiss-all-toasts');
+            if (toasts.length > 0) {
+                if (!existingBtn) {
+                    let btn = document.createElement('button');
+                    btn.id = 'btn-dismiss-all-toasts';
+                    btn.type = 'button';
+                    btn.className = 'dismiss-all-toasts-btn';
+                    btn.innerHTML = window.currentLang === 'en' ? '✖ Dismiss All Notifications' : '✖ إخفاء الكل (مسح الإشعارات)';
+                    btn.onclick = function(e) {
+                        e.stopPropagation();
+                        window.dismissAllToasts();
+                    };
+                    container.prepend(btn);
+                }
+            } else if (existingBtn) {
+                existingBtn.remove();
+            }
+        };
+
+        window.dismissAllToasts = function() {
+            let container = document.getElementById('toast-container');
+            if (container) container.innerHTML = '';
+        };
+
+        // تحديث showWorkLivePopupAlert ليحتوي على زر إغلاق فردي + زر "إخفاء الكل" ولا يظهر للطلبات القديمة عند فتح الصفحة
+        window.showWorkLivePopupAlert = function(title, subtitle) {
+            // لا نظهر نوافذ منبثقة خلال أول 4 ثوانٍ من فتح المتجر أثناء تحميل البيانات القديمة من القاعدة
+            if (Date.now() - window.adminStartupTimestamp < 4500) return;
+
+            window.playWorkNotificationSound(false);
+            let container = document.getElementById('toast-container');
+            if (!container) return;
+
+            let toast = document.createElement('div');
+            toast.className = 'toast info show';
+            toast.style.cssText = 'background:linear-gradient(135deg, #1e3a5f, #028090); color:white; border:2px solid #c59b27; padding:12px 14px; box-shadow:0 8px 25px rgba(0,0,0,0.3); display:flex; justify-content:space-between; align-items:center; gap:10px;';
+            toast.innerHTML = `
+                <div style="cursor:pointer; flex:1;" onclick="window.showPanel('admin-work'); window.dismissAllToasts();">
+                    <strong style="display:block; font-size:0.95rem; color:#fcd34d;">${window.escapeHTML(title)}</strong>
+                    <span style="font-size:0.84rem;">${window.escapeHTML(subtitle)} (اضغط للفتح في غرفة العمل 💼)</span>
+                </div>
+                <button type="button" onclick="event.stopPropagation(); this.parentElement.remove(); window.ensureDismissAllToastsButton();" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:50%; width:26px; height:26px; cursor:pointer; font-weight:bold;">✖</button>
+            `;
+            container.appendChild(toast);
+            window.ensureDismissAllToastsButton();
+
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                    window.ensureDismissAllToastsButton();
+                }
+            }, 6000);
+        };
+
+        // 2. كود خصم السلة المتروكة الحقيقي (COMEBACK بخصم 3% افتراضياً وقابل للتخصيص والإخفاء)
+        window.checkAbandonedCart = function() {
+            if (storeSettings.enableAbandonedModal === false) return;
+            if (cart.length > 0) {
+                let lastTime = localStorage.getItem('cart_last_updated');
+                let now = new Date().getTime();
+                if (lastTime && (now - lastTime > 1800000)) {
+                    setTimeout(() => {
+                        if (storeSettings.enableAbandonedModal === false) return;
+                        let modal = document.getElementById('abandoned-cart-modal');
+                        let codeBox = document.getElementById('abandoned-modal-code-box');
+                        let pctEl = document.getElementById('abandoned-modal-disc-pct');
+                        let abCode = String(storeSettings.abandonedCartCode || 'COMEBACK').trim().toUpperCase();
+                        let abDisc = Number(storeSettings.abandonedCartDiscount) || 3;
+                        if (codeBox) codeBox.textContent = abCode;
+                        if (pctEl) pctEl.textContent = abDisc + '%';
+                        if (modal) modal.style.display = 'flex';
+                        localStorage.setItem('cart_last_updated', new Date().getTime());
+                    }, 3000);
+                }
+            }
+        };
+
+        window.claimAbandonedCartOfferNow = function() {
+            let abCode = String(storeSettings.abandonedCartCode || 'COMEBACK').trim().toUpperCase();
+            let abDisc = Number(storeSettings.abandonedCartDiscount) || 3;
+            currentDiscountPercent = Math.max(currentDiscountPercent, abDisc);
+            appliedPromoCode = abCode;
+            let pInput1 = document.getElementById('promo-code-input-cart'); if (pInput1) pInput1.value = abCode;
+            let pInput2 = document.getElementById('promo-code-input'); if (pInput2) pInput2.value = abCode;
+            let pMsg1 = document.getElementById('promo-msg-cart'); if (pMsg1) { pMsg1.textContent = `✅ تم تفعيل خصم ${abDisc}% بكود ${abCode}`; pMsg1.style.color = '#2a9d8f'; }
+            let pMsg2 = document.getElementById('promo-msg'); if (pMsg2) { pMsg2.textContent = `✅ تم تفعيل خصم ${abDisc}% بكود ${abCode}`; pMsg2.style.color = '#2a9d8f'; }
+            window.updateInvoiceUI();
+            let modal = document.getElementById('abandoned-cart-modal');
+            if (modal) modal.style.display = 'none';
+            window.showToast(`🎉 تم تفعيل كود (${abCode}) بخصم حقيقي ${abDisc}% في سلتك!`, 'success');
+            window.showPanel('cart');
+        };
+
+        // 3. موسوعة الوصفات الصحية في القائمة الجانبية والرئيسية + إضافة وحذف وصفة جديدة للمدير
+        window.getDefaultStoreRecipes = function() {
+            return [
+                { id: 'rec_1', title: '🍯 وصفة المناعة الصباحية الذهبية', desc: 'ملعقة كبيرة من زيت الزيتون السيناوي البكر على الريق مع قطرات الليمون وعسل النحل لتنشيط الكبد ورفع المناعة طوال اليوم.' },
+                { id: 'rec_2', title: '🥗 تتبيلة السلطة المتوسطية الفاخرة', desc: '3 ملاعق زيت زيتون عصرة أولى على البارد مع الزعتر البري السيناوي وعصير الليمون لطعم أصلي وصحة للقلب والشرايين.' },
+                { id: 'rec_3', title: '💆‍♀️ حمام الزيت الدافئ لتكثيف الشعر', desc: 'تدليك فروة الرأس بزيت الزيتون السيناوي الخام الغني بفيتامين E لمدة 45 دقيقة أسبوعياً لمنع التساقط ولمعان فوري.' },
+                { id: 'rec_4', title: '🧄 خلطة زيت الزيتون والثوم لصحة المفاصل', desc: 'نقع فصوص الثوم الطازج في كوب من زيت الزيتون السيناوي البكر واستخدامه كدهان موضعي دافئ لتهدئة آلام المفاصل والعضلات.' },
+                { id: 'rec_5', title: '🧀 فطور الجبن القريش بزيت الزيتون والزعتر', desc: 'إضافة ملعقتين من زيت الزيتون البكر الممتاز على الجبن القريش مع حبة البركة والزعتر لوجبة فطور مشبعة وغنية بالأوميجا 9.' },
+                { id: 'rec_6', title: '✨ سيروم النضارة الليلي للبشرة الجافة', desc: 'نقطتان من زيت الزيتون البكر النقي على بشرة نظيفة قبل النوم لترطيب عميق وتجديد خلايا البشرة ومقاومة التجاعيد.' }
+            ];
+        };
+
+        window.getAllStoreRecipes = function() {
+            let custom = Array.isArray(storeSettings.customRecipesList) ? storeSettings.customRecipesList : [];
+            return [...custom, ...window.getDefaultStoreRecipes()];
+        };
+
+        window.renderAllStoreRecipes = function() {
+            let all = window.getAllStoreRecipes();
+            let fullGrid = document.getElementById('full-page-recipes-grid');
+            let homeGrid = document.getElementById('home-recipes-grid-container');
+            let adminAddBox = document.getElementById('admin-add-recipe-box');
+            if (adminAddBox) adminAddBox.style.display = isCurrentUserAdmin ? 'block' : 'none';
+
+            let buildCards = (list) => list.map((r, idx) => {
+                let isCustom = String(r.id || '').startsWith('custom_');
+                let delBtn = (isCurrentUserAdmin && isCustom)
+                    ? `<button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem; margin-top:6px; width:100%;" onclick="window.deleteCustomStoreRecipe('${r.id}')">🗑️ حذف الوصفة</button>`
+                    : '';
+                return `<div class="recipe-card">
+                    <div>
+                        <strong style="color:var(--primary); font-size:0.95rem; display:block; margin-bottom:5px;">${window.escapeHTML(r.title)}</strong>
+                        <p style="font-size:0.83rem; color:var(--text-muted); margin:0 0 10px 0; line-height:1.6;">${window.escapeHTML(r.desc)}</p>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem; width:100%;" onclick="window.shopRecipeQuickAdd(${idx})">🛒 <span class="translatable">أضف العبوة المناسبة للوصفة</span></button>
+                        ${delBtn}
+                    </div>
+                </div>`;
+            }).join('');
+
+            if (fullGrid) fullGrid.innerHTML = buildCards(all);
+            if (homeGrid) homeGrid.innerHTML = buildCards(all.slice(0, 4));
+        };
+
+        window.addCustomStoreRecipe = async function() {
+            let tInp = document.getElementById('new-recipe-title');
+            let dInp = document.getElementById('new-recipe-desc');
+            if (!tInp || !dInp || !tInp.value.trim() || !dInp.value.trim()) {
+                window.showToast('يرجى كتابة عنوان الوصفة وطريقة التحضير أولاً', 'error');
+                return;
+            }
+            let custom = Array.isArray(storeSettings.customRecipesList) ? [...storeSettings.customRecipesList] : [];
+            custom.unshift({
+                id: 'custom_' + Date.now(),
+                title: tInp.value.trim(),
+                desc: dInp.value.trim()
+            });
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), { customRecipesList: custom });
+                tInp.value = '';
+                dInp.value = '';
+                window.recordAdminAuditLog('إضافة وصفة صحية جديدة');
+                window.showToast('تم حفظ ونشر الوصفة الجديدة بنجاح 🥗', 'success');
+            } catch (e) {}
+        };
+
+        window.deleteCustomStoreRecipe = async function(recId) {
+            if (!confirm('هل تريد حذف هذه الوصفة؟')) return;
+            let custom = (storeSettings.customRecipesList || []).filter(r => r.id !== recId);
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), { customRecipesList: custom });
+                window.showToast('تم حذف الوصفة', 'info');
+            } catch (e) {}
+        };
+
+        // 4. القارئ الصوتي لوصف المنتج (Voice Reader) + بلغني عند انخفاض السعر + اسأل عن المنتج (Q&A)
+        window.isSpeakingProduct = false;
+        window.toggleProductVoiceReader = function() {
+            if (!('speechSynthesis' in window)) {
+                window.showToast('متصفحك لا يدعم القارئ الصوتي', 'error');
+                return;
+            }
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                window.isSpeakingProduct = false;
+                return;
+            }
+            let p = products.find(pr => pr.id === activeProductForReview);
+            if (!p) return;
+            let textToRead = `${p.name}. السعر ${p.price} جنيه. ${p.description || ''}. زيت زيتون سيناوي بكر ممتاز عصره أولى على البارد طبيعي مئة بالمئة.`;
+            let utter = new SpeechSynthesisUtterance(textToRead);
+            utter.lang = window.currentLang === 'en' ? 'en-US' : 'ar-EG';
+            utter.rate = 0.95;
+            window.speechSynthesis.speak(utter);
+            window.showToast('🔊 جاري قراءة وصف وفوائد المنتج صوتياً...', 'info');
+        };
+
+        window.requestPriceDropAlert = async function() {
+            let p = products.find(pr => pr.id === activeProductForReview);
+            if (!p) return;
+            let phone = prompt(`أدخل رقم الواتساب الخاص بك لنبلغك فور نزول خصم أو عرض جديد على (${p.name}):`, localStorage.getItem('zait_wheel_saved_phone') || '');
+            if (!phone || !phone.trim()) return;
+            try {
+                await addDoc(collection(db, 'price_alerts'), {
+                    productId: p.id,
+                    productName: p.name,
+                    currentPrice: p.price,
+                    phone: phone.trim(),
+                    date: new Date().toISOString()
+                });
+                window.showToast('📉 تم تسجيل رقمك! سنبلغك فور نزول عرض خاص على هذا المنتج', 'success');
+            } catch (e) {}
+        };
+
+        window.adminPriceAlertsUnsub = null;
+        window.loadAdminPriceAlerts = function() {
+            if (window.adminPriceAlertsUnsub) window.adminPriceAlertsUnsub();
+            window.adminPriceAlertsUnsub = onSnapshot(collection(db, 'price_alerts'), (snap) => {
+                let cont = document.getElementById('admin-price-alerts-list');
+                let badge = document.getElementById('price-alerts-count-badge');
+                if (!cont) return;
+                let list = [];
+                snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+                if (badge) badge.textContent = list.length;
+                if (list.length === 0) {
+                    cont.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; margin:0;">لا توجد طلبات حالياً.</p>';
+                    return;
+                }
+                cont.innerHTML = list.map(item => {
+                    let pureWa = String(item.phone || '').replace(/\D/g, '');
+                    if (pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
+                    let waMsg = `مرحباً بك من متجر زيت الشجرة المباركة 🌿 نبشرك بنزول عرض وخصم جديد على (${item.productName}) الذي طلبت متابعة سعره! اطلبه الآن.`;
+                    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px; background:var(--input-bg); border:1px solid var(--border-color); border-radius:8px; margin-bottom:6px; font-size:0.84rem;">
+                        <div><strong>${window.escapeHTML(item.productName)}</strong><br><span style="color:var(--text-muted);">📞 ${window.escapeHTML(item.phone)}</span></div>
+                        <div style="display:flex; gap:6px;">
+                            ${pureWa.length >= 10 ? `<a href="https://wa.me/${pureWa}?text=${encodeURIComponent(waMsg)}" target="_blank" class="btn btn-outline" style="padding:4px 8px; font-size:0.76rem; border-color:#25D366; color:#25D366; text-decoration:none;">💬 واتساب</a>` : ''}
+                            <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.76rem;" onclick="deleteDoc(doc(db, 'price_alerts', '${item.id}'))">🗑️</button>
+                        </div>
+                    </div>`;
+                }).join('');
+            });
+        };
+
+        // قسم اسأل عن المنتج (Product Q&A)
+        window.renderProductQASection = function(product) {
+            let sec = document.getElementById('modal-product-qa-section');
+            let listEl = document.getElementById('modal-qa-list');
+            if (!sec || !listEl || !product) return;
+            if (storeSettings.enableProductQA === false) {
+                sec.style.display = 'none';
+                return;
+            }
+            sec.style.display = 'block';
+            let qaArr = Array.isArray(product.questionsList) ? product.questionsList : [];
+            if (qaArr.length === 0) {
+                listEl.innerHTML = '<p style="color:var(--text-muted); font-size:0.82rem; margin:0;">هل لديك استفسار عن هذا المنتج؟ اكتب سؤالك بالأسفل وسنجيبك فوراً.</p>';
+                return;
+            }
+            listEl.innerHTML = qaArr.map((q, idx) => `
+                <div class="qa-item-card">
+                    <div><strong>❓ ${window.escapeHTML(q.userName || 'زائر')}:</strong> ${window.escapeHTML(q.question)}</div>
+                    ${q.answer ? `<div style="color:#166534; margin-top:4px;"><strong>✅ إجابة الإدارة:</strong> ${window.escapeHTML(q.answer)}</div>` : (isCurrentUserAdmin ? `<button type="button" class="btn btn-outline" style="padding:2px 8px; font-size:0.74rem; margin-top:4px;" onclick="window.replyToProductQuestion('${product.id}', ${idx})">✍️ إضافة إجابة الإدارة</button>` : `<small style="color:var(--text-muted);">⏳ بانتظار رد الإدارة</small>`)}
+                </div>
+            `).join('');
+        };
+
+        window.submitProductQuestion = async function() {
+            if (!activeProductForReview) return;
+            let inp = document.getElementById('modal-qa-input');
+            if (!inp || !inp.value.trim()) return;
+            let p = products.find(pr => pr.id === activeProductForReview);
+            if (!p) return;
+            let qaArr = Array.isArray(p.questionsList) ? [...p.questionsList] : [];
+            let uName = (currentUser && currentUser.displayName) ? currentUser.displayName : (localStorage.getItem('zait_wheel_saved_name') || 'عميل');
+            qaArr.push({
+                userName: uName,
+                question: inp.value.trim(),
+                answer: '',
+                date: new Date().toISOString()
+            });
+            inp.value = '';
+            try {
+                await updateDoc(doc(db, 'products', p.id), { questionsList: qaArr });
+                p.questionsList = qaArr;
+                window.renderProductQASection(p);
+                window.showToast('تم إرسال سؤالك بنجاح ❓', 'success');
+            } catch (e) {}
+        };
+
+        window.replyToProductQuestion = async function(prodId, qIdx) {
+            let p = products.find(pr => pr.id === prodId);
+            if (!p || !p.questionsList || !p.questionsList[qIdx]) return;
+            let ans = prompt('اكتب إجابة الإدارة على هذا السؤال:', p.questionsList[qIdx].answer || '');
+            if (ans === null) return;
+            p.questionsList[qIdx].answer = ans.trim();
+            try {
+                await updateDoc(doc(db, 'products', prodId), { questionsList: p.questionsList });
+                window.renderProductQASection(p);
+                window.showToast('تم نشر الإجابة بنجاح ✅', 'success');
+            } catch (e) {}
+        };
+
+        // 5. تعديل العميل لطلبه قبل الشحن (Edit Order Before Shipping)
+        window.openCustomerEditOrderModal = function(orderId) {
+            let ord = (window.customerOrdersArray || []).find(o => o.id === orderId) || (window.phoneTrackedOrders || []).find(o => o.id === orderId);
+            if (!ord) return;
+            document.getElementById('edit-ord-id').value = ord.id;
+            document.getElementById('edit-ord-name').value = ord.customerName || '';
+            document.getElementById('edit-ord-phone').value = (ord.phones && ord.phones.primary) || '';
+            document.getElementById('edit-ord-addr').value = (ord.location && ord.location.details) || '';
+            document.getElementById('customer-edit-order-modal').style.display = 'flex';
+        };
+
+        window.saveCustomerOrderEdits = async function() {
+            let oid = document.getElementById('edit-ord-id').value;
+            let newName = document.getElementById('edit-ord-name').value.trim();
+            let newPhone = document.getElementById('edit-ord-phone').value.trim();
+            let newAddr = document.getElementById('edit-ord-addr').value.trim();
+            if (!oid || !newName || !newPhone || !newAddr) {
+                window.showToast('يرجى ملء كافة الحقول', 'error');
+                return;
+            }
+            try {
+                await updateDoc(doc(db, 'orders', oid), {
+                    customerName: newName,
+                    'phones.primary': newPhone,
+                    'location.details': newAddr,
+                    updatedAt: new Date().toISOString()
+                });
+                document.getElementById('customer-edit-order-modal').style.display = 'none';
+                window.showToast('تم تحديث بيانات طلبك بنجاح ✅', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء التحديث', 'error');
+            }
+        };
+
+        const origOpenCustOrderModalV59 = window.openCustomerOrderModal;
+        window.openCustomerOrderModal = function(orderId) {
+            origOpenCustOrderModalV59(orderId);
+            if (storeSettings.enableEditOrderBeforeShip === false) return;
+            let order = (window.customerOrdersArray || []).find(o => o.id === orderId);
+            if (order && order.status === 'قيد المراجعة') {
+                let com = document.getElementById('com-content');
+                if (com) {
+                    com.innerHTML += `<button type="button" class="btn btn-outline" style="width:100%; margin-top:8px; border-color:#028090; color:#028090;" onclick="document.getElementById('customer-order-modal').style.display='none'; window.openCustomerEditOrderModal('${order.id}');">✏️ تعديل العنوان أو رقم الهاتف قبل الشحن</button>`;
+                }
+            }
+        };
+
+        // 6. كاشير الإدارة لتسجيل طلب هاتفي مباشر (POS) + كوبون الشات السريع + حملات واتساب + سجل الرقابة
+        window.openAdminPOSModal = function() {
+            let govSel = document.getElementById('pos-cust-gov');
+            if (govSel && govSel.options.length === 0) {
+                let gHtml = '<option value="" disabled selected>اختر المحافظة...</option>';
+                for (let g in deliveryData) gHtml += `<option value="${g}">${g}</option>`;
+                govSel.innerHTML = gHtml;
+            }
+            let prodSel = document.getElementById('pos-prod-select');
+            if (prodSel) {
+                prodSel.innerHTML = products.map(p => `<option value="${p.id}">${window.escapeHTML(p.name)} (${p.price} ج)</option>`).join('');
+            }
+            document.getElementById('admin-pos-modal').style.display = 'flex';
+        };
+
+        window.submitAdminPOSOrder = async function() {
+            let name = document.getElementById('pos-cust-name').value.trim();
+            let phone = document.getElementById('pos-cust-phone').value.trim();
+            let gov = document.getElementById('pos-cust-gov').value;
+            let addr = document.getElementById('pos-cust-addr').value.trim();
+            let pid = document.getElementById('pos-prod-select').value;
+            let qty = Math.max(1, Number(document.getElementById('pos-prod-qty').value) || 1);
+            let p = products.find(pr => pr.id === pid);
+            if (!name || !phone || !gov || !p) {
+                window.showToast('يرجى إدخال اسم العميل والهاتف والمحافظة والمنتج', 'error');
+                return;
+            }
+            let ship = window.getShippingCostForGov ? window.getShippingCostForGov(gov) : 90;
+            let sub = Number(p.price) * qty;
+            if (storeSettings.enableFreeShipping !== false && sub >= (Number(storeSettings.freeShippingThreshold) || 1000)) ship = 0;
+
+            let payload = {
+                userId: 'pos_admin',
+                customerName: name,
+                phones: { primary: phone, secondary: 'لا يوجد' },
+                location: { governorate: gov, city: 'طلب هاتفي POS', details: addr || gov, mapAddress: '', mapLink: '' },
+                items: [{ id: p.id, cartItemId: p.id, name: p.name, price: Number(p.price), imageUrl: (p.images && p.images[0]) || '1000392409.jpeg', quantity: qty }],
+                subtotal: sub,
+                shippingCost: ship,
+                totalAmount: sub + ship,
+                paymentMethod: 'كاش عند الاستلام (طلب هاتفي POS ☎️)',
+                orderMethod: 'كاشير الإدارة POS ☎️',
+                status: 'تم التجهيز',
+                orderDate: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            try {
+                let docRef = await addDoc(collection(db, 'orders'), payload);
+                window.recordAdminAuditLog(`تسجيل طلب هاتفي POS للعميل ${name}`);
+                document.getElementById('admin-pos-modal').style.display = 'none';
+                window.showToast('تم تسجيل الطلب الهاتفي بنجاح ☎️', 'success');
+                setTimeout(() => window.printOrderShippingLabel(docRef.id), 400);
+            } catch (e) {}
+        };
+
+        window.generateAndInsertChatCoupon = async function() {
+            let code = window.generateUniqueSingleUseCode('GIFT5');
+            try {
+                await addDoc(collection(db, 'promoCodes'), {
+                    code: code,
+                    discount: 5,
+                    singleUse: true,
+                    used: false,
+                    createdAt: new Date().toISOString()
+                });
+            } catch (e) {}
+            let msg = `🎁 يسعدنا إهداؤك كود خصم خاص (5%) صالح لطلبك القادم لمرة واحدة: ${code}`;
+            window.insertCannedAdminReply(msg);
+            window.showToast(`تم توليد الكود الفريد (${code}) وإدراجه في الرد!`, 'success');
+        };
+
+        window.renderWhatsAppCampaignList = function() {
+            let seg = (document.getElementById('wa-campaign-segment') || {}).value || 'all';
+            let msg = (document.getElementById('wa-campaign-msg') || {}).value || '';
+            let cont = document.getElementById('wa-campaign-targets-list');
+            if (!cont) return;
+
+            let phoneMap = new Map();
+            if (seg === 'wheel') {
+                (window.allWheelLeadsRawList || []).forEach(w => {
+                    if (w.phone) phoneMap.set(w.phone.replace(/\D/g, ''), w.customerName || 'عميل');
+                });
+            } else {
+                (adminOrdersArray || []).forEach(o => {
+                    let ph = (o.phones && o.phones.primary) ? o.phones.primary.replace(/\D/g, '') : '';
+                    if (!ph) return;
+                    if (seg === 'vip') {
+                        let tag = (storeSettings.customerTagsMap || {})[ph];
+                        if (!tag || tag.type !== 'vip') return;
+                    }
+                    phoneMap.set(ph, o.customerName || 'عميل');
+                });
+            }
+
+            if (phoneMap.size === 0) {
+                cont.innerHTML = '<p style="color:var(--text-muted); font-size:0.82rem;">لا يوجد عملاء في هذه الشريحة حالياً.</p>';
+                return;
+            }
+            let html = '';
+            phoneMap.forEach((name, ph) => {
+                let pureWa = (!ph.startsWith('20') && ph.length >= 10) ? '20' + ph : ph;
+                html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:var(--input-bg); border:1px solid var(--border-color); border-radius:6px; margin-bottom:5px; font-size:0.82rem;">
+                    <span>👤 <strong>${window.escapeHTML(name)}</strong> (${ph})</span>
+                    <a href="https://wa.me/${pureWa}?text=${encodeURIComponent(msg)}" target="_blank" class="btn btn-outline" style="padding:3px 10px; font-size:0.76rem; border-color:#25D366; color:#25D366; text-decoration:none;">📲 إرسال العرض</a>
+                </div>`;
+            });
+            cont.innerHTML = html;
+        };
+
+        // سجل رقابة نشاط الإدارة (Audit Log) + متوقع نفاد المخزون الذكي
+        window.recordAdminAuditLog = async function(actionText) {
+            if (!currentUser) return;
+            let logs = Array.isArray(storeSettings.adminAuditLogs) ? [...storeSettings.adminAuditLogs] : [];
+            logs.unshift({
+                actor: currentUser.email || currentUser.displayName || 'مدير',
+                action: actionText,
+                time: new Date().toISOString()
+            });
+            logs = logs.slice(0, 40);
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), { adminAuditLogs: logs });
+            } catch (e) {}
+        };
+
+        window.renderAdminAuditLog = function() {
+            let cont = document.getElementById('admin-audit-log-list');
+            let card = document.getElementById('admin-audit-log-card');
+            if (card) card.style.display = storeSettings.enableAuditLog !== false ? 'block' : 'none';
+            if (!cont) return;
+            let logs = Array.isArray(storeSettings.adminAuditLogs) ? storeSettings.adminAuditLogs : [];
+            if (logs.length === 0) {
+                cont.innerHTML = '<p style="color:var(--text-muted); margin:0;">سيتم تسجيل حركات الإدارة والموظفين هنا تلقائياً.</p>';
+                return;
+            }
+            cont.innerHTML = logs.map(l => {
+                let dStr = new Date(window.parseSafeTimestamp(l.time, Date.now())).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
+                return `<div style="padding:5px 8px; border-bottom:1px dashed var(--border-color);">
+                    <strong style="color:var(--primary);">${window.escapeHTML(l.action)}</strong><br>
+                    <small style="color:var(--text-muted);">👤 ${window.escapeHTML(l.actor)} • 🕒 ${dStr}</small>
+                </div>`;
+            }).join('');
+        };
+
+        // ربط فتح نافذة المنتج وتحديث الإعدادات بـ V60
+        const origOpenProductModalV59 = window.openProductModal;
+        window.openProductModal = function(id) {
+            origOpenProductModalV59(id);
+            let p = products.find(pr => pr.id === id);
+            if (p) window.renderProductQASection(p);
+            let vrBtn = document.getElementById('btn-voice-reader');
+            if (vrBtn) vrBtn.style.display = storeSettings.enableVoiceReader !== false ? 'inline-block' : 'none';
+            let pdBtn = document.getElementById('btn-price-drop-alert');
+            if (pdBtn) pdBtn.style.display = storeSettings.enablePriceDrop !== false ? 'inline-block' : 'none';
+        };
+
+        const origShowPanelV59 = window.showPanel;
+        window.showPanel = function(panelId) {
+            origShowPanelV59(panelId);
+            if (panelId === 'recipes') {
+                window.renderAllStoreRecipes();
+            }
+        };
+
+        const origUpdateAdminUIV59 = window.updateAdminUI;
+        window.updateAdminUI = function() {
+            origUpdateAdminUIV59();
+            if (isCurrentUserAdmin) {
+                window.loadAdminPriceAlerts();
+                window.renderAdminAuditLog();
+            }
+        };
+
+        const prevApplySettingsV59 = window.applySettingsToUI;
+        window.applySettingsToUI = function() {
+            prevApplySettingsV59();
+            window.renderAllStoreRecipes();
+
+            if (isCurrentUserAdmin) {
+                let setC = (id, val, def = true) => { let el = document.getElementById(id); if (el) el.checked = val !== undefined ? Boolean(val) : def; };
+                let setV = (id, val, def = '') => { let el = document.getElementById(id); if (el) el.value = val !== undefined ? val : def; };
+
+                setC('setting-enable-abandoned-modal', storeSettings.enableAbandonedModal, true);
+                setV('setting-abandoned-code', storeSettings.abandonedCartCode, 'COMEBACK');
+                setV('setting-abandoned-discount', storeSettings.abandonedCartDiscount, 3);
+
+                setC('setting-enable-voice-reader', storeSettings.enableVoiceReader, true);
+                setC('setting-enable-edit-order', storeSettings.enableEditOrderBeforeShip, true);
+                setC('setting-enable-delivery-slot', storeSettings.enableDeliverySlot, true);
+                setC('setting-enable-gift-wrap', storeSettings.enableGiftWrap, true);
+                setC('setting-enable-price-drop', storeSettings.enablePriceDrop, true);
+                setC('setting-enable-product-qa', storeSettings.enableProductQA, true);
+                setC('setting-enable-admin-pos', storeSettings.enableAdminPOS, true);
+                setC('setting-enable-wa-campaigns', storeSettings.enableWaCampaigns, true);
+                setC('setting-enable-audit-log', storeSettings.enableAuditLog, true);
+                setC('setting-enable-maintenance-mode', storeSettings.enableMaintenanceMode, false);
+                window.renderAdminAuditLog();
+            }
+
+            // تحديث نافذة السلة المتروكة بالكود الحقيقي ونسبته
+            let codeBox = document.getElementById('abandoned-modal-code-box');
+            let pctEl = document.getElementById('abandoned-modal-disc-pct');
+            if (codeBox) codeBox.textContent = String(storeSettings.abandonedCartCode || 'COMEBACK').trim().toUpperCase();
+            if (pctEl) pctEl.textContent = (Number(storeSettings.abandonedCartDiscount) || 3) + '%';
+
+            // إظهار/إخفاء عناصر V60 حسب الإعدادات
+            let showEl = (id, cond, disp = 'block') => { let el = document.getElementById(id); if (el) el.style.display = cond ? disp : 'none'; };
+            showEl('checkout-delivery-slot-box', storeSettings.enableDeliverySlot !== false);
+            showEl('checkout-gift-wrap-box', storeSettings.enableGiftWrap !== false);
+            showEl('btn-open-admin-pos', storeSettings.enableAdminPOS !== false, 'inline-block');
+            showEl('admin-price-alerts-card', storeSettings.enablePriceDrop !== false);
+            showEl('admin-wa-campaigns-card', storeSettings.enableWaCampaigns !== false);
+            showEl('admin-audit-log-card', storeSettings.enableAuditLog !== false);
+
+            // وضع الجرد أو الصيانة المؤقت (للزوار فقط وليس للمدير)
+            let maintScreen = document.getElementById('maintenance-overlay-screen');
+            if (maintScreen) {
+                maintScreen.style.display = (storeSettings.enableMaintenanceMode === true && !isCurrentUserAdmin) ? 'flex' : 'none';
+            }
+
+            if (window.currentLang === 'en') window.translateDOM(document.body);
+        };
+
+        const prevSaveSettingsV59 = window.saveSettings;
+        window.saveSettings = async function() {
+            const getC = (id, def = true) => { let el = document.getElementById(id); return el ? el.checked : def; };
+            const getV = (id, def = '') => { let el = document.getElementById(id); return el ? el.value.trim() : def; };
+            try {
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    enableAbandonedModal: getC('setting-enable-abandoned-modal', true),
+                    abandonedCartCode: getV('setting-abandoned-code', 'COMEBACK').toUpperCase(),
+                    abandonedCartDiscount: Number(getV('setting-abandoned-discount', 3)) || 3,
+                    enableVoiceReader: getC('setting-enable-voice-reader', true),
+                    enableEditOrderBeforeShip: getC('setting-enable-edit-order', true),
+                    enableDeliverySlot: getC('setting-enable-delivery-slot', true),
+                    enableGiftWrap: getC('setting-enable-gift-wrap', true),
+                    enablePriceDrop: getC('setting-enable-price-drop', true),
+                    enableProductQA: getC('setting-enable-product-qa', true),
+                    enableAdminPOS: getC('setting-enable-admin-pos', true),
+                    enableWaCampaigns: getC('setting-enable-wa-campaigns', true),
+                    enableAuditLog: getC('setting-enable-audit-log', true),
+                    enableMaintenanceMode: getC('setting-enable-maintenance-mode', false)
+                });
+                window.recordAdminAuditLog('تحديث وحفظ إعدادات المتجر');
+            } catch (e) {}
+            await prevSaveSettingsV59();
+        };
+
+        Object.assign(window.FULL_AR_TO_EN, {
+            "إضافة منتج ➕": "Add Product ➕",
+            "أدوات التوفير والخدمات الذكية:": "Smart Savings & Store Tools:",
+            "ركن الوصفات والفوائد الصحية": "Healthy Recipes & Benefits",
+            "موسوعة الوصفات الصحية وفوائد زيت الزيتون السيناوي": "Sinai Olive Oil Healthy Recipes & Benefits Encyclopedia",
+            "تفعيل الخصم وإكمال الطلب الآن 🚀": "Activate Discount & Checkout Now 🚀",
+            "استمع لوصف المنتج صوتياً": "Listen to Product Audio",
+            "بلغني عند انخفاض السعر": "Price Drop Alert",
+            "اسأل عن هذا المنتج (أسئلة وأجوبة العملاء):": "Ask About This Product (Customer Q&A):",
+            "إرسال السؤال": "Submit Question",
+            "الفترة المفضلة لاستلام الطلب:": "Preferred Delivery Time Slot:",
+            "تغليف الطلب كهدية فاخرة مع كارت إهداء مطبوع": "Wrap Order as a Luxury Gift with Printed Card"
+        });

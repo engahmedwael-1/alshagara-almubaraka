@@ -1660,3 +1660,63 @@ html[dir="ltr"] .recipe-card {
 html[dir="ltr"] .growth-card {
     text-align: left;
 }
+
+
+/* === النسخة V60: تنظيف الرئيسية + فصل إضافة المنتج + إخفاء الإشعارات + الميزات الـ 12 === */
+#home-smart-tools-bar {
+    display: none !important;
+}
+.dismiss-all-toasts-btn {
+    background: #dc2626;
+    color: white;
+    border: 2px solid white;
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-weight: 900;
+    font-size: 0.85rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.35);
+    margin-bottom: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: auto;
+    z-index: 10001;
+}
+.dismiss-all-toasts-btn:hover {
+    background: #b91c1c;
+    transform: scale(1.03);
+}
+.product-qa-box {
+    margin-top: 15px;
+    padding: 12px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    text-align: right;
+}
+html[dir="ltr"] .product-qa-box {
+    text-align: left;
+}
+.qa-item-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-right: 3px solid #028090;
+    padding: 8px 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+}
+.maintenance-overlay-screen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, #1b2610, #0f203c);
+    color: white;
+    z-index: 99999;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 25px;
+}

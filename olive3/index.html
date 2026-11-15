@@ -59,6 +59,15 @@
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.showPanel('home'); window.closeSidebar();">🏠 <span class="translatable">الرئيسية</span></button>
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.showPanel('support'); window.closeSidebar();">💬 <span class="translatable">خدمة العملاء</span></button>
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.loadAllReviews(); window.closeSidebar();">⭐️ <span class="translatable">آراء العملاء</span></button>
+            <div style="background:var(--input-bg); padding:10px; border-radius:10px; border:1px solid var(--border-color); display:flex; flex-direction:column; gap:8px;">
+                <strong style="color:var(--primary); font-size:0.85rem; display:block; margin-bottom:2px;">🛠️ <span class="translatable">أدوات التوفير والخدمات الذكية:</span></strong>
+                <button type="button" class="btn btn-outline" style="width: 100%; border-color: #28a745; color: #28a745; text-align: right; font-weight:bold; padding:7px 10px; font-size:0.86rem;" onclick="window.showPanel('recipes'); window.closeSidebar();">🥗 <span class="translatable">ركن الوصفات والفوائد الصحية</span></button>
+                <button type="button" id="sidebar-box-builder-btn" class="btn btn-outline" style="width: 100%; border-color: var(--secondary); color: var(--primary); text-align: right; font-weight:bold; padding:7px 10px; font-size:0.86rem;" onclick="window.openCustomBoxModal(); window.closeSidebar();">📦 <span class="translatable">كوّن كرتونة التوفير بخصم خاص!</span></button>
+                <button type="button" id="sidebar-product-quiz-btn" class="btn btn-outline" style="width: 100%; border-color: #028090; color: #028090; text-align: right; font-weight:bold; padding:7px 10px; font-size:0.86rem;" onclick="window.openProductQuizModal(); window.closeSidebar();">🧭 <span class="translatable">محتار؟ مساعد الاختيار الذكي</span></button>
+                <button type="button" id="sidebar-gift-card-btn" class="btn btn-outline" style="width: 100%; border-color: #d97706; color: #d97706; text-align: right; font-weight:bold; padding:7px 10px; font-size:0.86rem;" onclick="window.openGiftCardModal(); window.closeSidebar();">🎟️ <span class="translatable">إهداء بطاقة هدية رقمية</span></button>
+                <button type="button" id="sidebar-b2b-btn" class="btn btn-outline" style="width: 100%; border-color: #6f42c1; color: #6f42c1; text-align: right; font-weight:bold; padding:7px 10px; font-size:0.86rem;" onclick="window.openB2BWholesaleModal(); window.closeSidebar();">🏢 <span class="translatable">طلبات الجملة والمطاعم</span></button>
+                <button type="button" id="sidebar-batch-tracker-btn" class="btn btn-outline" style="width: 100%; border-color: var(--primary); color: var(--primary); text-align: right; font-weight:bold; padding:7px 10px; font-size:0.86rem;" onclick="window.openBatchTrackerModal(); window.closeSidebar();">🌾 <span class="translatable">فاحص تاريخ العصرة والنقاء</span></button>
+            </div>
             <button type="button" id="sidebar-spin-wheel-btn" class="btn btn-outline" style="width: 100%; border-color: #ff6b00; color: #ff6b00; text-align: right; font-weight:bold;" onclick="window.openSpinWheelModal(); window.closeSidebar();">🎡 <span class="translatable">عجلة الحظ الأسبوعية</span></button>
             <button type="button" id="sidebar-annual-calc-btn" class="btn btn-outline" style="width: 100%; border-color: var(--secondary); color: var(--primary); text-align: right; font-weight:bold;" onclick="window.openAnnualCalcModal(); window.closeSidebar();">🧮 <span class="translatable">حاسبة الخزين السنوي ورمضان</span></button>
             <button type="button" id="sidebar-track-order-btn" class="btn btn-outline" style="width: 100%; border-color: #028090; color: #028090; text-align: right; font-weight:bold;" onclick="window.showPanel('customer-orders'); window.closeSidebar();">🚚 <span class="translatable">تتبع طلبي برقم الهاتف</span></button>
@@ -91,9 +100,9 @@
         <div class="modal-content" style="border: 2px solid var(--secondary); padding: 30px;">
             <button type="button" class="modal-close" onclick="document.getElementById('abandoned-cart-modal').style.display='none'">X</button>
             <h2 style="color:var(--primary); margin-top:0;" class="translatable">🛒 منتجاتك في انتظارك!</h2>
-            <p style="color:var(--text-color); font-size:1rem; margin-bottom:20px;" class="translatable">لإتمام طلبك الآن نهديك كود خصم خاص!</p>
-            <div style="background:var(--input-bg); border:2px dashed var(--secondary); padding:10px; border-radius:8px; font-size:1.4rem; font-weight:bold; color:var(--secondary); letter-spacing:2px; margin-bottom:20px;">COMEBACK</div>
-            <button type="button" class="btn btn-full" onclick="document.getElementById('abandoned-cart-modal').style.display='none'; window.showPanel('cart');"><span class="translatable">إكمال الطلب الآن 🚀</span></button>
+            <p id="abandoned-modal-desc" style="color:var(--text-color); font-size:1rem; margin-bottom:15px;">لإتمام طلبك الآن نهديك كود خصم حقيقي فوري بنسبة <strong id="abandoned-modal-disc-pct" style="color:var(--danger);">3%</strong>!</p>
+            <div id="abandoned-modal-code-box" style="background:var(--input-bg); border:2px dashed var(--secondary); padding:10px; border-radius:8px; font-size:1.4rem; font-weight:bold; color:var(--secondary); letter-spacing:2px; margin-bottom:20px;">COMEBACK</div>
+            <button type="button" class="btn btn-full" onclick="window.claimAbandonedCartOfferNow()"><span class="translatable">تفعيل الخصم وإكمال الطلب الآن 🚀</span></button>
         </div>
     </div>
 
@@ -174,6 +183,7 @@
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(0,123,255,0.2); border-color: #007bff;" onclick="window.showPanel('admin-messages')">الرسائل 📩</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: #e0a800; border-color: #d39e00;" onclick="window.showPanel('admin-returns')">الاسترجاع 🔄</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(111,66,193,0.2); border-color: #6f42c1; color: #6f42c1;" onclick="window.showPanel('admin-users')"><span class="translatable">العملاء 👥</span></button>
+        <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(40,167,69,0.2); border-color: #28a745; color: #28a745; font-weight:bold;" onclick="window.showPanel('admin-add-product')">إضافة منتج ➕</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(2,128,144,0.2); border-color: #028090;" onclick="window.showPanel('admin')">الإعدادات ⚙️</button>
     </nav>
 
@@ -414,6 +424,47 @@
         </div>
     </div>
 
+    <!-- شاشة وضع الجرد أو الصيانة المؤقت (Maintenance Mode Overlay) -->
+    <div id="maintenance-overlay-screen" class="maintenance-overlay-screen">
+        <img src="1000392409.jpeg" style="width:95px; height:95px; border-radius:50%; border:3px solid var(--secondary); background:white; margin-bottom:15px;">
+        <h2 style="color:var(--secondary); margin:0 0 10px 0;">🌿 متجر زيت الشجرة المباركة</h2>
+        <p id="maintenance-overlay-msg" style="max-width:460px; font-size:1.05rem; line-height:1.8; color:#f1f5f9;">نقوم حالياً بتجهيز وتعبئة دفعة جديدة طازجة من زيت الزيتون السيناوي البكر الممتاز.. سنعود لاستقبال طلباتكم خلال وقت قصير جداً!</p>
+        <button type="button" class="btn btn-outline" style="margin-top:20px; color:white; border-color:rgba(255,255,255,0.4);" onclick="document.getElementById('maintenance-overlay-screen').style.display='none'; window.showPanel('auth');">🔐 دخول الإدارة</button>
+    </div>
+
+    <!-- نافذة تسجيل طلب هاتفي مباشر (كاشير الإدارة POS) -->
+    <div id="admin-pos-modal" class="modal-overlay" style="z-index: 5880;">
+        <div class="modal-content" style="max-width: 460px; text-align: right; border: 2px solid #6f42c1; padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('admin-pos-modal').style.display='none'">X</button>
+            <h2 style="color:#6f42c1; margin:0 0 10px 0; text-align:center;">☎️ كاشير تسجيل طلب هاتفي / واتساب مباشر (POS)</h2>
+            <input type="text" id="pos-cust-name" placeholder="اسم العميل..." style="margin-bottom:8px;">
+            <input type="tel" id="pos-cust-phone" placeholder="رقم هاتف العميل..." style="margin-bottom:8px;">
+            <select id="pos-cust-gov" style="margin-bottom:8px;"></select>
+            <input type="text" id="pos-cust-addr" placeholder="المدينة والعنوان التفصيلي..." style="margin-bottom:8px;">
+            <div class="form-row" style="margin-bottom:8px;">
+                <select id="pos-prod-select" style="margin-bottom:0; flex:2;"></select>
+                <input type="number" id="pos-prod-qty" value="1" min="1" placeholder="الكمية" style="margin-bottom:0; flex:1;">
+            </div>
+            <button type="button" class="btn btn-full" style="background:#6f42c1;" onclick="window.submitAdminPOSOrder()">🚀 تسجيل الطلب فوراً وطباعة البوليصة</button>
+        </div>
+    </div>
+
+    <!-- نافذة تعديل العميل لطلبه قبل الشحن (Edit Order Before Shipping) -->
+    <div id="customer-edit-order-modal" class="modal-overlay" style="z-index: 5885;">
+        <div class="modal-content" style="max-width: 440px; text-align: right; border: 2px solid #028090; padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('customer-edit-order-modal').style.display='none'">X</button>
+            <h2 style="color:#028090; margin:0 0 10px 0; text-align:center;">✏️ <span class="translatable">تعديل بيانات الطلب قبل الشحن</span></h2>
+            <input type="hidden" id="edit-ord-id">
+            <label style="font-size:0.84rem; font-weight:bold; color:var(--primary);">👤 الاسم:</label>
+            <input type="text" id="edit-ord-name" style="margin-bottom:8px;">
+            <label style="font-size:0.84rem; font-weight:bold; color:var(--primary);">📞 رقم الهاتف:</label>
+            <input type="tel" id="edit-ord-phone" style="margin-bottom:8px;">
+            <label style="font-size:0.84rem; font-weight:bold; color:var(--primary);">🏠 العنوان التفصيلي أو ملاحظات التوصيل:</label>
+            <textarea id="edit-ord-addr" rows="2" style="margin-bottom:10px;"></textarea>
+            <button type="button" class="btn btn-full" style="background:#028090;" onclick="window.saveCustomerOrderEdits()">💾 <span class="translatable">حفظ التعديلات على الطلب</span></button>
+        </div>
+    </div>
+
     <div id="policy-info-modal" class="modal-overlay" style="z-index: 5600;">
         <div class="modal-content" style="max-width: 550px; text-align: right; border: 2px solid var(--secondary); padding-bottom: 25px;">
             <button type="button" class="modal-close" onclick="document.getElementById('policy-info-modal').style.display='none'">X</button>
@@ -451,6 +502,10 @@
                     <span>🔄 <span class="translatable">اشتراك شهري تلقائي</span> (<span class="translatable">خصم إضافي</span> <strong id="modal-sub-disc-pct" style="color:#028090;">5%</strong> + <span class="translatable">تذكير شهري عبر واتساب</span>)</span>
                 </label>
             </div>
+            <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+                <button type="button" id="btn-voice-reader" class="btn btn-outline" style="flex:1; padding:6px 10px; font-size:0.82rem; border-color:var(--primary); color:var(--primary);" onclick="window.toggleProductVoiceReader()">🔊 <span class="translatable">استمع لوصف المنتج صوتياً</span></button>
+                <button type="button" id="btn-price-drop-alert" class="btn btn-outline" style="flex:1; padding:6px 10px; font-size:0.82rem; border-color:#d97706; color:#d97706;" onclick="window.requestPriceDropAlert()">📉 <span class="translatable">بلغني عند انخفاض السعر</span></button>
+            </div>
             <div id="modal-wa-btn-container" style="margin-bottom: 10px; width: 100%;"></div>
             <button type="button" class="btn btn-full" id="btn-buy-now" style="background-color: var(--primary); margin-bottom:10px; display:none;" onclick="window.executeBuyNow()"><span class="translatable">🚀 اشتري الآن (دفع سريع)</span></button>
 
@@ -469,6 +524,14 @@
                 <div class="trust-badge"><span class="icon">🔄</span><span class="translatable">استرجاع مضمون</span></div>
             </div>
             <p id="modal-desc" style="line-height: 1.6; color: var(--text-muted); font-size: 0.95rem; text-align: justify; padding: 10px; background: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color);"></p>
+            <div id="modal-product-qa-section" class="product-qa-box" style="display:none;">
+                <h4 style="color:var(--primary); margin:0 0 8px 0;">❓ <span class="translatable">اسأل عن هذا المنتج (أسئلة وأجوبة العملاء):</span></h4>
+                <div id="modal-qa-list" style="max-height:180px; overflow-y:auto; margin-bottom:8px;"></div>
+                <div style="display:flex; gap:6px;">
+                    <input type="text" id="modal-qa-input" placeholder="اكتب سؤالك عن هذا المنتج..." style="margin:0; flex:1; padding:7px 10px; font-size:0.84rem;">
+                    <button type="button" class="btn" style="padding:7px 12px; font-size:0.82rem; background:#028090;" onclick="window.submitProductQuestion()"><span class="translatable">إرسال السؤال</span></button>
+                </div>
+            </div>
             <div id="modal-specs-faq-section" class="specs-faq-container" style="display:none;">
                 <h4 style="color:var(--primary); margin:0 0 8px 0;">📋 مواصفات وضمان المنتج:</h4>
                 <table class="specs-table" id="modal-specs-table"></table>
@@ -580,7 +643,7 @@
                     <span style="color:var(--secondary); font-weight:bold;">▼</span>
                 </div>
                 <div id="home-recipes-body" style="display:none; margin-top:10px;">
-                    <div class="recipes-grid">
+                    <div class="recipes-grid" id="home-recipes-grid-container">
                         <div class="recipe-card">
                             <div>
                                 <strong style="color:var(--primary); font-size:0.95rem; display:block; margin-bottom:4px;">🍯 <span class="translatable">وصفة المناعة الصباحية الذهبية</span></strong>
@@ -665,6 +728,47 @@
                 <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
                     <button type="button" class="btn" style="background:#25D366; flex:1; min-width:170px;" onclick="window.shareReferralLinkWhatsApp()">📲 <span class="translatable">مشاركة الرابط عبر واتساب</span></button>
                     <button type="button" class="btn btn-outline" style="flex:1; min-width:140px;" onclick="window.copyReferralLink()">📋 <span class="translatable">نسخ رابط الدعوة</span></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" id="recipes-panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid var(--border-color); padding-bottom:12px; margin-bottom:15px;">
+                <div>
+                    <h2 style="color:var(--primary); margin:0;">🥗 <span class="translatable">موسوعة الوصفات الصحية وفوائد زيت الزيتون السيناوي</span></h2>
+                    <p style="color:var(--text-muted); font-size:0.88rem; margin:4px 0 0 0;" class="translatable">وصفات طبيعية مجربة للصحة والمناعة والمائدة والعناية بالشعر والبشرة مع طلب المكونات بضغطة زر</p>
+                </div>
+            </div>
+
+            <!-- نموذج إضافة وصفة جديدة (يظهر للمدير فقط) -->
+            <div id="admin-add-recipe-box" style="display:none; background:var(--input-bg); padding:15px; border-radius:12px; border:2px dashed var(--secondary); margin-bottom:18px;">
+                <h3 style="color:var(--primary); margin:0 0 10px 0; font-size:1rem;">➕ إضافة وصفة صحية جديدة للمتجر (تظهر هنا وفي الصفحة الرئيسية):</h3>
+                <div class="form-row" style="margin-bottom:8px;">
+                    <input type="text" id="new-recipe-title" placeholder="عنوان الوصفة (مثال: 🍋 خلطة زيت الزيتون والليمون لتنقية الجسم)" style="margin-bottom:0; flex:1;">
+                </div>
+                <textarea id="new-recipe-desc" rows="2" placeholder="طريقة التحضير والفوائد..." style="margin-bottom:8px;"></textarea>
+                <button type="button" class="btn" style="background:#28a745; width:100%;" onclick="window.addCustomStoreRecipe()">➕ حفظ ونشر الوصفة الآن</button>
+            </div>
+
+            <div id="full-page-recipes-grid" class="recipes-grid" style="margin-bottom:22px;"></div>
+
+            <h3 style="color:var(--primary); border-bottom:1px solid var(--border-color); padding-bottom:8px;">📖 <span class="translatable">فوائد زيت الزيتون السيناوي البكر الممتاز (عصرة أولى على البارد)</span></h3>
+            <div class="seo-benefits-grid">
+                <div class="seo-benefit-card">
+                    <strong style="color:var(--primary); display:block; margin-bottom:4px;">❤️ <span class="translatable">حماية القلب والشرايين</span></strong>
+                    <span style="font-size:0.85rem; color:var(--text-muted);" class="translatable">غني بحمض الأوليك والدهون الأحادية الصحية التي تخفض الكوليسترول الضار وتحافظ على مرونة الأوعية الدموية.</span>
+                </div>
+                <div class="seo-benefit-card">
+                    <strong style="color:var(--primary); display:block; margin-bottom:4px;">🛡️ <span class="translatable">رفع المناعة ومضادات الأكسدة</span></strong>
+                    <span style="font-size:0.85rem; color:var(--text-muted);" class="translatable">يحتوي على مركبات البوليفينول وفيتامين E الطبيعي لمقاومة الالتهابات وتجديد خلايا الجسم.</span>
+                </div>
+                <div class="seo-benefit-card">
+                    <strong style="color:var(--primary); display:block; margin-bottom:4px;">🌿 <span class="translatable">تحسين الهضم والمعدة</span></strong>
+                    <span style="font-size:0.85rem; color:var(--text-muted);" class="translatable">ملعقة صباحاً على الريق تريح المعدة والقولون وتساعد على امتصاص الفيتامينات والمعادن بكفاءة.</span>
+                </div>
+                <div class="seo-benefit-card">
+                    <strong style="color:var(--primary); display:block; margin-bottom:4px;">✨ <span class="translatable">نضارة البشرة وتكثيف الشعر</span></strong>
+                    <span style="font-size:0.85rem; color:var(--text-muted);" class="translatable">مرطب طبيعي عميق يقوي بصيلات الشعر ويمنع التقصف ويمنح البشرة إشراقة طبيعية بدون أي كيماويات.</span>
                 </div>
             </div>
         </div>
@@ -776,7 +880,22 @@
                 <input type="text" id="order-map-address" placeholder="العنوان المستخرج من الخريطة تلقائياً..." readonly style="background:var(--input-bg); font-size:0.85rem; color:var(--text-color); font-weight:bold;">
                 <textarea id="order-address" placeholder="العنوان التفصيلي الدقيق (اسم الشارع، رقم العمارة، رقم الشقة، علامة مميزة)" rows="3" required></textarea>
                 <div style="background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: var(--primary); display: block; margin-bottom: 10px;" class="translatable">💳 طريقة الدفع:</label>
+                    <div id="checkout-delivery-slot-box" style="margin-bottom:12px;">
+                    <label style="font-weight:bold; display:block; margin-bottom:6px; color:var(--primary);">⏰ <span class="translatable">الفترة المفضلة لاستلام الطلب:</span></label>
+                    <select id="order-delivery-slot" style="margin-bottom:0;">
+                        <option value="أقرب وقت متاح (توصيل سريع)">🚀 أقرب وقت متاح (توصيل سريع)</option>
+                        <option value="الفترة الصباحية (10 ص - 3 م)">☀️ الفترة الصباحية (من 10 صباحاً حتى 3 عصراً)</option>
+                        <option value="الفترة المسائية (4 م - 9 م)">🌙 الفترة المسائية (من 4 عصراً حتى 9 مساءً)</option>
+                    </select>
+                </div>
+                <div id="checkout-gift-wrap-box" style="background:var(--input-bg); padding:10px 12px; border-radius:10px; border:1px dashed var(--secondary); margin-bottom:14px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:bold; color:var(--primary); font-size:0.9rem; margin:0;">
+                        <input type="checkbox" id="order-gift-wrap-cb" style="width:18px; height:18px; margin:0; accent-color:var(--secondary);" onchange="document.getElementById('order-gift-wrap-msg').style.display=this.checked?'block':'none';">
+                        <span>🎀 <span class="translatable">تغليف الطلب كهدية فاخرة مع كارت إهداء مطبوع</span></span>
+                    </label>
+                    <input type="text" id="order-gift-wrap-msg" placeholder="اكتب نص الإهداء ليتم طباعته وإرفاقه مع الطلب..." style="display:none; margin-top:8px; margin-bottom:0; font-size:0.85rem;">
+                </div>
+                <label style="font-weight: bold; color: var(--primary); display: block; margin-bottom: 10px;" class="translatable">💳 طريقة الدفع:</label>
                     <select id="order-payment-method" required onchange="window.togglePaymentInfo(this.value)" style="margin-bottom: 0;">
                         <option value="كاش عند الاستلام">💵 الدفع كاش عند الاستلام</option>
                         <option value="محفظة إلكترونية">📱 المحافظ الإلكترونية وإنستاباي</option>
@@ -926,6 +1045,7 @@
                     <button type="button" id="btn-toggle-work-sound" class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem; border-color:var(--primary); color:var(--primary);" onclick="window.toggleWorkSoundAlert()">🔊 الصوت: مفعل</button>
                     <button type="button" class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem; border-color:#ff6b00; color:#ff6b00;" onclick="window.playWorkNotificationSound(true)">🔔 تجربة الصوت</button>
                     <button type="button" id="btn-toggle-work-hide-done" class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem;" onclick="window.toggleWorkHideCompleted()">👁️ إخفاء المكتمل القديم</button>
+                    <button type="button" id="btn-open-admin-pos" class="btn" style="padding:6px 12px; font-size:0.8rem; background:#6f42c1;" onclick="window.openAdminPOSModal()">☎️ تسجيل طلب هاتفي POS</button>
                     <button type="button" class="btn" style="padding:6px 12px; font-size:0.8rem; background:#028090;" onclick="window.renderAdminWorkHub()">🔄 تحديث</button>
                 </div>
             </div>
@@ -1007,6 +1127,36 @@
                         <span style="font-size:1.2rem; color:#ff6b00; font-weight:bold;">▼</span>
                     </div>
                     <div id="admin-wheel-leads-list" style="display:none; margin-top:15px; border-top:1px solid var(--border-color); padding-top:15px;">لا توجد أرقام مسجلة بعد.</div>
+                </div>
+                <div class="dash-card" id="admin-price-alerts-card" style="border-top-color: #d97706; text-align:right;">
+                    <div onclick="let el=document.getElementById('admin-price-alerts-list'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                        <h3 style="color:#d97706; margin:0;">📉 طلبات (بلغني عند انخفاض السعر) <span id="price-alerts-count-badge" style="background:#d97706; color:white; padding:2px 8px; border-radius:12px; font-size:0.8rem; margin-right:5px;">0</span></h3>
+                        <span style="font-size:1.2rem; color:#d97706; font-weight:bold;">▼</span>
+                    </div>
+                    <div id="admin-price-alerts-list" style="display:none; margin-top:15px; border-top:1px solid var(--border-color); padding-top:15px;">لا توجد طلبات حالياً.</div>
+                </div>
+                <div class="dash-card" id="admin-wa-campaigns-card" style="border-top-color: #25D366; text-align:right;">
+                    <div onclick="let el=document.getElementById('admin-wa-campaigns-body'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                        <h3 style="color:#166534; margin:0;">📢 أداة حملات واتساب الموجهة للعملاء</h3>
+                        <span style="font-size:1.2rem; color:#166534; font-weight:bold;">▼</span>
+                    </div>
+                    <div id="admin-wa-campaigns-body" style="display:none; margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px;">
+                        <select id="wa-campaign-segment" style="margin-bottom:8px;" onchange="window.renderWhatsAppCampaignList()">
+                            <option value="all">👥 كل العملاء الذين طلبوا سابقاً</option>
+                            <option value="vip">🌟 عملاء VIP المميزين</option>
+                            <option value="wheel">🎡 عملاء عجلة الحظ</option>
+                        </select>
+                        <textarea id="wa-campaign-msg" rows="2" placeholder="اكتب نص رسالة الحملة أو العرض..." style="margin-bottom:8px;">مرحباً بك من متجر زيت الشجرة المباركة 🌿 لدينا اليوم عرض خاص على زيت الزيتون السيناوي البكر عصرة أولى عالبارد بخصم مميز لفترة محدودة!</textarea>
+                        <button type="button" class="btn" style="background:#25D366; width:100%; margin-bottom:10px;" onclick="window.renderWhatsAppCampaignList()">📋 تجهيز قائمة المراسلة السريعة</button>
+                        <div id="wa-campaign-targets-list" style="max-height:220px; overflow-y:auto;"></div>
+                    </div>
+                </div>
+                <div class="dash-card" id="admin-audit-log-card" style="border-top-color: #6f42c1; text-align:right;">
+                    <div onclick="let el=document.getElementById('admin-audit-log-list'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                        <h3 style="color:#6f42c1; margin:0;">🕵️‍♂️ سجل رقابة نشاط الإدارة والموظفين (Audit Log)</h3>
+                        <span style="font-size:1.2rem; color:#6f42c1; font-weight:bold;">▼</span>
+                    </div>
+                    <div id="admin-audit-log-list" style="display:none; margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px; max-height:220px; overflow-y:auto; font-size:0.83rem;">لا توجد حركات مسجلة بعد.</div>
                 </div>
             </div>
 
@@ -1129,6 +1279,7 @@
                 </div>
                 <div id="admin-chat-messages" style="height: 350px; overflow-y: auto; margin-bottom: 15px; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column;"></div>
                 <div id="admin-canned-responses-bar" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:8px;">
+                    <button type="button" class="work-canned-chip" style="border-color:#28a745; color:#166534; font-weight:bold;" onclick="window.generateAndInsertChatCoupon()">🎫 إهداء كوبون خاص 5%</button>
                     <button type="button" class="work-canned-chip" onclick="window.insertCannedAdminReply('أهلاً بحضرتك في متجر زيت الشجرة المباركة 🌿 تحت أمرك، كيف يمكنني مساعدتك؟')">👋 ترحيب</button>
                     <button type="button" class="work-canned-chip" onclick="window.insertCannedAdminReply('تم تأكيد طلب حضرتك وجاري تجهيزه بعناية ليصلك في أسرع وقت 📦')">📦 تأكيد التجهيز</button>
                     <button type="button" class="work-canned-chip" onclick="window.insertCannedAdminReply('طلب حضرتك خرج مع المندوب للشحن وسيتواصل معك قريباً جداً 🚚')">🚚 تم الشحن</button>
@@ -1146,7 +1297,7 @@
             </div>
         </div>
 
-        <div class="panel" id="admin-panel">
+        <div class="panel" id="admin-add-product-panel">
             <h2 style="color: var(--primary); margin-top: 0;" id="admin-product-title">🛒 إضافة / تعديل منتج</h2>
             <form id="add-product-form">
                 <input type="hidden" id="edit-product-id"><input type="hidden" id="edit-product-old-image">
@@ -1196,9 +1347,9 @@
                     <button type="button" class="btn btn-outline" id="btn-cancel-edit" style="display:none; color:var(--danger); border-color:var(--danger); width:30%;" onclick="window.cancelEditProduct()">إلغاء</button>
                 </div>
             </form>
+        </div>
 
-            <hr style="margin: 35px 0; border: 0; border-top: 2px dashed var(--border-color);">
-
+        <div class="panel" id="admin-panel">
             <h2 style="color: #028090; margin-top: 0;">⚙️ الإعدادات (محمية)</h2>
             <div id="roles-auth-section"><div class="form-row"><input type="password" id="roles-pin" placeholder="رمز الأمان للمؤسس" style="margin-bottom:0;" autocomplete="new-password"><button type="button" class="btn" id="btn-unlock-roles" style="background-color: #028090; width: 30%;">فتح 🔓</button></div></div>
             <div id="roles-content-section" style="display: none;">
@@ -1360,6 +1511,62 @@
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                             <input type="checkbox" id="setting-enable-product-compare" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>⚖️ تفعيل مقارنة المنتجات السريعة وحاسبة التوفير للأحجام</span>
+                        </label>
+                        <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
+                        <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🎁 كود السلة المتروكة الحقيقي (3%) وميزات (V60) الشاملة:</h4>
+                        <div style="background:var(--panel-bg); padding:10px; border-radius:8px; border:2px solid var(--secondary); margin-bottom:8px;">
+                            <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem; margin-bottom:6px;">
+                                <input type="checkbox" id="setting-enable-abandoned-modal" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                                <span>🛒 تفعيل نافذة تذكير السلة المتروكة (منتجاتك في انتظارك!) وكود الهدية الحقيقي</span>
+                            </label>
+                            <div class="form-row" style="align-items:center; margin-bottom:0;">
+                                <span style="font-size:0.8rem;">اسم الكود:</span>
+                                <input type="text" id="setting-abandoned-code" placeholder="COMEBACK" value="COMEBACK" style="margin-bottom:0; max-width:130px; font-size:0.82rem; font-weight:bold;">
+                                <span style="font-size:0.8rem;">نسبة الخصم الحقيقية (%):</span>
+                                <input type="number" id="setting-abandoned-discount" placeholder="3" value="3" min="1" max="90" style="margin-bottom:0; max-width:85px; font-size:0.82rem; font-weight:bold;">
+                                <button type="button" class="btn" style="padding:6px 12px; font-size:0.8rem; background:#028090;" onclick="window.saveSettings()">حفظ</button>
+                            </div>
+                        </div>
+
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-voice-reader" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🔊 تفعيل زر (القارئ الصوتي لوصف وفوائد المنتج) داخل نافذة المنتج</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-edit-order" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>✏️ تفعيل زر (تعديل العميل لبيانات وعنوان طلبه قبل الشحن) في طلباتي</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-delivery-slot" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>⏰ تفعيل اختيار (الفترة المفضلة للتوصيل: صباحاً / مساءً) في صفحة الدفع</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-gift-wrap" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🎀 تفعيل خيار (تغليف الطلب كهدية فاخرة مع رسالة إهداء) في صفحة الدفع</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-price-drop" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📉 تفعيل زر (بلغني عند انخفاض السعر) داخل نافذة المنتج وتنبيهات الإدارة</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-product-qa" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>❓ تفعيل قسم (اسأل عن المنتج - Q&A) داخل نافذة المنتج</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-admin-pos" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>☎️ تفعيل كاشير (تسجيل طلب هاتفي مباشر POS) في غرفة العمل</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-wa-campaigns" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📢 تفعيل أداة (حملات واتساب الموجهة للعملاء) في الإحصائيات</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-audit-log" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🕵️‍♂️ تفعيل (سجل رقابة نشاط الإدارة والموظفين Audit Log) ومتوقع نفاد المخزون</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-maintenance-mode" style="width:18px; height:18px; margin:0; accent-color:#dc3545;" onchange="window.saveSettings()">
+                            <span style="color:var(--danger);">🛑 تفعيل (وضع الجرد أو الصيانة المؤقت للمتجر - يغلق المتجر مؤقتاً للزوار فقط)</span>
                         </label>
                         <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
                         <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🛡️ حماية المحتوى وصلاحيات الموظفين والمرحلة الثانية (V59):</h4>
