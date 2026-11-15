@@ -521,6 +521,12 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             if (!promo && inputCode === abCode) {
                 promo = { code: abCode, discount: abDisc, singleUse: false };
             }
+            if (!promo && inputCode === 'GROUP7' && storeSettings.enableGroupBuy !== false) {
+                promo = { code: 'GROUP7', discount: 7, singleUse: false };
+            }
+            if (!promo && inputCode === 'EARLY10' && storeSettings.enablePreorderHarvest !== false) {
+                promo = { code: 'EARLY10', discount: 10, singleUse: false };
+            }
             if (promo && promo.singleUse && promo.used) {
                 currentDiscountPercent = 0; appliedPromoCode = "";
                 let errTxt = window.currentLang === 'en' ? '❌ This single-use coupon has already been used!' : '❌ هذا الكود مخصص لاستخدام مرة واحدة فقط وتم استخدامه مسبقاً!';
@@ -11140,3 +11146,846 @@ window.showUserHistory = function(userId, userName) {
             "متوفر فوراً": "In Stock Now",
             "أقل من 500 ج": "Under 500 EGP"
         });
+
+
+        // =========================================================================
+        // === النسخة V66 الشاملة: الإصلاح الجذري لحفظ الإعدادات + علامة الاستفهام المصورة + الـ 19 ميزة جديدة ===
+        // =========================================================================
+
+        // -------------------------------------------------------------------------
+        // أولاً: الإصلاح الجذري لمشكلة رجوع علامة الصح في الإعدادات (Atomic Single-Write Save)
+        // -------------------------------------------------------------------------
+        window.lastAdminSettingInteractionTs = 0;
+
+        // منع onSnapshot من إعادة علامة الصح أثناء ضغط المدير على أي إعداد!
+        document.addEventListener('change', (e) => {
+            if (e.target && e.target.closest && e.target.closest('#roles-content-section')) {
+                window.lastAdminSettingInteractionTs = Date.now();
+            }
+        }, true);
+
+        // خريطة شاملة تربط كل Checkbox في لوحة التحكم بالخاصية المقابلة له في storeSettings
+        window.MASTER_SETTINGS_CHECKBOX_MAP = [
+            ['setting-enable-topbar', 'enableTopBar', false],
+            ['setting-enable-custom-shipping', 'enableCustomShipping', true],
+            ['setting-enable-free-shipping', 'enableFreeShipping', true],
+            ['setting-enable-bundles', 'enableBundles', false],
+            ['setting-enable-auto-reply', 'enableAutoReply', true],
+            ['setting-enable-working-hours', 'enableWorkingHours', true],
+            ['setting-append-hours-autoreply', 'appendHoursToAutoReply', false],
+            ['setting-enable-loyalty', 'enableLoyalty', true],
+            ['setting-enable-offer-banner', 'enableOfferBanner', true],
+            ['setting-enable-social-proof', 'enableSocialProof', true],
+            ['setting-cross-sell', 'enableCrossSell', true],
+            ['setting-enable-hero-slider', 'enableHeroSlider', false],
+            ['setting-enable-est-delivery', 'enableEstDelivery', true],
+            ['setting-enable-specs-faq', 'enableSpecsFaq', true],
+            ['setting-enable-product-badges', 'enableProductBadges', true],
+            ['setting-enable-guest-tracking', 'enableGuestTracking', true],
+            ['setting-enable-onetap-coupons', 'enableOneTapCoupons', true],
+            ['setting-enable-buy-again', 'enableBuyAgain', true],
+            ['setting-enable-pin-hide-products', 'enablePinHideProducts', true],
+            ['setting-enable-admin-order-tools', 'enableAdminOrderTools', true],
+            ['setting-enable-top-analytics', 'enableTopAnalytics', true],
+            ['setting-enable-quick-rating', 'enableQuickRating', true],
+            ['setting-enable-backup-restore', 'enableBackupRestore', true],
+            ['setting-enable-compact-ui', 'enableCompactUI', true],
+            ['setting-enable-savings-badge', 'enableSavingsBadge', true],
+            ['setting-enable-cart-upsell', 'enableCartUpsell', true],
+            ['setting-enable-back-in-stock', 'enableBackInStock', true],
+            ['setting-enable-dispatch-timer', 'enableDispatchTimer', true],
+            ['setting-enable-quality-cert', 'enableQualityCert', true],
+            ['setting-enable-trust-policies', 'enableTrustPolicies', true],
+            ['setting-enable-customer-gallery', 'enableCustomerGallery', true],
+            ['setting-enable-courier-export', 'enableCourierExport', true],
+            ['setting-enable-spin-wheel', 'enableSpinWheel', true],
+            ['setting-enable-free-gift', 'enableFreeGift', true],
+            ['setting-enable-scarcity-bar', 'enableScarcityBar', true],
+            ['setting-enable-smart-chat-chips', 'enableSmartChatChips', true],
+            ['setting-enable-saved-addresses', 'enableSavedAddresses', true],
+            ['setting-enable-product-compare', 'enableProductCompare', true],
+            ['setting-enable-net-profit', 'enableNetProfit', true],
+            ['setting-enable-wa-order-status', 'enableWaOrderStatus', true],
+            ['setting-enable-customer-tags', 'enableCustomerTags', true],
+            ['setting-enable-referral', 'enableReferral', true],
+            ['setting-enable-insta-stories', 'enableInstaStories', true],
+            ['setting-enable-seo-articles', 'enableSeoArticles', true],
+            ['setting-enable-seasonal-themes', 'enableSeasonalThemes', true],
+            ['setting-enable-bulk-price', 'enableBulkPrice', true],
+            ['setting-enable-work-hub', 'enableWorkHub', true],
+            ['setting-enable-quick-order', 'enableQuickOrder', true],
+            ['setting-enable-box-builder', 'enableBoxBuilder', true],
+            ['setting-enable-trust-marquee', 'enableTrustMarquee', true],
+            ['setting-enable-shipping-label', 'enableShippingLabel', true],
+            ['setting-enable-flash-deal', 'enableFlashDeal', true],
+            ['setting-enable-subscribe-save', 'enableSubscribeSave', true],
+            ['setting-enable-gift-cards', 'enableGiftCards', true],
+            ['setting-enable-product-qr', 'enableProductQR', true],
+            ['setting-enable-last-viewed-bar', 'enableLastViewedBar', true],
+            ['setting-enable-unique-wheel-codes', 'enableUniqueWheelCodes', true],
+            ['setting-enable-b2b-portal', 'enableB2BPortal', true],
+            ['setting-enable-batch-tracker', 'enableBatchTracker', true],
+            ['setting-enable-content-protection', 'enableContentProtection', true],
+            ['setting-enable-annual-calc', 'enableAnnualCalc', true],
+            ['setting-enable-shoppable-recipes', 'enableShoppableRecipes', true],
+            ['setting-enable-growth-report', 'enableGrowthReport', true],
+            ['setting-enable-courier-dispatch', 'enableCourierDispatch', true],
+            ['setting-enable-staff-permissions', 'enableStaffPermissions', true],
+            ['setting-enable-abandoned-modal', 'enableAbandonedModal', true],
+            ['setting-enable-voice-reader', 'enableVoiceReader', true],
+            ['setting-enable-edit-order', 'enableEditOrderBeforeShip', true],
+            ['setting-enable-delivery-slot', 'enableDeliverySlot', true],
+            ['setting-enable-gift-wrap', 'enableGiftWrap', true],
+            ['setting-enable-price-drop', 'enablePriceDrop', true],
+            ['setting-enable-product-qa', 'enableProductQA', true],
+            ['setting-enable-admin-pos', 'enableAdminPOS', true],
+            ['setting-enable-wa-campaigns', 'enableWaCampaigns', true],
+            ['setting-enable-audit-log', 'enableAuditLog', true],
+            ['setting-enable-maintenance-mode', 'enableMaintenanceMode', false],
+            ['setting-enable-visitor-tracking', 'enableVisitorTracking', true],
+            ['setting-enable-anti-spam', 'enableAntiSpam', true],
+            ['setting-enable-auto-lock-admin', 'enableAutoLockAdmin', true],
+            ['setting-enable-chat-account-control', 'enableChatAccountControl', true],
+            ['setting-enable-smart-mic-corrector', 'enableSmartMicCorrector', true],
+            ['setting-enable-chat-media', 'enableChatMedia', true],
+            ['setting-enable-store-wallet', 'enableStoreWallet', true],
+            ['setting-enable-impersonate-chat', 'enableImpersonateInChat', true],
+            ['setting-enable-impersonate-users', 'enableImpersonateInUsers', true],
+            ['setting-enable-quick-tag-filters', 'enableQuickTagFilters', true],
+            ['setting-enable-membership-tiers', 'enableMembershipTiers', true],
+            ['setting-enable-variant-stock', 'enableVariantStock', true],
+            ['setting-enable-cart-item-notes', 'enableCartItemNotes', true],
+            ['setting-enable-wallet-statement', 'enableWalletStatement', true],
+            ['setting-enable-advanced-returns', 'enableAdvancedReturns', true],
+            // ميزات V66 الجديدة
+            ['setting-enable-glass-ui', 'enableGlassUI', true],
+            ['setting-enable-farm-reels', 'enableFarmReels', true],
+            ['setting-enable-visual-size-guide', 'enableVisualSizeGuide', true],
+            ['setting-enable-sample-bottle', 'enableSampleBottle', true],
+            ['setting-enable-gift-by-phone', 'enableGiftByPhone', true],
+            ['setting-enable-preorder-harvest', 'enablePreorderHarvest', true],
+            ['setting-enable-group-buy', 'enableGroupBuy', true],
+            ['setting-enable-mystery-gift', 'enableMysteryGift', true],
+            ['setting-enable-heavy-weight-calc', 'enableHeavyWeightCalc', true],
+            ['setting-enable-replenish-alert', 'enableReplenishAlert', true]
+        ];
+
+        // دالة حفظ موحدة وذرية (Atomic Save) تحفظ كل الخيارات دفعة واحدة في ثانية واحدة وتمنع رجوع علامة الصح نهائياً!
+        window.saveSettings = async function() {
+            window.lastAdminSettingInteractionTs = Date.now();
+            const getV = (id, def = '') => { let el = document.getElementById(id); return el ? el.value.trim() : def; };
+
+            let masterPayload = {};
+            window.MASTER_SETTINGS_CHECKBOX_MAP.forEach(([domId, propKey, defVal]) => {
+                let el = document.getElementById(domId);
+                if (el) {
+                    masterPayload[propKey] = Boolean(el.checked);
+                } else if (storeSettings[propKey] !== undefined) {
+                    masterPayload[propKey] = Boolean(storeSettings[propKey]);
+                } else {
+                    masterPayload[propKey] = defVal;
+                }
+            });
+
+            // قراءة الحقول النصية والقوائم المنسدلة
+            Object.assign(masterPayload, {
+                topBarText: getV('setting-topbar-text', storeSettings.topBarText || ''),
+                topBarBg: getV('setting-topbar-bg', storeSettings.topBarBg || '#c59b27'),
+                defaultShippingCost: Number(getV('setting-shipping-default', 90)) || 90,
+                remoteShippingCost: Number(getV('setting-shipping-remote', 100)) || 100,
+                freeShippingThreshold: Number(getV('setting-free-shipping', 1000)) || 1000,
+                bundleMinQty: Number(getV('setting-bundle-min-qty', 2)) || 2,
+                bundleDiscountPercent: Number(getV('setting-bundle-discount', 10)) || 10,
+                bundlePromoText: getV('setting-bundle-text', storeSettings.bundlePromoText || ''),
+                autoReplyMessage: getV('setting-auto-reply', storeSettings.autoReplyMessage || ''),
+                workingHoursText: getV('setting-working-hours-text', storeSettings.workingHoursText || ''),
+                loyaltyEarnRate: parseInt(getV('setting-loyalty-earn', 20)) || 20,
+                loyaltyRedeemValue: parseInt(getV('setting-loyalty-value', 10)) || 10,
+                offerBannerText: getV('setting-offer-banner-text', storeSettings.offerBannerText || '🔥 عرض خاص لفترة محدودة!'),
+                visualBarMode: getV('setting-visual-bar-mode', storeSettings.visualBarMode || 'categories'),
+                walletNumber: getV('setting-wallet-number', storeSettings.walletNumber || '01018631768'),
+                fbPixelId: getV('setting-fb-pixel', storeSettings.fbPixelId || ''),
+                ttPixelId: getV('setting-tt-pixel', storeSettings.ttPixelId || ''),
+                heroSlidesData: getV('setting-hero-slides-data', storeSettings.heroSlidesData || window.getDefaultHeroSlidesText()),
+                deliveryMinDays: Number(getV('setting-delivery-min-days', 2)) || 2,
+                deliveryMaxDays: Number(getV('setting-delivery-max-days', 4)) || 4,
+                defaultSpecsText: getV('setting-default-specs', storeSettings.defaultSpecsText || ''),
+                defaultFaqsText: getV('setting-default-faqs', storeSettings.defaultFaqsText || ''),
+                wheelCouponCode: getV('setting-wheel-coupon', storeSettings.wheelCouponCode || 'LUCKY10'),
+                wheelDiscountPercent: Number(getV('setting-wheel-discount', 10)) || 10,
+                freeGiftThreshold: Number(getV('setting-free-gift-threshold', 1500)) || 1500,
+                freeGiftName: getV('setting-free-gift-name', storeSettings.freeGiftName || 'عبوة زيت زيتون هدية 🎁'),
+                storeThemeName: getV('setting-store-theme-name', storeSettings.storeThemeName || 'default'),
+                flashDealProductId: getV('setting-flash-deal-product', storeSettings.flashDealProductId || ''),
+                flashDealTitle: getV('setting-flash-deal-title', storeSettings.flashDealTitle || ''),
+                flashDealDiscount: Number(getV('setting-flash-deal-discount', 15)) || 15,
+                subscribeDiscountPct: Number(getV('setting-subscribe-discount', 5)) || 5,
+                staffEmailsList: getV('setting-staff-emails', storeSettings.staffEmailsList || ''),
+                abandonedCartCode: getV('setting-abandoned-code', storeSettings.abandonedCartCode || 'COMEBACK').toUpperCase(),
+                abandonedCartDiscount: Number(getV('setting-abandoned-discount', 3)) || 3,
+                productsLayoutMode: getV('setting-products-layout-mode', storeSettings.productsLayoutMode || 'grid')
+            });
+
+            if (window.collectAdminWheel7PrizesFromDOM) {
+                let prizes = window.collectAdminWheel7PrizesFromDOM();
+                if (Array.isArray(prizes) && prizes.length === 7) masterPayload.wheel7Prizes = prizes;
+            }
+
+            // 1. تحديث المتغير في الذاكرة وتطبيق التعديلات فوراً في نفس اللحظة!
+            Object.assign(storeSettings, masterPayload);
+            window.applyV66MasterUI();
+            prevApplySettingsV64();
+
+            // إعادة تثبيت حالة الـ Checkboxes التي اختارها المدير حتى لا تتغير أبداً
+            window.MASTER_SETTINGS_CHECKBOX_MAP.forEach(([domId, propKey]) => {
+                let el = document.getElementById(domId);
+                if (el) el.checked = Boolean(storeSettings[propKey]);
+            });
+
+            try {
+                await setDoc(doc(db, 'settings', 'main'), masterPayload, { merge: true });
+                window.showToast('✅ تم حفظ وتطبيق التعديل فوراً بنجاح!', 'success');
+            } catch (e) {
+                console.error("Save settings error:", e);
+                window.showToast('حدث خطأ أثناء الحفظ في السحابة', 'error');
+            }
+        };
+
+        // -------------------------------------------------------------------------
+        // ثانياً: نظام علامة الاستفهام (❓) لشرح ومعاينة كل خيار في الإعدادات بالصور التوضيحية
+        // -------------------------------------------------------------------------
+        window.SETTINGS_DETAILED_HELP_DB = {
+            'setting-enable-glass-ui': {
+                title: 'التصميم الزجاجي العصري الفاخر (Glassmorphism)',
+                desc: 'يمنح المتجر مظهراً عالمياً فاخراً مثل تطبيقات المتاجر الكبرى، مع تأثير زجاجي ناعم للشريط العلوي وحواف دائرية انسيابية وظلال هادئة لكروت المنتجات.',
+                previewType: 'card_ui',
+                mockBadge: '✨ تصميم زجاجي فاخر',
+                mockTitle: 'كارت منتج بحواف انسيابية وظل ناعم',
+                mockSub: 'يرفع جاذبية المتجر ويزيد ثقة المشتري من أول نظرة'
+            },
+            'setting-enable-farm-reels': {
+                title: 'شريط فيديوهات المزرعة وتجارب المشترين (Reels Wall)',
+                desc: 'يعرض في أعلى الصفحة الرئيسية قصصاً وفيديوهات قصيرة توضح قطف الزيتون من سيناء وعصره على البارد وآراء العملاء، وتفتح عند الضغط عليها مثل حالات إنستجرام.',
+                previewType: 'reels',
+                mockBadge: '🎥 فيديو من مزرعة سيناء',
+                mockTitle: 'شاهد لحظة العصر على البارد 🌿',
+                mockSub: 'تظهر كبطاقات طولية جذابة بأعلى المتجر'
+            },
+            'setting-enable-visual-size-guide': {
+                title: 'دليل المقاسات والأحجام المرئي للعبوات',
+                desc: 'يضيف زراً يفتح للعميل رسماً توضيحياً يقارن بين أحجام العبوات (250 مل، نصف لتر، 1 لتر، وجركن 5 لتر) وعدد الملاعق والمدة التي تكفيها كل عبوة.',
+                previewType: 'sizes',
+                mockBadge: '📏 مقارنة الأحجام',
+                mockTitle: '250مل | 500مل | 1 لتر | جركن 5 لتر',
+                mockSub: 'يساعد العميل المتردد على اختيار العبوة الأكبر والأوفر'
+            },
+            'setting-enable-sample-bottle': {
+                title: 'زر (اطلب عبوة تذوق تجريبية)',
+                desc: 'يتيح للعميل الجديد الذي يريد تجربة طعم ونقاء زيت الزيتون السيناوي أولاً أن يطلب عبوة تذوق صغيرة بضغطة زر واحدة.',
+                previewType: 'button_pill',
+                mockBadge: '🧪 تجربة النقاء',
+                mockTitle: 'اطلب عبوة تذوق تجريبية الآن',
+                mockSub: 'يحول الزائر المتردد إلى عميل دائم بعد تجربة الطعم الأصلي'
+            },
+            'setting-enable-gift-by-phone': {
+                title: 'زر (أرسل كهدية برقم الهاتف فقط)',
+                desc: 'يمكّن العميل من إرسال عبوة زيت كهدية لصديقه أو قريبه بكتابة اسمه ورقم هاتفه فقط دون الحاجة لمعرفة عنوانه التفصيلي، وتتولى الإدارة التواصل مع المستلم لتوصيلها.',
+                previewType: 'gift_card',
+                mockBadge: '🎁 هدية سريعة برقم الهاتف',
+                mockTitle: 'أدخل اسم ورقم هاتف المُهدى إليه فقط',
+                mockSub: 'يصل الطلب لغرفة العمل بشارة (🎁 هدية برقم الهاتف)'
+            },
+            'setting-enable-preorder-harvest': {
+                title: 'زر (احجز من العصرة الطازجة القادمة)',
+                desc: 'يسمح للعملاء بحجز كميتهم مسبقاً من أول قطفة وعصرة جديدة في الموسم مع منحهم خصم الحجز المبكر (10% بكود EARLY10).',
+                previewType: 'banner',
+                mockBadge: '🌾 حجز موسم القطف الجديد',
+                mockTitle: 'احجز حصتك من العصرة الطازجة بخصم 10%',
+                mockSub: 'يضمن لك مبيعات مسبقة قوية قبل بداية الموسم'
+            },
+            'setting-enable-group-buy': {
+                title: 'ميزة (شراء جماعي مع صديق أو جار - خصم 7%)',
+                desc: 'تتيح للعميل مشاركة دعوة شراء مشترك عبر واتساب مع صديقه أو جاره للحصول على خصم إضافي فوري 7% بكود (GROUP7)، مما يضاعف عدد عملاء المتجر مجاناً.',
+                previewType: 'coupon',
+                mockBadge: '🤝 كود الشراء المشترك: GROUP7',
+                mockTitle: 'شارك مع صديقك واكسبوا خصم 7% فوراً!',
+                mockSub: 'تسويق فيروسي مجاني عبر واتساب'
+            },
+            'setting-enable-mystery-gift': {
+                title: 'صندوق الهدية الغامضة + عداد التوفير التراكمي بالسلة',
+                desc: 'يعرض داخل سلة المشتريات شريطاً ذهبياً يخبر العميل كم يتبقى له لفتح (صندوق الهدية السيناوية الغامضة)، مع عداد أخضر يجمع له كل جنيه وفره في طلبه.',
+                previewType: 'cart_bar',
+                mockBadge: '🎁 هدية غامضة + 💰 عداد التوفير',
+                mockTitle: '🎉 مبروك! فتحت صندوق الهدية الغامضة ووفرت 120 ج',
+                mockSub: 'يرفع متوسط قيمة سلة المشتريات بشكل ملحوظ'
+            },
+            'setting-enable-heavy-weight-calc': {
+                title: 'حاسبة وزن الشحنة التلقائية للأوزان الثقيلة',
+                desc: 'تحسب تلقائياً وزن العبوات في السلة، فإذا تخطى الطلب 10 لتر/كجم تضيف رسوم وزن إضافية بسيطة لشركة الشحن حتى لا تتحمل الإدارة فرق شحن الجراكن الثقيلة.',
+                previewType: 'shipping',
+                mockBadge: '⚖️ حساب الوزن الذكي',
+                mockTitle: 'شحنة ثقيلة (> 10 لتر): يضاف فرق وزن الشحن تلقائياً',
+                mockSub: 'يحمي صافي ربحك في الطلبات الكبيرة'
+            },
+            'setting-enable-replenish-alert': {
+                title: 'منبّه إعادة الشراء الذكي + رادار الزوار + استوديو البانرات + فاتورة الضمان',
+                desc: 'يفتح لك في لوحة الإحصائيات: رادار الزوار المتواجدين الآن مع زر إرسال عرض فوري لهم، منبّه العملاء الذين أوشك الزيت لديهم على النفاد لمراسلتهم واتساب، استوديو تصميم البانرات، وزر طباعة فاتورة مختومة بختم الضمان الذهبي.',
+                previewType: 'admin_tool',
+                mockBadge: '📡 أدوات الإدارة الذكية',
+                mockTitle: 'رادار الزوار الحي + منبّه نفاد الزيت لدى العميل',
+                mockSub: 'تظهر في قسم الإحصائيات وتفاصيل الطلبات'
+            }
+        };
+
+        window.injectHelpQuestionButtonsInSettings = function() {
+            let sec = document.getElementById('roles-content-section');
+            if (!sec) return;
+            let cbs = sec.querySelectorAll('input[type="checkbox"][id]');
+            cbs.forEach(cb => {
+                let lbl = cb.closest('label');
+                if (!lbl || lbl.querySelector('.setting-help-q-btn')) return;
+                let btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'setting-help-q-btn';
+                btn.title = 'اضغط لشرح هذه الميزة ومعاينة شكلها بالصور';
+                btn.innerHTML = '؟';
+                btn.onclick = function(ev) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    window.openSettingVisualHelpModal(cb.id);
+                };
+                lbl.appendChild(btn);
+            });
+        };
+
+        window.openSettingVisualHelpModal = function(checkboxId) {
+            let cb = document.getElementById(checkboxId);
+            if (!cb) return;
+            let lbl = cb.closest('label');
+            let rawLabelText = lbl ? lbl.innerText.replace('؟', '').trim() : checkboxId;
+
+            let info = window.SETTINGS_DETAILED_HELP_DB[checkboxId];
+            let title = info ? info.title : rawLabelText;
+            let desc = info ? info.desc : `عند تفعيل خيار (${rawLabelText})، يقوم النظام بإظهار وتشغيل هذه الميزة في واجهة المتجر للعملاء أو في أدوات الإدارة فوراً. وعند إزالة علامة الصح يتم إخفاؤها وإيقافها تماماً دون التأثير على باقي بياناتك.`;
+
+            let isChecked = cb.checked;
+            let titleEl = document.getElementById('sh-modal-title');
+            let statusEl = document.getElementById('sh-modal-status-badge');
+            let descEl = document.getElementById('sh-modal-desc');
+            let prevEl = document.getElementById('sh-modal-visual-preview');
+            let toggleBtn = document.getElementById('sh-modal-toggle-btn');
+
+            if (titleEl) titleEl.textContent = title;
+            if (statusEl) {
+                statusEl.innerHTML = isChecked
+                    ? `<span style="background:#dcfce7; color:#166534; padding:4px 14px; border-radius:20px; font-weight:900; font-size:0.84rem; border:1px solid #22c55e;">🟢 هذه الميزة مفعلة وتعمل حالياً في المتجر</span>`
+                    : `<span style="background:#fee2e2; color:#991b1b; padding:4px 14px; border-radius:20px; font-weight:900; font-size:0.84rem; border:1px solid #ef4444;">🔴 هذه الميزة متوقفة ومخفية حالياً</span>`;
+            }
+            if (descEl) descEl.textContent = desc;
+
+            // رسم معاينة مصورة حية (Visual UI Mockup) توضح شكل الميزة عند تفعيلها!
+            let mockBadge = (info && info.mockBadge) ? info.mockBadge : '🌿 معاينة الميزة في المتجر';
+            let mockTitle = (info && info.mockTitle) ? info.mockTitle : rawLabelText;
+            let mockSub = (info && info.mockSub) ? info.mockSub : 'هكذا يظهر العنصر بشكل أنيق ومتناسق مع هوية زيت الشجرة المباركة عند التفعيل';
+
+            if (prevEl) {
+                prevEl.innerHTML = `
+                    <div style="background:white; border:2px solid #c59b27; border-radius:14px; padding:14px; max-width:380px; margin:0 auto; box-shadow:0 8px 20px rgba(0,0,0,0.08); text-align:right;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                            <img src="1000392409.jpeg" style="width:46px; height:46px; border-radius:10px; object-fit:cover; border:1.5px solid #3c521e;" onerror="this.style.display='none'">
+                            <div style="flex:1;">
+                                <span style="background:#3c521e; color:#fff; padding:2px 8px; border-radius:8px; font-size:0.72rem; font-weight:bold;">${window.escapeHTML(mockBadge)}</span>
+                                <strong style="display:block; color:#1f3a13; font-size:0.9rem; margin-top:3px;">${window.escapeHTML(mockTitle)}</strong>
+                            </div>
+                        </div>
+                        <div style="background:#f8fafc; padding:8px 10px; border-radius:8px; border:1px dashed #cbd5e1; font-size:0.78rem; color:#475569;">
+                            ✨ ${window.escapeHTML(mockSub)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (toggleBtn) {
+                toggleBtn.style.background = isChecked ? '#dc2626' : '#16a34a';
+                toggleBtn.textContent = isChecked ? '⏹️ إيقاف وإخفاء هذه الميزة الآن' : '▶️ تفعيل وإظهار هذه الميزة الآن';
+                toggleBtn.onclick = async function() {
+                    cb.checked = !cb.checked;
+                    await window.saveSettings();
+                    window.openSettingVisualHelpModal(checkboxId);
+                };
+            }
+
+            let modal = document.getElementById('setting-visual-help-modal');
+            if (modal) modal.style.display = 'flex';
+        };
+
+        // -------------------------------------------------------------------------
+        // ثالثاً: تنفيذ جميع الميزات والـ 19 أداة وزر جديد (V66)
+        // -------------------------------------------------------------------------
+
+        // 1. ركن فيديوهات المزرعة وتجارب العملاء (Farm Reels Wall)
+        window.renderFarmReelsWall = function() {
+            let sec = document.getElementById('home-farm-reels-section');
+            let cont = document.getElementById('farm-reels-strip-container');
+            if (!sec || !cont) return;
+            if (storeSettings.enableFarmReels === false) {
+                sec.style.display = 'none';
+                return;
+            }
+            sec.style.display = 'block';
+            let reelsData = [
+                { title: 'قطف الزيتون يدوياً من مزارع سيناء 🌿', desc: 'شاهد كيف نختار أفضل ثمار الزيتون السيناوي المبارك قطفاً يدوياً لضمان أعلى نقاء.', badge: '🚜 من المزرعة' },
+                { title: 'لحظة العصر على البارد (< 25 درجة) ❄️', desc: 'عصرة أولى على البارد تحفظ جميع الفيتامينات ومضادات الأكسدة الطبيعية بدون أي حرارة.', badge: '❄️ عصرة أولى' },
+                { title: 'اختبار الحموضة والنقاء معملياً 🧪', desc: 'نسبة حموضة أقل من 0.5% (بكر ممتاز فائق الجودة) خالٍ تماماً من أي خلط أو إضافات.', badge: '🏅 شهادة نقاء' },
+                { title: 'آراء وتجارب عملائنا في كل المحافظات ⭐', desc: 'ثقة آلاف الأسر المصرية في زيت الشجرة المباركة للمائدة والصحة والعناية اليومية.', badge: '❤️ تجارب العملاء' }
+            ];
+            let defaultImg = (products && products[0] && products[0].images && products[0].images[0]) ? products[0].images[0] : '1000392409.jpeg';
+            cont.innerHTML = reelsData.map((r, i) => {
+                let pImg = (products && products[i] && products[i].images && products[i].images[0]) ? products[i].images[0] : defaultImg;
+                return `<div class="farm-reel-card" onclick="window.openFarmReelStory(${i})">
+                    <img loading="lazy" src="${pImg}" alt="Reel" onerror="this.src='1000392409.jpeg'">
+                    <div class="farm-reel-overlay">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="background:rgba(0,0,0,0.6); padding:2px 7px; border-radius:8px; font-size:0.68rem; font-weight:bold;">${r.badge}</span>
+                            <span class="farm-reel-play-badge">▶</span>
+                        </div>
+                        <strong style="font-size:0.78rem; line-height:1.35; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${window.escapeHTML(r.title)}</strong>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        window.openFarmReelStory = function(idx) {
+            let titles = [
+                '🚜 قطف الزيتون يدوياً من مزارع شمال سيناء',
+                '❄️ العصرة الأولى على البارد تحت 25 درجة مئوية',
+                '🧪 فحص الحموضة والنقاء (أقل من 0.5%)',
+                '⭐ تجارب عملاء متجر زيت الشجرة المباركة'
+            ];
+            let descs = [
+                'نقطف ثمار الزيتون السيناوي في ذروة نضجها يدوياً حبة بحبة من أشجارنا المباركة في سيناء لنضمن لك طعماً أصلياً لا يُنسى.',
+                'يتم عصر الزيتون خلال ساعات من قطفه على البارد بدون أي معالجة حرارية أو كيميائية ليحتفظ بكامل فوائده للقلب والمناعة.',
+                'كل تشغيلة تخضع لفحص الحموضة والبيروكسيد للتأكد من مطابقتها لمعايير زيت الزيتون البكر الممتاز (Extra Virgin) بنسبة نقاء 100%.',
+                'انضم لآلاف العملاء السعداء واستمتع بحق معاينة وتذوق طلبك عند الاستلام مع ضمان الاستبدال والاسترجاع الفوري.'
+            ];
+            let p = (products && products[idx]) ? products[idx] : (products && products[0]);
+            if (window.openInstaStoryModal && p) {
+                window.openInstaStoryModal({
+                    id: p.id,
+                    name: titles[idx] || p.name,
+                    price: p.price,
+                    description: descs[idx] || p.description,
+                    images: p.images || ['1000392409.jpeg']
+                });
+            }
+        };
+
+        // 2. دليل المقاسات المرئي + عبوة التذوق التجريبية + إرسال كهدية برقم الهاتف + حجز العصرة القادمة + إعادة آخر طلب + الشراء الجماعي
+        window.openVisualSizeGuideModal = function() {
+            let m = document.getElementById('visual-size-guide-modal');
+            if (m) m.style.display = 'flex';
+        };
+
+        window.orderTrialSampleBottle = function() {
+            let firstProd = (products && products[0]) ? products[0] : null;
+            let samplePrice = firstProd ? Math.max(85, Math.round(Number(firstProd.price) * 0.35)) : 120;
+            let sampleId = firstProd ? firstProd.id : 'sample_250ml';
+            window.addToCart(sampleId, '🧪 عبوة تذوق تجريبية (زيت زيتون سيناوي بكر ممتاز 250 مل)', samplePrice, '1000392409.jpeg', 'عبوة تذوق 250 مل');
+            window.showToast('🧪 تمت إضافة (عبوة التذوق التجريبية 250 مل) إلى سلتك بنجاح!', 'success');
+            window.showPanel('cart');
+        };
+
+        window.openSendGiftByPhoneModal = function() {
+            let sel = document.getElementById('gift-phone-product-sel');
+            if (sel && products && products.length > 0) {
+                sel.innerHTML = products.filter(p => !p.isHidden).map(p => `<option value="${p.id}">${window.escapeHTML(p.name)} (${p.price} ج)</option>`).join('');
+            }
+            let m = document.getElementById('send-gift-by-phone-modal');
+            if (m) m.style.display = 'flex';
+        };
+
+        window.submitGiftByPhoneOrder = async function() {
+            let sender = (document.getElementById('gift-phone-sender') || {}).value.trim();
+            let receiver = (document.getElementById('gift-phone-receiver') || {}).value.trim();
+            let phone = (document.getElementById('gift-phone-number') || {}).value.trim();
+            let pid = (document.getElementById('gift-phone-product-sel') || {}).value;
+            let cardMsg = (document.getElementById('gift-phone-card-msg') || {}).value.trim();
+            let p = products.find(x => x.id === pid) || products[0];
+
+            if (!sender || !receiver || !phone || !p) {
+                window.showToast('يرجى كتابة اسمك واسم ورقم هاتف المُهدى إليه', 'error');
+                return;
+            }
+            let price = Number(p.price) || 250;
+            let ship = Number(storeSettings.defaultShippingCost) || 90;
+            let payload = {
+                userId: currentUser ? currentUser.uid : 'gift_phone_guest',
+                customerName: `🎁 [هدية إلى: ${receiver}] من (${sender})`,
+                phones: { primary: phone, secondary: 'لا يوجد' },
+                location: { governorate: 'تحديد عبر الهاتف 🎁', city: 'هدية برقم الهاتف فقط', details: `رسالة الكارت: ${cardMsg || 'هدية خاصة من متجر زيت الشجرة المباركة 🌿'} (يرجى الاتصال بالمستلم لتحديد العنوان)` },
+                items: [{ id: p.id, cartItemId: p.id, name: `🎁 ${p.name}`, price: price, imageUrl: (p.images && p.images[0]) || '1000392409.jpeg', quantity: 1 }],
+                subtotal: price,
+                shippingCost: ship,
+                totalAmount: price + ship,
+                paymentMethod: 'هدية برقم الهاتف 🎁',
+                orderMethod: 'أرسل هدية برقم الهاتف',
+                giftWrapInfo: cardMsg || 'هدية فاخرة',
+                status: 'قيد المراجعة',
+                orderDate: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            try {
+                await addDoc(collection(db, 'orders'), payload);
+                document.getElementById('send-gift-by-phone-modal').style.display = 'none';
+                window.showToast(`🎉 تم تسجيل الهدية لـ (${receiver})! سنتواصل معه لتحديد العنوان وتوصيلها.`, 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء الإرسال', 'error');
+            }
+        };
+
+        window.openPreorderHarvestModal = function() {
+            let m = document.getElementById('preorder-harvest-modal');
+            if (m) m.style.display = 'flex';
+        };
+
+        window.submitPreorderHarvestRequest = async function() {
+            let name = (document.getElementById('preorder-cust-name') || {}).value.trim();
+            let phone = (document.getElementById('preorder-cust-phone') || {}).value.trim();
+            let qty = (document.getElementById('preorder-qty-wanted') || {}).value.trim();
+            if (!name || !phone || !qty) {
+                window.showToast('يرجى إدخال الاسم ورقم الهاتف والكمية المطلوبة', 'error');
+                return;
+            }
+            let payload = {
+                userId: currentUser ? currentUser.uid : 'preorder_guest',
+                customerName: `🌾 [حجز العصرة القادمة] ${name}`,
+                phones: { primary: phone, secondary: 'لا يوجد' },
+                location: { governorate: 'حجز مسبق 🌾', city: qty, details: 'حجز مبكر من العصرة الطازجة القادمة بخصم 10% (EARLY10)' },
+                items: [{ id: 'preorder_item', cartItemId: 'preorder_item', name: `🌾 حجز عصرة طازجة: (${qty})`, price: 0, imageUrl: '1000392409.jpeg', quantity: 1 }],
+                subtotal: 0,
+                shippingCost: 0,
+                totalAmount: 0,
+                paymentMethod: 'حجز مسبق بخصم 10% 🌾',
+                orderMethod: 'حجز العصرة القادمة',
+                status: 'قيد المراجعة',
+                orderDate: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            try {
+                await addDoc(collection(db, 'orders'), payload);
+                currentDiscountPercent = Math.max(currentDiscountPercent, 10);
+                appliedPromoCode = 'EARLY10';
+                window.updateInvoiceUI();
+                document.getElementById('preorder-harvest-modal').style.display = 'none';
+                window.showToast('🌾 تم تثبيت حجزك المبكر وتفعيل خصم 10% (EARLY10) بنجاح!', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء الإرسال', 'error');
+            }
+        };
+
+        window.executeOneTapLastReorder = function() {
+            let ords = window.customerOrdersArray || [];
+            if (ords.length > 0 && window.reorderPastOrder) {
+                window.reorderPastOrder(ords[0].id);
+                return;
+            }
+            window.showPanel('customer-orders');
+            window.showToast('📦 اختر طلبك السابق واضغط (إعادة الطلب بنفس المنتجات) بضغطة واحدة', 'info');
+        };
+
+        window.openGroupBuyModal = function() {
+            let m = document.getElementById('group-buy-modal');
+            if (m) m.style.display = 'flex';
+        };
+
+        window.shareGroupBuyInviteWhatsApp = function() {
+            currentDiscountPercent = Math.max(currentDiscountPercent, 7);
+            appliedPromoCode = 'GROUP7';
+            window.updateInvoiceUI();
+            document.getElementById('group-buy-modal').style.display = 'none';
+            window.showToast('🤝 تم تفعيل خصم الشراء الجماعي 7% (GROUP7) في سلتك!', 'success');
+            let shareTxt = `🌿 صديقي العزيز، أنا أطلب الآن زيت زيتون سيناوي بكر ممتاز عصرة أولى على البارد من *متجر زيت الشجرة المباركة*!\n🤝 اشترِ معي اليوم واستخدم كود الشراء الجماعي المشترك *GROUP7* لتحصل على خصم فوري 7%:\n${window.location.origin + window.location.pathname}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(shareTxt)}`, '_blank');
+        };
+
+        // 3. صندوق الهدية الغامضة + عداد التوفير التراكمي بالسلة + حاسبة وزن الشحنة للأوزان الثقيلة
+        window.updateV66CartEnhancements = function() {
+            let mysBox = document.getElementById('cart-mystery-gift-box');
+            let savBar = document.getElementById('cart-cumulative-savings-bar');
+            let showMys = storeSettings.enableMysteryGift !== false && cart && cart.length > 0;
+
+            if (mysBox) {
+                if (!showMys) {
+                    mysBox.style.display = 'none';
+                } else {
+                    mysBox.style.display = 'block';
+                    let targetAmt = 900;
+                    if (currentSubtotal >= targetAmt) {
+                        mysBox.innerHTML = `🎁 <strong>مبروك! فتحت صندوق الهدية السيناوية الغامضة:</strong> سيُرفق مع طلبك (عبوة زعتر سيناوي بري أصلي أو هدية مفاجئة من المزرعة) مجاناً!`;
+                        mysBox.style.background = 'linear-gradient(90deg, #dcfce7, #bbf7d0)';
+                        mysBox.style.color = '#166534';
+                        mysBox.style.borderColor = '#22c55e';
+                    } else {
+                        let rem = targetAmt - currentSubtotal;
+                        mysBox.innerHTML = `🎁 أضف منتجات بقيمة <strong>${rem} ج</strong> فقط لفتح <strong>صندوق الهدية السيناوية الغامضة</strong> مجاناً مع طلبك!`;
+                        mysBox.style.background = 'linear-gradient(90deg, #fef3c7, #fde68a)';
+                        mysBox.style.color = '#92400e';
+                        mysBox.style.borderColor = '#d97706';
+                    }
+                }
+            }
+
+            if (savBar) {
+                if (!showMys) {
+                    savBar.style.display = 'none';
+                } else {
+                    // حساب التوفير التراكمي (فرق السعر قبل الخصم + خصم الكوبون + خصم الباقة + خصم الولاء)
+                    let oldPriceDiff = 0;
+                    let totalQty = 0;
+                    (cart || []).filter(i => i.selected !== false).forEach(it => {
+                        totalQty += Number(it.quantity) || 1;
+                        let p = products.find(x => x.id === it.id);
+                        if (p && p.oldPrice && Number(p.oldPrice) > Number(it.price)) {
+                            oldPriceDiff += (Number(p.oldPrice) - Number(it.price)) * (Number(it.quantity) || 1);
+                        }
+                    });
+                    let promoSaved = Math.round(currentSubtotal * (currentDiscountPercent / 100));
+                    let loyaltySaved = Number(window.loyaltyDiscountFixed) || 0;
+                    let totalSaved = oldPriceDiff + promoSaved + loyaltySaved;
+
+                    if (totalSaved > 0) {
+                        savBar.style.display = 'block';
+                        savBar.innerHTML = `💰 إجمالي توفيرك التراكمي في هذه السلة حتى الآن: <span style="font-size:1.08rem; text-decoration:underline;">${totalSaved} جنيه</span> 🎉`;
+                    } else {
+                        savBar.style.display = 'none';
+                    }
+                }
+            }
+        };
+
+        const origUpdateInvoiceV65 = window.updateInvoiceUI;
+        window.updateInvoiceUI = function() {
+            origUpdateInvoiceV65();
+            window.updateV66CartEnhancements();
+        };
+
+        // 4. رادار الزوار المتواجدين الآن + منبّه إعادة الشراء الذكي + استوديو تصميم البانرات + الوضع المختصر للعمل + فاتورة الضمان المختومة
+        window.renderLiveVisitorRadarAndReplenish = function() {
+            // أ) رادار الزوار
+            let radarList = document.getElementById('live-radar-visitors-list');
+            let radarCard = document.getElementById('admin-live-radar-card');
+            let repBody = document.getElementById('admin-replenish-body');
+            let repCard = document.getElementById('admin-replenish-reminder-card');
+            let stuCard = document.getElementById('admin-banner-studio-card');
+
+            let enabled = storeSettings.enableReplenishAlert !== false;
+            if (radarCard) radarCard.style.display = enabled ? 'block' : 'none';
+            if (repCard) repCard.style.display = enabled ? 'block' : 'none';
+            if (stuCard) stuCard.style.display = enabled ? 'block' : 'none';
+            if (!enabled) return;
+
+            if (radarList) {
+                let visitors = (window.allSiteVisitorsList || []).slice(0, 6);
+                if (visitors.length === 0) {
+                    radarList.innerHTML = '<p style="margin:0; color:var(--text-muted);">لا يوجد متصفحون نشطون في هذه اللحظة.</p>';
+                } else {
+                    radarList.innerHTML = visitors.map(v => {
+                        let minsAgo = Math.max(0, Math.round((Date.now() - window.parseSafeTimestamp(v.lastVisit, Date.now())) / 60000));
+                        let statusDot = minsAgo <= 15 ? '🟢 متواجد الآن' : `🕒 منذ ${minsAgo} د`;
+                        return `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:var(--input-bg); border-radius:8px; margin-bottom:5px; font-size:0.8rem;">
+                            <span>👤 <strong>${window.escapeHTML(v.name || 'زائر')}</strong> (${window.escapeHTML(v.deviceSummary || 'هاتف')})</span>
+                            <span style="color:#16a34a; font-weight:bold;">${statusDot}</span>
+                        </div>`;
+                    }).join('');
+                }
+            }
+
+            // ب) منبّه إعادة الشراء الذكي (العملاء الذين مر على طلبهم 14 يوماً فأكثر أو اشتروا سابقاً)
+            if (repBody) {
+                let custMap = new Map();
+                (adminOrdersArray || []).forEach(o => {
+                    let ph = (o.phones && o.phones.primary) ? o.phones.primary.replace(/\D/g, '') : '';
+                    if (!ph || String(o.status || '').includes('لغى')) return;
+                    let ordMs = window.parseSafeTimestamp(o.orderDate, Date.now());
+                    if (!custMap.has(ph) || ordMs > custMap.get(ph).ordMs) {
+                        custMap.set(ph, { name: o.customerName || 'عميل', phone: ph, ordMs, total: o.totalAmount });
+                    }
+                });
+                let list = Array.from(custMap.values()).sort((a, b) => a.ordMs - b.ordMs).slice(0, 8);
+                if (list.length === 0) {
+                    repBody.innerHTML = '<p style="margin:0; color:var(--text-muted);">لا توجد طلبات سابقة كافية لحساب موعد التجديد.</p>';
+                } else {
+                    repBody.innerHTML = list.map(c => {
+                        let daysPassed = Math.max(1, Math.round((Date.now() - c.ordMs) / 86400000));
+                        let pureWa = (!c.phone.startsWith('20') && c.phone.length >= 10) ? '20' + c.phone : c.phone;
+                        let waMsg = `مرحباً أستاذ ${c.name} من متجر زيت الشجرة المباركة 🌿 مر حوالي ${daysPassed} يوم على طلبك الأخير، نتمنى أن يكون الزيت السيناوي قد نال إعجابك! نود تذكيرك بتوفر عصرة جديدة طازجة مع كود خصم خاص لك (COMEBACK) لتجديد خزينك.`;
+                        return `<div style="display:flex; justify-content:space-between; align-items:center; padding:7px 8px; background:var(--input-bg); border:1px solid var(--border-color); border-radius:8px; margin-bottom:6px; font-size:0.82rem;">
+                            <div><strong>👤 ${window.escapeHTML(c.name)}</strong><br><small style="color:var(--text-muted);">آخر طلب منذ ${daysPassed} يوم (${c.total} ج)</small></div>
+                            <a href="https://wa.me/${pureWa}?text=${encodeURIComponent(waMsg)}" target="_blank" class="btn btn-outline" style="padding:4px 10px; font-size:0.76rem; border-color:#25D366; color:#25D366; text-decoration:none;">🔄 تذكير واتساب</a>
+                        </div>`;
+                    }).join('');
+                }
+            }
+        };
+
+        window.broadcastInstantPopupCouponToVisitors = async function() {
+            let code = prompt('🎁 اكتب كود الخصم الفوري الذي سيظهر الآن لجميع المتصفحين في المتجر:', 'LIVE10');
+            if (!code) return;
+            let pct = Number(prompt('نسبة الخصم (%):', '10')) || 10;
+            try {
+                await addDoc(collection(db, 'promoCodes'), { code: code.trim().toUpperCase(), discount: pct, singleUse: false });
+                await addDoc(collection(db, 'global_notifications'), {
+                    title: `🎁 هدية فورية لزوار المتجر الآن!`,
+                    message: `استخدم كود (${code.trim().toUpperCase()}) الآن واحصل على خصم فوري ${pct}% على طلبك!`,
+                    date: new Date().toISOString()
+                });
+                window.showToast(`📡 تم بث الكود الفوري (${code.trim().toUpperCase()}) لجميع زوار المتجر الآن!`, 'success');
+            } catch (e) {}
+        };
+
+        window.publishStudioBannerToHero = async function() {
+            let t = (document.getElementById('studio-banner-title') || {}).value.trim();
+            let s = (document.getElementById('studio-banner-sub') || {}).value.trim();
+            let b = (document.getElementById('studio-banner-btn') || {}).value.trim() || 'تسوق الآن 🛒';
+            if (!t || !s) {
+                window.showToast('يرجى كتابة عنوان العرض والنص الفرعي أولاً', 'error');
+                return;
+            }
+            let newLine = `${t} | ${s} | ${b}`;
+            let currentSlides = storeSettings.heroSlidesData || window.getDefaultHeroSlidesText();
+            let updatedSlides = newLine + '\n' + currentSlides;
+            storeSettings.enableHeroSlider = true;
+            storeSettings.heroSlidesData = updatedSlides;
+            let cb = document.getElementById('setting-enable-hero-slider'); if (cb) cb.checked = true;
+            let ta = document.getElementById('setting-hero-slides-data'); if (ta) ta.value = updatedSlides;
+            await setDoc(doc(db, 'settings', 'main'), { enableHeroSlider: true, heroSlidesData: updatedSlides }, { merge: true });
+            window.renderHeroSlider();
+            window.showToast('🎨 تم تصميم ونشر البانر الجديد في أعلى الصفحة الرئيسية فوراً!', 'success');
+        };
+
+        window.toggleCompactWorkHubMode = function() {
+            let cont = document.getElementById('admin-work-stream-container');
+            if (!cont) return;
+            cont.classList.toggle('compact-work-mode');
+            let isCompact = cont.classList.contains('compact-work-mode');
+            window.showToast(isCompact ? '📋 تم تفعيل الوضع المختصر السريع لغرفة العمل' : '📋 تم تفعيل الوضع التفصيلي الكامل لغرفة العمل', 'info');
+        };
+
+        // 5. طباعة فاتورة وشهادة ضمان رسمية مختومة (Official Stamped Warranty Invoice)
+        window.printOfficialStampedWarrantyInvoice = function(orderId) {
+            let o = (adminOrdersArray || []).find(x => x.id === orderId) || (window.customerOrdersArray || []).find(x => x.id === orderId);
+            if (!o) return;
+            let itemsRows = (o.items || []).map(i => `<tr><td style="padding:8px; border:1px solid #cbd5e1;">${window.escapeHTML(i.name)}</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">${i.quantity}</td><td style="padding:8px; border:1px solid #cbd5e1; text-align:center;">${i.price} ج</td></tr>`).join('');
+            let w = window.open('', '_blank');
+            if (!w) return;
+            w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>فاتورة وشهادة ضمان رسمية - #${o.id.slice(0,6).toUpperCase()}</title></head>
+            <body style="font-family:'Cairo',Tahoma,sans-serif; padding:25px; color:#1f2937; max-width:680px; margin:0 auto; border:4px double #c59b27; border-radius:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #3c521e; padding-bottom:12px; margin-bottom:15px;">
+                    <div>
+                        <h2 style="margin:0; color:#3c521e;">🌿 متجر زيت الشجرة المباركة</h2>
+                        <small style="color:#64748b;">مزارع شمال سيناء - عصرة أولى على البارد 100%</small>
+                    </div>
+                    <div style="text-align:left;">
+                        <strong style="color:#b45309;">🧾 فاتورة وشهادة ضمان</strong><br>
+                        <small>رقم الطلب: #${o.id.slice(0,6).toUpperCase()}</small><br>
+                        <small>التاريخ: ${new Date(o.orderDate).toLocaleDateString('ar-EG')}</small>
+                    </div>
+                </div>
+                <div style="background:#f8fafc; padding:12px; border-radius:10px; margin-bottom:15px; font-size:0.9rem; line-height:1.7;">
+                    <div><strong>👤 العميل:</strong> ${window.escapeHTML(o.customerName)} &nbsp;|&nbsp; <strong>📞 الهاتف:</strong> ${window.escapeHTML((o.phones && o.phones.primary) || '')}</div>
+                    <div><strong>📍 العنوان:</strong> ${window.escapeHTML((o.location && o.location.governorate) || '')} - ${window.escapeHTML((o.location && o.location.city) || '')} (${window.escapeHTML((o.location && o.location.details) || '')})</div>
+                </div>
+                <table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:0.9rem;">
+                    <thead><tr style="background:#3c521e; color:white;"><th style="padding:8px; border:1px solid #3c521e;">المنتج</th><th style="padding:8px; border:1px solid #3c521e;">الكمية</th><th style="padding:8px; border:1px solid #3c521e;">السعر</th></tr></thead>
+                    <tbody>${itemsRows}</tbody>
+                </table>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-top:20px;">
+                    <div style="border:3px double #166534; color:#166534; border-radius:50%; width:125px; height:125px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; font-weight:900; font-size:0.75rem; transform:rotate(-8deg); background:rgba(22,101,52,0.05);">
+                        <span>🏅 ختم الضمان</span>
+                        <span style="font-size:0.85rem; color:#b45309;">الشجرة المباركة</span>
+                        <span>بكر ممتاز 100%</span>
+                        <span>مفحوص معملياً</span>
+                    </div>
+                    <div style="text-align:left; font-size:1.1rem; font-weight:900; color:#3c521e;">
+                        <div>الشحن: ${o.shippingCost || 0} ج</div>
+                        <div style="font-size:1.3rem; color:#b45309; margin-top:4px;">الإجمالي النهائي: ${o.totalAmount} ج</div>
+                    </div>
+                </div>
+                <p style="text-align:center; font-size:0.8rem; color:#64748b; margin-top:20px; border-top:1px dashed #cbd5e1; padding-top:10px;">شهادة ضمان رسمية بأن جميع المنتجات طبيعية خام 100% عصرة أولى على البارد من مزارع سيناء بدون أي إضافات.</p>
+                <script>window.onload = function(){ window.print(); };<\/script>
+            </body></html>`);
+            w.document.close();
+        };
+
+        const origOpenAdminOrderModalV65 = window.openAdminOrderModal;
+        window.openAdminOrderModal = function(id) {
+            origOpenAdminOrderModalV65(id);
+            if (storeSettings.enableReplenishAlert === false) return;
+            let aom = document.getElementById('aom-content');
+            if (aom) {
+                aom.insertAdjacentHTML('beforeend', `<button type="button" class="btn btn-outline" style="width:100%; margin-top:8px; border-color:#c59b27; color:#b45309; font-weight:bold;" onclick="window.printOfficialStampedWarrantyInvoice('${id}')">🧾 طباعة فاتورة وشهادة ضمان رسمية مختومة</button>`);
+            }
+        };
+
+        const origOpenCustOrderModalV65 = window.openCustomerOrderModal;
+        window.openCustomerOrderModal = function(orderId) {
+            origOpenCustOrderModalV65(orderId);
+            if (storeSettings.enableReplenishAlert === false) return;
+            let com = document.getElementById('com-content');
+            if (com) {
+                com.insertAdjacentHTML('beforeend', `<button type="button" class="btn btn-outline" style="width:100%; margin-top:8px; border-color:#c59b27; color:#b45309; font-weight:bold;" onclick="window.printOfficialStampedWarrantyInvoice('${orderId}')">🧾 تحميل / طباعة فاتورة وشهادة الضمان المختومة</button>`);
+            }
+        };
+
+        // 6. تطبيق كافة إعدادات V66 على الواجهة
+        window.applyV66MasterUI = function() {
+            document.body.classList.toggle('glass-modern-ui', storeSettings.enableGlassUI !== false);
+
+            let pCont = document.getElementById('products-container');
+            if (pCont) {
+                pCont.classList.remove('layout-luxury-large', 'layout-compact-list');
+                let lMode = storeSettings.productsLayoutMode || 'grid';
+                if (lMode === 'luxury-large') pCont.classList.add('layout-luxury-large');
+                else if (lMode === 'compact-list') pCont.classList.add('layout-compact-list');
+            }
+
+            window.renderFarmReelsWall();
+            window.updateV66CartEnhancements();
+
+            let showEl = (id, cond, disp = 'block') => { let el = document.getElementById(id); if (el) el.style.display = cond ? disp : 'none'; };
+            showEl('sidebar-size-guide-btn', storeSettings.enableVisualSizeGuide !== false);
+            showEl('btn-modal-size-guide', storeSettings.enableVisualSizeGuide !== false, 'inline-block');
+            showEl('sidebar-sample-bottle-btn', storeSettings.enableSampleBottle !== false);
+            showEl('sidebar-gift-by-phone-btn', storeSettings.enableGiftByPhone !== false);
+            showEl('btn-modal-gift-phone', storeSettings.enableGiftByPhone !== false, 'inline-block');
+            showEl('sidebar-preorder-harvest-btn', storeSettings.enablePreorderHarvest !== false);
+            showEl('sidebar-group-buy-btn', storeSettings.enableGroupBuy !== false);
+
+            if (isCurrentUserAdmin) {
+                window.injectHelpQuestionButtonsInSettings();
+                window.renderLiveVisitorRadarAndReplenish();
+                let lSel = document.getElementById('setting-products-layout-mode');
+                if (lSel && storeSettings.productsLayoutMode) lSel.value = storeSettings.productsLayoutMode;
+            }
+        };
+
+        window.applySettingsToUI = function() {
+            let isAdminEditingRightNow = (Date.now() - (window.lastAdminSettingInteractionTs || 0)) < 3500;
+            prevApplySettingsV64();
+            window.applyV66MasterUI();
+
+            // إذا لم يكن المدير يضغط في هذه اللحظة، نزامن جميع الـ Checkboxes من storeSettings بدقة
+            if (isCurrentUserAdmin && !isAdminEditingRightNow) {
+                window.MASTER_SETTINGS_CHECKBOX_MAP.forEach(([domId, propKey, defVal]) => {
+                    let el = document.getElementById(domId);
+                    if (el) {
+                        el.checked = storeSettings[propKey] !== undefined ? Boolean(storeSettings[propKey]) : defVal;
+                    }
+                });
+            }
+        };
+
+        setTimeout(() => {
+            window.applyV66MasterUI();
+            window.injectHelpQuestionButtonsInSettings();
+        }, 700);

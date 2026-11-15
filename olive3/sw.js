@@ -1,5 +1,5 @@
-// Service Worker (Network-First Strategy) - Zait El Shagara Store V65
-const CACHE_NAME = 'zait-store-v65';
+// Service Worker (Network-First Strategy) - Zait El Shagara Store V66
+const CACHE_NAME = 'zait-store-v66';
 self.addEventListener('install', () => { self.skipWaiting(); });
 self.addEventListener('activate', (event) => {
   event.waitUntil(

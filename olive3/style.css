@@ -1976,3 +1976,154 @@ html[dir="ltr"] .wallet-statement-box {
     margin-top: 6px;
     text-align: right;
 }
+
+
+/* === النسخة V66 الشاملة: التصميم الزجاجي الفاخر + علامة الاستفهام المصورة للإعدادات + جميع الإضافات === */
+body.glass-modern-ui header {
+    background: linear-gradient(135deg, rgba(31, 58, 19, 0.94), rgba(2, 128, 144, 0.90)) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(197, 155, 39, 0.35);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14);
+}
+body.glass-modern-ui .product-card {
+    border-radius: 18px !important;
+    border: 1px solid rgba(197, 155, 39, 0.22) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06) !important;
+    transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+    overflow: hidden;
+}
+body.glass-modern-ui .product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 32px rgba(60, 82, 30, 0.14) !important;
+}
+body.glass-modern-ui .product-card img {
+    border-radius: 14px 14px 0 0;
+}
+body.glass-modern-ui .dash-card,
+body.glass-modern-ui .growth-card,
+body.glass-modern-ui .work-event-card {
+    border-radius: 16px !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.05) !important;
+}
+
+/* أوضاع عرض شبكة المنتجات (Layout Switcher) */
+#products-container.layout-luxury-large {
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)) !important;
+}
+#products-container.layout-luxury-large .product-card img {
+    height: 260px !important;
+}
+#products-container.layout-compact-list {
+    grid-template-columns: 1fr !important;
+}
+#products-container.layout-compact-list .product-card {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    text-align: right !important;
+    padding: 10px !important;
+    gap: 12px !important;
+}
+#products-container.layout-compact-list .product-card img {
+    width: 95px !important;
+    height: 95px !important;
+    border-radius: 12px !important;
+    margin: 0 !important;
+    flex-shrink: 0;
+}
+
+/* زر علامة الاستفهام (❓) لشرح ومعاينة كل إعداد بالصور */
+.setting-help-q-btn {
+    background: linear-gradient(135deg, #028090, #3c521e);
+    color: #fff;
+    border: 1.5px solid #c59b27;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 0.78rem;
+    font-weight: 900;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 6px;
+    margin-left: 4px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+.setting-help-q-btn:hover {
+    transform: scale(1.15);
+    background: #c59b27;
+    color: #111;
+}
+
+/* شريط فيديوهات المزرعة وتجارب المشترين (Reels Wall) */
+.farm-reels-strip {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 8px 4px 12px 4px;
+    margin-bottom: 14px;
+    scrollbar-width: none;
+}
+.farm-reels-strip::-webkit-scrollbar { display: none; }
+.farm-reel-card {
+    min-width: 135px;
+    max-width: 145px;
+    height: 195px;
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid var(--secondary);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    flex-shrink: 0;
+    background: #1b2610;
+}
+.farm-reel-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.82;
+    transition: transform 0.3s ease;
+}
+.farm-reel-card:hover img {
+    transform: scale(1.07);
+}
+.farm-reel-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.88) 10%, rgba(0,0,0,0.1) 65%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px;
+    color: #fff;
+    text-align: right;
+}
+.farm-reel-play-badge {
+    align-self: flex-end;
+    background: rgba(197, 155, 39, 0.92);
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* الوضع المختصر لغرفة العمل (Compact Work Hub View) */
+#admin-work-stream-container.compact-work-mode .work-event-card {
+    padding: 8px 12px !important;
+    margin-bottom: 6px !important;
+    border-radius: 10px !important;
+}
+#admin-work-stream-container.compact-work-mode .work-event-card .work-status-bar-btns {
+    padding: 4px !important;
+    margin-top: 4px !important;
+}
