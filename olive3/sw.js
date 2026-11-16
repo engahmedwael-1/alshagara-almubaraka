@@ -1,5 +1,5 @@
 // Service Worker (Network-First + Push Notification Click Handler) - Zait Store V67
-const CACHE_NAME = 'zait-store-v70';
+const CACHE_NAME = 'zait-store-v71';
 self.addEventListener('install', () => { self.skipWaiting(); });
 self.addEventListener('activate', (event) => {
   event.waitUntil(

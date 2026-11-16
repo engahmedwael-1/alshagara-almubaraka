@@ -38,7 +38,7 @@
     <link rel="apple-touch-icon" href="1000392409.jpeg">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="style.css?v=70">
+    <link rel="stylesheet" href="style.css?v=71">
     <script type="application/ld+json" id="dynamic-json-ld-schema">
     {
       "@context": "https://schema.org",
@@ -62,6 +62,61 @@
     <meta property="og:url" content="https://alshagara-almubaraka.vercel.app/">
     <meta property="og:site_name" content="متجر زيت الشجرة المباركة">
     <meta property="og:image" content="https://alshagara-almubaraka.vercel.app/1000392409.jpeg">
+    <script id="zait-zero-flash-preloader">
+    (function() {
+        try {
+            var raw = localStorage.getItem('zait_cached_settings_v71');
+            if (!raw) return;
+            var s = JSON.parse(raw);
+            var rules = [];
+            var hideIfFalse = [
+                ['enableSpinWheel', '#spin-wheel-fab, #sidebar-spin-wheel-btn'],
+                ['enableBoxBuilder', '#sidebar-box-builder-btn, #pill-box-builder'],
+                ['enableB2BPortal', '#sidebar-b2b-btn'],
+                ['enableBatchTracker', '#sidebar-batch-tracker-btn, #pill-batch-tracker'],
+                ['enableVisualSizeGuide', '#sidebar-size-guide-btn, #btn-modal-size-guide'],
+                ['enableSampleBottle', '#sidebar-sample-bottle-btn'],
+                ['enableGiftByPhone', '#sidebar-gift-by-phone-btn, #btn-modal-gift-phone'],
+                ['enablePreorderHarvest', '#sidebar-preorder-harvest-btn'],
+                ['enableGroupBuy', '#sidebar-group-buy-btn'],
+                ['enableDriverPortal', '#sidebar-driver-portal-btn'],
+                ['enableAffiliateSystem', '#sidebar-affiliate-btn'],
+                ['enableLiveShopping', '#sidebar-live-stream-btn, #home-seasonal-bundles-bar'],
+                ['enableFarmReels', '#home-farm-reels-section'],
+                ['enableQuickTagFilters', '#v64-quick-tags-bar'],
+                ['enableOfferBanner', '#home-limited-offer-banner'],
+                ['enableTrustMarquee', '#trust-marquee-bar'],
+                ['enableFloatingCartBar', '#floating-bottom-cart-bar, #header-font-size-btn'],
+                ['enableGuestTracking', '#sidebar-track-order-btn, #guest-order-track-box'],
+                ['enableAnnualCalc', '#sidebar-annual-calc-btn'],
+                ['enableGiftCards', '#sidebar-gift-card-btn, #pill-gift-card'],
+                ['enableSeoArticles', '#home-seo-benefits-section'],
+                ['enableAmazonSubHeader', '#amazon-sub-header']
+            ];
+            for (var i = 0; i < hideIfFalse.length; i++) {
+                var key = hideIfFalse[i][0];
+                var sel = hideIfFalse[i][1];
+                if (s[key] === false) {
+                    rules.push(sel + ' { display: none !important; }');
+                }
+            }
+            if (s.enableTopBar !== true) {
+                rules.push('#top-announcement-bar { display: none !important; }');
+            }
+            if (s.enableHeroSlider !== true) {
+                rules.push('#hero-slider-wrapper { display: none !important; }');
+            } else {
+                rules.push('#hero-section { display: none !important; }');
+            }
+            if (rules.length > 0) {
+                var st = document.createElement('style');
+                st.id = 'zait-instant-hide-css';
+                st.textContent = rules.join('\n');
+                document.head.appendChild(st);
+            }
+        } catch (e) {}
+    })();
+    </script>
 </head>
 <body class="compact-ui">
     <div id="social-proof-toast" class="social-proof-toast">
@@ -77,9 +132,9 @@
         <div style="padding: 20px; background: var(--primary); color: white; display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h3 style="margin: 0; font-size: 1.15rem;" class="translatable">الخدمات والأقسام</h3>
-                <small style="font-size:0.7rem; opacity:0.85; display:block;">💡 اضغط مطولاً على أي قسم لتغيير ترتيبه ⬆️⬇️</small>
+                <small id="sidebar-reorder-hint-lbl" style="font-size:0.7rem; opacity:0.85; display:none;">💡 للمدير فقط: اضغط (↕️ ترتيب) لنقل الأقسام</small>
             </div>
-            <button type="button" id="btn-sidebar-reorder-toggle" onclick="window.toggleSidebarReorderMode()" style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.5); color:white; border-radius:8px; padding:3px 8px; font-size:0.75rem; cursor:pointer; font-weight:bold;">↕️ ترتيب</button>
+            <button type="button" id="btn-sidebar-reorder-toggle" onclick="window.toggleSidebarReorderMode()" style="display:none; background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.5); color:white; border-radius:8px; padding:3px 8px; font-size:0.75rem; cursor:pointer; font-weight:bold;">↕️ ترتيب</button>
             <button type="button" onclick="window.closeSidebar()" style="background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer;">✖</button>
         </div>
         <div style="padding: 15px; display: flex; flex-direction: column; gap: 10px; flex: 1;">
@@ -184,27 +239,24 @@
 
     <div id="top-announcement-bar" class="top-announcement-bar" style="display:none;"></div>
     <header>
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <button type="button" onclick="window.openSidebar()" style="background: transparent; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 0;">☰</button>
+        <div class="header-brand-wrap">
+            <button type="button" class="header-menu-trigger" onclick="window.openSidebar()" title="القائمة الرئيسية">☰</button>
             <h1 onclick="window.showPanel('home')">
-                <img loading="lazy" src="1000392409.jpeg" alt="Logo" onerror="this.src='https://via.placeholder.com/45?text=لوجو'"> 
+                <img loading="lazy" src="1000392409.jpeg" alt="Logo" onerror="this.src='icon-192.png'"> 
                 <span class="translatable">زيت الشجرة المباركة</span>
             </h1>
         </div>
         <div class="header-actions">
-            <!-- الإشعارات الأساسية -->
-            <button type="button" class="notification-bell" id="btn-notifications-main" onclick="window.showPanel('global-notifications-panel')" style="display:none; position:relative;">
+            <button type="button" class="hdr-icon-pill notification-bell" id="btn-notifications-main" onclick="window.showPanel('global-notifications-panel')" style="display:none; position:relative;" title="الإشعارات">
                 🔔<span class="notification-badge" id="notif-badge-main" style="top:-5px; right:-5px;">0</span>
             </button>
-            
-            
-            <button type="button" class="btn btn-outline" style="padding: 5px 8px; font-size:1.1rem; background:transparent; border:none;" onclick="window.toggleLanguage()" id="lang-btn">🌐 EN</button>
-            <button type="button" id="header-font-size-btn" class="btn btn-outline" title="تكبير الخط لراحة العين" style="padding: 4px 7px; font-size:0.88rem; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; border-radius:12px; font-weight:900;" onclick="window.toggleComfortLargeFont()">🔍 A+</button>
-            <button type="button" class="btn btn-outline" style="padding: 5px 8px; font-size:1.1rem; background:transparent; border:none;" onclick="window.toggleDarkMode()">🌓</button>
-            <button type="button" class="btn btn-outline" style="padding: 5px 12px; font-size:0.9rem; background:white; color:var(--primary);" id="btn-show-auth" onclick="window.showPanel('auth')"><span class="translatable">تسجيل الدخول</span></button>
+            <button type="button" class="hdr-icon-pill" onclick="window.toggleLanguage()" id="lang-btn" title="تغيير اللغة">🌐 EN</button>
+            <button type="button" class="hdr-icon-pill" id="header-font-size-btn" title="تكبير الخط لراحة العين" onclick="window.toggleComfortLargeFont()">A+</button>
+            <button type="button" class="hdr-icon-pill" id="header-dark-mode-btn" title="الوضع الليلي / النهاري" onclick="window.toggleDarkMode()">🌓</button>
+            <button type="button" class="hdr-user-pill" id="btn-show-auth" onclick="window.showPanel('auth')">🔑 <span class="translatable">دخول</span></button>
             <div id="user-menu-container" style="display:none; position: relative;">
-                <button type="button" onclick="window.toggleDropdown(event)" title="حسابي وتبديل الحسابات" style="background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 5px 10px; border-radius: 18px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;">
-                    <span>👤</span> <span id="user-email-display">حسابي</span> <span style="font-size:0.75rem; color:#fde68a;">▼</span>
+                <button type="button" class="hdr-user-pill" onclick="window.toggleDropdown(event)" title="حسابي وتبديل الحسابات">
+                    <span>👤</span> <span id="user-email-display">حسابي</span> <span style="font-size:0.7rem; color:#fde68a;">▼</span>
                 </button>
                 <div id="profile-dropdown" class="dropdown-menu">
                     <div style="background:var(--input-bg); padding:10px 15px; text-align:center; border-bottom:1px solid var(--border-color);">
@@ -212,6 +264,7 @@
                         <strong style="color:var(--secondary); font-size:1.2rem;" id="nav-loyalty-points">0</strong> <span style="font-size:0.8rem; color:var(--text-color);" class="translatable">نقطة</span>
                         <div style="margin-top:4px; font-size:0.8rem; color:#028090; font-weight:bold;">💳 <span class="translatable">رصيد محفظتك:</span> <span id="nav-wallet-balance">0</span> ج</div>
                     </div>
+                    <button type="button" class="dropdown-item" onclick="window.showProfilePanel(); window.closeDropdown()">🪪 <span class="translatable">بيانات حسابي ورقم العضوية</span></button>
                     <button type="button" class="dropdown-item" onclick="window.showPanel('loyalty'); window.closeDropdown()">🎁 <span class="translatable">نقاط الولاء</span></button>
                     <button type="button" class="dropdown-item" onclick="window.showPanel('customer-orders'); window.closeDropdown()">📦 <span class="translatable">طلباتي</span></button>
                     <button type="button" class="dropdown-item" onclick="window.showPanel('wishlist'); window.closeDropdown()">❤️ <span class="translatable">المفضلة</span></button>
@@ -227,6 +280,15 @@
             </div>
         </div>
     </header>
+    <!-- الشريط الفرعي الثاني على طراز أمازون (Amazon Sub-Header Bar) -->
+    <div id="amazon-sub-header" class="amazon-sub-header">
+        <button type="button" class="amz-sub-link amz-deliver-to-btn" onclick="window.promptAmazonDeliverToGov()">📍 <span id="amz-deliver-to-label">التوصيل إلى: كل محافظات مصر</span></button>
+        <button type="button" class="amz-sub-link" onclick="window.showPanel('home'); window.filterByQuickTag('discount')">🔥 <span class="translatable">عروض اليوم</span></button>
+        <button type="button" class="amz-sub-link" onclick="window.showPanel('home'); window.filterByQuickTag('instock')">🏆 <span class="translatable">الأكثر مبيعاً</span></button>
+        <button type="button" class="amz-sub-link" onclick="window.executeOneTapLastReorder()">🔄 <span class="translatable">اشترِ مجدداً</span></button>
+        <button type="button" class="amz-sub-link" onclick="window.showPanel('customer-orders')">🚚 <span class="translatable">تتبع شحنتك</span></button>
+        <button type="button" class="amz-sub-link" onclick="window.showPanel('support')">💬 <span class="translatable">خدمة العملاء</span></button>
+    </div>
 
     <nav class="main-nav" id="smart-nav" style="display: none;">
         <!-- أزرار الإدارة فقط -->
@@ -1012,6 +1074,18 @@
 
             <div id="modal-actions" style="margin-top: 15px; display:none;"></div>
             <!-- مؤشر المذاق والنكهة التفاعلي + القيمة الغذائية + شهادة المعمل (V68) -->
+            <!-- صندوق الشراء الموحد على طراز أمازون (Amazon Buy Box) + يُشترى معاً غالباً -->
+            <div id="modal-amz-buy-box" class="amz-buy-box-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px;">
+                    <span style="color:#166534; font-weight:900; font-size:0.9rem;">✅ متوفر في المخزون — جاهز للشحن الفوري</span>
+                    <span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:bold;">🔥 تم شراء +200 عبوة هذا الشهر</span>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted); line-height:1.7;">
+                    <div>🏢 <strong>يُشحن ويُباع بواسطة:</strong> مزارع ومعاصر زيت الشجرة المباركة (شمال سيناء)</div>
+                    <div>🔒 <strong>الأمان والضمان:</strong> معاملة آمنة 100% + حق معاينة وتذوق الطلب عند الاستلام</div>
+                </div>
+            </div>
+            <div id="modal-amz-fbt-box" class="amz-fbt-box" style="display:none;"></div>
             <div id="modal-taste-nutrition-box" class="taste-profile-box">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
                     <strong style="color:var(--primary); font-size:0.86rem;">👅 مؤشر المذاق والنكهة السيناوية الأصيلة:</strong>
@@ -1062,7 +1136,12 @@
             </div>
             <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-color);">
             <h4 style="color: var(--primary); text-align: right;" class="translatable">تقييمات العملاء ⭐️</h4>
-            <div id="modal-reviews-list" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
+            <div id="modal-amz-histogram-box" style="background:var(--input-bg); padding:10px 12px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:12px;">
+                    <div class="amz-histogram-row"><span>5 نجوم</span><div class="amz-histogram-bar-bg"><div class="amz-histogram-bar-fill" style="width:88%;"></div></div><strong>88%</strong></div>
+                    <div class="amz-histogram-row"><span>4 نجوم</span><div class="amz-histogram-bar-bg"><div class="amz-histogram-bar-fill" style="width:9%;"></div></div><strong>9%</strong></div>
+                    <div class="amz-histogram-row"><span>3 نجوم</span><div class="amz-histogram-bar-bg"><div class="amz-histogram-bar-fill" style="width:3%;"></div></div><strong>3%</strong></div>
+                </div>
+                <div id="modal-reviews-list" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
             <div id="add-review-section" style="display: none; background: var(--input-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
                 <label style="display:block; text-align:right; font-weight:bold; margin-bottom:5px; color:var(--text-color);" class="translatable">أضف تقييمك:</label>
                 <select id="review-stars" style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 8px;">
@@ -1332,7 +1411,18 @@
         </div>
 
         <div class="panel" id="cart-panel">
-            <h2 style="color: var(--primary); margin-top: 0;" class="translatable">🛒 سلة مشترياتك</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                <h2 style="color: var(--primary); margin: 0;" class="translatable">🛒 سلة مشترياتك</h2>
+                <span style="font-size:0.82rem; color:#166534; background:#dcfce7; padding:4px 10px; border-radius:12px; font-weight:bold;">🔒 تسوق آمن ومضمون 100%</span>
+            </div>
+            <!-- شريط أمازون العلوي الثابت للمتابعة للدفع (يبقى ظاهراً دائماً أثناء التمرير) -->
+            <div id="amz-cart-top-sticky-bar" class="amz-cart-sticky-bar">
+                <div>
+                    <div style="font-size:0.92rem; color:var(--text-color);">الإجمالي الفرعي (<strong id="amz-sticky-cart-count">0</strong> منتجات): <strong style="color:#b45309; font-size:1.15rem;"><span class="invoice-total-val">0</span> ج</strong></div>
+                    <small style="color:#166534; font-weight:bold;">✅ مؤهل للشحن السريع لباب البيت مع ضمان المعاينة</small>
+                </div>
+                <button type="button" class="amz-checkout-gold-btn" onclick="window.goToCheckout()">المتابعة للدفع والتوصيل 🚀</button>
+            </div>
                         <!-- شريط الشحن المجاني -->
             <div class="free-shipping-container" id="free-shipping-box">
                 <div class="shipping-msg" id="free-shipping-msg"><span class="translatable">أضف منتجات بقيمة</span> <strong>0 ج</strong> <span class="translatable">لتحصل على شحن مجاني! 🚚</span></div>
@@ -1399,7 +1489,14 @@
                 <div>💳 <strong>رصيد محفظتك النقدية بالمتجر:</strong> <strong id="cart-wallet-balance-val" style="color:#028090;">0</strong> ج</div>
                 <button type="button" class="btn" style="background:#028090; padding:5px 12px; font-size:0.8rem;" onclick="window.applyStoreWalletBalanceToCart()">خصم الرصيد من الفاتورة ✅</button>
             </div>
-            <button type="button" class="btn btn-full" onclick="window.goToCheckout()" style="font-size: 1.1rem; margin-top: 10px;"><span class="translatable">المتابعة للدفع والتوصيل</span></button>
+            <!-- شريط أمازون السفلي الثابت للمتابعة للدفع (ثابت أسفل الشاشة دائماً) -->
+            <div id="amz-cart-bottom-fixed-bar" class="amz-cart-bottom-fixed-bar">
+                <div>
+                    <span style="font-size:0.78rem; opacity:0.9; display:block;">الإجمالي النهائي المطلوب:</span>
+                    <strong style="font-size:1.2rem; color:#fde68a;"><span class="invoice-total-val">0</span> ج</strong>
+                </div>
+                <button type="button" class="amz-checkout-gold-btn" onclick="window.goToCheckout()">المتابعة للدفع والتوصيل 🚀</button>
+            </div>
             <button type="button" id="btn-share-cart-wa" class="btn btn-outline" style="width:100%; margin-top:10px; border-color:#25D366; color:#25D366; font-size:0.9rem;" onclick="window.shareCartViaWhatsApp()">🔗 <span class="translatable">مشاركة سلة المشتريات عبر واتساب (لإتمام الدفع مع العائلة أو الأصدقاء)</span></button>
             <div id="saved-for-later-section" style="display:none; margin-top: 40px; border-top: 2px dashed var(--border-color); padding-top: 20px;">
                 <h3 style="color: var(--secondary); margin-top: 0;" class="translatable">📦 محفوظة لوقت لاحق</h3>
@@ -1431,7 +1528,10 @@
         </div>
 
         <div class="panel" id="checkout-panel">
-            <h2 style="color: var(--primary); margin-top: 0;" class="translatable">📍 بيانات التوصيل والدفع</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:2px solid var(--border-color); padding-bottom:10px; margin-bottom:14px;">
+                <h2 style="color: var(--primary); margin: 0;" class="translatable">🔒 إتمام الطلب الآمن (3 خطوات سريعة)</h2>
+                <button type="button" class="btn btn-outline" style="padding:5px 12px; font-size:0.8rem;" onclick="window.showPanel('cart')">🔙 تعديل السلة</button>
+            </div>
             <div style="background: var(--input-bg); padding: 15px; border-radius: var(--border-radius); margin-bottom: 20px; border: 1px dashed var(--border-color);" id="promo-section">
                 <label style="font-weight: bold; color: var(--primary);" class="translatable">هل لديك كود خصم؟ 🎁</label>
                 <div class="form-row" style="margin-top: 10px;"><input type="text" id="promo-code-input" placeholder="أدخل الكود" autocomplete="off" style="margin-bottom:0; flex: 2;"><button type="button" class="btn" style="flex: 1;" onclick="window.applyPromoCode()"><span class="translatable">تفعيل</span></button></div>
@@ -1449,6 +1549,11 @@
                 <div id="saved-addresses-chips-list" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
             </div>
             <form id="checkout-form">
+                <div class="amz-checkout-step-card">
+                    <div class="amz-step-header">
+                        <span class="amz-step-num-badge">1</span>
+                        <h3 style="margin:0; color:var(--primary); font-size:1.02rem;">عنوان التوصيل وبيانات المستلم</h3>
+                    </div>
                 <div style="position: relative; margin-bottom: 15px;">
                     <button type="button" id="btn-locate-me" style="position: absolute; top: 10px; right: 10px; z-index: 1000; background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);"><span class="translatable">📍 حدد موقعي الحالي</span></button>
                     <div id="map" style="margin-bottom: 0;"></div>
@@ -1464,7 +1569,13 @@
                 </div>
                 <input type="text" id="order-map-address" placeholder="العنوان المستخرج من الخريطة تلقائياً..." readonly style="background:var(--input-bg); font-size:0.85rem; color:var(--text-color); font-weight:bold;">
                 <textarea id="order-address" placeholder="العنوان التفصيلي الدقيق (اسم الشارع، رقم العمارة، رقم الشقة، علامة مميزة)" rows="3" required></textarea>
-                <div style="background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px;">
+                </div>
+                <div class="amz-checkout-step-card">
+                    <div class="amz-step-header">
+                        <span class="amz-step-num-badge">2</span>
+                        <h3 style="margin:0; color:var(--primary); font-size:1.02rem;">طريقة الدفع وتفضيلات الاستلام</h3>
+                    </div>
+                    <div style="background: var(--input-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 10px;">
                     <div id="checkout-advanced-delivery-prefs" style="background:var(--input-bg); padding:10px 12px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:10px;">
                         <div class="form-row" style="margin-bottom:6px;">
                             <div style="flex:1;">
@@ -1520,16 +1631,29 @@
                         </div>
                     </div>
                 </div>
-                <div class="invoice-box">
+                </div>
+                <div class="amz-checkout-step-card">
+                    <div class="amz-step-header">
+                        <span class="amz-step-num-badge">3</span>
+                        <h3 style="margin:0; color:var(--primary); font-size:1.02rem;">مراجعة الفاتورة النهائية وتأكيد الطلب</h3>
+                    </div>
+                    <div class="invoice-box">
                     <div class="invoice-line"><span class="translatable">المنتجات:</span><span><span id="invoice-subtotal">0</span> ج</span></div>
                     <div class="invoice-line" id="discount-row" style="display: none; color: #2a9d8f;"><span class="translatable">الخصم:</span><span>-<span id="invoice-discount">0</span> ج</span></div>
                     <div class="invoice-line"><span class="translatable">الشحن:</span><span><span id="invoice-shipping">0</span> ج</span></div>
                     <div class="invoice-line total"><span class="translatable">الإجمالي النهائي:</span><span><span id="invoice-total">0</span> ج</span></div>
                 </div>
                 <div id="checkout-total-savings-banner" class="total-savings-banner" style="display:none;"></div>
-                <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
-                    <button type="button" onclick="window.processOrder('عبر الموقع')" class="btn btn-full checkout-submit-btn" style="flex: 1; background-color: var(--primary);"><span class="translatable">تأكيد عبر الموقع 🌐</span></button>
-                    <button type="button" onclick="window.processOrder('عبر واتساب')" class="btn btn-full checkout-submit-btn" style="flex: 1; background-color: #25D366; color: white;"><span class="translatable">تأكيد عبر واتساب 💬</span></button>
+                </div>
+                <div class="amz-checkout-sticky-submit-bar">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:0.9rem;">
+                        <strong>💰 الإجمالي النهائي شامل التوصيل:</strong>
+                        <strong style="color:#166534; font-size:1.22rem;"><span class="invoice-total-val">0</span> ج</strong>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="button" onclick="window.processOrder('عبر الموقع')" class="btn btn-full checkout-submit-btn" style="flex: 1.2; background: linear-gradient(135deg, #f59e0b, #d97706); color:#111; font-weight:900; border-radius:22px;"><span class="translatable">تأكيد الطلب عبر الموقع 🚀</span></button>
+                        <button type="button" onclick="window.processOrder('عبر واتساب')" class="btn btn-full checkout-submit-btn" style="flex: 1; background-color: #25D366; color: white; border-radius:22px;"><span class="translatable">تأكيد عبر واتساب 💬</span></button>
+                    </div>
                 </div>
                 <button type="button" class="btn btn-outline" onclick="window.showPanel('cart')" style="width: 100%; margin-top: 15px; color: var(--text-color); border-color: var(--border-color);"><span class="translatable">العودة للسلة</span></button>
             </form>
@@ -1570,6 +1694,14 @@
                 <div id="support-live-speed-banner" style="background:linear-gradient(90deg, #f0fdf4, #dcfce7); border:1px solid #86efac; color:#166534; padding:6px 12px; border-radius:10px; font-size:0.8rem; font-weight:bold; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
                     <span>🟢 فريق خدمة العملاء متصل الآن</span>
                     <span>⚡ متوسط سرعة الرد: 1 - 3 دقائق</span>
+                </div>
+                <!-- شريط الخدمة الذاتية السريع على طراز أمازون أعلى الشات -->
+                <div id="support-amz-self-service-bar" class="chat-pro-quick-strip" style="border-radius:10px; margin-bottom:8px; border:1px solid var(--border-color);">
+                    <button type="button" class="smart-chat-chip" onclick="window.triggerSmartBotChip('shipping')">📦 أين شحنتي وموعد التوصيل؟</button>
+                    <button type="button" class="smart-chat-chip" onclick="window.openAttachOrderToChatModal()">🧾 استفسار عن طلب سابق</button>
+                    <button type="button" class="smart-chat-chip" onclick="window.triggerSmartBotChip('quality')">🌿 شهادة نقاء الزيت</button>
+                    <button type="button" class="smart-chat-chip" onclick="window.triggerSmartBotChip('payment')">💳 أرقام التحويل والدفع</button>
+                    <button type="button" class="smart-chat-chip" style="border-color:#dc2626; color:#dc2626;" onclick="window.requestUrgentPhoneCallbackInChat()">📞 اطلب مكالمة هاتفية الآن</button>
                 </div>
                 <input type="search" id="cust-chat-search-inp" placeholder="🔍 ابحث داخل رسائل المحادثة..." style="margin-bottom:8px; padding:7px 12px; font-size:0.82rem;" oninput="window.filterChatMessages(this.value, 'support-history-container')">
                 <div id="support-history-container" style="height: 350px; overflow-y: auto; margin-bottom: 20px; padding: 10px; border: 1px solid var(--border-color); border-radius: var(--border-radius); background: var(--input-bg);"></div>
@@ -1613,7 +1745,7 @@
                 <form id="support-form" style="display: flex; gap: 10px; position:relative; align-items:center;">
                     <div style="flex:1; display:flex; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; overflow:hidden; position:relative;">
                         <input type="text" id="support-message" placeholder="اكتب أو تحدث استفسارك..." autocomplete="off" style="border:none; margin:0; border-radius:0; padding-left: 50px;">
-                        <div class="mic-btn-container" onclick="window.startVoiceTyping('support-message', this.querySelector('.mic-btn'))">
+                        <div class="mic-btn-container" title="اضغط للتحدث وتحويل كلامك لنص" onclick="event.preventDefault(); event.stopPropagation(); window.startVoiceTyping('support-message', document.getElementById('voice-support-btn'))">
                             <button type="button" id="voice-support-btn" class="mic-btn">🎤</button>
                         </div>
                     </div>
@@ -1869,6 +2001,16 @@
                         <button type="button" class="btn" style="background:var(--secondary); width:100%;" onclick="window.publishStudioBannerToHero()">🚀 تصميم ونشر البانر في أعلى المتجر فوراً</button>
                     </div>
                 </div>
+                <div class="dash-card" id="admin-seller-inventory-grid-card" style="border-top-color: #d97706; text-align:right; grid-column: 1 / -1;">
+                    <div onclick="let el=document.getElementById('admin-seller-inv-body'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                        <h3 style="color:#b45309; margin:0;">📦 جدول إدارة المخزون والأسعار السريع (Amazon Seller Central) + صحة المتجر</h3>
+                        <span style="font-size:1.2rem; color:#b45309; font-weight:bold;">▼ فتح / طي</span>
+                    </div>
+                    <div id="admin-seller-inv-body" style="display:none; margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px; font-size:0.84rem;">
+                        <div id="admin-store-health-bar" style="margin-bottom:12px;"></div>
+                        <div id="admin-quick-inventory-table-wrap" style="overflow-x:auto;"></div>
+                    </div>
+                </div>
                 <div class="dash-card" id="admin-monthly-pdf-and-gov-card" style="border-top-color: #4f46e5; text-align:right;">
                     <div onclick="let el=document.getElementById('admin-gov-map-body'); el.style.display=el.style.display==='none'?'block':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
                         <h3 style="color:#4f46e5; margin:0;">🗺️ خريطة مبيعات الـ 27 محافظة + التقرير المالي الشهري المختوم</h3>
@@ -2118,7 +2260,7 @@
                 <div style="display:flex; gap:10px; align-items:center;">
                     <div style="flex:1; display:flex; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; overflow:hidden; position:relative;">
                         <input type="text" id="admin-chat-input" placeholder="رد على العميل صوتاً أو كتابة..." autocomplete="off" style="border:none; margin:0; border-radius:0; padding-left: 50px;">
-                        <div class="mic-btn-container" onclick="window.startVoiceTyping('admin-chat-input', this.querySelector('.mic-btn'))">
+                        <div class="mic-btn-container" title="اضغط للتحدث وتحويل كلامك لنص" onclick="event.preventDefault(); event.stopPropagation(); window.startVoiceTyping('admin-chat-input', document.getElementById('voice-admin-btn'))">
                             <button type="button" id="voice-admin-btn" class="mic-btn">🎤</button>
                         </div>
                     </div>
@@ -2362,6 +2504,20 @@
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                             <input type="checkbox" id="setting-enable-product-compare" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>⚖️ تفعيل مقارنة المنتجات السريعة وحاسبة التوفير للأحجام</span>
+                        </label>
+                        <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
+                        <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">📦 هيكلة وتصميم أمازون العالمي (Amazon Header, Buy Box, Cart & Seller Central - V71):</h4>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-amazon-subheader" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🛒 تفعيل (الشريط الفرعي الثاني على طراز أمازون: التوصيل إلى محافظتك + عروض اليوم + الأكثر مبيعاً + اشترِ مجدداً)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-amazon-buybox" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📦 تفعيل (صندوق الشراء الموحد Amazon Buy Box + يُشترى معاً غالباً + مخطط التقييمات 5 نجوم بالمنتج)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-seller-inventory-grid" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>📊 تفعيل (جدول إدارة المخزون والأسعار السريع Amazon Seller Central + مؤشر صحة أداء المتجر)</span>
                         </label>
                         <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
                         <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🎯 التحكم في أزرار ونقاط مهام الولاء الثلاثة + إشعارات العملاء وتطويرات الشات (V70):</h4>
@@ -3140,6 +3296,6 @@
             <p class="dev-signature">تم الإنشاء بواسطة المهندس أحمد وائل</p>
         </div>
     </footer>
-    <script type="module" src="script.js?v=70"></script>
+    <script type="module" src="script.js?v=71"></script>
 </body>
 </html>

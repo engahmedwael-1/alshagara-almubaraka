@@ -11286,7 +11286,10 @@ window.showUserHistory = function(userId, userName) {
             ['setting-enable-quest-invite', 'enableQuestInvite', true],
             ['setting-enable-quest-fb', 'enableQuestFb', true],
             ['setting-enable-chat-advanced-v70', 'enableChatAdvancedV70', true],
-            ['setting-enable-sidebar-longpress-sort', 'enableSidebarLongpressSort', true]
+            ['setting-enable-sidebar-longpress-sort', 'enableSidebarLongpressSort', true],
+            ['setting-enable-amazon-subheader', 'enableAmazonSubHeader', true],
+            ['setting-enable-amazon-buybox', 'enableAmazonBuyBox', true],
+            ['setting-enable-seller-inventory-grid', 'enableSellerInventoryGrid', true]
         ];
 
         // دالة حفظ موحدة وذرية (Atomic Save) تحفظ كل الخيارات دفعة واحدة في ثانية واحدة وتمنع رجوع علامة الصح نهائياً!
@@ -15109,3 +15112,497 @@ window.showUserHistory = function(userId, userName) {
                 window.injectHelpQuestionButtonsInSettings();
             }
         };
+
+
+        // =========================================================================
+        // === النسخة V71 طراز أمازون العالمي: الحلول الجذرية الـ 7 + واجهة أمازون الشاملة ===
+        // =========================================================================
+
+        window.syncZeroFlashSettingsCache = function() {
+            try {
+                localStorage.setItem('zait_cached_settings_v71', JSON.stringify(storeSettings || {}));
+                let s = storeSettings || {};
+                let rules = [];
+                let hideIfFalse = [
+                    ['enableSpinWheel', '#spin-wheel-fab, #sidebar-spin-wheel-btn'],
+                    ['enableBoxBuilder', '#sidebar-box-builder-btn, #pill-box-builder'],
+                    ['enableB2BPortal', '#sidebar-b2b-btn'],
+                    ['enableBatchTracker', '#sidebar-batch-tracker-btn, #pill-batch-tracker'],
+                    ['enableVisualSizeGuide', '#sidebar-size-guide-btn, #btn-modal-size-guide'],
+                    ['enableSampleBottle', '#sidebar-sample-bottle-btn'],
+                    ['enableGiftByPhone', '#sidebar-gift-by-phone-btn, #btn-modal-gift-phone'],
+                    ['enablePreorderHarvest', '#sidebar-preorder-harvest-btn'],
+                    ['enableGroupBuy', '#sidebar-group-buy-btn'],
+                    ['enableDriverPortal', '#sidebar-driver-portal-btn'],
+                    ['enableAffiliateSystem', '#sidebar-affiliate-btn'],
+                    ['enableLiveShopping', '#sidebar-live-stream-btn, #home-seasonal-bundles-bar'],
+                    ['enableFarmReels', '#home-farm-reels-section'],
+                    ['enableQuickTagFilters', '#v64-quick-tags-bar'],
+                    ['enableOfferBanner', '#home-limited-offer-banner'],
+                    ['enableTrustMarquee', '#trust-marquee-bar'],
+                    ['enableFloatingCartBar', '#floating-bottom-cart-bar, #header-font-size-btn'],
+                    ['enableGuestTracking', '#sidebar-track-order-btn, #guest-order-track-box'],
+                    ['enableAnnualCalc', '#sidebar-annual-calc-btn'],
+                    ['enableGiftCards', '#sidebar-gift-card-btn, #pill-gift-card'],
+                    ['enableSeoArticles', '#home-seo-benefits-section'],
+                    ['enableAmazonSubHeader', '#amazon-sub-header']
+                ];
+                hideIfFalse.forEach(([key, sel]) => {
+                    if (s[key] === false) rules.push(`${sel} { display: none !important; }`);
+                });
+                if (s.enableTopBar !== true) rules.push('#top-announcement-bar { display: none !important; }');
+                if (s.enableHeroSlider !== true) rules.push('#hero-slider-wrapper { display: none !important; }');
+                else rules.push('#hero-section { display: none !important; }');
+
+                let styleEl = document.getElementById('zait-instant-hide-css');
+                if (!styleEl) {
+                    styleEl = document.createElement('style');
+                    styleEl.id = 'zait-instant-hide-css';
+                    document.head.appendChild(styleEl);
+                }
+                styleEl.textContent = rules.join('\n');
+            } catch (e) {}
+        };
+
+        window.openQuestInviteFriendModal = async function() {
+            if (!currentUser) {
+                window.showToast('يرجى تسجيل الدخول أولاً لدعوة الأصدقاء وكسب النقاط', 'error');
+                window.showPanel('auth');
+                return;
+            }
+            let pts = Number(storeSettings.questInvitePoints) || 20;
+            let inviteToken = Math.random().toString(36).substring(2, 7).toUpperCase();
+            let shareUrl = `${window.location.origin + window.location.pathname}?ref=${currentUser.uid.slice(0, 6)}&inv=${inviteToken}`;
+            let shareTitle = 'متجر زيت الشجرة المباركة 🌿';
+            let shareText = `اكتشف أفضل زيت زيتون سيناوي بكر ممتاز عصرة أولى على البارد 100% من متجر زيت الشجرة المباركة! اطلب الآن عبر هذا الرابط:`;
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: shareTitle,
+                        text: shareText,
+                        url: shareUrl
+                    });
+                    await window.creditVerifiedNativeSharePoints(pts, inviteToken);
+                } catch (err) {
+                    if (err && err.name === 'AbortError') {
+                        window.showToast('تم إلغاء المشاركة — أرسل الدعوة لصديقك للحصول على النقاط 📲', 'info');
+                    }
+                }
+            } else {
+                window.open(`https://wa.me/?text=${encodeURIComponent(shareText + '\n' + shareUrl)}`, '_blank');
+                setTimeout(() => {
+                    window.creditVerifiedNativeSharePoints(pts, inviteToken);
+                }, 4000);
+            }
+        };
+
+        window.creditVerifiedNativeSharePoints = async function(pts, inviteToken) {
+            if (!currentUser) return;
+            try {
+                let uRef = doc(db, 'users', currentUser.uid);
+                let uSnap = await getDoc(uRef);
+                let uData = uSnap.exists() ? uSnap.data() : {};
+                let logs = Array.isArray(uData.nativeShareLogs) ? [...uData.nativeShareLogs] : [];
+                let nowMs = Date.now();
+
+                let recentIn2Mins = logs.find(x => (nowMs - (Number(x.ts) || 0)) < 120000);
+                if (recentIn2Mins) {
+                    window.showToast('✅ تم احتساب نقاط هذه الدعوة بالفعل! يمكنك دعوة صديق آخر بعد قليل.', 'info');
+                    return;
+                }
+                let todayStr = new Date().toISOString().slice(0, 10);
+                let todayShares = logs.filter(x => String(x.date || '').startsWith(todayStr));
+                if (todayShares.length >= 5) {
+                    window.showToast('🎉 وصلت للحد الأقصى من مكافآت الدعوة اليومية (5 أصدقاء)! شكراً لدعمك.', 'info');
+                    return;
+                }
+
+                logs.push({ token: inviteToken, ts: nowMs, date: new Date().toISOString() });
+                await setDoc(uRef, {
+                    nativeShareLogs: logs,
+                    loyaltyPoints: increment(pts),
+                    unreadNotifs: increment(1),
+                    notifications: arrayUnion({
+                        title: 'مكافأة مشاركة ودعوة صديق 📲🎁',
+                        message: `شكراً لمشاركتك المتجر مع أصدقائك! تمت إضافة (+${pts} نقطة) إلى رصيدك.`,
+                        date: new Date().toISOString()
+                    })
+                }, { merge: true });
+
+                window.showToast(`🎉 شكراً لمشاركتك الدعوة! تمت إضافة (+${pts} نقطة) إلى حسابك بنجاح!`, 'success');
+            } catch (e) {}
+        };
+
+        window.syncSidebarAdminReorderVisibility = function() {
+            let btn = document.getElementById('btn-sidebar-reorder-toggle');
+            let hint = document.getElementById('sidebar-reorder-hint-lbl');
+            let sb = document.getElementById('sidebar');
+            let canSort = Boolean(isCurrentUserAdmin && storeSettings.enableSidebarLongpressSort !== false);
+
+            if (btn) btn.style.display = canSort ? 'inline-block' : 'none';
+            if (hint) hint.style.display = canSort ? 'block' : 'none';
+            if (!canSort && sb) {
+                sb.classList.remove('reorder-mode-active');
+                window.isSidebarReorderMode = false;
+            }
+
+            if (sb && sb.children[1]) {
+                let mainList = sb.children[1];
+                let orderToApply = (Array.isArray(storeSettings.customSidebarOrder) && storeSettings.customSidebarOrder.length > 0)
+                    ? storeSettings.customSidebarOrder
+                    : JSON.parse(localStorage.getItem('zait_custom_sidebar_order') || 'null');
+                if (Array.isArray(orderToApply) && orderToApply.length > 0) {
+                    orderToApply.forEach(key => {
+                        let el = Array.from(mainList.children).find(c => c.dataset && c.dataset.sbItemKey === key);
+                        if (el) mainList.appendChild(el);
+                    });
+                }
+            }
+        };
+
+        window.toggleSidebarReorderMode = function() {
+            if (!isCurrentUserAdmin) {
+                window.showToast('هذه الميزة مخصصة لمدير المتجر فقط', 'error');
+                return;
+            }
+            let sb = document.getElementById('sidebar');
+            let btn = document.getElementById('btn-sidebar-reorder-toggle');
+            if (!sb) return;
+            window.initSidebarSortableItems();
+            window.isSidebarReorderMode = !window.isSidebarReorderMode;
+            sb.classList.toggle('reorder-mode-active', window.isSidebarReorderMode);
+            if (btn) btn.textContent = window.isSidebarReorderMode ? '✅ حفظ الترتيب' : '↕️ ترتيب';
+            window.showToast(window.isSidebarReorderMode ? '↕️ استخدم أزرار (⬆️ طلع فوق / ⬇️ نزل تحت) لنقل أي قسم' : '📌 تم حفظ ترتيب القائمة الجانبية لجميع زوار المتجر!', 'success');
+        };
+
+        window.moveSidebarItem = async function(itemEl, dir) {
+            if (!isCurrentUserAdmin || !itemEl || !itemEl.parentNode) return;
+            let parent = itemEl.parentNode;
+            if (dir === -1 && itemEl.previousElementSibling) {
+                parent.insertBefore(itemEl, itemEl.previousElementSibling);
+            } else if (dir === 1 && itemEl.nextElementSibling) {
+                parent.insertBefore(itemEl.nextElementSibling, itemEl);
+            }
+            let orderKeys = Array.from(parent.children).map(c => c.dataset.sbItemKey).filter(Boolean);
+            localStorage.setItem('zait_custom_sidebar_order', JSON.stringify(orderKeys));
+            try {
+                await setDoc(doc(db, 'settings', 'main'), { customSidebarOrder: orderKeys }, { merge: true });
+            } catch (e) {}
+        };
+
+        window.activeSpeechRecInstance = null;
+        window.activeSpeechBtnEl = null;
+
+        window.startVoiceTyping = async function(inputId, btnElement) {
+            const inputEl = document.getElementById(inputId);
+            if (!btnElement && inputEl && inputEl.parentElement) {
+                btnElement = inputEl.parentElement.querySelector('.mic-btn');
+            }
+
+            if (window.activeSpeechRecInstance) {
+                try { window.activeSpeechRecInstance.stop(); } catch (e) {}
+                window.activeSpeechRecInstance = null;
+                if (window.activeSpeechBtnEl) window.activeSpeechBtnEl.classList.remove('recording');
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                window.showToast('🎤 جاري تفعيل الميكروفون الصوتي...', 'info');
+                let voiceBtn = document.getElementById(inputId === 'admin-chat-input' ? 'btn-admin-voice-note' : 'btn-cust-voice-note');
+                if (voiceBtn && window.toggleChatVoiceNoteRecording) {
+                    window.toggleChatVoiceNoteRecording(inputId === 'admin-chat-input' ? 'admin' : 'customer', voiceBtn);
+                }
+                return;
+            }
+
+            try {
+                const recognition = new SpeechRecognition();
+                window.activeSpeechRecInstance = recognition;
+                window.activeSpeechBtnEl = btnElement;
+
+                recognition.lang = window.currentLang === 'en' ? 'en-US' : 'ar-EG';
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                recognition.maxAlternatives = 3;
+
+                const baseText = inputEl ? inputEl.value.trim() : '';
+
+                recognition.onstart = function() {
+                    if (btnElement) btnElement.classList.add('recording');
+                    window.showToast('🎤 تحدث الآن بوضوح.. جاري كتابة كلامك تلقائياً', 'info');
+                };
+
+                recognition.onresult = function(event) {
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            finalTranscript += event.results[i][0].transcript;
+                        } else {
+                            interimTranscript += event.results[i][0].transcript;
+                        }
+                    }
+                    let combinedSpeech = (finalTranscript || interimTranscript).trim();
+                    if (window.smartCorrectSpeechTranscript && finalTranscript) {
+                        combinedSpeech = window.smartCorrectSpeechTranscript(combinedSpeech, []);
+                    }
+                    if (inputEl && combinedSpeech) {
+                        inputEl.value = baseText ? (baseText + ' ' + combinedSpeech) : combinedSpeech;
+                        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                };
+
+                recognition.onerror = function(ev) {
+                    if (btnElement) btnElement.classList.remove('recording');
+                    window.activeSpeechRecInstance = null;
+                    if (ev && ev.error === 'not-allowed') {
+                        window.showToast('⚠️ يرجى السماح بصلاحية الميكروفون من علامة القفل 🔒 أعلى المتصفح', 'error');
+                    } else if (ev && ev.error !== 'aborted') {
+                        window.showToast('🎤 لم نتمكن من سماع الصوت، اضغط على 🎤 وتحدث مرة أخرى', 'info');
+                    }
+                };
+
+                recognition.onend = function() {
+                    if (btnElement) btnElement.classList.remove('recording');
+                    window.activeSpeechRecInstance = null;
+                    if (inputEl) inputEl.focus();
+                };
+
+                recognition.start();
+            } catch (err) {
+                window.activeSpeechRecInstance = null;
+                if (btnElement) btnElement.classList.remove('recording');
+                window.showToast('تعذر بدء الإملاء الصوتي في هذا المتصفح', 'error');
+            }
+        };
+
+        ['support-message', 'admin-chat-input'].forEach(id => {
+            let el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('focus', () => {
+                document.body.classList.add('chat-keyboard-active');
+                setTimeout(() => {
+                    let msgBox = document.getElementById(id === 'support-message' ? 'support-history-container' : 'admin-chat-messages');
+                    if (msgBox) {
+                        msgBox.scrollTop = msgBox.scrollHeight;
+                        msgBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }, 200);
+            });
+            el.addEventListener('blur', () => {
+                setTimeout(() => { document.body.classList.remove('chat-keyboard-active'); }, 150);
+            });
+        });
+
+        window.requestUrgentPhoneCallbackInChat = async function() {
+            if (!currentUser) { window.showPanel('auth'); return; }
+            let ph = prompt('📞 اكتب رقم هاتفك ليتصل بك ممثل خدمة العملاء هاتفياً الآن:', currentUser.phoneNumber || localStorage.getItem('zait_wheel_saved_phone') || '');
+            if (!ph) return;
+            let chatId = currentUser.email || currentUser.phoneNumber || currentUser.uid;
+            let nowIso = new Date().toISOString();
+            await setDoc(doc(db, 'chats', chatId), {
+                customerName: currentUser.displayName || chatId.split('@')[0],
+                lastUpdate: nowIso,
+                unreadByAdmin: true,
+                messages: arrayUnion({
+                    sender: 'customer',
+                    text: `📞 [طلب مكالمة هاتفية عاجلة] يرجى الاتصال بي هاتفياً على الرقم: ${ph.trim()}`,
+                    timestamp: nowIso
+                })
+            }, { merge: true });
+            window.showToast('📞 تم إرسال طلب الاتصال الفوري لممثل خدمة العملاء!', 'success');
+        };
+
+        const origUpdateCartUIV70 = window.updateCartUI;
+        window.updateCartUI = function() {
+            origUpdateCartUIV70();
+            let totalCount = (cart || []).filter(i => i.selected !== false).reduce((s, i) => s + (Number(i.quantity) || 1), 0);
+            let stickyCnt = document.getElementById('amz-sticky-cart-count');
+            if (stickyCnt) stickyCnt.textContent = totalCount;
+
+            let topBar = document.getElementById('amz-cart-top-sticky-bar');
+            let botBar = document.getElementById('amz-cart-bottom-fixed-bar');
+            let hasItems = cart && cart.length > 0;
+            if (topBar) topBar.style.display = hasItems ? 'flex' : 'none';
+            if (botBar) botBar.style.display = hasItems ? 'flex' : 'none';
+        };
+
+        window.promptAmazonDeliverToGov = function() {
+            let govs = Object.keys(deliveryData || {});
+            let savedGov = localStorage.getItem('zait_amz_selected_gov') || 'القاهرة';
+            let chosen = prompt('📍 اختر محافظتك لحساب أسرع موعد توصيل وتكلفة الشحن تلقائياً:\n(' + govs.slice(0, 12).join(' - ') + '...)', savedGov);
+            if (!chosen) return;
+            let matched = govs.find(g => g.includes(chosen.trim()) || chosen.trim().includes(g));
+            if (matched) {
+                localStorage.setItem('zait_amz_selected_gov', matched);
+                let shipCost = window.getShippingCostForGov ? window.getShippingCostForGov(matched) : 90;
+                let lbl = document.getElementById('amz-deliver-to-label');
+                if (lbl) lbl.textContent = `التوصيل إلى: ${matched} (شحن ${shipCost} ج)`;
+                let chkGov = document.getElementById('order-gov');
+                if (chkGov) {
+                    chkGov.value = matched;
+                    chkGov.dispatchEvent(new Event('change'));
+                }
+                window.showToast(`📍 تم ضبط التوصيل إلى (${matched}) بنجاح!`, 'success');
+            } else {
+                window.showToast('يرجى كتابة اسم محافظة صحيح (مثل: القاهرة، الجيزة، الشرقية، الإسكندرية)', 'info');
+            }
+        };
+
+        (function initSavedAmazonGovLabel() {
+            let savedGov = localStorage.getItem('zait_amz_selected_gov');
+            if (savedGov && deliveryData[savedGov]) {
+                let lbl = document.getElementById('amz-deliver-to-label');
+                let shipCost = window.getShippingCostForGov ? window.getShippingCostForGov(savedGov) : 90;
+                if (lbl) lbl.textContent = `التوصيل إلى: ${savedGov} (شحن ${shipCost} ج)`;
+            }
+        })();
+
+        window.renderAmazonFrequentlyBoughtTogether = function(mainProd) {
+            let fbtBox = document.getElementById('modal-amz-fbt-box');
+            let buyBox = document.getElementById('modal-amz-buy-box');
+            let histBox = document.getElementById('modal-amz-histogram-box');
+
+            let enabled = storeSettings.enableAmazonBuyBox !== false;
+            if (buyBox) buyBox.style.display = enabled ? 'block' : 'none';
+            if (histBox) histBox.style.display = enabled ? 'block' : 'none';
+            if (!fbtBox) return;
+
+            if (!enabled || !mainProd || !products || products.length < 2) {
+                fbtBox.style.display = 'none';
+                return;
+            }
+            let companion = products.find(p => p.id !== mainProd.id && !p.isHidden) || products[0];
+            if (!companion || companion.id === mainProd.id) {
+                fbtBox.style.display = 'none';
+                return;
+            }
+            let img1 = (mainProd.images && mainProd.images[0]) || '1000392409.jpeg';
+            let img2 = (companion.images && companion.images[0]) || '1000392409.jpeg';
+            let totalBoth = Number(mainProd.price || 0) + Number(companion.price || 0);
+            let discountedBoth = Math.round(totalBoth * 0.94);
+
+            fbtBox.style.display = 'block';
+            fbtBox.innerHTML = `
+                <strong style="color:var(--primary); font-size:0.88rem; display:block; margin-bottom:8px;">🛍️ يُشترى معاً غالباً في أمازون الشجرة المباركة (خصم إضافي 6%):</strong>
+                <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;">
+                    <img src="${img1}" style="width:58px; height:58px; border-radius:10px; object-fit:cover; border:1.5px solid var(--secondary);">
+                    <span style="font-size:1.3rem; font-weight:900; color:var(--secondary);">+</span>
+                    <img src="${img2}" style="width:58px; height:58px; border-radius:10px; object-fit:cover; border:1.5px solid var(--secondary);">
+                </div>
+                <div style="font-size:0.82rem; margin-bottom:8px;">
+                    <span>${window.escapeHTML(mainProd.name)}</span> + <span>${window.escapeHTML(companion.name)}</span><br>
+                    <del style="color:var(--text-muted);">${totalBoth} ج</del> <strong style="color:#166534; font-size:1rem;">${discountedBoth} ج فقط!</strong>
+                </div>
+                <button type="button" class="amz-checkout-gold-btn" style="padding:6px 16px !important; font-size:0.82rem !important;" onclick="window.addFrequentlyBoughtPairToCart('${mainProd.id}', '${companion.id}')">🛒 أضف المنتجين معاً إلى السلة</button>
+            `;
+        };
+
+        window.addFrequentlyBoughtPairToCart = function(id1, id2) {
+            let p1 = products.find(x => x.id === id1);
+            let p2 = products.find(x => x.id === id2);
+            if (p1) window.addToCart(p1.id, p1.name, Math.round(Number(p1.price) * 0.97), (p1.images && p1.images[0]) || '1000392409.jpeg');
+            if (p2) window.addToCart(p2.id, p2.name, Math.round(Number(p2.price) * 0.97), (p2.images && p2.images[0]) || '1000392409.jpeg');
+            window.closeProductModal();
+            window.showPanel('cart');
+        };
+
+        const origOpenProductModalV70 = window.openProductModal;
+        window.openProductModal = function(id) {
+            origOpenProductModalV70(id);
+            let prod = products.find(p => p.id === id);
+            window.renderAmazonFrequentlyBoughtTogether(prod);
+        };
+
+        window.renderSellerCentralInventoryGrid = function() {
+            let card = document.getElementById('admin-seller-inventory-grid-card');
+            let healthEl = document.getElementById('admin-store-health-bar');
+            let wrapEl = document.getElementById('admin-quick-inventory-table-wrap');
+            if (card) card.style.display = storeSettings.enableSellerInventoryGrid !== false ? 'block' : 'none';
+            if (!wrapEl || storeSettings.enableSellerInventoryGrid === false) return;
+
+            if (healthEl) {
+                let totalOrds = (adminOrdersArray || []).length;
+                let deliveredOrds = (adminOrdersArray || []).filter(o => String(o.status || '').includes('توصيل')).length;
+                let returnRate = totalOrds > 0 ? Math.round(((adminReturnsArray || []).length / totalOrds) * 100) : 0;
+                healthEl.innerHTML = `
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; background:var(--input-bg); padding:10px; border-radius:12px; border:1px solid var(--border-color);">
+                        <div>🟢 <strong>صحة الحساب:</strong> <span style="color:#166534; font-weight:900;">ممتاز (100%)</span></div>
+                        <div>📦 <strong>الطلبات المسلمة:</strong> <strong>${deliveredOrds} / ${totalOrds}</strong></div>
+                        <div>🔄 <strong>معدل المرتجعات:</strong> <strong style="color:${returnRate < 5 ? '#166534' : '#dc2626'};">${returnRate}%</strong></div>
+                    </div>
+                `;
+            }
+
+            if (!products || products.length === 0) {
+                wrapEl.innerHTML = '<p style="color:var(--text-muted);">لا توجد منتجات حالياً.</p>';
+                return;
+            }
+
+            let rows = products.map(p => `
+                <tr style="border-bottom:1px solid var(--border-color);">
+                    <td style="padding:6px;"><strong>${window.escapeHTML(p.name)}</strong></td>
+                    <td style="padding:6px;"><input type="number" id="sc-price-${p.id}" value="${p.price}" style="margin:0; width:80px; padding:4px; text-align:center;"></td>
+                    <td style="padding:6px;"><input type="number" id="sc-old-${p.id}" value="${p.oldPrice || ''}" placeholder="-" style="margin:0; width:80px; padding:4px; text-align:center;"></td>
+                    <td style="padding:6px;"><input type="number" id="sc-stock-${p.id}" value="${p.stock !== undefined ? p.stock : ''}" placeholder="متاح" style="margin:0; width:75px; padding:4px; text-align:center;"></td>
+                    <td style="padding:6px;"><button type="button" class="btn" style="padding:4px 10px; font-size:0.76rem; background:#16a34a;" onclick="window.saveSellerCentralRow('${p.id}')">💾 حفظ</button></td>
+                </tr>
+            `).join('');
+
+            wrapEl.innerHTML = `
+                <table style="width:100%; border-collapse:collapse; font-size:0.82rem; text-align:right;">
+                    <thead>
+                        <tr style="background:var(--input-bg); color:var(--primary);">
+                            <th style="padding:8px;">المنتج</th>
+                            <th style="padding:8px;">السعر (ج)</th>
+                            <th style="padding:8px;">قبل الخصم</th>
+                            <th style="padding:8px;">المخزون</th>
+                            <th style="padding:8px;">تحديث فوري</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+        };
+
+        window.saveSellerCentralRow = async function(pid) {
+            let pr = Number((document.getElementById('sc-price-' + pid) || {}).value) || 0;
+            let oldP = (document.getElementById('sc-old-' + pid) || {}).value;
+            let stVal = (document.getElementById('sc-stock-' + pid) || {}).value;
+            let stock = stVal === '' ? '' : Number(stVal);
+            if (!pr) return;
+            try {
+                await updateDoc(doc(db, 'products', pid), { price: pr, oldPrice: oldP, stock: stock });
+                window.showToast('✅ تم تحديث السعر والمخزون فوراً!', 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء الحفظ', 'error');
+            }
+        };
+
+        const origUpdateAdminUIV70 = window.updateAdminUI;
+        window.updateAdminUI = function() {
+            origUpdateAdminUIV70();
+            window.syncSidebarAdminReorderVisibility();
+        };
+
+        const origApplyV70MasterUI = window.applyV66MasterUI;
+        window.applyV66MasterUI = function() {
+            origApplyV70MasterUI();
+            window.syncZeroFlashSettingsCache();
+            window.syncSidebarAdminReorderVisibility();
+
+            let subHdr = document.getElementById('amazon-sub-header');
+            if (subHdr) subHdr.style.display = storeSettings.enableAmazonSubHeader !== false ? 'flex' : 'none';
+
+            if (isCurrentUserAdmin) {
+                window.renderSellerCentralInventoryGrid();
+                window.injectHelpQuestionButtonsInSettings();
+            }
+        };
+
+        setTimeout(() => {
+            window.syncZeroFlashSettingsCache();
+            window.syncSidebarAdminReorderVisibility();
+        }, 500);
