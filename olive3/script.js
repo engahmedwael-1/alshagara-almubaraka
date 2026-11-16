@@ -13968,9 +13968,10 @@ window.showUserHistory = function(userId, userName) {
             let html = origFormatRichChatV67(m, viewMode);
             if (m.videoDataUrl) {
                 let vidTag = `<div style="margin-top:6px;"><video controls playsinline src="${m.videoDataUrl}" style="max-width:220px; max-height:200px; border-radius:10px; background:#000;"></video></div>`;
-                html = html.replace('</div>
-            </div>', vidTag + '</div>
-            </div>');
+                let lastCloseIdx = html.lastIndexOf('</div>');
+                if (lastCloseIdx !== -1) {
+                    html = html.slice(0, lastCloseIdx) + vidTag + html.slice(lastCloseIdx);
+                }
             }
             return html;
         };
