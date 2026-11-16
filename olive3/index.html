@@ -38,7 +38,7 @@
     <link rel="apple-touch-icon" href="1000392409.jpeg">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="style.css?v=66">
+    <link rel="stylesheet" href="style.css?v=67">
     <script type="application/ld+json" id="dynamic-json-ld-schema">
     {
       "@context": "https://schema.org",
@@ -56,6 +56,12 @@
         });
       }
     </script>
+    <link rel="canonical" href="https://alshagara-almubaraka.vercel.app/">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta property="og:url" content="https://alshagara-almubaraka.vercel.app/">
+    <meta property="og:site_name" content="متجر زيت الشجرة المباركة">
+    <meta property="og:image" content="https://alshagara-almubaraka.vercel.app/1000392409.jpeg">
 </head>
 <body class="compact-ui">
     <div id="social-proof-toast" class="social-proof-toast">
@@ -76,6 +82,28 @@
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.showPanel('home'); window.closeSidebar();">🏠 <span class="translatable">الرئيسية</span></button>
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.showPanel('support'); window.closeSidebar();">💬 <span class="translatable">خدمة العملاء</span></button>
             <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align: right;" onclick="window.loadAllReviews(); window.closeSidebar();">⭐️ <span class="translatable">آراء العملاء</span></button>
+            <!-- 1. قائمة حسابي في الأعلى مباشرة تحت آراء العملاء -->
+            <div id="sidebar-account-section" style="display:block; background:var(--input-bg); padding:10px; border-radius:10px; border:1px solid var(--border-color); margin-top:4px;">
+                <div onclick="let el=document.getElementById('sidebar-account-links-body'); el.style.display=el.style.display==='none'?'flex':'none';" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                    <h4 style="margin: 0; color: var(--primary); font-size:0.95rem;">👤 <span class="translatable">قائمة حسابي</span> <span id="sidebar-cust-seq-badge" class="cust-seq-id-badge" style="display:none; margin-right:6px;"></span></h4>
+                    <span style="color:var(--primary); font-weight:bold;">▼</span>
+                </div>
+                <div id="sidebar-account-links-body" style="display:flex; flex-direction:column; gap:7px; margin-top:10px;">
+                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--primary); color: var(--primary); text-align:right; padding:6px 10px; font-size:0.85rem;" onclick="window.showProfilePanel(); window.closeSidebar();">🪪 <span class="translatable">بيانات حسابي ورقم العضوية</span></button>
+                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align:right; padding:6px 10px; font-size:0.85rem;" onclick="window.showPanel('customer-orders'); window.closeSidebar();">📦 <span class="translatable">طلباتي وتتبع الشحن</span></button>
+                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align:right; padding:6px 10px; font-size:0.85rem;" onclick="window.showPanel('cart'); window.closeSidebar();">🛒 <span class="translatable">سلة المشتريات</span></button>
+                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align:right; padding:6px 10px; font-size:0.85rem;" onclick="window.showPanel('wishlist'); window.closeSidebar();">❤️ <span class="translatable">المفضلة</span></button>
+                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align:right; padding:6px 10px; font-size:0.85rem;" onclick="window.showPanel('loyalty'); window.closeSidebar();">🎁 <span class="translatable">نقاط الولاء والمكافآت</span></button>
+                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align:right; padding:6px 10px; font-size:0.85rem;" onclick="window.showPanel('global-notifications-panel'); window.closeSidebar();">🔔 <span class="translatable">الإشعارات</span></button>
+                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align:right; padding:6px 10px; font-size:0.85rem;" onclick="window.showPanel('recently-viewed-panel'); window.closeSidebar();">👀 <span class="translatable">سجل المشاهدات</span></button>
+                </div>
+            </div>
+
+            <!-- 2. قائمة تصفح الأقسام تحت قائمة حسابي مباشرة -->
+            <div style="background:var(--input-bg); padding:10px; border-radius:10px; border:1px solid var(--border-color);">
+                <h4 style="margin: 0 0 8px 0; color: var(--primary); font-size:0.95rem;">📂 <span class="translatable">تصفح الأقسام:</span></h4>
+                <div id="sidebar-categories-list" style="display:flex; flex-direction:column; gap:7px;"></div>
+            </div>
             <div style="background:var(--input-bg); padding:10px; border-radius:10px; border:1px solid var(--border-color); display:flex; flex-direction:column; gap:8px;">
                 <strong style="color:var(--primary); font-size:0.85rem; display:block; margin-bottom:2px;">🛠️ <span class="translatable">أدوات التوفير والخدمات الذكية:</span></strong>
                 <button type="button" id="sidebar-install-pwa-btn" class="btn" style="width: 100%; background: linear-gradient(90deg, #3c521e, #028090); color: white; text-align: center; font-weight:bold; padding:8px 10px; font-size:0.86rem;" onclick="window.triggerInstallStoreApp()">📲 <span class="translatable">تثبيت تطبيق المتجر على هاتفك</span></button>
@@ -95,20 +123,7 @@
             <button type="button" id="sidebar-spin-wheel-btn" class="btn btn-outline" style="width: 100%; border-color: #ff6b00; color: #ff6b00; text-align: right; font-weight:bold;" onclick="window.openSpinWheelModal(); window.closeSidebar();">🎡 <span class="translatable">عجلة الحظ الأسبوعية</span></button>
             <button type="button" id="sidebar-annual-calc-btn" class="btn btn-outline" style="width: 100%; border-color: var(--secondary); color: var(--primary); text-align: right; font-weight:bold;" onclick="window.openAnnualCalcModal(); window.closeSidebar();">🧮 <span class="translatable">حاسبة الخزين السنوي ورمضان</span></button>
             <button type="button" id="sidebar-track-order-btn" class="btn btn-outline" style="width: 100%; border-color: #028090; color: #028090; text-align: right; font-weight:bold;" onclick="window.showPanel('customer-orders'); window.closeSidebar();">🚚 <span class="translatable">تتبع طلبي برقم الهاتف</span></button>
-            <div id="sidebar-account-section" style="display:none; margin-top:10px;">
-                <h4 style="margin: 0 0 10px 0; color: var(--primary);" class="translatable">👤 حسابي:</h4>
-                <div style="display:flex; flex-direction:column; gap:8px;">
-                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color);" onclick="window.showPanel('loyalty'); window.closeSidebar();">🎁 <span class="translatable">نقاط الولاء</span></button>
-                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color);" onclick="window.showPanel('cart'); window.closeSidebar();">🛒 <span class="translatable">سلة المشتريات</span></button>
-                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color);" onclick="window.showPanel('customer-orders'); window.closeSidebar();">📦 <span class="translatable">طلباتي</span></button>
-                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color);" onclick="window.showPanel('wishlist'); window.closeSidebar();">❤️ <span class="translatable">المفضلة</span></button>
-                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color);" onclick="window.showPanel('global-notifications-panel'); window.closeSidebar();">🔔 <span class="translatable">الإشعارات</span></button>
-                    <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color);" onclick="window.showPanel('recently-viewed-panel'); window.closeSidebar();">👀 <span class="translatable">سجل المشاهدات</span></button>
-                </div>
-            </div>
-            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 10px 0;">
-            <h4 style="margin: 0 0 10px 0; color: var(--primary);" class="translatable">تصفح الأقسام:</h4>
-            <div id="sidebar-categories-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+
             <div id="sidebar-switch-accounts-section" style="display:none;">
                 <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 10px 0;">
                 <h4 style="margin: 0 0 10px 0; color: var(--primary);" class="translatable">🔄 تبديل الحسابات:</h4>
@@ -212,15 +227,49 @@
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(0,123,255,0.2); border-color: #007bff;" onclick="window.showPanel('admin-messages')">الرسائل 📩</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: #e0a800; border-color: #d39e00;" onclick="window.showPanel('admin-returns')">الاسترجاع 🔄</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(111,66,193,0.2); border-color: #6f42c1; color: #6f42c1;" onclick="window.showPanel('admin-users')"><span class="translatable">العملاء 👥</span></button>
+        <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(245,158,11,0.2); border-color: #f59e0b; color: #b45309; font-weight:bold;" onclick="window.showPanel('admin-staff-ratings')">تقييمات الموظفين ⭐</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(40,167,69,0.2); border-color: #28a745; color: #28a745; font-weight:bold;" onclick="window.showPanel('admin-add-product')">إضافة منتج ➕</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(2,128,144,0.2); border-color: #028090;" onclick="window.showPanel('admin')">الإعدادات ⚙️</button>
     </nav>
+    <!-- سهم إخفاء / إظهار شريط الإدارة العلوي -->
+    <div id="smart-nav-collapse-arrow">
+        <button type="button" id="btn-toggle-smart-nav-arrow" class="smart-nav-arrow-btn" onclick="window.toggleAdminNavManualCollapse()">
+            <span id="smart-nav-arrow-icon">▲</span> <span id="smart-nav-arrow-label">إخفاء شريط الإدارة</span>
+        </button>
+    </div>
+
+    <!-- الزر العائم السريع للمدير مع القائمة المنبثقة الذكية -->
+    <div id="admin-floating-launcher-wrap" class="admin-floating-launcher-wrap">
+        <button type="button" class="admin-floating-main-btn" title="قائمة الإدارة السريعة" onclick="window.toggleAdminFloatingQuickMenu()">🛡️</button>
+        <div id="admin-floating-popout-menu" class="admin-floating-popout-menu">
+            <div style="font-size:0.75rem; color:var(--secondary); font-weight:900; text-align:center; border-bottom:1px dashed var(--border-color); padding-bottom:4px;">⚡ الانتقال السريع للإدارة</div>
+            <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin-work')"><span>💼 غرفة العمل</span> <span class="work-hub-live-badge" style="background:#dc3545; color:#fff; padding:1px 6px; border-radius:10px; font-size:0.72rem;">0</span></button>
+            <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin-dashboard')"><span>📊 الإحصائيات</span></button>
+            <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin-orders')"><span>📦 الطلبات</span></button>
+            <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin-messages')"><span>📩 الرسائل والشات</span></button>
+            <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin-returns')"><span>🔄 الاسترجاع</span></button>
+            <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin-users')"><span>👥 العملاء</span></button>
+            <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin-staff-ratings')"><span>⭐ تقييمات الموظفين</span></button>
+            <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin-add-product')"><span>➕ إضافة منتج</span></button>
+            <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin')"><span>⚙️ الإعدادات المحمية</span></button>
+        </div>
+    </div>
 
     <div class="floating-menu" id="floating-menu-container"></div>
     <div id="toast-container"></div>
     <div class="panel" id="admin-users-panel">
         <h2 style="color: #6f42c1; margin-top: 0;" class="translatable">👥 قائمة العملاء المسجلين</h2>
         <div id="admin-users-container"></div>
+    </div>
+
+    <div class="panel" id="admin-staff-ratings-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid var(--border-color); padding-bottom:12px; margin-bottom:15px;">
+            <div>
+                <h2 style="color:#b45309; margin:0;">⭐ تقييمات العملاء لموظفي خدمة العملاء</h2>
+                <p style="color:var(--text-muted); font-size:0.86rem; margin:4px 0 0 0;">اضغط على أي تقييم لعرض سجل المحادثة الخاص بهذا الموظف فقط مع العميل</p>
+            </div>
+        </div>
+        <div id="admin-staff-ratings-container">جاري تحميل تقييمات الموظفين...</div>
     </div>
 
     <!-- زر ونافذة عجلة الحظ التفاعلية -->
@@ -263,6 +312,7 @@
             </div>
             <button type="button" class="modal-close" style="color:white; background:rgba(255,255,255,0.2);" onclick="window.closeInstaStoryModal()">X</button>
             <img id="insta-story-img" src="1000392409.jpeg" style="width:100%; height:290px; object-fit:cover; border-radius:12px; margin-bottom:12px;">
+            <video id="insta-story-video" controls playsinline style="display:none; width:100%; height:290px; object-fit:cover; border-radius:12px; margin-bottom:12px; background:#000;"></video>
             <h3 id="insta-story-title" style="color:var(--secondary); margin:0 0 6px 0;"></h3>
             <p id="insta-story-desc" style="font-size:0.88rem; color:#ddd; margin:0 0 12px 0;"></p>
             <div id="insta-story-action"></div>
@@ -545,10 +595,20 @@
         </div>
     </div>
 
+    <!-- نافذة عرض محادثة الموظف المحددة مع العميل (Staff Specific Session Transcript) -->
+    <div id="staff-session-transcript-modal" class="modal-overlay" style="z-index: 6150;">
+        <div class="modal-content" style="max-width: 520px; text-align: right; border: 2px solid #f59e0b; padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('staff-session-transcript-modal').style.display='none'">X</button>
+            <h3 id="sst-modal-title" style="color:var(--primary); margin:0 0 8px 0; text-align:center;">💬 سجل محادثة الموظف مع العميل</h3>
+            <div id="sst-modal-meta" style="background:var(--input-bg); padding:8px 12px; border-radius:8px; font-size:0.82rem; margin-bottom:10px; border:1px solid var(--border-color);"></div>
+            <div id="sst-modal-messages" style="max-height: 340px; overflow-y: auto; padding: 10px; background: var(--input-bg); border-radius: 10px; border: 1px solid var(--border-color); display:flex; flex-direction:column; gap:6px;"></div>
+        </div>
+    </div>
+
     <div id="support-rating-modal" class="modal-overlay" style="z-index: 5940;">
         <div class="modal-content" style="max-width: 400px; text-align: center; border: 2px solid var(--secondary); padding-bottom: 20px;">
             <button type="button" class="modal-close" onclick="document.getElementById('support-rating-modal').style.display='none'">X</button>
-            <h3 style="color:var(--primary); margin:0 0 8px 0;">⭐ <span class="translatable">ما رأيك في خدمة العملاء اليوم؟</span></h3>
+            <h3 style="color:var(--primary); margin:0 0 4px 0;">⭐ <span class="translatable">تقييم مستوى خدمة العملاء</span></h3><p id="support-rating-staff-label" style="font-size:0.85rem; color:#028090; font-weight:bold; margin:0 0 10px 0;">كيف كانت تجربتك اليوم مع ممثل خدمة العملاء؟</p>
             <select id="support-rating-stars" style="margin-bottom:10px;">
                 <option value="5">⭐⭐⭐⭐⭐ ممتازة وسريعة جداً</option>
                 <option value="4">⭐⭐⭐⭐ جيدة جداً</option>
@@ -1219,7 +1279,11 @@
                     <button type="button" class="smart-chat-chip" onclick="window.triggerSmartBotChip('offers')">🎁 <span class="translatable">ما هي العروض والهدايا الحالية؟</span></button>
                 </div>
                 <div id="customer-chat-status-indicator" style="font-size:0.78rem; color:#028090; font-weight:bold; margin-bottom:6px; min-height:18px;"></div>
-                <div id="customer-chat-media-toolbar" class="chat-media-toolbar">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:6px; flex-wrap:wrap;">
+                    <button type="button" class="chat-media-btn" style="background:var(--primary); color:#fff;" onclick="document.getElementById('customer-chat-media-toolbar').classList.toggle('open')">📎 إرفاق صورة / صوت / طلب / موقع ▼</button>
+                    <span id="customer-chat-seq-id-display" class="cust-seq-id-badge" style="display:none;"></span>
+                </div>
+                <div id="customer-chat-media-toolbar" class="chat-compact-tools-drawer">
                     <button type="button" class="chat-media-btn" onclick="window.openChatPhotoChooser('customer')">📸 <span class="translatable">إرسال صورة / إيصال</span></button>
                     <button type="button" class="chat-media-btn" onclick="window.sendCustomerGpsInChat()">📍 <span class="translatable">إرسال موقعي GPS</span></button>
                     <button type="button" id="btn-cust-voice-note" class="chat-media-btn" onclick="window.toggleChatVoiceNoteRecording('customer', this)">🎙️ <span class="translatable">تسجيل رسالة صوتية</span></button>
@@ -1634,13 +1698,17 @@
                         <strong style="color:var(--primary); font-size:0.95rem;">👤 بيانات العميل والتحكم الكامل في حسابه (الاسم، البريد، الرقم السري، الرصيد، والطلبات)</strong>
                         <span style="color:#028090; font-weight:bold;">▼ فتح / طي</span>
                     </div>
-                    <div id="admin-chat-cust-control-body" style="display:block; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color); font-size:0.85rem;">
+                    <div id="admin-chat-cust-control-body" style="display:none; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color); font-size:0.85rem;">
                         جاري تحميل ملف العميل الكامل...
                     </div>
                 </div>
                 <input type="search" id="admin-chat-search-inp" placeholder="🔍 ابحث داخل رسائل هذه المحادثة..." style="margin-bottom:8px; padding:7px 12px; font-size:0.82rem;" oninput="window.filterChatMessages(this.value, 'admin-chat-messages')">
                 <div id="admin-chat-messages" style="height: 350px; overflow-y: auto; margin-bottom: 15px; padding: 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column;"></div>
-                <div id="admin-chat-media-toolbar" class="chat-media-toolbar">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:6px; flex-wrap:wrap;">
+                    <button type="button" class="chat-media-btn" style="background:#028090; color:#fff;" onclick="document.getElementById('admin-chat-media-toolbar').classList.toggle('open')">🛠️ أدوات الموظف والمرفقات والردود ▼</button>
+                    <span id="admin-active-chat-seq-badge" class="cust-seq-id-badge"></span>
+                </div>
+                <div id="admin-chat-media-toolbar" class="chat-compact-tools-drawer">
                     <button type="button" class="chat-media-btn" onclick="window.openChatPhotoChooser('admin')">📸 إرسال صورة (كاميرا / معرض)</button>
                     <button type="button" id="btn-admin-voice-note" class="chat-media-btn" onclick="window.toggleChatVoiceNoteRecording('admin', this)">🎙️ تسجيل رسالة صوتية</button>
                     <button type="button" class="chat-media-btn" style="border-color:var(--secondary); color:var(--primary);" onclick="window.openSendProductInChatModal()">🛍️ إرسال بطاقة منتج للشراء بالشات</button>
@@ -1891,6 +1959,42 @@
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                             <input type="checkbox" id="setting-enable-product-compare" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>⚖️ تفعيل مقارنة المنتجات السريعة وحاسبة التوفير للأحجام</span>
+                        </label>
+                        <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
+                        <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🌟 الزر العائم للمدير + رقم العميل الثابت + الشات الذكي وتقييم الموظفين والقصص (V67):</h4>
+                        <div style="background:var(--panel-bg); padding:12px; border-radius:10px; border:2px solid #028090; margin-bottom:8px;">
+                            <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem; margin-bottom:8px;">
+                                <input type="checkbox" id="setting-enable-admin-float-btn" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                                <span>🛡️ تفعيل (الزر العائم السريع للمدير 🛡️ + سهم طي وإظهار شريط الإدارة العلوي)</span>
+                            </label>
+                            <div class="form-row" style="align-items:center; margin-bottom:0;">
+                                <span style="font-size:0.82rem; font-weight:bold;">⏱️ عدد الثواني قبل اختفاء قائمة الزر العائم تلقائياً:</span>
+                                <input type="number" id="setting-admin-float-seconds" value="5" min="2" max="60" style="margin:0; max-width:90px; font-weight:bold;">
+                                <button type="button" class="btn" style="padding:5px 12px; font-size:0.8rem; background:#028090;" onclick="window.saveSettings()">حفظ</button>
+                            </div>
+                        </div>
+
+                        <div style="background:var(--panel-bg); padding:12px; border-radius:10px; border:1px dashed var(--secondary); margin-bottom:8px;">
+                            <label style="font-weight:bold; color:var(--primary); display:block; margin-bottom:6px; font-size:0.88rem;">🎬 محرر القصص التفاعلية والفيديوهات (Insta Stories & Videos - كل قصة في سطر: العنوان | الوصف | رابط فيديو mp4 أو صورة):</label>
+                            <textarea id="setting-custom-insta-stories" rows="3" placeholder="قطف الزيتون السيناوي | عصرة أولى على البارد 100% من مزارعنا | 1000392409.jpeg" style="margin-bottom:6px; font-size:0.82rem;"></textarea>
+                            <button type="button" class="btn" style="padding:5px 14px; font-size:0.8rem; background:var(--primary);" onclick="window.saveSettings()">💾 حفظ القصص والفيديوهات</button>
+                        </div>
+
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-customer-seq-id" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🆔 تفعيل (الرقم التعريفي الثابت والمتسلسل لكل عميل: #1، #2، #3... في الحساب والشات والعملاء والطلبات)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-chat-onboarding-bot" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>🤖 تفعيل (بوت تأكيد وتحديث اسم ورقم العميل تلقائياً عند بدء الشات وتجميع المشكلة في بطاقة واحدة)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-staff-join-notice" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>👨‍💼 تفعيل إشعار (انضم [اسم الموظف] إلى المحادثة) + إشعار الهاتف الخارجي للعميل عند رد الموظف</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-staff-ratings-system" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>⭐ تفعيل (شاشة تقييم الموظف بعد انتهاء المحادثة مثل أمازون ونون + قسم تقييمات الموظفين وسجل الجلسة)</span>
                         </label>
                         <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
                         <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">✨ التصميم الزجاجي الفاخر + الأزرار التفاعلية الجديدة + الأدوات الذكية (V66):</h4>
@@ -2525,6 +2629,6 @@
             <p class="dev-signature">تم الإنشاء بواسطة المهندس أحمد وائل</p>
         </div>
     </footer>
-    <script type="module" src="script.js?v=66"></script>
+    <script type="module" src="script.js?v=67"></script>
 </body>
 </html>

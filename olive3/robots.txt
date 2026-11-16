@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://olive-oile-store.firebaseapp.com/sitemap.xml
+Sitemap: https://alshagara-almubaraka.vercel.app/sitemap.xml

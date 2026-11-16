@@ -2127,3 +2127,189 @@ body.glass-modern-ui .work-event-card {
     padding: 4px !important;
     margin-top: 4px !important;
 }
+
+
+/* === النسخة V67 العالمية: سهم طي شريط الإدارة + الزر العائم للمدير + تنظيم الشات الاحترافي + رقم العميل الثابت + تقييمات الموظفين === */
+
+/* 1. سهم إخفاء/إظهار شريط الإدارة (#smart-nav) */
+#smart-nav-collapse-arrow {
+    position: sticky;
+    top: 62px;
+    z-index: 998;
+    display: none;
+    justify-content: center;
+    margin: 0 auto;
+    width: fit-content;
+}
+.smart-nav-arrow-btn {
+    background: linear-gradient(135deg, #1f3a13, #028090);
+    color: #fff;
+    border: 1.5px solid #c59b27;
+    border-top: none;
+    border-radius: 0 0 14px 14px;
+    padding: 3px 16px;
+    font-size: 0.76rem;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+#smart-nav.manually-collapsed {
+    display: none !important;
+}
+
+/* 2. الزر العائم السريع للمدير والقائمة المنبثقة بجانبه */
+.admin-floating-launcher-wrap {
+    position: fixed;
+    bottom: 145px;
+    left: 18px;
+    z-index: 4950;
+    display: none;
+    align-items: center;
+    gap: 10px;
+}
+.admin-floating-main-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1f3a13, #028090);
+    color: #fff;
+    border: 2.5px solid #c59b27;
+    font-size: 1.35rem;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.32);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+.admin-floating-main-btn:hover {
+    transform: scale(1.08);
+}
+.admin-floating-popout-menu {
+    background: var(--panel-bg, #fff);
+    border: 2px solid var(--secondary, #c59b27);
+    border-radius: 16px;
+    padding: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 175px;
+    max-height: 70vh;
+    overflow-y: auto;
+    animation: fadeInPop 0.2s ease;
+}
+@keyframes fadeInPop {
+    from { opacity: 0; transform: translateX(-10px) scale(0.95); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+}
+.admin-float-item-btn {
+    background: var(--input-bg, #f8fafc);
+    border: 1px solid var(--border-color, #e2e8f0);
+    color: var(--text-color, #1e293b);
+    padding: 7px 12px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: bold;
+    text-align: right;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: 0.15s;
+}
+.admin-float-item-btn:hover {
+    background: var(--primary, #3c521e);
+    color: #fff;
+}
+
+/* 3. شارة الرقم التعريفي الثابت والمتسلسل للعميل (#1, #2, #3...) */
+.cust-seq-id-badge {
+    background: linear-gradient(135deg, #c59b27, #b45309);
+    color: #fff;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 0.76rem;
+    font-weight: 900;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 6px rgba(197,155,39,0.3);
+}
+
+/* 4. تنظيم شات خدمة العملاء الاحترافي (رؤية الشات بوضوح أثناء الكتابة + درج الأدوات المدمج) */
+#support-content,
+#admin-active-chat {
+    display: flex;
+    flex-direction: column;
+}
+#support-history-container,
+#admin-chat-messages {
+    height: 44vh !important;
+    min-height: 250px !important;
+    max-height: 420px !important;
+    overflow-y: auto !important;
+    scroll-behavior: smooth;
+    margin-bottom: 8px !important;
+    padding: 12px !important;
+    border-radius: 14px !important;
+    border: 1.5px solid var(--border-color) !important;
+}
+.chat-compact-tools-drawer {
+    display: none;
+    background: var(--input-bg);
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px dashed var(--secondary);
+    margin-bottom: 8px;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.chat-compact-tools-drawer.open {
+    display: flex !important;
+}
+.chat-system-join-pill {
+    align-self: center;
+    margin: 8px auto;
+    background: linear-gradient(90deg, #e0f2fe, #bae6fd);
+    color: #0369a1;
+    border: 1px solid #38bdf8;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-align: center;
+    max-width: 90%;
+}
+.chat-onboarding-bot-card {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border: 2px solid #22c55e;
+    color: #14532d;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    text-align: right;
+    box-shadow: 0 4px 12px rgba(34,197,94,0.12);
+}
+.chat-unified-summary-ticket {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border: 2px solid #2563eb;
+    color: #1e3a8a;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-top: 4px;
+    text-align: right;
+    line-height: 1.7;
+    font-size: 0.85rem;
+}
+.staff-rating-card {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-right: 4px solid #c59b27;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
