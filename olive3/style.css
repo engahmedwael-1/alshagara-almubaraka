@@ -2313,3 +2313,174 @@ body.glass-modern-ui .work-event-card {
     padding: 14px;
     margin-bottom: 12px;
 }
+
+
+/* === النسخة V68 الشاملة: السلة العائمة + تكبير الخط + سحب الزر العائم + إلغاء الصوت + بوابات الدفع + بوابة المندوب + المسوقين + جميع الإضافات === */
+
+/* 1. تكبير الخط المريح لكبار السن (Comfort Large Font Mode) */
+body.large-comfort-font {
+    font-size: 112% !important;
+}
+body.large-comfort-font .product-card h3 {
+    font-size: 1.22rem !important;
+}
+body.large-comfort-font .price {
+    font-size: 1.35rem !important;
+}
+body.large-comfort-font p,
+body.large-comfort-font label,
+body.large-comfort-font button,
+body.large-comfort-font input,
+body.large-comfort-font select {
+    font-size: 1.04rem !important;
+}
+
+/* 2. تأثيرات الهوية السيناوية البصرية الهادئة */
+body.sinai-olive-ambient .hero-section,
+body.sinai-olive-ambient #home-panel {
+    background-image: radial-gradient(rgba(197, 155, 39, 0.07) 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+}
+
+/* 3. شريط السلة السفلي الزجاجي المتفاعل (Floating Bottom Cart Bar) */
+.floating-bottom-cart-bar {
+    position: fixed;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4850;
+    background: linear-gradient(135deg, rgba(31, 58, 19, 0.96), rgba(2, 128, 144, 0.94));
+    backdrop-filter: blur(10px);
+    color: #fff;
+    border: 2px solid #c59b27;
+    border-radius: 30px;
+    padding: 8px 18px;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.32);
+    min-width: 280px;
+    max-width: 92vw;
+    cursor: pointer;
+    transition: transform 0.25s ease;
+}
+.floating-bottom-cart-bar:hover {
+    transform: translateX(-50%) scale(1.03);
+}
+.fly-to-cart-clone {
+    position: fixed;
+    z-index: 999999;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #c59b27;
+    pointer-events: none;
+    transition: all 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+/* 4. زر تغيير وسحب مكان الزر العائم للمدير (Long-Press Drag Mode) */
+.admin-float-move-badge {
+    position: absolute;
+    top: -34px;
+    right: 0;
+    background: #c59b27;
+    color: #111;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.74rem;
+    font-weight: 900;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    display: none;
+    align-items: center;
+    gap: 4px;
+    z-index: 5001;
+}
+.admin-floating-launcher-wrap.dragging-active .admin-floating-main-btn {
+    background: #dc2626 !important;
+    border-color: #fff !important;
+    cursor: move !important;
+    animation: pulseOffer 0.8s infinite;
+}
+
+/* 5. شريط التحكم في التسجيل الصوتي مع زر الحذف والإلغاء الفوري */
+.voice-recording-control-pill {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: #fee2e2;
+    border: 1.5px solid #dc2626;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: bold;
+    color: #991b1b;
+}
+
+/* 6. شريط المحطات الثلاث للمكافآت في السلة (3-Tier Milestones) */
+.cart-milestones-track-box {
+    background: var(--input-bg);
+    border: 1.5px solid var(--secondary);
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 12px;
+    text-align: center;
+}
+.milestones-progress-bg {
+    width: 100%;
+    height: 10px;
+    background: #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+.milestones-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #c59b27, #16a34a);
+    width: 0%;
+    transition: width 0.35s ease;
+}
+.milestones-steps-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--text-muted);
+}
+.milestones-steps-row span.unlocked {
+    color: #16a34a;
+    font-weight: 900;
+}
+
+/* 7. مؤشر المذاق والنكهة التفاعلي وجدول القيمة الغذائية في المنتج */
+.taste-profile-box {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    margin: 10px 0;
+    text-align: right;
+}
+.taste-meter-bar {
+    height: 7px;
+    background: #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 3px;
+}
+.taste-meter-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3c521e, #c59b27);
+}
+
+/* 8. تمييز خيارات الإعدادات المطابقة للبحث */
+label.setting-search-match {
+    background: rgba(197, 155, 39, 0.18) !important;
+    border-radius: 8px;
+    padding: 4px 8px !important;
+    border-right: 3px solid #c59b27;
+}

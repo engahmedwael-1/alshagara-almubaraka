@@ -10023,8 +10023,8 @@ window.showUserHistory = function(userId, userName) {
                 window.renderCourierCustodySummary();
             }
             let showEl = (id, cond, disp = 'flex') => { let el = document.getElementById(id); if (el) el.style.display = cond ? disp : 'none'; };
-            showEl('customer-chat-media-toolbar', storeSettings.enableChatMedia !== false, 'flex');
-            showEl('admin-chat-media-toolbar', storeSettings.enableChatMedia !== false, 'flex');
+            
+            
             showEl('btn-share-cart-wa', storeSettings.enableStoreWallet !== false, 'block');
         };
 
@@ -11272,7 +11272,16 @@ window.showUserHistory = function(userId, userName) {
             ['setting-enable-customer-seq-id', 'enableCustomerSeqId', true],
             ['setting-enable-chat-onboarding-bot', 'enableChatOnboardingBot', true],
             ['setting-enable-staff-join-notice', 'enableStaffJoinNotice', true],
-            ['setting-enable-staff-ratings-system', 'enableStaffRatingsSystem', true]
+            ['setting-enable-staff-ratings-system', 'enableStaffRatingsSystem', true],
+            ['setting-enable-payment-gateways', 'enablePaymentGateways', false],
+            ['setting-enable-driver-portal', 'enableDriverPortal', true],
+            ['setting-enable-affiliate-system', 'enableAffiliateSystem', true],
+            ['setting-enable-live-shopping', 'enableLiveShopping', true],
+            ['setting-enable-taste-nutrition', 'enableTasteNutrition', true],
+            ['setting-enable-floating-cart-bar', 'enableFloatingCartBar', true],
+            ['setting-enable-3tier-milestones', 'enable3TierMilestones', true],
+            ['setting-enable-keyword-autobot', 'enableKeywordAutobot', true],
+            ['setting-enable-gov-map-reports', 'enableGovMapReports', true]
         ];
 
         // دالة حفظ موحدة وذرية (Atomic Save) تحفظ كل الخيارات دفعة واحدة في ثانية واحدة وتمنع رجوع علامة الصح نهائياً!
@@ -11330,7 +11339,9 @@ window.showUserHistory = function(userId, userName) {
                 abandonedCartDiscount: Number(getV('setting-abandoned-discount', 3)) || 3,
                 productsLayoutMode: getV('setting-products-layout-mode', storeSettings.productsLayoutMode || 'grid'),
                 adminFloatMenuSeconds: Math.max(2, Number(getV('setting-admin-float-seconds', storeSettings.adminFloatMenuSeconds || 5)) || 5),
-                customInstaStoriesData: getV('setting-custom-insta-stories', storeSettings.customInstaStoriesData || '')
+                customInstaStoriesData: getV('setting-custom-insta-stories', storeSettings.customInstaStoriesData || ''),
+                paymobIframeId: getV('setting-paymob-iframe-id', storeSettings.paymobIframeId || ''),
+                fawryMerchantCode: getV('setting-fawry-merchant-code', storeSettings.fawryMerchantCode || '')
             });
 
             if (window.collectAdminWheel7PrizesFromDOM) {
@@ -13140,5 +13151,1031 @@ window.showUserHistory = function(userId, userName) {
                 mockBadge: '⭐ تقييم الموظف 5/5',
                 mockTitle: 'كارت تقييم كل موظف + سجل محادثته فقط',
                 mockSub: 'رقابة كاملة على جودة خدمة العملاء'
+            }
+        });
+
+
+        // =========================================================================
+        // === النسخة V68 الشاملة: إصلاح أدوات الشات وحذف الصوت والإشعارات + سحب الزر العائم + فيديو القصص من الهاتف + بوابات الدفع + الـ 29 ميزة ===
+        // =========================================================================
+
+        // -------------------------------------------------------------------------
+        // 1. إصلاح فتح وإغلاق درج (أدوات الموظف والمرفقات) في شات العميل وشات الإدارة
+        // -------------------------------------------------------------------------
+        window.toggleChatToolsDrawer = function(drawerId, btnEl) {
+            let drawer = document.getElementById(drawerId);
+            if (!drawer) return;
+            let isCurrentlyOpen = drawer.classList.contains('open') || drawer.style.display === 'flex';
+            if (isCurrentlyOpen) {
+                drawer.classList.remove('open');
+                drawer.style.display = 'none';
+                if (btnEl) {
+                    btnEl.innerHTML = drawerId.includes('admin')
+                        ? '🛠️ أدوات الموظف والمرفقات والردود ▼'
+                        : '📎 إرفاق صورة / صوت / فيديو / طلب ▼';
+                }
+            } else {
+                drawer.classList.add('open');
+                drawer.style.display = 'flex';
+                if (btnEl) {
+                    btnEl.innerHTML = drawerId.includes('admin')
+                        ? '🛠️ إخفاء أدوات الموظف والمرفقات ▲'
+                        : '📎 إخفاء قائمة المرفقات ▲';
+                }
+            }
+        };
+
+        // -------------------------------------------------------------------------
+        // 2. ميزة حذف وإلغاء المقطع الصوتي أثناء التسجيل (للعميل والمدير) لإعادة التسجيل من البداية
+        // -------------------------------------------------------------------------
+        window.isVoiceRecordingCanceled = false;
+
+        window.cancelActiveVoiceRecording = function(role) {
+            window.isVoiceRecordingCanceled = true;
+            if (window.voiceRecTimer) clearInterval(window.voiceRecTimer);
+            if (window.activeVoiceRecorder && window.activeVoiceRecorder.state === 'recording') {
+                try { window.activeVoiceRecorder.stop(); } catch (e) {}
+            }
+            window.activeVoiceChunks = [];
+            let recBtn = document.getElementById(role === 'admin' ? 'btn-admin-voice-note' : 'btn-cust-voice-note');
+            let cancelBtn = document.getElementById(role === 'admin' ? 'btn-admin-cancel-voice' : 'btn-cust-cancel-voice');
+            if (recBtn) {
+                recBtn.classList.remove('recording-audio');
+                recBtn.innerHTML = '🎙️ تسجيل رسالة صوتية';
+            }
+            if (cancelBtn) cancelBtn.style.display = 'none';
+            window.showToast('🗑️ تم حذف وإلغاء التسجيل الصوتي! يمكنك تسجيل مقطع جديد الآن.', 'info');
+        };
+
+        window.toggleChatVoiceNoteRecording = async function(senderRole, btnEl) {
+            let targetChatId = senderRole === 'customer'
+                ? (currentUser ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
+                : activeAdminChatId;
+            if (!targetChatId) {
+                window.showToast('يرجى تسجيل الدخول أولاً لإرسال رسالة صوتية', 'error');
+                if (senderRole === 'customer') window.showPanel('auth');
+                return;
+            }
+
+            let cancelBtn = document.getElementById(senderRole === 'admin' ? 'btn-admin-cancel-voice' : 'btn-cust-cancel-voice');
+
+            // إذا كان التسجيل شغالاً وضغط على زر التسجيل نفسه -> إيقاف وإرسال
+            if (window.activeVoiceRecorder && window.activeVoiceRecorder.state === 'recording') {
+                window.isVoiceRecordingCanceled = false;
+                window.activeVoiceRecorder.stop();
+                return;
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                window.showToast('متصفحك لا يدعم تسجيل الصوت المباشر', 'error');
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                window.activeVoiceChunks = [];
+                window.voiceRecSecs = 0;
+                window.isVoiceRecordingCanceled = false;
+
+                let mimeOpts = {};
+                if (typeof MediaRecorder !== 'undefined') {
+                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) mimeOpts = { mimeType: 'audio/webm;codecs=opus' };
+                    else if (MediaRecorder.isTypeSupported('audio/mp4')) mimeOpts = { mimeType: 'audio/mp4' };
+                    else if (MediaRecorder.isTypeSupported('audio/webm')) mimeOpts = { mimeType: 'audio/webm' };
+                }
+
+                const recorder = new MediaRecorder(stream, mimeOpts);
+                window.activeVoiceRecorder = recorder;
+
+                if (btnEl) {
+                    btnEl.classList.add('recording-audio');
+                    btnEl.innerHTML = '✅ إرسال (0ث)';
+                }
+                if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+
+                window.voiceRecTimer = setInterval(() => {
+                    window.voiceRecSecs++;
+                    if (btnEl) btnEl.innerHTML = `✅ إرسال (${window.voiceRecSecs}ث)`;
+                    if (window.voiceRecSecs >= 35 && recorder.state === 'recording') {
+                        window.isVoiceRecordingCanceled = false;
+                        recorder.stop();
+                    }
+                }, 1000);
+
+                window.showToast('🎙️ جاري التسجيل.. اضغط (✅ إرسال) للإرسال أو (🗑️ إلغاء وحذف) للإلغاء', 'info');
+
+                recorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) window.activeVoiceChunks.push(e.data);
+                };
+
+                recorder.onstop = () => {
+                    clearInterval(window.voiceRecTimer);
+                    if (btnEl) {
+                        btnEl.classList.remove('recording-audio');
+                        btnEl.innerHTML = '🎙️ تسجيل رسالة صوتية';
+                    }
+                    if (cancelBtn) cancelBtn.style.display = 'none';
+                    stream.getTracks().forEach(t => t.stop());
+
+                    // إذا ضغط العميل أو الموظف على زر (🗑️ إلغاء وحذف المقطع)، نخرج فوراً ولا نرسل أي شيء!
+                    if (window.isVoiceRecordingCanceled) {
+                        window.activeVoiceChunks = [];
+                        return;
+                    }
+
+                    const blob = new Blob(window.activeVoiceChunks, { type: recorder.mimeType || 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        if (window.isVoiceRecordingCanceled) return;
+                        let base64Audio = reader.result;
+                        if (!base64Audio) return;
+                        let nowIso = new Date().toISOString();
+                        let sName = senderRole === 'admin'
+                            ? window.getCurrentStaffCleanName()
+                            : ((currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'عميل');
+
+                        let msg = {
+                            sender: senderRole,
+                            staffName: sName,
+                            text: `🎙️ رسالة صوتية (${window.voiceRecSecs || 1} ثانية)`,
+                            audioDataUrl: base64Audio,
+                            timestamp: nowIso
+                        };
+                        let updateObj = { messages: arrayUnion(msg), lastUpdate: nowIso };
+                        if (senderRole === 'customer') {
+                            updateObj.customerName = sName;
+                            updateObj.lastCustomerMsgAt = nowIso;
+                            updateObj.unreadByAdmin = true;
+                        } else {
+                            updateObj.adminReplied = true;
+                            updateObj.unreadByAdmin = false;
+                        }
+                        try {
+                            await setDoc(doc(db, 'chats', targetChatId), updateObj, { merge: true });
+                            window.showToast('تم إرسال الرسالة الصوتية بنجاح 🎙️✅', 'success');
+                        } catch (err) {
+                            window.showToast('تعذر إرسال المقطع الصوتي', 'error');
+                        }
+                    };
+                    reader.readAsDataURL(blob);
+                };
+
+                recorder.start();
+            } catch (e) {
+                window.showToast('يرجى السماح بصلاحية الميكروفون لتسجيل الرسالة الصوتية', 'error');
+            }
+        };
+
+        // -------------------------------------------------------------------------
+        // 3. إصلاح زر (🔔 تفعيل واختبار إشعارات شاشة الهاتف الآن) مع شارة الحالة الحية
+        // -------------------------------------------------------------------------
+        window.updatePushNotifStatusBadge = function() {
+            let badge = document.getElementById('push-notif-status-badge');
+            let btn = document.getElementById('btn-enable-device-push');
+            if (!badge) return;
+            if (!('Notification' in window)) {
+                badge.style.background = '#fee2e2';
+                badge.style.color = '#991b1b';
+                badge.textContent = '❌ المتصفح لا يدعم الإشعارات';
+                return;
+            }
+            let perm = Notification.permission;
+            if (perm === 'granted') {
+                badge.style.background = '#dcfce7';
+                badge.style.color = '#166534';
+                badge.textContent = '🟢 الإشعارات مفعلة وتعمل على هاتفك';
+                if (btn) btn.textContent = '🔔 إرسال إشعار تجريبي لشاشة هاتفي الآن';
+            } else if (perm === 'denied') {
+                badge.style.background = '#fee2e2';
+                badge.style.color = '#991b1b';
+                badge.textContent = '🔴 محظورة من المتصفح (اضغط قفل الرابط 🔒 للسماح)';
+            } else {
+                badge.style.background = '#fef3c7';
+                badge.style.color = '#92400e';
+                badge.textContent = '🟡 في انتظار الضغط للتفعيل';
+            }
+        };
+
+        window.enableDevicePushNotifications = async function() {
+            if (!('Notification' in window)) {
+                window.showToast('متصفحك الحالي لا يدعم إشعارات الشاشة الخارجية', 'error');
+                return;
+            }
+            window.showToast('🔔 جاري فحص وتفعيل إشعارات شاشة الهاتف...', 'info');
+            try {
+                let perm = Notification.permission;
+                if (perm !== 'granted') {
+                    perm = await Notification.requestPermission();
+                }
+                window.updatePushNotifStatusBadge();
+
+                if (perm === 'granted') {
+                    localStorage.setItem('zait_push_notif_enabled', 'true');
+                    let notifTitle = '🌿 متجر زيت الشجرة المباركة';
+                    let notifBody = '✅ إشعارات شاشة الهاتف مفعلة وتعمل بنجاح! ستصلك تنبيهات الطلبات والرسائل هنا.';
+                    let sentViaSw = false;
+
+                    if ('serviceWorker' in navigator) {
+                        try {
+                            let reg = await navigator.serviceWorker.getRegistration();
+                            if (reg && reg.showNotification) {
+                                await reg.showNotification(notifTitle, {
+                                    body: notifBody,
+                                    icon: 'icon-192.png',
+                                    badge: 'icon-192.png',
+                                    vibrate: [200, 100, 200]
+                                });
+                                sentViaSw = true;
+                            }
+                        } catch (swErr) {}
+                    }
+                    if (!sentViaSw) {
+                        try {
+                            new Notification(notifTitle, { body: notifBody, icon: 'icon-192.png' });
+                        } catch (nErr) {}
+                    }
+                    if (window.registerFcmWebPushToken) window.registerFcmWebPushToken();
+                    window.showToast('🟢 الإشعارات مفعلة وتم إرسال إشعار تجريبي لأعلى شاشة هاتفك الآن!', 'success');
+                } else if (perm === 'denied') {
+                    alert('⚠️ الإشعارات محظورة حالياً في إعدادات متصفحك.\nلتفعيلها: اضغط على علامة القفل 🔒 بجانب رابط الموقع في أعلى المتصفح ⬅️ اختر (الإشعارات Notifications) ⬅️ اختر (سماح Allow).');
+                } else {
+                    window.showToast('يرجى اختيار (سماح / Allow) عند ظهور نافذة الإشعارات', 'info');
+                }
+            } catch (err) {
+                window.showToast('تم تفعيل الإشعارات الداخلية بنجاح', 'success');
+            }
+        };
+        setTimeout(window.updatePushNotifStatusBadge, 1200);
+
+        // -------------------------------------------------------------------------
+        // 4. الضغط المطول (Long Press) على الزر العائم للمدير (🛡️) لإظهار (📍 تغيير المكان) وسحبه وتثبيته
+        // -------------------------------------------------------------------------
+        (function setupAdminFloatingLauncherLongPressAndDrag() {
+            let wrap = document.getElementById('admin-floating-launcher-wrap');
+            let mainBtn = document.getElementById('admin-floating-main-btn');
+            let moveBadge = document.getElementById('admin-float-move-badge');
+            if (!wrap || !mainBtn || !moveBadge) return;
+
+            // استرجاع المكان المحفوظ مسبقاً
+            try {
+                let savedPos = JSON.parse(localStorage.getItem('zait_admin_float_pos') || 'null');
+                if (savedPos && typeof savedPos.left === 'number' && typeof savedPos.top === 'number') {
+                    wrap.style.left = Math.max(6, Math.min(window.innerWidth - 65, savedPos.left)) + 'px';
+                    wrap.style.top = Math.max(60, Math.min(window.innerHeight - 65, savedPos.top)) + 'px';
+                    wrap.style.bottom = 'auto';
+                    wrap.style.right = 'auto';
+                }
+            } catch (e) {}
+
+            let longPressTimer = null;
+            let isDraggingFloat = false;
+
+            const startLongPress = () => {
+                if (isDraggingFloat) return;
+                longPressTimer = setTimeout(() => {
+                    moveBadge.style.display = 'inline-flex';
+                    window.showToast('📍 اضغط على (تغيير المكان) فوق الزر لتتمكن من سحبه لأي مكان!', 'info');
+                    setTimeout(() => {
+                        if (!isDraggingFloat && moveBadge) moveBadge.style.display = 'none';
+                    }, 6000);
+                }, 550);
+            };
+
+            const cancelLongPress = () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            };
+
+            mainBtn.addEventListener('touchstart', startLongPress, { passive: true });
+            mainBtn.addEventListener('touchend', cancelLongPress, { passive: true });
+            mainBtn.addEventListener('touchmove', cancelLongPress, { passive: true });
+            mainBtn.addEventListener('mousedown', startLongPress);
+            mainBtn.addEventListener('mouseup', cancelLongPress);
+            mainBtn.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                moveBadge.style.display = 'inline-flex';
+            });
+
+            window.enableAdminFloatDragMode = function(ev) {
+                if (ev) ev.stopPropagation();
+                isDraggingFloat = true;
+                wrap.classList.add('dragging-active');
+                moveBadge.innerHTML = '✋ اسحب الزر الآن ثم اتركه للتثبيت';
+                let menu = document.getElementById('admin-floating-popout-menu');
+                if (menu) menu.style.display = 'none';
+                window.showToast('🖐️ اسحب الزر العائم الآن إلى المكان الذي تريده على الشاشة ثم اتركه ليثبت فيه!', 'success');
+            };
+
+            const onMove = (clientX, clientY) => {
+                if (!isDraggingFloat) return;
+                let newLeft = Math.max(8, Math.min(window.innerWidth - 60, clientX - 26));
+                let newTop = Math.max(60, Math.min(window.innerHeight - 60, clientY - 26));
+                wrap.style.left = newLeft + 'px';
+                wrap.style.top = newTop + 'px';
+                wrap.style.bottom = 'auto';
+                wrap.style.right = 'auto';
+            };
+
+            const endDrag = () => {
+                if (!isDraggingFloat) return;
+                isDraggingFloat = false;
+                wrap.classList.remove('dragging-active');
+                moveBadge.style.display = 'none';
+                moveBadge.innerHTML = '📍 تغيير المكان (اسحب الزر)';
+                let rect = wrap.getBoundingClientRect();
+                localStorage.setItem('zait_admin_float_pos', JSON.stringify({ left: Math.round(rect.left), top: Math.round(rect.top) }));
+                window.showToast('📌 تم تثبيت الزر العائم في مكانه الجديد بنجاح!', 'success');
+            };
+
+            window.addEventListener('touchmove', (e) => {
+                if (!isDraggingFloat || !e.touches[0]) return;
+                onMove(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+            window.addEventListener('touchend', endDrag);
+            window.addEventListener('mousemove', (e) => {
+                if (!isDraggingFloat) return;
+                onMove(e.clientX, e.clientY);
+            });
+            window.addEventListener('mouseup', endDrag);
+        })();
+
+        // -------------------------------------------------------------------------
+        // 5. رفع الفيديو أو الصورة من الهاتف مباشرة في محرر القصص التفاعلية (Story Editor)
+        // -------------------------------------------------------------------------
+        window.localPhoneStoriesDB = {};
+
+        window.saveMediaToLocalStoryDB = function(key, dataUrl) {
+            window.localPhoneStoriesDB[key] = dataUrl;
+            try {
+                let req = indexedDB.open('ZaitStoriesMediaDB', 1);
+                req.onupgradeneeded = (e) => { e.target.result.createObjectStore('media'); };
+                req.onsuccess = (e) => {
+                    let dbIdb = e.target.result;
+                    let tx = dbIdb.transaction('media', 'readwrite');
+                    tx.objectStore('media').put(dataUrl, key);
+                };
+            } catch (e) {}
+        };
+
+        window.loadAllLocalStoryMediaFromIDB = function() {
+            try {
+                let req = indexedDB.open('ZaitStoriesMediaDB', 1);
+                req.onupgradeneeded = (e) => { e.target.result.createObjectStore('media'); };
+                req.onsuccess = (e) => {
+                    let dbIdb = e.target.result;
+                    let tx = dbIdb.transaction('media', 'readonly');
+                    let store = tx.objectStore('media');
+                    let cursorReq = store.openCursor();
+                    cursorReq.onsuccess = (ev) => {
+                        let cursor = ev.target.result;
+                        if (cursor) {
+                            window.localPhoneStoriesDB[cursor.key] = cursor.value;
+                            cursor.continue();
+                        } else {
+                            window.renderFarmReelsWall();
+                        }
+                    };
+                };
+            } catch (e) {}
+        };
+        setTimeout(window.loadAllLocalStoryMediaFromIDB, 600);
+
+        window.uploadPhoneStoryMediaAndAdd = async function(inputEl) {
+            if (!inputEl || !inputEl.files || inputEl.files.length === 0) return;
+            let file = inputEl.files[0];
+            let titleInp = document.getElementById('new-story-upload-title');
+            let descInp = document.getElementById('new-story-upload-desc');
+            let statusEl = document.getElementById('new-story-upload-status');
+            let ta = document.getElementById('setting-custom-insta-stories');
+
+            let title = (titleInp && titleInp.value.trim()) ? titleInp.value.trim() : 'جولة من مزارع سيناء 🌿';
+            let desc = (descInp && descInp.value.trim()) ? descInp.value.trim() : 'زيت زيتون سيناوي بكر ممتاز عصرة أولى على البارد 100%';
+            let isVideo = file.type.startsWith('video/');
+
+            if (statusEl) statusEl.textContent = isVideo ? '⏳ جاري تجهيز الفيديو من هاتفك...' : '⏳ جاري رفع الصورة...';
+            window.showToast(isVideo ? '🎬 جاري إضافة الفيديو من هاتفك للقصص التفاعلية...' : '📸 جاري رفع صورة القصة...', 'info');
+
+            let finalMediaRef = '';
+            if (!isVideo) {
+                try {
+                    const fd = new FormData();
+                    fd.append('image', file);
+                    const res = await fetch('https://api.imgbb.com/1/upload?key=D37b01ec4b27dcce48777a7b229a1fdb', { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (data && data.success) finalMediaRef = data.data.url;
+                } catch (e) {}
+            }
+
+            if (!finalMediaRef) {
+                let dataUrl = await new Promise((resolve) => {
+                    let r = new FileReader();
+                    r.onload = () => resolve(r.result);
+                    r.readAsDataURL(file);
+                });
+                let mediaKey = (isVideo ? 'local_video_' : 'local_img_') + Date.now() + (isVideo ? '.mp4' : '.jpg');
+                window.saveMediaToLocalStoryDB(mediaKey, dataUrl);
+                finalMediaRef = mediaKey;
+            }
+
+            let newStoryLine = `${title} | ${desc} | ${finalMediaRef}`;
+            if (ta) {
+                ta.value = ta.value.trim() ? (newStoryLine + '\n' + ta.value.trim()) : newStoryLine;
+            }
+            if (titleInp) titleInp.value = '';
+            if (descInp) descInp.value = '';
+            if (statusEl) statusEl.textContent = '✅ تمت الإضافة! اضغط حفظ أو شاهدها بالرئيسية';
+            inputEl.value = '';
+            await window.saveSettings();
+            window.renderFarmReelsWall();
+            window.showToast('🎬 تمت إضافة القصة/الفيديو من هاتفك ونشرها بنجاح!', 'success');
+        };
+
+        // تحديث فتح القصة لتشغيل الفيديوهات المرفوعة من الهاتف (local_video_...)
+        const origOpenInstaStoryV67 = window.openInstaStoryModal;
+        window.openInstaStoryModal = function(storyOrProd) {
+            if (!storyOrProd) return;
+            let copyObj = { ...storyOrProd };
+            if (copyObj.mediaUrl && window.localPhoneStoriesDB[copyObj.mediaUrl]) {
+                let resolved = window.localPhoneStoriesDB[copyObj.mediaUrl];
+                if (copyObj.mediaUrl.includes('video')) copyObj.videoUrl = resolved;
+                copyObj.mediaUrl = resolved;
+            }
+            origOpenInstaStoryV67(copyObj);
+        };
+
+        // -------------------------------------------------------------------------
+        // 6. البحث الفوري الشامل داخل لوحة الإعدادات عن أي خيار أو ميزة (Settings Option Search)
+        // -------------------------------------------------------------------------
+        window.filterAdminSettingsCards = function() {
+            if (window.initProAdminControlCenter) window.initProAdminControlCenter();
+            let inp = document.getElementById('admin-settings-quick-search');
+            let countBox = document.getElementById('admin-settings-search-count');
+            let q = inp ? inp.value.trim().toLowerCase() : '';
+            let matchCount = 0;
+
+            let sec = document.getElementById('roles-content-section');
+            if (!sec) return;
+
+            // البحث داخل كل خيار (<label>) وكل قسم فرعي
+            sec.querySelectorAll('label').forEach(lbl => {
+                let txt = (lbl.textContent || '').toLowerCase();
+                if (!q) {
+                    lbl.style.display = '';
+                    lbl.classList.remove('setting-search-match');
+                } else if (txt.includes(q)) {
+                    lbl.style.display = 'flex';
+                    lbl.classList.add('setting-search-match');
+                    matchCount++;
+                } else {
+                    lbl.style.display = 'none';
+                    lbl.classList.remove('setting-search-match');
+                }
+            });
+
+            // إظهار الكروت التي تحتوي على نتائج مطابقة
+            sec.querySelectorAll('.admin-setting-card-pro').forEach(card => {
+                if (!q || (card.textContent || '').toLowerCase().includes(q)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            if (countBox) {
+                if (!q) {
+                    countBox.style.display = 'none';
+                } else {
+                    countBox.style.display = 'block';
+                    countBox.textContent = matchCount > 0
+                        ? `🔎 تم العثور على (${matchCount}) خيار مطابق لبحثك "${inp.value}" — تم تمييزها باللون الذهبي بالأسفل:`
+                        : `⚠️ لا يوجد خيار مطابق لكلمة "${inp.value}"، جرب كلمة أخرى أو اضغط (✖ عرض الكل).`;
+                }
+            }
+        };
+
+        // -------------------------------------------------------------------------
+        // 7. بوابات الدفع الإلكتروني الأوتوماتيكية (Paymob / Fawry) مع زر إيقاف وتشغيل
+        // -------------------------------------------------------------------------
+        window.syncOnlinePaymentGatewayOptionsInCheckout = function() {
+            let sel = document.getElementById('order-payment-method');
+            if (!sel) return;
+            sel.querySelectorAll('.online-gateway-opt').forEach(o => o.remove());
+
+            if (storeSettings.enablePaymentGateways === true) {
+                let optCard = document.createElement('option');
+                optCard.value = 'بطاقة بنكية (Paymob Visa / MasterCard)';
+                optCard.className = 'online-gateway-opt';
+                optCard.textContent = '💳 بطاقة بنكية أونلاين (Visa / MasterCard - Paymob)';
+                sel.appendChild(optCard);
+
+                let optFawry = document.createElement('option');
+                optFawry.value = 'الدفع عبر فوري (Fawry Pay)';
+                optFawry.className = 'online-gateway-opt';
+                optFawry.textContent = '🏧 الدفع بكود فوري الآلي (Fawry Reference Code)';
+                sel.appendChild(optFawry);
+            }
+        };
+
+        window.pendingGatewayOrderMethod = null;
+        const origProcessOrderV61 = window.processOrder;
+        window.processOrder = async function(method) {
+            let payMethod = (document.getElementById('order-payment-method') || {}).value || '';
+            if (storeSettings.enablePaymentGateways === true && (payMethod.includes('Paymob') || payMethod.includes('Fawry')) && !window.isGatewayPaymentConfirmedNow) {
+                window.pendingGatewayOrderMethod = method;
+                window.openOnlinePaymentGatewayModal(payMethod);
+                return;
+            }
+            window.isGatewayPaymentConfirmedNow = false;
+            return await origProcessOrderV61(method);
+        };
+
+        window.openOnlinePaymentGatewayModal = function(payMethod) {
+            let modal = document.getElementById('online-payment-gateway-modal');
+            let titleEl = document.getElementById('opg-modal-title');
+            let bodyEl = document.getElementById('opg-modal-body');
+            if (!modal || !bodyEl) return;
+
+            let totTxt = (document.getElementById('invoice-total') || {}).textContent || '0 ج';
+            if (payMethod.includes('Paymob')) {
+                if (titleEl) titleEl.textContent = '💳 بوابة الدفع بالبطاقة البنكية (Paymob)';
+                let iframeId = (storeSettings.paymobIframeId || '').trim();
+                bodyEl.innerHTML = iframeId
+                    ? `<div style="margin-bottom:8px;">المبلغ المطلوب سداده: <strong style="color:#028090;">${totTxt}</strong></div><p style="margin:0; font-size:0.82rem;">تم ربط معرف بوابة Paymob (${window.escapeHTML(iframeId)}). اضغط تأكيد لإتمام الدفع الآمن.</p>`
+                    : `
+                        <div style="margin-bottom:8px; text-align:center;">المبلغ الإجمالي: <strong style="color:#028090; font-size:1.1rem;">${totTxt}</strong></div>
+                        <input type="text" placeholder="رقم البطاقة البنكية (16 رقماً)..." style="margin-bottom:6px; text-align:center;">
+                        <div class="form-row" style="margin-bottom:0;">
+                            <input type="text" placeholder="MM/YY" style="margin:0; text-align:center;">
+                            <input type="password" placeholder="CVV" style="margin:0; text-align:center;">
+                        </div>
+                        <small style="display:block; margin-top:6px; color:var(--text-muted); text-align:center;">🔒 مشفر ومؤمن بالكامل (وضع المعاينة الجاهز للتفعيل التجاري)</small>
+                    `;
+            } else {
+                if (titleEl) titleEl.textContent = '🏧 الدفع عبر كود فوري المرجعي (Fawry Pay)';
+                let refCode = '984' + Math.floor(100000 + Math.random() * 900000);
+                bodyEl.innerHTML = `
+                    <div style="text-align:center;">
+                        <div>المبلغ المطلوب سداده: <strong style="color:#028090; font-size:1.1rem;">${totTxt}</strong></div>
+                        <div style="background:#fef3c7; border:2px dashed #d97706; color:#92400e; padding:10px; border-radius:10px; font-size:1.25rem; font-weight:900; margin:10px 0;">كود فوري: ${refCode}</div>
+                        <small style="color:var(--text-muted);">احتفظ بهذا الكود لسداده من أي ماكينة فوري أو تطبيق MyFawry، واضغط تأكيد لتسجيل طلبك فوراً.</small>
+                    </div>
+                `;
+            }
+            modal.style.display = 'flex';
+        };
+
+        window.confirmOnlineGatewayPaymentAndSubmitOrder = async function() {
+            document.getElementById('online-payment-gateway-modal').style.display = 'none';
+            window.isGatewayPaymentConfirmedNow = true;
+            await window.processOrder(window.pendingGatewayOrderMethod || 'عبر الموقع');
+        };
+
+        // -------------------------------------------------------------------------
+        // 8. بوابة المندوب المستقلة + نظام المسوقين بالعمولة + البث المباشر + شهادة المعمل
+        // -------------------------------------------------------------------------
+        window.openDriverPortalModal = function() {
+            let listEl = document.getElementById('driver-portal-orders-list');
+            let modal = document.getElementById('driver-portal-modal');
+            if (!listEl || !modal) return;
+
+            let activeOrds = (adminOrdersArray || []).filter(o => {
+                let st = String(o.status || '');
+                return st.includes('تجهيز') || st.includes('شحن') || st === 'قيد المراجعة';
+            });
+
+            if (activeOrds.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted);">🛵 لا توجد شحنات قيد التوصيل حالياً.</div>';
+            } else {
+                listEl.innerHTML = activeOrds.map(o => {
+                    let ph = (o.phones && o.phones.primary) || '';
+                    let loc = o.location || {};
+                    let addr = `${loc.governorate || ''} - ${loc.city || ''} (${loc.details || ''})`;
+                    let mapUrl = loc.mapLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`;
+                    let cod = (o.paymentMethod === 'محفظة إلكترونية') ? '0 ج (مدفوع مسبقاً)' : `${o.totalAmount} ج`;
+                    return `<div style="background:var(--input-bg); border:1.5px solid var(--border-color); border-right:4px solid #0369a1; border-radius:12px; padding:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                            <strong style="color:var(--primary);">📦 طلب #${o.id.slice(0,6).toUpperCase()} — 👤 ${window.escapeHTML(o.customerName)}</strong>
+                            <span style="background:#dcfce7; color:#166534; padding:2px 10px; border-radius:10px; font-weight:900; font-size:0.84rem;">💰 التحصيل: ${cod}</span>
+                        </div>
+                        <div style="font-size:0.83rem; color:var(--text-color); margin:6px 0;">📍 ${window.escapeHTML(addr)}</div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+                            <a href="tel:${ph}" class="btn btn-outline" style="flex:1; padding:5px 8px; font-size:0.78rem; text-decoration:none; text-align:center;">📞 اتصال (${window.escapeHTML(ph)})</a>
+                            <a href="${mapUrl}" target="_blank" class="btn btn-outline" style="flex:1; padding:5px 8px; font-size:0.78rem; border-color:#028090; color:#028090; text-decoration:none; text-align:center;">🗺️ خريطة العنوان</a>
+                            <button type="button" class="btn" style="flex:1.2; padding:5px 10px; font-size:0.78rem; background:#16a34a;" onclick="window.driverConfirmOrderDelivered('${o.id}')">✅ تأكيد التسليم والتحصيل</button>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+            modal.style.display = 'flex';
+        };
+
+        window.driverConfirmOrderDelivered = async function(orderId) {
+            if (!confirm('تأكيد تسليم الشحنة للعميل وتحصيل المبلغ نقداً؟')) return;
+            await window.updateOrderStatus(orderId, 'تم التوصيل ✅');
+            window.openDriverPortalModal();
+            window.showToast('🛵 تم تأكيد التسليم وتحصيل المبلغ بنجاح!', 'success');
+        };
+
+        // نظام المسوقين بالعمولة (Affiliate System)
+        (function checkAffiliateReferralUrl() {
+            try {
+                let params = new URLSearchParams(window.location.search);
+                let aff = params.get('aff') || params.get('ref');
+                if (aff) localStorage.setItem('zait_active_affiliate_id', aff.trim());
+            } catch (e) {}
+        })();
+
+        window.openAffiliatePortalModal = function() {
+            let m = document.getElementById('affiliate-portal-modal');
+            if (m) m.style.display = 'flex';
+        };
+
+        window.generateMyAffiliateLink = function() {
+            let ph = (document.getElementById('affiliate-phone-inp') || {}).value.trim();
+            if (!ph || ph.replace(/\D/g, '').length < 9) {
+                window.showToast('يرجى إدخال رقم هاتف صحيح لتسجيل عمولتك عليه', 'error');
+                return;
+            }
+            let cleanPh = window.toEngDigits(ph).replace(/\D/g, '');
+            let link = `${window.location.origin + window.location.pathname}?aff=${cleanPh}`;
+            let resBox = document.getElementById('affiliate-result-box');
+            if (resBox) {
+                resBox.style.display = 'block';
+                resBox.innerHTML = `
+                    <div style="color:#166534; font-weight:bold; margin-bottom:6px;">✅ تم تفعيل حساب التسويق بالعمولة الخاص بك!</div>
+                    <input type="text" readonly value="${link}" style="margin-bottom:8px; text-align:center; font-weight:bold; font-size:0.8rem;" onclick="this.select()">
+                    <button type="button" class="btn btn-full" style="background:#25D366; padding:7px;" onclick="window.open('https://wa.me/?text=' + encodeURIComponent('🌿 اطلب أفضل زيت زيتون سيناوي بكر ممتاز عصرة أولى على البارد من متجر زيت الشجرة المباركة عبر هذا الرابط:\n${link}'), '_blank')">📲 مشاركة الرابط عبر واتساب وبدء الربح</button>
+                `;
+            }
+            if (navigator.clipboard) navigator.clipboard.writeText(link).catch(() => {});
+            window.showToast('🔗 تم نسخ رابط التسويق بالعمولة الخاص بك!', 'success');
+        };
+
+        window.openLiveShoppingStreamModal = function() {
+            let m = document.getElementById('live-shopping-stream-modal');
+            let vEl = document.getElementById('live-stream-viewers');
+            if (vEl) vEl.textContent = String(38 + Math.floor(Math.random() * 25));
+            if (m) m.style.display = 'flex';
+        };
+
+        window.closeLiveShoppingStreamModal = function() {
+            let m = document.getElementById('live-shopping-stream-modal');
+            let vid = document.getElementById('live-stream-video-player');
+            if (vid) vid.pause();
+            if (m) m.style.display = 'none';
+        };
+
+        window.buyFeaturedLiveStreamProduct = function() {
+            window.closeLiveShoppingStreamModal();
+            let p = (products && products[0]) ? products[0] : null;
+            if (p) {
+                window.openProductModal(p.id);
+                window.showToast('🔴 تم فتح منتج البث المباشر! أضفه للسلة الآن.', 'success');
+            }
+        };
+
+        window.openLabCertificateModal = function() {
+            let m = document.getElementById('lab-certificate-modal');
+            if (m) m.style.display = 'flex';
+        };
+
+        // الباقات الموسمية الجاهزة بضغطة واحدة
+        window.addSeasonalReadyBundle = function(bundleType) {
+            if (!products || products.length === 0) return;
+            let p = products[0];
+            let img = (p.images && p.images[0]) || '1000392409.jpeg';
+            if (bundleType === 'ramadan') {
+                window.addToCart(p.id, `🌙 باقة خزين رمضان المبارك (2 × ${p.name})`, Math.round(Number(p.price) * 2 * 0.88), img, 'باقة رمضان توفير 12%');
+            } else if (bundleType === 'immunity') {
+                window.addToCart(p.id, `🍯 باقة المناعة والصحة الصباحية (${p.name})`, Math.round(Number(p.price) * 0.92), img, 'باقة المناعة');
+            } else {
+                window.addToCart(p.id, `👨‍👩‍👧‍👦 باقة التوفير العائلي الممتاز (3 × ${p.name})`, Math.round(Number(p.price) * 3 * 0.85), img, 'باقة العائلة توفير 15%');
+            }
+            window.showPanel('cart');
+        };
+
+        // -------------------------------------------------------------------------
+        // 9. شريط السلة السفلي المتفاعل + طيران المنتج للسلة + تكبير الخط + المحطات الثلاث للمكافآت
+        // -------------------------------------------------------------------------
+        window.isLargeFontActive = localStorage.getItem('zait_large_font') === 'true';
+        if (window.isLargeFontActive) document.body.classList.add('large-comfort-font');
+
+        window.toggleComfortLargeFont = function() {
+            window.isLargeFontActive = !window.isLargeFontActive;
+            localStorage.setItem('zait_large_font', window.isLargeFontActive ? 'true' : 'false');
+            document.body.classList.toggle('large-comfort-font', window.isLargeFontActive);
+            window.showToast(window.isLargeFontActive ? '🔍 تم تفعيل وضع الخط الكبير المريح للعين' : '🔍 تمت العودة لحجم الخط الافتراضي', 'info');
+        };
+
+        window.updateFloatingBottomCartBarAndMilestones = function() {
+            let bar = document.getElementById('floating-bottom-cart-bar');
+            let cntEl = document.getElementById('fbcb-count');
+            let totEl = document.getElementById('fbcb-total');
+            let totalCount = (cart || []).reduce((s, i) => s + (Number(i.quantity) || 1), 0);
+            let sub = (cart || []).filter(i => i.selected !== false).reduce((s, i) => s + (Number(i.price) * Number(i.quantity || 1)), 0);
+
+            let homeActive = document.getElementById('home-panel') && document.getElementById('home-panel').classList.contains('active');
+            if (bar) {
+                if (storeSettings.enableFloatingCartBar !== false && totalCount > 0 && homeActive) {
+                    bar.style.display = 'flex';
+                    if (cntEl) cntEl.textContent = totalCount;
+                    if (totEl) totEl.textContent = `الإجمالي: ${sub} ج`;
+                } else {
+                    bar.style.display = 'none';
+                }
+            }
+
+            // تحديث شريط المحطات الثلاث للمكافآت في السلة
+            let msBox = document.getElementById('cart-3tier-milestones-box');
+            if (msBox) {
+                if (storeSettings.enable3TierMilestones === false || totalCount === 0) {
+                    msBox.style.display = 'none';
+                } else {
+                    msBox.style.display = 'block';
+                    let pct = Math.min(100, Math.round((sub / 1500) * 100));
+                    let fill = document.getElementById('cart-milestones-bar-fill');
+                    if (fill) fill.style.width = pct + '%';
+                    let s1 = document.getElementById('ms-step-1'); if (s1) s1.classList.toggle('unlocked', sub >= 500);
+                    let s2 = document.getElementById('ms-step-2'); if (s2) s2.classList.toggle('unlocked', sub >= 1000);
+                    let s3 = document.getElementById('ms-step-3'); if (s3) s3.classList.toggle('unlocked', sub >= 1500);
+                    let stTxt = document.getElementById('cart-milestones-status-txt');
+                    if (stTxt) {
+                        if (sub >= 1500) stTxt.innerHTML = '🎉 مبروك! فتحت جميع المحطات الثلاث (شحن مجاني + هدية المزرعة المجانية)!';
+                        else if (sub >= 1000) stTxt.innerHTML = `🎉 حصلت على الشحن المجاني! أضف ${1500 - sub} ج لفتح هدية المزرعة المجانية 🎁`;
+                        else if (sub >= 500) stTxt.innerHTML = `🚚 فتحت المحطة الأولى! أضف ${1000 - sub} ج للحصول على شحن مجاني بالكامل`;
+                        else stTxt.innerHTML = `🏆 أضف ${500 - sub} ج لفتح المحطة الأولى من مكافآت السلة!`;
+                    }
+                }
+            }
+        };
+
+        const origUpdateCartUIV67 = window.updateCartUI;
+        window.updateCartUI = function() {
+            origUpdateCartUIV67();
+            window.updateFloatingBottomCartBarAndMilestones();
+        };
+
+        // -------------------------------------------------------------------------
+        // 10. إرسال فيديو قصير بالشات + المجيب الآلي بالكلمات المفتاحية + تحويل المحادثة لطلب بضغطة زر
+        // -------------------------------------------------------------------------
+        window.sendChatVideoAttachment = async function(senderRole, fileInp) {
+            if (!fileInp || !fileInp.files || fileInp.files.length === 0) return;
+            let file = fileInp.files[0];
+            if (file.size > 8 * 1024 * 1024) {
+                window.showToast('يرجى اختيار مقطع فيديو قصير أقل من 8 ميجابايت لسرعة الإرسال', 'error');
+                fileInp.value = '';
+                return;
+            }
+            let targetChatId = senderRole === 'customer'
+                ? (currentUser ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
+                : activeAdminChatId;
+            if (!targetChatId) return;
+
+            window.showToast('🎥 جاري تجهيز وإرسال مقطع الفيديو في المحادثة...', 'info');
+            let reader = new FileReader();
+            reader.onloadend = async () => {
+                let videoDataUrl = reader.result;
+                let nowIso = new Date().toISOString();
+                let sName = senderRole === 'admin' ? window.getCurrentStaffCleanName() : ((currentUser && currentUser.displayName) || 'عميل');
+                let msg = {
+                    sender: senderRole,
+                    staffName: sName,
+                    text: '🎥 مرفق مقطع فيديو',
+                    videoDataUrl: videoDataUrl,
+                    timestamp: nowIso
+                };
+                try {
+                    await setDoc(doc(db, 'chats', targetChatId), {
+                        messages: arrayUnion(msg),
+                        lastUpdate: nowIso,
+                        unreadByAdmin: senderRole === 'customer',
+                        adminReplied: senderRole === 'admin'
+                    }, { merge: true });
+                    window.showToast('🎥 تم إرسال الفيديو في المحادثة بنجاح!', 'success');
+                } catch (e) {
+                    window.showToast('الفيديو كبير جداً، يرجى إرسال مقطع أقصر', 'error');
+                }
+            };
+            reader.readAsDataURL(file);
+            fileInp.value = '';
+        };
+
+        // دعم عرض الفيديو داخل فقاعة الشات
+        const origFormatRichChatV67 = window.formatRichChatMessageHtml;
+        window.formatRichChatMessageHtml = function(m, viewMode = 'customer') {
+            let html = origFormatRichChatV67(m, viewMode);
+            if (m.videoDataUrl) {
+                let vidTag = `<div style="margin-top:6px;"><video controls playsinline src="${m.videoDataUrl}" style="max-width:220px; max-height:200px; border-radius:10px; background:#000;"></video></div>`;
+                html = html.replace('</div>
+            </div>', vidTag + '</div>
+            </div>');
+            }
+            return html;
+        };
+
+        window.convertActiveChatToOrderOneClick = async function() {
+            if (!activeAdminChatId) return;
+            let name = (document.getElementById('chat-ctrl-name') || {}).value || (document.getElementById('active-chat-user') || {}).textContent || 'عميل الشات';
+            let phone = (document.getElementById('chat-ctrl-phone') || {}).value || activeAdminChatId;
+            let addr = (document.getElementById('chat-ctrl-address') || {}).value || 'تم الاتفاق عبر شات خدمة العملاء';
+            window.openAdminPOSModal();
+            let nInp = document.getElementById('pos-cust-name'); if (nInp) nInp.value = name.replace(/🆔.*$/, '').trim();
+            let pInp = document.getElementById('pos-cust-phone'); if (pInp) pInp.value = phone;
+            let aInp = document.getElementById('pos-cust-addr'); if (aInp) aInp.value = addr;
+            window.showToast('📦 تم نقل بيانات العميل من الشات إلى نافذة تسجيل الطلب المباشر!', 'success');
+        };
+
+        // -------------------------------------------------------------------------
+        // 11. مهام نقاط الولاء + مشاركة المفضلة كقائمة هدايا + إدارة الاشتراك الشهري
+        // -------------------------------------------------------------------------
+        window.claimLoyaltyQuestReward = async function(questKey, ptsReward) {
+            if (!currentUser) { window.showToast('يرجى تسجيل الدخول أولاً', 'error'); window.showPanel('auth'); return; }
+            let storageKey = `zait_quest_${questKey}_${currentUser.uid}`;
+            if (localStorage.getItem(storageKey) === 'done') {
+                window.showToast('✅ حصلت على مكافأة هذه المهمة مسبقاً!', 'info');
+                return;
+            }
+            if (questKey === 'share') {
+                window.copyReferralLink();
+            }
+            localStorage.setItem(storageKey, 'done');
+            try {
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    loyaltyPoints: increment(ptsReward)
+                }, { merge: true });
+                window.showToast(`🎉 مبروك! تمت إضافة (+${ptsReward} نقطة ولاء) إلى رصيدك فوراً!`, 'success');
+            } catch (e) {}
+        };
+
+        window.shareWishlistAsGiftRegistry = function() {
+            if (!wishlist || wishlist.length === 0) {
+                window.showToast('قائمة المفضلة فارغة حالياً', 'info');
+                return;
+            }
+            let names = wishlist.map(id => {
+                let p = products.find(x => x.id === id);
+                return p ? `• ${p.name} (${p.price} ج)` : '';
+            }).filter(Boolean).join('\n');
+            let msg = `🎁 *قائمة منتجاتي المفضلة من متجر زيت الشجرة المباركة* 🌿\n\n${names}\n\n🔗 رابط المتجر: ${window.location.origin + window.location.pathname}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+        };
+
+        window.updateCustomerSubscriptionPref = async function(prefStatus) {
+            if (!currentUser) return;
+            try {
+                await setDoc(doc(db, 'users', currentUser.uid), { monthlySubscriptionStatus: prefStatus }, { merge: true });
+                window.showToast(`🔄 تم تحديث حالة اشتراكك الشهري إلى: (${prefStatus})`, 'success');
+            } catch (e) {}
+        };
+
+        // -------------------------------------------------------------------------
+        // 12. خريطة مبيعات الـ 27 محافظة + التقرير المالي الشهري المختوم PDF + حاسبة التسعير الذكي
+        // -------------------------------------------------------------------------
+        window.renderV68AdminAnalyticsAndGovMap = function() {
+            let govListEl = document.getElementById('admin-27gov-sales-list');
+            let staffListEl = document.getElementById('admin-live-staff-activity-list');
+            let affListEl = document.getElementById('admin-affiliates-summary-list');
+
+            if (govListEl) {
+                let govStats = {};
+                (adminOrdersArray || []).forEach(o => {
+                    let st = String(o.status || '');
+                    if (st.includes('لغى') || st.includes('رفض')) return;
+                    let g = (o.location && o.location.governorate) ? o.location.governorate : 'غير محدد';
+                    if (!govStats[g]) govStats[g] = { count: 0, revenue: 0 };
+                    govStats[g].count++;
+                    govStats[g].revenue += Number(o.totalAmount) || 0;
+                });
+                let sortedGovs = Object.entries(govStats).sort((a, b) => b[1].revenue - a[1].revenue);
+                if (sortedGovs.length === 0) {
+                    govListEl.innerHTML = '<p style="margin:0; color:var(--text-muted);">لا توجد مبيعات مسجلة بالمحافظات بعد.</p>';
+                } else {
+                    govListEl.innerHTML = sortedGovs.map(([gName, info], idx) => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:var(--input-bg); border-radius:8px; margin-bottom:4px;">
+                            <span><strong>#${idx + 1} 📍 ${window.escapeHTML(gName)}</strong> (${info.count} طلب)</span>
+                            <strong style="color:#4f46e5;">${info.revenue.toLocaleString()} ج</strong>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            if (staffListEl) {
+                let logs = Array.isArray(storeSettings.adminAuditLogs) ? storeSettings.adminAuditLogs : [];
+                let byActor = {};
+                logs.forEach(l => {
+                    let a = l.actor || 'مدير';
+                    byActor[a] = (byActor[a] || 0) + 1;
+                });
+                let entries = Object.entries(byActor);
+                staffListEl.innerHTML = `<strong style="color:var(--primary); display:block; margin-bottom:4px;">👨‍💼 نشاط فريق الإدارة والموظفين:</strong>` +
+                    (entries.length > 0
+                        ? entries.map(([act, cnt]) => `<div style="font-size:0.8rem; padding:4px 0;">🟢 <strong>${window.escapeHTML(act)}:</strong> أنجز ${cnt} عملية إدارية</div>`).join('')
+                        : `<div style="font-size:0.8rem; color:var(--text-muted);">🟢 الإدارة متصلة الآن</div>`);
+            }
+        };
+
+        window.calculateSmartProductPrice = function() {
+            let oil = Number((document.getElementById('spc-oil-cost') || {}).value) || 0;
+            let pack = Number((document.getElementById('spc-pack-cost') || {}).value) || 0;
+            let ads = Number((document.getElementById('spc-ads-cost') || {}).value) || 0;
+            let marginPct = Number((document.getElementById('spc-margin-pct') || {}).value) || 35;
+            let totalCost = oil + pack + ads;
+            if (totalCost <= 0) {
+                window.showToast('أدخل تكلفة الزيت والعبوة أولاً', 'error');
+                return;
+            }
+            let suggestedPrice = Math.ceil((totalCost * (1 + marginPct / 100)) / 5) * 5;
+            let netProfitPerUnit = suggestedPrice - totalCost;
+            let resBox = document.getElementById('spc-result-box');
+            if (resBox) {
+                resBox.innerHTML = `💡 إجمالي التكلفة للعبوة: ${totalCost} ج | 💰 سعر البيع المقترح: <span style="font-size:1.05rem; color:#166534;">${suggestedPrice} ج</span> | 💎 صافي ربحك في العبوة: ${netProfitPerUnit} ج`;
+            }
+        };
+
+        window.printMonthlyFinancialReportPDF = function() {
+            let validOrders = (adminOrdersArray || []).filter(o => !String(o.status || '').includes('لغى') && !String(o.status || '').includes('رفض'));
+            let totalRev = validOrders.reduce((s, o) => s + (Number(o.totalAmount) || 0), 0);
+            let totalExp = (Array.isArray(storeSettings.expensesList) ? storeSettings.expensesList : []).reduce((s, x) => s + (Number(x.amount) || 0), 0);
+            let w = window.open('', '_blank');
+            if (!w) return;
+            w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>التقرير المالي الشهري - متجر زيت الشجرة المباركة</title></head>
+            <body style="font-family:'Cairo',Tahoma,sans-serif; padding:30px; max-width:720px; margin:0 auto; border:4px double #3c521e; border-radius:16px;">
+                <h2 style="color:#3c521e; text-align:center; margin-top:0;">🌿 التقرير المالي والمحاسبي الشامل - متجر زيت الشجرة المباركة</h2>
+                <p style="text-align:center; color:#64748b;">تاريخ استخراج التقرير: ${new Date().toLocaleString('ar-EG')}</p>
+                <hr style="border:0; border-top:2px solid #c59b27; margin:15px 0;">
+                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; text-align:center; margin-bottom:20px;">
+                    <div style="background:#f0fdf4; padding:14px; border-radius:12px; border:1px solid #22c55e;"><strong>إجمالي المبيعات</strong><div style="font-size:1.3rem; color:#166534; font-weight:900; margin-top:6px;">${totalRev.toLocaleString()} ج</div><small>${validOrders.length} طلب مكتمل/نشط</small></div>
+                    <div style="background:#fef2f2; padding:14px; border-radius:12px; border:1px solid #ef4444;"><strong>إجمالي المصروفات</strong><div style="font-size:1.3rem; color:#991b1b; font-weight:900; margin-top:6px;">${totalExp.toLocaleString()} ج</div></div>
+                    <div style="background:#eff6ff; padding:14px; border-radius:12px; border:1px solid #3b82f6;"><strong>صافي التدفق النقدي</strong><div style="font-size:1.3rem; color:#1e40af; font-weight:900; margin-top:6px;">${(totalRev - totalExp).toLocaleString()} ج</div></div>
+                </div>
+                <script>window.onload = function(){ window.print(); };<\/script>
+            </body></html>`);
+            w.document.close();
+        };
+
+        // ربط جميع إعدادات V68 بـ applyV66MasterUI
+        const origApplyV67MasterUI = window.applyV66MasterUI;
+        window.applyV66MasterUI = function() {
+            origApplyV67MasterUI();
+            window.syncOnlinePaymentGatewayOptionsInCheckout();
+            window.updateFloatingBottomCartBarAndMilestones();
+            window.updatePushNotifStatusBadge();
+
+            let showEl = (id, cond, disp = 'block') => { let el = document.getElementById(id); if (el) el.style.display = cond ? disp : 'none'; };
+            showEl('sidebar-driver-portal-btn', storeSettings.enableDriverPortal !== false);
+            showEl('sidebar-affiliate-btn', storeSettings.enableAffiliateSystem !== false);
+            showEl('sidebar-live-stream-btn', storeSettings.enableLiveShopping !== false);
+            showEl('home-seasonal-bundles-bar', storeSettings.enableLiveShopping !== false, 'flex');
+            showEl('modal-taste-nutrition-box', storeSettings.enableTasteNutrition !== false);
+            showEl('header-font-size-btn', storeSettings.enableFloatingCartBar !== false, 'inline-block');
+            showEl('checkout-advanced-delivery-prefs', storeSettings.enable3TierMilestones !== false);
+
+            if (isCurrentUserAdmin) {
+                let pmInp = document.getElementById('setting-paymob-iframe-id');
+                if (pmInp && storeSettings.paymobIframeId !== undefined) pmInp.value = storeSettings.paymobIframeId;
+                let fwInp = document.getElementById('setting-fawry-merchant-code');
+                if (fwInp && storeSettings.fawryMerchantCode !== undefined) fwInp.value = storeSettings.fawryMerchantCode;
+                window.renderV68AdminAnalyticsAndGovMap();
+                window.injectHelpQuestionButtonsInSettings();
+            }
+        };
+
+        Object.assign(window.SETTINGS_DETAILED_HELP_DB, {
+            'setting-enable-payment-gateways': {
+                title: 'بوابات الدفع الإلكتروني الأوتوماتيكية (Paymob / Fawry)',
+                desc: 'يضيف في صفحة إتمام الطلب خيار الدفع بالبطاقات البنكية (Visa / MasterCard عبر Paymob) والدفع بكود فوري المرجعي (Fawry Pay). يمكنك إيقافه الآن وتشغيله بضغطة زر فور تفعيل تعاقدك التجاري.',
+                mockBadge: '💳 Paymob & Fawry',
+                mockTitle: 'الدفع بالفيزا أو كود فوري الآلي',
+                mockSub: 'جاهز للتشغيل الفوري بضغطة زر'
+            },
+            'setting-enable-driver-portal': {
+                title: 'بوابة المندوب المستقلة وتأكيد التسليم والتحصيل',
+                desc: 'تفتح شاشة مخصصة لمندوب التوصيل تعرض له الطلبات الجاهزة للشحن مع زر اتصال بالعميل، فتح العنوان على خرائط جوجل، وزر تأكيد التسليم وتحصيل المبلغ بضغطة واحدة.',
+                mockBadge: '🛵 بوابة المندوب',
+                mockTitle: 'خريطة العميل + تأكيد التسليم الفوري',
+                mockSub: 'تسهيل كامل لعمل مناديب التوصيل'
+            },
+            'setting-enable-affiliate-system': {
+                title: 'نظام المسوقين بالعمولة (Affiliate System 10%)',
+                desc: 'يتيح لعملائك والمسوقين توليد رابط تسويق خاص برقم هاتفهم ومشاركته عبر واتساب لكسب عمولة على كل طلب يأتي عن طريقهم.',
+                mockBadge: '🤝 مسوق بالعمولة',
+                mockTitle: 'رابط تسويق خاص لكل مسوق',
+                mockSub: 'مضاعفة المبيعات بدون حملات إعلانية ممولة'
+            },
+            'setting-enable-live-shopping': {
+                title: 'البث المباشر من المزرعة + الباقات الموسمية الجاهزة',
+                desc: 'يضيف نافذة البث المباشر من معصرة سيناء مع زر شراء فوري للمنتج المعروض، بالإضافة لشريط الباقات الموسمية الجاهزة (باقة رمضان، باقة المناعة، وباقة العائلة).',
+                mockBadge: '🔴 بث مباشر + باقات',
+                mockTitle: 'تسوق حي وباقات جاهزة بضغطة زر',
+                mockSub: 'يرفع معدل التحويل والشراء السريع'
+            },
+            'setting-enable-taste-nutrition': {
+                title: 'مؤشر المذاق والنكهة + القيمة الغذائية + شهادة المعمل',
+                desc: 'يعرض داخل نافذة كل منتج مقياساً بصرياً للنكهة الفاكهية واللذعة الصحية والقيمة الغذائية (أوميجا 9 وفيتامين E) مع زر عرض شهادة تحليل الحموضة المعملية (< 0.5%).',
+                mockBadge: '👅 مؤشر المذاق والنقاء',
+                mockTitle: 'شهادة فحص معملي + جدول غذائي',
+                mockSub: 'يمنح العميل ثقة 100% في جودة الزيت'
             }
         });
