@@ -38,7 +38,7 @@
     <link rel="apple-touch-icon" href="1000392409.jpeg">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="style.css?v=69">
+    <link rel="stylesheet" href="style.css?v=70">
     <script type="application/ld+json" id="dynamic-json-ld-schema">
     {
       "@context": "https://schema.org",
@@ -75,7 +75,11 @@
     <div class="sidebar-overlay" id="sidebar-overlay" onclick="window.closeSidebar()"></div>
     <div class="sidebar" id="sidebar">
         <div style="padding: 20px; background: var(--primary); color: white; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0; font-size: 1.2rem;" class="translatable">الخدمات والأقسام</h3>
+            <div>
+                <h3 style="margin: 0; font-size: 1.15rem;" class="translatable">الخدمات والأقسام</h3>
+                <small style="font-size:0.7rem; opacity:0.85; display:block;">💡 اضغط مطولاً على أي قسم لتغيير ترتيبه ⬆️⬇️</small>
+            </div>
+            <button type="button" id="btn-sidebar-reorder-toggle" onclick="window.toggleSidebarReorderMode()" style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.5); color:white; border-radius:8px; padding:3px 8px; font-size:0.75rem; cursor:pointer; font-weight:bold;">↕️ ترتيب</button>
             <button type="button" onclick="window.closeSidebar()" style="background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer;">✖</button>
         </div>
         <div style="padding: 15px; display: flex; flex-direction: column; gap: 10px; flex: 1;">
@@ -98,6 +102,10 @@
                     <button type="button" class="btn btn-outline" style="width: 100%; border-color: var(--border-color); color: var(--text-color); text-align:right; padding:6px 10px; font-size:0.85rem;" onclick="window.showPanel('recently-viewed-panel'); window.closeSidebar();">👀 <span class="translatable">سجل المشاهدات</span></button>
                 </div>
             </div>
+
+            <!-- زرار عجلة الحظ وتتبع الطلب تحت قائمة حسابي مباشرة -->
+            <button type="button" id="sidebar-spin-wheel-btn" class="btn btn-outline sidebar-sortable-item" data-sb-id="spin-wheel" style="width: 100%; border-color: #ff6b00; color: #ff6b00; text-align: right; font-weight:bold;" onclick="window.openSpinWheelModal(); window.closeSidebar();">🎡 <span class="translatable">عجلة الحظ الأسبوعية</span></button>
+            <button type="button" id="sidebar-track-order-btn" class="btn btn-outline sidebar-sortable-item" data-sb-id="track-order" style="width: 100%; border-color: #028090; color: #028090; text-align: right; font-weight:bold;" onclick="window.showPanel('customer-orders'); window.closeSidebar();">🚚 <span class="translatable">تتبع طلبي برقم الهاتف</span></button>
 
             <!-- 2. قائمة تصفح الأقسام تحت قائمة حسابي مباشرة -->
             <div style="background:var(--input-bg); padding:10px; border-radius:10px; border:1px solid var(--border-color);">
@@ -123,9 +131,7 @@
                 <button type="button" id="sidebar-1tap-reorder-btn" class="btn btn-outline" style="width: 100%; border-color: var(--primary); color: var(--primary); text-align: right; font-weight:bold; padding:7px 10px; font-size:0.86rem;" onclick="window.executeOneTapLastReorder(); window.closeSidebar();">⚡ <span class="translatable">إعادة آخر طلب بضغطة واحدة</span></button>
                 <button type="button" id="sidebar-batch-tracker-btn" class="btn btn-outline" style="width: 100%; border-color: var(--primary); color: var(--primary); text-align: right; font-weight:bold; padding:7px 10px; font-size:0.86rem;" onclick="window.openBatchTrackerModal(); window.closeSidebar();">🌾 <span class="translatable">فاحص تاريخ العصرة والنقاء</span></button>
             </div>
-            <button type="button" id="sidebar-spin-wheel-btn" class="btn btn-outline" style="width: 100%; border-color: #ff6b00; color: #ff6b00; text-align: right; font-weight:bold;" onclick="window.openSpinWheelModal(); window.closeSidebar();">🎡 <span class="translatable">عجلة الحظ الأسبوعية</span></button>
-            <button type="button" id="sidebar-annual-calc-btn" class="btn btn-outline" style="width: 100%; border-color: var(--secondary); color: var(--primary); text-align: right; font-weight:bold;" onclick="window.openAnnualCalcModal(); window.closeSidebar();">🧮 <span class="translatable">حاسبة الخزين السنوي ورمضان</span></button>
-            <button type="button" id="sidebar-track-order-btn" class="btn btn-outline" style="width: 100%; border-color: #028090; color: #028090; text-align: right; font-weight:bold;" onclick="window.showPanel('customer-orders'); window.closeSidebar();">🚚 <span class="translatable">تتبع طلبي برقم الهاتف</span></button>
+            <button type="button" id="sidebar-annual-calc-btn" class="btn btn-outline sidebar-sortable-item" data-sb-id="annual-calc" style="width: 100%; border-color: var(--secondary); color: var(--primary); text-align: right; font-weight:bold;" onclick="window.openAnnualCalcModal(); window.closeSidebar();">🧮 <span class="translatable">حاسبة الخزين السنوي ورمضان</span></button>
 
             <div id="sidebar-switch-accounts-section" style="display:none;">
                 <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 10px 0;">
@@ -197,8 +203,8 @@
             <button type="button" class="btn btn-outline" style="padding: 5px 8px; font-size:1.1rem; background:transparent; border:none;" onclick="window.toggleDarkMode()">🌓</button>
             <button type="button" class="btn btn-outline" style="padding: 5px 12px; font-size:0.9rem; background:white; color:var(--primary);" id="btn-show-auth" onclick="window.showPanel('auth')"><span class="translatable">تسجيل الدخول</span></button>
             <div id="user-menu-container" style="display:none; position: relative;">
-                <button type="button" onclick="window.toggleDropdown(event)" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.3s;">
-                    <span id="user-email-display"></span> <span style="font-size:0.7rem;">▼</span>
+                <button type="button" onclick="window.toggleDropdown(event)" title="حسابي وتبديل الحسابات" style="background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 5px 10px; border-radius: 18px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;">
+                    <span>👤</span> <span id="user-email-display">حسابي</span> <span style="font-size:0.75rem; color:#fde68a;">▼</span>
                 </button>
                 <div id="profile-dropdown" class="dropdown-menu">
                     <div style="background:var(--input-bg); padding:10px 15px; text-align:center; border-bottom:1px solid var(--border-color);">
@@ -232,6 +238,7 @@
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: #e0a800; border-color: #d39e00;" onclick="window.showPanel('admin-returns')">الاسترجاع 🔄</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(111,66,193,0.2); border-color: #6f42c1; color: #6f42c1;" onclick="window.showPanel('admin-users')"><span class="translatable">العملاء 👥</span></button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(245,158,11,0.2); border-color: #f59e0b; color: #b45309; font-weight:bold;" onclick="window.showPanel('admin-staff-ratings')">تقييمات الموظفين ⭐</button>
+        <button type="button" class="nav-btn admin-tab" style="display: none; background: linear-gradient(135deg, #028090, #2563eb); color: white; border: none; font-weight: bold;" onclick="window.showPanel('admin-broadcast')">إرسال إشعارات 📢</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(40,167,69,0.2); border-color: #28a745; color: #28a745; font-weight:bold;" onclick="window.showPanel('admin-add-product')">إضافة منتج ➕</button>
         <button type="button" class="nav-btn admin-tab" style="display: none; background-color: rgba(2,128,144,0.2); border-color: #028090;" onclick="window.showPanel('admin')">الإعدادات ⚙️</button>
     </nav>
@@ -255,6 +262,7 @@
             <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin-returns')"><span>🔄 الاسترجاع</span></button>
             <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin-users')"><span>👥 العملاء</span></button>
             <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin-staff-ratings')"><span>⭐ تقييمات الموظفين</span></button>
+            <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin-broadcast')"><span>📢 إرسال إشعارات للعملاء</span></button>
             <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin-add-product')"><span>➕ إضافة منتج</span></button>
             <button type="button" class="admin-float-item-btn" onclick="window.selectAdminFloatPanel('admin')"><span>⚙️ الإعدادات المحمية</span></button>
         </div>
@@ -275,6 +283,62 @@
             </div>
         </div>
         <div id="admin-staff-ratings-container">جاري تحميل تقييمات الموظفين...</div>
+    </div>
+
+    <!-- قسم إرسال إشعارات للعملاء المتطور وسجل الرسائل وتفاصيل المشاهدة (Admin Broadcast Center V70) -->
+    <div class="panel" id="admin-broadcast-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid var(--border-color); padding-bottom:12px; margin-bottom:16px;">
+            <div>
+                <h2 style="color:#028090; margin:0;">📢 مركز إرسال الإشعارات والرسائل للعملاء</h2>
+                <p style="color:var(--text-muted); font-size:0.86rem; margin:4px 0 0 0;">اختر قنوات الإرسال المفضلة، وتابع سجل كل رسالة وعدد العملاء الذين وصلتهم ومن ضغط عليها وشاهدها بالتفصيل</p>
+            </div>
+        </div>
+
+        <!-- نموذج كتابة وإرسال الإشعار المتعدد القنوات -->
+        <div style="background:var(--input-bg); border:2px solid #028090; border-radius:14px; padding:16px; margin-bottom:20px;">
+            <h3 style="margin:0 0 10px 0; color:var(--primary); font-size:1.02rem;">✍️ كتابة رسالة أو إشعار جديد للعملاء:</h3>
+            <input type="text" id="bc-title-inp" placeholder="عنوان الإشعار (مثال: 🌿 عرض خاص اليوم على زيت الشجرة المباركة!)" value="🌿 إشعار هام من متجر زيت الشجرة المباركة" style="margin-bottom:8px; font-weight:bold;">
+            <textarea id="bc-message-inp" rows="3" placeholder="اكتب نص الرسالة أو العرض الذي سيصل للعملاء بالتفصيل..." style="margin-bottom:12px;"></textarea>
+
+            <div style="background:var(--panel-bg); padding:12px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+                    <strong style="color:var(--primary); font-size:0.9rem;">📡 حدد بعلامة (✔) القنوات التي تريد وصول الرسالة للعميل عبرها:</strong>
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="btn btn-outline" style="padding:3px 10px; font-size:0.75rem;" onclick="window.selectBroadcastChannelsPreset('push_and_app')">📱+🔔 الهاتف والتطبيق معاً</button>
+                        <button type="button" class="btn btn-outline" style="padding:3px 10px; font-size:0.75rem;" onclick="window.selectBroadcastChannelsPreset('all')">☑️ تحديد الكل</button>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:8px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:bold; font-size:0.86rem; background:#f0fdf4; padding:8px 10px; border-radius:10px; border:1px solid #86efac; margin:0; color:#166534;">
+                        <input type="checkbox" id="bc-ch-push" checked style="width:18px; height:18px; margin:0; accent-color:#16a34a;">
+                        <span>📱 إشعارات الهاتف الخارجية (حتى والموقع مغلق)</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:bold; font-size:0.86rem; background:#e0f2fe; padding:8px 10px; border-radius:10px; border:1px solid #7dd3fc; margin:0; color:#0369a1;">
+                        <input type="checkbox" id="bc-ch-inapp" checked style="width:18px; height:18px; margin:0; accent-color:#028090;">
+                        <span>🔔 إشعارات داخل التطبيق والمتجر</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:bold; font-size:0.86rem; background:#fef3c7; padding:8px 10px; border-radius:10px; border:1px solid #fde68a; margin:0; color:#92400e;">
+                        <input type="checkbox" id="bc-ch-email" style="width:18px; height:18px; margin:0; accent-color:#d97706;">
+                        <span>📧 البريد الإلكتروني المسجل للعملاء</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:bold; font-size:0.86rem; background:#d1fae5; padding:8px 10px; border-radius:10px; border:1px solid #6ee7b7; margin:0; color:#065f46;">
+                        <input type="checkbox" id="bc-ch-whatsapp" style="width:18px; height:18px; margin:0; accent-color:#059669;">
+                        <span>💬 رسائل واتساب لأرقام العملاء</span>
+                    </label>
+                </div>
+            </div>
+
+            <button type="button" id="btn-send-multi-broadcast" class="btn btn-full" style="background:linear-gradient(135deg, #028090, #1f3a13); font-size:1rem; padding:12px;" onclick="window.sendMultiChannelCustomerBroadcast()">🚀 إرسال الرسالة للعملاء عبر القنوات المحددة الآن</button>
+        </div>
+
+        <!-- سجل الرسائل والإشعارات المرسلة بالتاريخ والساعة والدقيقة -->
+        <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 style="margin:0; color:var(--primary); font-size:1.05rem;">📜 سجل الرسائل والإشعارات المرسلة للعملاء (اضغط على أي رسالة لعرض تفاصيل المشاهدة):</h3>
+                <button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.78rem;" onclick="window.loadAdminBroadcastHistory()">🔄 تحديث السجل</button>
+            </div>
+            <div id="admin-broadcast-log-container">جاري تحميل سجل الرسائل المرسلة...</div>
+        </div>
     </div>
 
     <!-- زر ونافذة عجلة الحظ التفاعلية -->
@@ -830,6 +894,76 @@
         </div>
     </div>
 
+    <!-- 1. نافذة تفاصيل الرسالة المرسلة للعملاء وإحصائيات المشاهدة والقنوات (Broadcast Details Modal) -->
+    <div id="broadcast-details-modal" class="modal-overlay" style="z-index: 6300;">
+        <div class="modal-content" style="max-width: 580px; text-align: right; border: 3px solid #028090; padding-bottom: 22px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('broadcast-details-modal').style.display='none'">X</button>
+            <h2 id="bcd-modal-title" style="color:#028090; margin:0 0 6px 0; text-align:center;">📊 تفاصيل الرسالة وتقرير المشاهدة</h2>
+            <div id="bcd-modal-meta" style="background:var(--input-bg); padding:12px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:12px; font-size:0.86rem; line-height:1.8;"></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; text-align:center;">
+                <div style="background:#e0f2fe; border:1.5px solid #38bdf8; border-radius:12px; padding:10px;">
+                    <strong style="color:#0369a1; display:block; font-size:0.82rem;">📬 وصلت إلى</strong>
+                    <span id="bcd-delivered-count" style="font-size:1.4rem; font-weight:900; color:#0284c7;">0 عميل</span>
+                </div>
+                <div style="background:#dcfce7; border:1.5px solid #22c55e; border-radius:12px; padding:10px;">
+                    <strong style="color:#166534; display:block; font-size:0.82rem;">👁️ ضغط عليها وفتحها وشاهدها</strong>
+                    <span id="bcd-opened-count" style="font-size:1.4rem; font-weight:900; color:#15803d;">0 عميل</span>
+                </div>
+            </div>
+            <strong style="color:var(--primary); display:block; margin-bottom:8px; font-size:0.9rem;">👥 قائمة العملاء وحالة المشاهدة والقناة (اضغط على اسم أي عميل لعرض كل معلوماته والدخول لحسابه):</strong>
+            <div id="bcd-recipients-list" style="max-height: 290px; overflow-y: auto; display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+    </div>
+
+    <!-- 2. نافذة معلومات العميل الكاملة عند الضغط على اسمه داخل تفاصيل الإشعار (Customer Full Info Modal) -->
+    <div id="broadcast-cust-profile-modal" class="modal-overlay" style="z-index: 6350;">
+        <div class="modal-content" style="max-width: 460px; text-align: right; border: 3px solid #4f46e5; padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('broadcast-cust-profile-modal').style.display='none'">X</button>
+            <h2 style="color:#4f46e5; margin:0 0 10px 0; text-align:center;">👤 بطاقة معلومات العميل الكاملة</h2>
+            <div id="bccp-modal-body" style="background:var(--input-bg); padding:14px; border-radius:12px; border:1px solid var(--border-color); font-size:0.88rem; line-height:1.9; margin-bottom:12px;"></div>
+            <div id="bccp-modal-actions" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+    </div>
+
+    <!-- 3. نافذة مهمة إكمال بيانات حساب العميل للحصول على نقاط الولاء (Complete Profile Quest Modal) -->
+    <div id="quest-profile-modal" class="modal-overlay" style="z-index: 6280;">
+        <div class="modal-content" style="max-width: 440px; text-align: right; border: 2px solid var(--primary); padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('quest-profile-modal').style.display='none'">X</button>
+            <h2 style="color:var(--primary); margin:0 0 6px 0; text-align:center;">👤 إكمال بيانات حسابي واستلام النقاط</h2>
+            <p style="font-size:0.84rem; color:var(--text-muted); text-align:center; margin:0 0 12px 0;">يرجى كتابة اسمك الحقيقي ورقم هاتفك وعنوانك وحفظها ليتم التحقق منها وإضافة النقاط لحسابك فوراً:</p>
+            <label style="font-weight:bold; font-size:0.82rem; display:block; margin-bottom:4px;">الاسم بالكامل (إلزامي):</label>
+            <input type="text" id="qp-full-name" placeholder="اكتب اسمك الثلاثي..." style="margin-bottom:8px;">
+            <label style="font-weight:bold; font-size:0.82rem; display:block; margin-bottom:4px;">رقم الهاتف الأساسي - واتساب (إلزامي):</label>
+            <input type="tel" id="qp-phone-num" placeholder="مثال: 01012345678" style="margin-bottom:8px;">
+            <label style="font-weight:bold; font-size:0.82rem; display:block; margin-bottom:4px;">المحافظة والعنوان التفصيلي (إلزامي):</label>
+            <input type="text" id="qp-full-address" placeholder="المحافظة - المدينة - اسم الشارع ورقم العقار..." style="margin-bottom:12px;">
+            <button type="button" class="btn btn-full" style="background:var(--primary);" onclick="window.submitVerifiedProfileQuest()">💾 حفظ بياناتي واستلام النقاط الآن</button>
+        </div>
+    </div>
+
+    <!-- 4. نافذة دعوة الأصدقاء عبر منصات التواصل الاجتماعي مع منع تكرار نفس الشخص (Invite Friend Quest Modal) -->
+    <div id="quest-invite-modal" class="modal-overlay" style="z-index: 6290;">
+        <div class="modal-content" style="max-width: 460px; text-align: right; border: 2px solid #028090; padding-bottom: 20px;">
+            <button type="button" class="modal-close" onclick="document.getElementById('quest-invite-modal').style.display='none'">X</button>
+            <h2 style="color:#028090; margin:0 0 6px 0; text-align:center;">📲 ادعُ أصدقاءك عبر تطبيقات التواصل واكسب نقاطاً!</h2>
+            <p style="font-size:0.83rem; color:var(--text-muted); text-align:center; margin:0 0 12px 0;">يمكنك دعوة أكثر من صديق وكسب نقاط عن كل صديق جديد، بشرط أن يكون كل صديق شخصاً مختلفاً لم ترسل له الدعوة من قبل:</p>
+            <div style="background:var(--input-bg); padding:10px 12px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:12px;">
+                <label style="font-weight:bold; font-size:0.82rem; color:var(--primary); display:block; margin-bottom:4px;">1️⃣ اكتب اسم ورقم هاتف (أو حساب) الصديق الجديد الذي ستدعوه:</label>
+                <input type="text" id="qi-friend-name" placeholder="اسم الصديق (مثال: محمد علي)..." style="margin-bottom:6px;">
+                <input type="tel" id="qi-friend-contact" placeholder="رقم هاتف الصديق (11 رقماً مختلفاً عن أصدقائك السابقين)..." style="margin-bottom:4px;">
+                <small style="font-size:0.74rem; color:#b45309;">🔒 يتحقق النظام تلقائياً من عدم تكرار نفس الرقم لمنع التحايل.</small>
+            </div>
+            <strong style="color:var(--primary); font-size:0.84rem; display:block; margin-bottom:8px; text-align:center;">2️⃣ اختر تطبيق التواصل لإرسال الدعوة لصديقك الآن:</strong>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                <button type="button" class="btn" style="background:#25D366; padding:9px; font-size:0.84rem;" onclick="window.dispatchFriendInviteViaApp('whatsapp')">💬 إرسال عبر واتساب</button>
+                <button type="button" class="btn" style="background:#0088cc; padding:9px; font-size:0.84rem;" onclick="window.dispatchFriendInviteViaApp('telegram')">✈️ إرسال عبر تيليجرام</button>
+                <button type="button" class="btn" style="background:#1877F2; padding:9px; font-size:0.84rem;" onclick="window.dispatchFriendInviteViaApp('facebook')">📘 مشاركة فيسبوك / مسنجر</button>
+                <button type="button" class="btn" style="background:#4f46e5; padding:9px; font-size:0.84rem;" onclick="window.dispatchFriendInviteViaApp('native')">📱 تطبيقات الهاتف الأخرى</button>
+            </div>
+            <div id="qi-invited-history-box" style="font-size:0.78rem; color:var(--text-muted); margin-top:8px;"></div>
+        </div>
+    </div>
+
     <div id="policy-info-modal" class="modal-overlay" style="z-index: 5600;">
         <div class="modal-content" style="max-width: 550px; text-align: right; border: 2px solid var(--secondary); padding-bottom: 25px;">
             <button type="button" class="modal-close" onclick="document.getElementById('policy-info-modal').style.display='none'">X</button>
@@ -1117,11 +1251,18 @@
 
         
         <div class="panel" id="loyalty-panel">
-            <div id="loyalty-quests-box" style="background:var(--input-bg); border:1.5px dashed var(--secondary); border-radius:12px; padding:12px 14px; margin-bottom:15px; text-align:right;">
-                <strong style="color:var(--primary); display:block; margin-bottom:8px;">🎯 مهام وتحديات نقاط الولاء المجانية (اكسب نقاطاً فورية):</strong>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <button type="button" class="btn btn-outline" style="flex:1; font-size:0.8rem; padding:6px 10px;" onclick="window.claimLoyaltyQuestReward('profile', 15)">👤 إكمال بيانات الحساب (+15 نقطة)</button>
-                    <button type="button" class="btn btn-outline" style="flex:1; font-size:0.8rem; padding:6px 10px;" onclick="window.claimLoyaltyQuestReward('share', 20)">📲 مشاركة المتجر مع صديق (+20 نقطة)</button>
+            <div id="loyalty-quests-box" style="background:var(--input-bg); border:2px dashed var(--secondary); border-radius:14px; padding:14px; margin-bottom:16px; text-align:right;">
+                <strong style="color:var(--primary); display:block; margin-bottom:10px; font-size:0.95rem;">🎯 مهام ومكافآت نقاط الولاء (نفّذ المهمة واحصل على نقاطك فوراً):</strong>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px;">
+                    <button type="button" id="btn-quest-complete-profile" class="btn btn-outline" style="font-size:0.83rem; padding:9px 12px; border-color:var(--primary); color:var(--primary); font-weight:bold;" onclick="window.openQuestCompleteProfileModal()">
+                        👤 إكمال بيانات الحساب (<span id="lbl-quest-profile-pts">+15</span> نقطة)
+                    </button>
+                    <button type="button" id="btn-quest-invite-friend" class="btn btn-outline" style="font-size:0.83rem; padding:9px 12px; border-color:#028090; color:#028090; font-weight:bold;" onclick="window.openQuestInviteFriendModal()">
+                        📲 ادعُ صديقاً عبر التواصل (<span id="lbl-quest-invite-pts">+20</span> نقطة)
+                    </button>
+                    <button type="button" id="btn-quest-follow-fb" class="btn btn-outline" style="font-size:0.83rem; padding:9px 12px; border-color:#1877F2; color:#1877F2; font-weight:bold;" onclick="window.startFacebookFollowQuest()">
+                        📘 تابع صفحتنا على فيسبوك (<span id="lbl-quest-fb-pts">+15</span> نقطة)
+                    </button>
                 </div>
             </div>
             <div class="loyalty-card-page" style="background: linear-gradient(135deg, var(--secondary), #e0a800); border-radius: 16px; padding: 20px; color: white; text-align: center; box-shadow: 0 8px 20px rgba(197, 155, 39, 0.3); margin-bottom: 20px; position: relative; overflow: hidden;">
@@ -1446,14 +1587,28 @@
                 <div id="customer-chat-media-toolbar" class="chat-compact-tools-drawer">
                     <button type="button" class="chat-media-btn" onclick="window.openChatPhotoChooser('customer')">📸 <span class="translatable">إرسال صورة / إيصال</span></button>
                     <button type="button" class="chat-media-btn" onclick="window.sendCustomerGpsInChat()">📍 <span class="translatable">إرسال موقعي GPS</span></button>
-                    <button type="button" id="btn-cust-voice-note" class="chat-media-btn" onclick="window.toggleChatVoiceNoteRecording('customer', this)">🎙️ <span class="translatable">تسجيل رسالة صوتية</span></button>
-                    <button type="button" id="btn-cust-cancel-voice" class="chat-media-btn" style="display:none; background:#dc2626; color:#fff; border-color:#dc2626;" onclick="window.cancelActiveVoiceRecording('customer')">🗑️ إلغاء وحذف المقطع</button>
+
                     <label class="chat-media-btn" style="margin:0;">
                         🎥 <span class="translatable">إرسال فيديو قصير</span>
                         <input type="file" accept="video/*" style="display:none;" onchange="window.sendChatVideoAttachment('customer', this)">
                     </label>
                     <button type="button" id="btn-cust-attach-order" class="chat-media-btn" onclick="window.openAttachOrderToChatModal()">📦 <span class="translatable">إرفاق طلب محدد</span></button>
                     <button type="button" id="btn-cust-rate-support" class="chat-media-btn" style="border-color:var(--secondary); color:#b45309;" onclick="window.openRateSupportModal()">⭐ <span class="translatable">تقييم الخدمة</span></button>
+                </div>
+                <!-- شريط اقتباس الرسالة + شريط تسجيل المقطع الصوتي الثابت دائماً فوق مربع الكتابة للعميل -->
+                <div id="cust-chat-quote-bar" class="chat-reply-quote-bar">
+                    <span id="cust-chat-quote-text"></span>
+                    <button type="button" style="background:none; border:none; color:#991b1b; font-weight:bold; cursor:pointer;" onclick="window.clearChatReplyQuote('customer')">✖</button>
+                </div>
+                <div id="customer-fixed-voice-bar" class="chat-fixed-voice-bar">
+                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%; justify-content:space-between;">
+                        <span style="font-size:0.8rem; font-weight:bold; color:var(--primary);">🎙️ <span class="translatable">رسالة صوتية سريعة:</span></span>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <button type="button" id="btn-cust-voice-note" class="chat-media-btn" style="background:var(--primary); color:#fff; border:none; padding:6px 14px;" onclick="window.toggleChatVoiceNoteRecording('customer', this)">🎙️ <span class="translatable">اضغط لتسجيل مقطع صوتي</span></button>
+                            <button type="button" id="btn-cust-cancel-voice" class="chat-media-btn" style="display:none; background:#dc2626; color:#fff; border-color:#dc2626; padding:6px 12px;" onclick="window.cancelActiveVoiceRecording('customer')">🗑️ إلغاء وحذف المقطع</button>
+                        </div>
+                    </div>
+                    <div id="cust-voice-preview-box" class="chat-voice-preview-box"></div>
                 </div>
                 <form id="support-form" style="display: flex; gap: 10px; position:relative; align-items:center;">
                     <div style="flex:1; display:flex; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; overflow:hidden; position:relative;">
@@ -1926,8 +2081,7 @@
                 </div>
                 <div id="admin-chat-media-toolbar" class="chat-compact-tools-drawer">
                     <button type="button" class="chat-media-btn" onclick="window.openChatPhotoChooser('admin')">📸 إرسال صورة (كاميرا / معرض)</button>
-                    <button type="button" id="btn-admin-voice-note" class="chat-media-btn" onclick="window.toggleChatVoiceNoteRecording('admin', this)">🎙️ تسجيل رسالة صوتية</button>
-                    <button type="button" id="btn-admin-cancel-voice" class="chat-media-btn" style="display:none; background:#dc2626; color:#fff; border-color:#dc2626;" onclick="window.cancelActiveVoiceRecording('admin')">🗑️ إلغاء وحذف المقطع</button>
+                    <button type="button" class="chat-media-btn" style="border-color:#d97706; color:#b45309;" onclick="window.sendInteractiveCouponInAdminChat()">🎟️ إرسال كوبون خصم تفاعلي بالشات</button>
                     <label class="chat-media-btn" style="margin:0;">
                         🎥 إرسال فيديو
                         <input type="file" accept="video/*" style="display:none;" onchange="window.sendChatVideoAttachment('admin', this)">
@@ -1945,6 +2099,21 @@
                     <button type="button" class="work-canned-chip" onclick="window.insertCannedAdminReply('تم تأكيد طلب حضرتك وجاري تجهيزه بعناية ليصلك في أسرع وقت 📦')">📦 تأكيد التجهيز</button>
                     <button type="button" class="work-canned-chip" onclick="window.insertCannedAdminReply('طلب حضرتك خرج مع المندوب للشحن وسيتواصل معك قريباً جداً 🚚')">🚚 تم الشحن</button>
                     <button type="button" class="work-canned-chip" onclick="window.insertCannedAdminReply('الزيت سيناوي بكر ممتاز عصرة أولى على البارد 100% ومضمون مع حق المعاينة عند الاستلام 🌿')">🌿 ضمان الجودة</button>
+                </div>
+                <!-- شريط اقتباس الرسالة + شريط تسجيل المقطع الصوتي الثابت دائماً فوق مربع الكتابة للمدير -->
+                <div id="admin-chat-quote-bar" class="chat-reply-quote-bar">
+                    <span id="admin-chat-quote-text"></span>
+                    <button type="button" style="background:none; border:none; color:#991b1b; font-weight:bold; cursor:pointer;" onclick="window.clearChatReplyQuote('admin')">✖</button>
+                </div>
+                <div id="admin-fixed-voice-bar" class="chat-fixed-voice-bar">
+                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%; justify-content:space-between;">
+                        <span style="font-size:0.8rem; font-weight:bold; color:#028090;">🎙️ تسجيل مقطع صوتي مباشر للعميل:</span>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <button type="button" id="btn-admin-voice-note" class="chat-media-btn" style="background:#028090; color:#fff; border:none; padding:6px 14px;" onclick="window.toggleChatVoiceNoteRecording('admin', this)">🎙️ اضغط لتسجيل مقطع صوتي</button>
+                            <button type="button" id="btn-admin-cancel-voice" class="chat-media-btn" style="display:none; background:#dc2626; color:#fff; border-color:#dc2626; padding:6px 12px;" onclick="window.cancelActiveVoiceRecording('admin')">🗑️ إلغاء وحذف المقطع</button>
+                        </div>
+                    </div>
+                    <div id="admin-voice-preview-box" class="chat-voice-preview-box"></div>
                 </div>
                 <div style="display:flex; gap:10px; align-items:center;">
                     <div style="flex:1; display:flex; background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; overflow:hidden; position:relative;">
@@ -2030,9 +2199,17 @@
                     </div>
                     <button type="button" class="btn" style="background:var(--secondary); color:white; padding:7px 16px; font-size:0.88rem;" onclick="window.saveSettings()">💾 حفظ كل الإعدادات الآن</button>
                 </div>
-                <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
-                    <input type="search" id="admin-settings-quick-search" placeholder="🔍 ابحث عن أي خيار أو ميزة في الإعدادات (مثال: دفع، إشعارات، مندوب، عجلة، واتساب، خط)..." oninput="window.filterAdminSettingsCards()" style="margin:0; flex:1; border:2px solid var(--secondary);">
-                    <button type="button" class="btn btn-outline" style="padding:8px 12px; font-size:0.8rem;" onclick="let el=document.getElementById('admin-settings-quick-search'); if(el){el.value=''; window.filterAdminSettingsCards();}">✖ عرض الكل</button>
+                <div style="display:flex; gap:6px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:210px; display:flex; align-items:center; background:var(--panel-bg); border:2px solid var(--secondary); border-radius:10px; overflow:hidden; padding:0 4px;">
+                        <input type="text" id="admin-settings-quick-search" placeholder="اكتب اسم الميزة أو الخيار ثم اضغط العدسة 🔍..." onkeydown="if(event.key==='Enter'){event.preventDefault(); window.filterAdminSettingsCards();}" style="margin:0; border:none; flex:1; padding:9px 10px; background:transparent;">
+                        <button type="button" title="مسح وإلغاء البحث" onclick="window.clearAdminSettingsSearch()" style="background:#fee2e2; color:#dc2626; border:none; border-radius:8px; width:32px; height:32px; font-weight:900; cursor:pointer; margin-left:4px; display:inline-flex; align-items:center; justify-content:center;">✖</button>
+                        <button type="button" title="اضغط للبحث الآن" onclick="window.filterAdminSettingsCards()" style="background:var(--primary); color:#fff; border:none; border-radius:8px; padding:6px 12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">🔍 بحث</button>
+                    </div>
+                    <div style="display:flex; gap:4px;">
+                        <button type="button" class="btn btn-outline" style="padding:6px 10px; font-size:0.76rem; border-color:#16a34a; color:#16a34a;" onclick="window.filterSettingsByActiveState('enabled')">🟢 المفعّل فقط</button>
+                        <button type="button" class="btn btn-outline" style="padding:6px 10px; font-size:0.76rem; border-color:#dc2626; color:#dc2626;" onclick="window.filterSettingsByActiveState('disabled')">🔴 المتوقف فقط</button>
+                        <button type="button" class="btn btn-outline" style="padding:6px 10px; font-size:0.76rem;" onclick="window.undoLastSettingsChange()">↩️ تراجع</button>
+                    </div>
                 </div>
                 <div id="admin-settings-search-count" style="display:none; background:#fef3c7; color:#92400e; padding:6px 12px; border-radius:8px; font-size:0.82rem; font-weight:bold; margin-bottom:10px;"></div>
                 <div class="admin-pro-tabs-bar" id="admin-pro-tabs-bar">
@@ -2185,6 +2362,50 @@
                         <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                             <input type="checkbox" id="setting-enable-product-compare" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
                             <span>⚖️ تفعيل مقارنة المنتجات السريعة وحاسبة التوفير للأحجام</span>
+                        </label>
+                        <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
+                        <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">🎯 التحكم في أزرار ونقاط مهام الولاء الثلاثة + إشعارات العملاء وتطويرات الشات (V70):</h4>
+                        <div style="background:var(--panel-bg); padding:12px; border-radius:10px; border:2px solid #c59b27; margin-bottom:8px;">
+                            <strong style="color:var(--primary); display:block; margin-bottom:8px; font-size:0.9rem;">🎁 تشغيل/إيقاف أزرار مهام نقاط الولاء وتحديد عدد نقاط كل مهمة:</strong>
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:8px; padding-bottom:6px; border-bottom:1px dashed var(--border-color);">
+                                <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.86rem; margin:0;">
+                                    <input type="checkbox" id="setting-enable-quest-profile" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                                    <span>👤 تفعيل زر (إكمال بيانات الحساب والهاتف والعنوان)</span>
+                                </label>
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                    <span style="font-size:0.8rem;">النقاط:</span>
+                                    <input type="number" id="setting-quest-profile-points" value="15" min="1" max="500" style="margin:0; width:70px; padding:4px 6px; font-weight:bold; text-align:center;" onchange="window.saveSettings()">
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:8px; padding-bottom:6px; border-bottom:1px dashed var(--border-color);">
+                                <label style="font-weight:bold; color:#028090; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.86rem; margin:0;">
+                                    <input type="checkbox" id="setting-enable-quest-invite" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                                    <span>📲 تفعيل زر (ادعُ صديقاً مختلفاً عبر منصات التواصل)</span>
+                                </label>
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                    <span style="font-size:0.8rem;">النقاط:</span>
+                                    <input type="number" id="setting-quest-invite-points" value="20" min="1" max="500" style="margin:0; width:70px; padding:4px 6px; font-weight:bold; text-align:center;" onchange="window.saveSettings()">
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                                <label style="font-weight:bold; color:#1877F2; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.86rem; margin:0;">
+                                    <input type="checkbox" id="setting-enable-quest-fb" style="width:18px; height:18px; margin:0; accent-color:#1877F2;" onchange="window.saveSettings()">
+                                    <span>📘 تفعيل زر (تابع صفحة الموقع على فيسبوك)</span>
+                                </label>
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                    <span style="font-size:0.8rem;">النقاط:</span>
+                                    <input type="number" id="setting-quest-fb-points" value="15" min="1" max="500" style="margin:0; width:70px; padding:4px 6px; font-weight:bold; text-align:center;" onchange="window.saveSettings()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-chat-advanced-v70" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>💬 تفعيل (الرد على رسالة محددة بالاقتباس + تعديل/حذف الرسالة + معاينة الصوت قبل الإرسال + مؤشر الكتابة الحي)</span>
+                        </label>
+                        <label style="font-weight:bold; color:var(--primary); display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+                            <input type="checkbox" id="setting-enable-sidebar-longpress-sort" style="width:18px; height:18px; margin:0; accent-color:#028090;" onchange="window.saveSettings()">
+                            <span>↕️ تفعيل (تغيير ترتيب أقسام القائمة الجانبية بالضغط المطول وحفظ الترتيب)</span>
                         </label>
                         <hr style="border:0; border-top:1px dashed var(--border-color); margin:8px 0;">
                         <h4 style="margin:4px 0; color:var(--primary); font-size:0.95rem;">💳 بوابات الدفع الإلكتروني + بوابة المندوب + المسوقين بالعمولة + البث المباشر ومميزات (V68):</h4>
@@ -2919,6 +3140,6 @@
             <p class="dev-signature">تم الإنشاء بواسطة المهندس أحمد وائل</p>
         </div>
     </footer>
-    <script type="module" src="script.js?v=69"></script>
+    <script type="module" src="script.js?v=70"></script>
 </body>
 </html>

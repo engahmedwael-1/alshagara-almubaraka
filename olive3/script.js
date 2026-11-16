@@ -362,7 +362,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
 
         window.showToast = function(message, type = 'info') { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${type}`; let icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️'); toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`; container.appendChild(toast); setTimeout(() => toast.classList.add('show'), 10); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000); };
 
-        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'global-notifications-panel': document.getElementById('global-notifications-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel'), 'profile': document.getElementById('profile-panel'), 'admin-work': document.getElementById('admin-work-panel'), 'admin-add-product': document.getElementById('admin-add-product-panel'), 'recipes': document.getElementById('recipes-panel'), 'admin-staff-ratings': document.getElementById('admin-staff-ratings-panel') };
+        const panels = { 'home': document.getElementById('home-panel'), 'cart': document.getElementById('cart-panel'), 'checkout': document.getElementById('checkout-panel'), 'auth': document.getElementById('auth-panel'), 'admin': document.getElementById('admin-panel'), 'support': document.getElementById('support-panel'), 'admin-messages': document.getElementById('admin-messages-panel'), 'admin-orders': document.getElementById('admin-orders-panel'), 'admin-returns': document.getElementById('admin-returns-panel'), 'customer-orders': document.getElementById('customer-orders-panel'), 'admin-dashboard': document.getElementById('admin-dashboard-panel'), 'wishlist': document.getElementById('wishlist-panel'), 'reviews': document.getElementById('reviews-panel'), 'recently-viewed-panel': document.getElementById('recently-viewed-panel'), 'global-notifications-panel': document.getElementById('global-notifications-panel'), 'admin-users': document.getElementById('admin-users-panel'), 'loyalty': document.getElementById('loyalty-panel'), 'profile': document.getElementById('profile-panel'), 'admin-work': document.getElementById('admin-work-panel'), 'admin-add-product': document.getElementById('admin-add-product-panel'), 'recipes': document.getElementById('recipes-panel'), 'admin-staff-ratings': document.getElementById('admin-staff-ratings-panel'), 'admin-broadcast': document.getElementById('admin-broadcast-panel') };
         let checkoutMap = null, userMarker = null;
 
         window.openSidebar = function() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('show'); }
@@ -847,7 +847,7 @@ let adminUsersUnsubscribe = null;
                 isCurrentUserAdmin = SUPER_ADMINS.includes((currentUser.email || '').toLowerCase()) || dynamicAdmins.includes((currentUser.email || '').toLowerCase()) || (currentUser.phoneNumber && SUPER_ADMINS.includes(currentUser.phoneNumber)); 
                 document.querySelectorAll('.admin-tab').forEach(tab => tab.style.display = isCurrentUserAdmin ? 'inline-block' : 'none'); 
                 let activePanel = document.querySelector('.panel.active');
-                if(!isCurrentUserAdmin && activePanel && ['admin', 'admin-add-product', 'admin-work', 'admin-orders', 'admin-messages', 'admin-dashboard', 'admin-returns', 'admin-users', 'admin-staff-ratings'].includes(activePanel.id.replace('-panel',''))) { window.showPanel('home'); }
+                if(!isCurrentUserAdmin && activePanel && ['admin', 'admin-add-product', 'admin-work', 'admin-orders', 'admin-messages', 'admin-dashboard', 'admin-returns', 'admin-users', 'admin-staff-ratings', 'admin-broadcast'].includes(activePanel.id.replace('-panel',''))) { window.showPanel('home'); }
                 if(isCurrentUserAdmin) { window.loadAdminOrders(); window.loadAdminReturns(); window.loadAdminUsers(); if(window.loadAdminAbandonedCarts) window.loadAdminAbandonedCarts(); if(window.renderLowStockAlerts) window.renderLowStockAlerts(); }
             } else { 
                 isCurrentUserAdmin = false; document.querySelectorAll('.admin-tab').forEach(tab => tab.style.display = 'none'); 
@@ -11281,7 +11281,12 @@ window.showUserHistory = function(userId, userName) {
             ['setting-enable-floating-cart-bar', 'enableFloatingCartBar', true],
             ['setting-enable-3tier-milestones', 'enable3TierMilestones', true],
             ['setting-enable-keyword-autobot', 'enableKeywordAutobot', true],
-            ['setting-enable-gov-map-reports', 'enableGovMapReports', true]
+            ['setting-enable-gov-map-reports', 'enableGovMapReports', true],
+            ['setting-enable-quest-profile', 'enableQuestProfile', true],
+            ['setting-enable-quest-invite', 'enableQuestInvite', true],
+            ['setting-enable-quest-fb', 'enableQuestFb', true],
+            ['setting-enable-chat-advanced-v70', 'enableChatAdvancedV70', true],
+            ['setting-enable-sidebar-longpress-sort', 'enableSidebarLongpressSort', true]
         ];
 
         // دالة حفظ موحدة وذرية (Atomic Save) تحفظ كل الخيارات دفعة واحدة في ثانية واحدة وتمنع رجوع علامة الصح نهائياً!
@@ -11341,7 +11346,10 @@ window.showUserHistory = function(userId, userName) {
                 adminFloatMenuSeconds: Math.max(2, Number(getV('setting-admin-float-seconds', storeSettings.adminFloatMenuSeconds || 5)) || 5),
                 customInstaStoriesData: getV('setting-custom-insta-stories', storeSettings.customInstaStoriesData || ''),
                 paymobIframeId: getV('setting-paymob-iframe-id', storeSettings.paymobIframeId || ''),
-                fawryMerchantCode: getV('setting-fawry-merchant-code', storeSettings.fawryMerchantCode || '')
+                fawryMerchantCode: getV('setting-fawry-merchant-code', storeSettings.fawryMerchantCode || ''),
+                questProfilePoints: Math.max(1, Number(getV('setting-quest-profile-points', storeSettings.questProfilePoints || 15)) || 15),
+                questInvitePoints: Math.max(1, Number(getV('setting-quest-invite-points', storeSettings.questInvitePoints || 20)) || 20),
+                questFbPoints: Math.max(1, Number(getV('setting-quest-fb-points', storeSettings.questFbPoints || 15)) || 15)
             });
 
             if (window.collectAdminWheel7PrizesFromDOM) {
@@ -14180,3 +14188,924 @@ window.showUserHistory = function(userId, userName) {
                 mockSub: 'يمنح العميل ثقة 100% في جودة الزيت'
             }
         });
+
+
+        // =========================================================================
+        // === النسخة V70 الشاملة: مركز إرسال الإشعارات متعدد القنوات + تثبيت قائمة الزر العائم + شريط الصوت الثابت + مهام الولاء المحمية + ترتيب القائمة الجانبية ===
+        // =========================================================================
+
+        window.ZAIT_OFFICIAL_FB_URL = "https://www.facebook.com/share/1Dh3Zv7868/";
+        window.previousSettingsBackupSnapshot = null;
+
+        // حفظ نسخة من الإعدادات قبل كل تعديل لإتاحة زر (↩️ تراجع عن آخر تعديل)
+        const origSaveSettingsV68 = window.saveSettings;
+        window.saveSettings = async function() {
+            try {
+                window.previousSettingsBackupSnapshot = JSON.parse(JSON.stringify(storeSettings || {}));
+            } catch (e) {}
+            return await origSaveSettingsV68();
+        };
+
+        window.undoLastSettingsChange = async function() {
+            if (!window.previousSettingsBackupSnapshot) {
+                window.showToast('لا يوجد تعديل سابق للتراجع عنه حالياً', 'info');
+                return;
+            }
+            try {
+                Object.assign(storeSettings, window.previousSettingsBackupSnapshot);
+                await setDoc(doc(db, 'settings', 'main'), window.previousSettingsBackupSnapshot, { merge: true });
+                window.applySettingsToUI();
+                window.showToast('↩️ تم التراجع عن آخر تعديل واستعادة الإعدادات السابقة بنجاح!', 'success');
+            } catch (e) {
+                window.showToast('تعذر استرجاع الإعدادات السابقة', 'error');
+            }
+        };
+
+        // -------------------------------------------------------------------------
+        // أولاً: حل مشكلة قائمة الزر العائم للمدير (🛡️) لتظهر كاملة 100% داخل الشاشة في أي مكان
+        // -------------------------------------------------------------------------
+        window.positionAdminFloatingMenuInViewport = function() {
+            let wrap = document.getElementById('admin-floating-launcher-wrap');
+            let btn = document.getElementById('admin-floating-main-btn');
+            let menu = document.getElementById('admin-floating-popout-menu');
+            if (!wrap || !btn || !menu || menu.style.display !== 'flex') return;
+
+            let btnRect = btn.getBoundingClientRect();
+            let vw = window.innerWidth;
+            let vh = window.innerHeight;
+            let menuW = menu.offsetWidth || 205;
+            let menuH = menu.offsetHeight || 340;
+
+            // تحديد ما إذا كانت القائمة ستفتح يمين الزر أو يساره حسب المساحة المتاحة في الشاشة
+            let targetLeft;
+            if (btnRect.left + btnRect.width + menuW + 14 <= vw) {
+                targetLeft = btnRect.right + 8;
+            } else if (btnRect.left - menuW - 8 >= 8) {
+                targetLeft = btnRect.left - menuW - 8;
+            } else {
+                targetLeft = Math.max(8, Math.min(vw - menuW - 8, (vw - menuW) / 2));
+            }
+
+            // تحديد الارتفاع الرأسي بحيث لا تختفي أبداً أسفل الشاشة أو أعلى الشاشة
+            let targetTop = btnRect.top;
+            if (targetTop + menuH + 15 > vh) {
+                targetTop = vh - menuH - 15;
+            }
+            if (targetTop < 65) {
+                targetTop = 65;
+            }
+
+            menu.style.left = Math.round(targetLeft) + 'px';
+            menu.style.top = Math.round(targetTop) + 'px';
+            menu.style.bottom = 'auto';
+            menu.style.right = 'auto';
+        };
+
+        window.toggleAdminFloatingQuickMenu = function() {
+            let menu = document.getElementById('admin-floating-popout-menu');
+            if (!menu) return;
+            if (window.adminFloatHideTimer) clearTimeout(window.adminFloatHideTimer);
+
+            let isOpening = (menu.style.display !== 'flex');
+            menu.style.display = isOpening ? 'flex' : 'none';
+
+            if (isOpening) {
+                window.positionAdminFloatingMenuInViewport();
+                setTimeout(window.positionAdminFloatingMenuInViewport, 30);
+                let secs = Math.max(2, Number(storeSettings.adminFloatMenuSeconds) || 6);
+                window.adminFloatHideTimer = setTimeout(() => {
+                    if (menu) menu.style.display = 'none';
+                }, secs * 1000);
+            }
+        };
+
+        window.addEventListener('resize', () => {
+            let menu = document.getElementById('admin-floating-popout-menu');
+            if (menu && menu.style.display === 'flex') window.positionAdminFloatingMenuInViewport();
+        });
+
+        // -------------------------------------------------------------------------
+        // ثانياً: قسم إرسال إشعارات للعملاء المتعدد القنوات + سجل الرسائل بالتاريخ والساعة والدقيقة + تفاصيل المشاهدة وحساب العميل
+        // -------------------------------------------------------------------------
+        window.allBroadcastsCache = [];
+        window.allRegisteredUsersCache = [];
+
+        window.selectBroadcastChannelsPreset = function(mode) {
+            let cPush = document.getElementById('bc-ch-push');
+            let cApp = document.getElementById('bc-ch-inapp');
+            let cEm = document.getElementById('bc-ch-email');
+            let cWa = document.getElementById('bc-ch-whatsapp');
+            if (mode === 'push_and_app') {
+                if (cPush) cPush.checked = true;
+                if (cApp) cApp.checked = true;
+                if (cEm) cEm.checked = false;
+                if (cWa) cWa.checked = false;
+            } else {
+                if (cPush) cPush.checked = true;
+                if (cApp) cApp.checked = true;
+                if (cEm) cEm.checked = true;
+                if (cWa) cWa.checked = true;
+            }
+        };
+
+        window.sendMultiChannelCustomerBroadcast = async function() {
+            let titleInp = document.getElementById('bc-title-inp');
+            let msgInp = document.getElementById('bc-message-inp');
+            let title = (titleInp && titleInp.value.trim()) ? titleInp.value.trim() : '🌿 إشعار من متجر زيت الشجرة المباركة';
+            let message = (msgInp && msgInp.value.trim()) ? msgInp.value.trim() : '';
+
+            if (!message) {
+                window.showToast('يرجى كتابة نص الرسالة أو الإشعار أولاً', 'error');
+                if (msgInp) msgInp.focus();
+                return;
+            }
+
+            let chPush = document.getElementById('bc-ch-push') && document.getElementById('bc-ch-push').checked;
+            let chInApp = document.getElementById('bc-ch-inapp') && document.getElementById('bc-ch-inapp').checked;
+            let chEmail = document.getElementById('bc-ch-email') && document.getElementById('bc-ch-email').checked;
+            let chWa = document.getElementById('bc-ch-whatsapp') && document.getElementById('bc-ch-whatsapp').checked;
+
+            let selectedChannels = [];
+            if (chPush) selectedChannels.push('push');
+            if (chInApp) selectedChannels.push('inapp');
+            if (chEmail) selectedChannels.push('email');
+            if (chWa) selectedChannels.push('whatsapp');
+
+            if (selectedChannels.length === 0) {
+                window.showToast('يرجى تحديد قناة إرسال واحدة على الأقل بعلامة صح ✔', 'error');
+                return;
+            }
+
+            let btn = document.getElementById('btn-send-multi-broadcast');
+            if (btn) btn.disabled = true;
+            window.showToast('⏳ جاري إرسال الرسالة للعملاء عبر القنوات المحددة...', 'info');
+
+            try {
+                let usersSnap = await getDocs(collection(db, 'users'));
+                let recipientsList = [];
+                let emailsList = [];
+                let waPhonesList = [];
+                let nowIso = new Date().toISOString();
+
+                usersSnap.forEach(uDoc => {
+                    let u = uDoc.data();
+                    let seqNum = u.customerSeqNumber || window.getCustomerSeqNumber(uDoc.id) || 1;
+                    let uName = u.name || (u.email ? u.email.split('@')[0] : 'عميل');
+                    let uEmail = (u.email && u.email.includes('@')) ? u.email.trim() : '';
+                    let uPhone = u.phone1 || '';
+                    if (uEmail) emailsList.push(uEmail);
+                    if (uPhone) waPhonesList.push({ name: uName, phone: uPhone });
+
+                    recipientsList.push({
+                        uid: uDoc.id,
+                        name: uName,
+                        email: uEmail,
+                        phone: uPhone,
+                        seqNum: seqNum,
+                        deliveredAt: nowIso
+                    });
+                });
+
+                let broadcastPayload = {
+                    title: title,
+                    message: message,
+                    date: nowIso,
+                    channels: selectedChannels,
+                    deliveredCount: recipientsList.length,
+                    deliveredTo: recipientsList,
+                    openedCount: 0,
+                    seenBy: [],
+                    sentByAdmin: window.getCurrentStaffCleanName ? window.getCurrentStaffCleanName() : 'الإدارة'
+                };
+
+                let docRef = await addDoc(collection(db, 'global_notifications'), broadcastPayload);
+                let bcId = docRef.id;
+
+                // 1. إرسال إلى إشعارات التطبيق وإشعارات الهاتف الخارجية لجميع العملاء
+                if (chInApp || chPush) {
+                    let userNotifObj = {
+                        broadcastId: bcId,
+                        title: title,
+                        message: message,
+                        channels: selectedChannels,
+                        date: nowIso
+                    };
+                    for (let r of recipientsList) {
+                        updateDoc(doc(db, 'users', r.uid), {
+                            unreadNotifs: increment(1),
+                            notifications: arrayUnion(userNotifObj)
+                        }).catch(() => {});
+                    }
+                }
+
+                // إذا اختار إشعارات الهاتف الخارجية، نطلق أيضاً إشعار النظام الفوري
+                if (chPush && 'Notification' in window && Notification.permission === 'granted') {
+                    try {
+                        if ('serviceWorker' in navigator) {
+                            let reg = await navigator.serviceWorker.getRegistration();
+                            if (reg && reg.showNotification) {
+                                await reg.showNotification(title, {
+                                    body: message,
+                                    icon: 'icon-192.png',
+                                    badge: 'icon-192.png',
+                                    data: { url: window.location.origin + window.location.pathname + '?openNotif=' + bcId }
+                                });
+                            }
+                        }
+                    } catch (e) {}
+                }
+
+                // 2. إذا اختار البريد الإلكتروني المسجل للعملاء
+                if (chEmail && emailsList.length > 0) {
+                    let bccStr = emailsList.slice(0, 60).join(',');
+                    let mailtoUrl = `mailto:?bcc=${encodeURIComponent(bccStr)}&subject=${encodeURIComponent(title)}&body=${encodeURIComponent(message + '\n\nمتجر زيت الشجرة المباركة: ' + window.location.origin)}`;
+                    setTimeout(() => { window.open(mailtoUrl, '_blank'); }, 300);
+                }
+
+                // 3. إذا اختار واتساب للعملاء
+                if (chWa && waPhonesList.length > 0) {
+                    let firstWa = waPhonesList[0].phone.replace(/\D/g, '');
+                    if (firstWa && !firstWa.startsWith('20') && firstWa.length >= 10) firstWa = '20' + firstWa;
+                    if (firstWa.length >= 10) {
+                        setTimeout(() => {
+                            window.open(`https://wa.me/${firstWa}?text=${encodeURIComponent('*' + title + '*\n' + message)}`, '_blank');
+                        }, 500);
+                    }
+                }
+
+                if (msgInp) msgInp.value = '';
+                window.recordAdminAuditLog(`إرسال إشعار جماعي (${title}) إلى ${recipientsList.length} عميل`);
+                window.showToast(`🚀 تم إرسال الرسالة بنجاح إلى (${recipientsList.length}) عميل عبر القنوات المحددة!`, 'success');
+                window.loadAdminBroadcastHistory();
+            } catch (err) {
+                console.error(err);
+                window.showToast('حدث خطأ أثناء إرسال الرسالة', 'error');
+            }
+            if (btn) btn.disabled = false;
+        };
+
+        window.formatChannelBadgesHtml = function(channels) {
+            let chArr = Array.isArray(channels) && channels.length > 0 ? channels : ['inapp', 'push'];
+            let map = {
+                'push': '<span class="channel-pill-badge ch-push">📱 إشعار الهاتف الخارجي</span>',
+                'inapp': '<span class="channel-pill-badge ch-inapp">🔔 إشعارات التطبيق</span>',
+                'email': '<span class="channel-pill-badge ch-email">📧 البريد الإلكتروني</span>',
+                'whatsapp': '<span class="channel-pill-badge ch-wa">💬 واتساب</span>'
+            };
+            return chArr.map(c => map[c] || '').join(' ');
+        };
+
+        window.formatExactDateTimeAr = function(isoStr) {
+            if (!isoStr) return 'غير محدد';
+            let d = new Date(window.parseSafeTimestamp(isoStr, Date.now()));
+            return d.toLocaleString('ar-EG', {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+        };
+
+        window.broadcastHistoryUnsub = null;
+        window.loadAdminBroadcastHistory = function() {
+            if (window.broadcastHistoryUnsub) window.broadcastHistoryUnsub();
+            window.broadcastHistoryUnsub = onSnapshot(query(collection(db, 'global_notifications'), orderBy('date', 'desc')), (snap) => {
+                let cont = document.getElementById('admin-broadcast-log-container');
+                let list = [];
+                snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+                window.allBroadcastsCache = list;
+                if (!cont) return;
+
+                if (list.length === 0) {
+                    cont.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted);">📭 لا توجد رسائل أو إشعارات مرسلة في السجل بعد.</div>';
+                    return;
+                }
+
+                cont.innerHTML = list.map(b => {
+                    let delivCnt = Number(b.deliveredCount) || (Array.isArray(b.deliveredTo) ? b.deliveredTo.length : 0);
+                    let seenArr = Array.isArray(b.seenBy) ? b.seenBy : [];
+                    let openCnt = seenArr.length;
+                    let dtFormatted = window.formatExactDateTimeAr(b.date);
+                    let chBadges = window.formatChannelBadgesHtml(b.channels);
+                    return `<div class="broadcast-log-card" onclick="window.openBroadcastDetailsModal('${b.id}')">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
+                            <h4 style="margin:0; color:var(--primary); font-size:1rem;">📢 ${window.escapeHTML(b.title || 'إشعار للعملاء')}</h4>
+                            <span style="font-size:0.78rem; color:var(--text-muted); font-weight:bold; background:var(--panel-bg); padding:3px 9px; border-radius:10px; border:1px solid var(--border-color);">🕒 ${dtFormatted}</span>
+                        </div>
+                        <p style="margin:0 0 8px 0; font-size:0.88rem; color:var(--text-color); line-height:1.6;">${window.escapeHTML(b.message || '')}</p>
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding-top:8px; border-top:1px dashed var(--border-color);">
+                            <div><strong style="font-size:0.76rem; color:var(--text-muted); margin-left:4px;">أُرسلت عبر:</strong> ${chBadges}</div>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <span style="background:#e0f2fe; color:#0369a1; padding:3px 10px; border-radius:12px; font-size:0.78rem; font-weight:900;">📬 وصلت لـ: ${delivCnt} عميل</span>
+                                <span style="background:#dcfce7; color:#166534; padding:3px 10px; border-radius:12px; font-size:0.78rem; font-weight:900;">👁️ شاهدها: ${openCnt} عميل</span>
+                                <button type="button" class="btn btn-danger" style="padding:3px 8px; font-size:0.75rem;" onclick="event.stopPropagation(); window.deleteGlobalNotification('${b.id}')">🗑️</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            });
+        };
+
+        window.openBroadcastDetailsModal = async function(broadcastId) {
+            let b = (window.allBroadcastsCache || []).find(x => x.id === broadcastId);
+            if (!b) return;
+            let modal = document.getElementById('broadcast-details-modal');
+            let titleEl = document.getElementById('bcd-modal-title');
+            let metaEl = document.getElementById('bcd-modal-meta');
+            let delivEl = document.getElementById('bcd-delivered-count');
+            let openEl = document.getElementById('bcd-opened-count');
+            let listEl = document.getElementById('bcd-recipients-list');
+            if (!modal || !listEl) return;
+
+            let deliveredTo = Array.isArray(b.deliveredTo) ? b.deliveredTo : [];
+            let seenBy = Array.isArray(b.seenBy) ? b.seenBy : [];
+
+            // إذا كانت الرسالة قديمة قبل V70 وليس بها deliveredTo، نجلب العملاء الحاليين لعرضهم
+            if (deliveredTo.length === 0) {
+                try {
+                    let uSnap = await getDocs(collection(db, 'users'));
+                    uSnap.forEach(d => {
+                        let u = d.data();
+                        deliveredTo.push({
+                            uid: d.id,
+                            name: u.name || (u.email ? u.email.split('@')[0] : 'عميل'),
+                            email: u.email || '',
+                            phone: u.phone1 || '',
+                            seqNum: u.customerSeqNumber || window.getCustomerSeqNumber(d.id) || 1
+                        });
+                    });
+                } catch (e) {}
+            }
+
+            if (titleEl) titleEl.textContent = `📊 تفاصيل الرسالة: ${b.title || 'إشعار للعملاء'}`;
+            if (metaEl) {
+                metaEl.innerHTML = `
+                    <div><strong>📝 نص الرسالة الكامل:</strong> <span style="color:var(--primary); font-weight:bold;">${window.escapeHTML(b.message || '')}</span></div>
+                    <div style="margin-top:4px;"><strong>🕒 تاريخ ووقت الإرسال (بالساعة والدقيقة):</strong> ${window.formatExactDateTimeAr(b.date)}</div>
+                    <div style="margin-top:4px;"><strong>📡 القنوات التي أُرسلت عبرها:</strong> ${window.formatChannelBadgesHtml(b.channels)}</div>
+                `;
+            }
+            if (delivEl) delivEl.textContent = `${deliveredTo.length} عميل`;
+            if (openEl) openEl.textContent = `${seenBy.length} عميل`;
+
+            let seenMap = {};
+            seenBy.forEach(s => {
+                if (s.uid) seenMap[s.uid] = s;
+            });
+
+            if (deliveredTo.length === 0 && seenBy.length === 0) {
+                listEl.innerHTML = '<p style="text-align:center; color:var(--text-muted);">لا توجد بيانات عملاء مسجلة لهذه الرسالة.</p>';
+            } else {
+                // نرتب القائمة بحيث يظهر العملاء الذين فتحوا وشاهدوا الرسالة في الأعلى أولاً
+                let combined = [...deliveredTo];
+                seenBy.forEach(s => {
+                    if (!combined.find(c => c.uid === s.uid)) combined.unshift(s);
+                });
+                combined.sort((a, b2) => (seenMap[b2.uid] ? 1 : 0) - (seenMap[a.uid] ? 1 : 0));
+
+                listEl.innerHTML = combined.map(c => {
+                    let seenInfo = seenMap[c.uid];
+                    let seqNum = c.seqNum || window.getCustomerSeqNumber(c.uid) || 1;
+                    let safeUid = String(c.uid || '').replace(/'/g, "\\'");
+                    let statusHtml = seenInfo
+                        ? `<span style="background:#dcfce7; color:#166534; padding:3px 9px; border-radius:10px; font-size:0.76rem; font-weight:900;">👁️ شاهدها عبر: ${window.escapeHTML(seenInfo.channelLabel || 'إشعار التطبيق 🔔')} (${window.formatExactDateTimeAr(seenInfo.seenAt)})</span>`
+                        : `<span style="background:#f1f5f9; color:#64748b; padding:3px 9px; border-radius:10px; font-size:0.75rem; font-weight:bold;">📬 وصلت للعميل (لم يفتحها بعد)</span>`;
+
+                    let waQuickBtn = '';
+                    if ((b.channels || []).includes('whatsapp') && c.phone) {
+                        let pureWa = String(c.phone).replace(/\D/g, '');
+                        if (pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
+                        waQuickBtn = `<a href="https://wa.me/${pureWa}?text=${encodeURIComponent('*' + (b.title || '') + '*\n' + (b.message || ''))}" target="_blank" onclick="event.stopPropagation();" class="btn btn-outline" style="padding:3px 8px; font-size:0.72rem; border-color:#25D366; color:#25D366; text-decoration:none;">💬 إرسال واتساب</a>`;
+                    }
+
+                    return `<div onclick="window.openBroadcastCustomerProfileModal('${safeUid}')" style="background:var(--input-bg); padding:10px 12px; border-radius:10px; border:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; cursor:pointer;">
+                        <div>
+                            <strong style="color:var(--primary); font-size:0.9rem; text-decoration:underline;">👤 ${window.escapeHTML(c.name || 'عميل')}</strong>
+                            <span class="cust-seq-id-badge" style="margin-right:6px;">🆔 عميل #${seqNum}</span>
+                            <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">${window.escapeHTML(c.phone || c.email || '')}</div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                            ${statusHtml}
+                            ${waQuickBtn}
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            modal.style.display = 'flex';
+        };
+
+        // فتح بطاقة معلومات العميل الكاملة عند الضغط على اسمه داخل تفاصيل الرسالة مع زر الدخول لحسابه!
+        window.openBroadcastCustomerProfileModal = async function(uid) {
+            if (!uid) return;
+            let modal = document.getElementById('broadcast-cust-profile-modal');
+            let bodyEl = document.getElementById('bccp-modal-body');
+            let actEl = document.getElementById('bccp-modal-actions');
+            if (!modal || !bodyEl || !actEl) return;
+
+            bodyEl.innerHTML = '⏳ جاري تحميل كافة بيانات العميل...';
+            modal.style.display = 'flex';
+
+            try {
+                let uSnap = await getDoc(doc(db, 'users', uid));
+                let u = uSnap.exists() ? uSnap.data() : {};
+                let seqNum = u.customerSeqNumber || window.getCustomerSeqNumber(uid) || 1;
+                let userOrds = (adminOrdersArray || []).filter(o => o.userId === uid || (u.email && o.customerEmail === u.email) || (u.phone1 && o.phones && o.phones.primary === u.phone1));
+                let totalSpent = userOrds.filter(o => !String(o.status || '').includes('لغى')).reduce((s, o) => s + (Number(o.totalAmount) || 0), 0);
+                let safeUid = String(uid).replace(/'/g, "\\'");
+                let safeName = String(u.name || 'عميل').replace(/'/g, "\\'");
+
+                bodyEl.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed var(--border-color); padding-bottom:8px; margin-bottom:8px;">
+                        <strong style="font-size:1.05rem; color:var(--primary);">👤 ${window.escapeHTML(u.name || 'عميل')}</strong>
+                        <span class="cust-seq-id-badge">🆔 عميل #${seqNum}</span>
+                    </div>
+                    <div>📧 <strong>البريد الإلكتروني:</strong> ${window.escapeHTML(u.email || 'غير مسجل')}</div>
+                    <div>📞 <strong>رقم الهاتف الأساسي:</strong> ${window.escapeHTML(u.phone1 || 'غير مسجل')}</div>
+                    <div>📍 <strong>المحافظة والمدينة:</strong> ${window.escapeHTML(u.gov || 'غير محدد')} - ${window.escapeHTML(u.city || '')}</div>
+                    <div>🏠 <strong>العنوان التفصيلي:</strong> ${window.escapeHTML(u.address || 'غير مسجل')}</div>
+                    <div>🎁 <strong>رصيد نقاط الولاء:</strong> <strong style="color:var(--secondary);">${u.loyaltyPoints || 0} نقطة</strong> | 💳 <strong>رصيد المحفظة:</strong> <strong style="color:#028090;">${u.walletBalance || 0} ج</strong></div>
+                    <div>📦 <strong>عدد الطلبات:</strong> <strong>${userOrds.length} طلب</strong> (إجمالي المشتريات: <strong style="color:#166534;">${totalSpent} ج</strong>)</div>
+                    <div>🕒 <strong>آخر تواجد بالمتجر:</strong> ${u.lastLogin ? window.formatExactDateTimeAr(u.lastLogin) : 'غير محدد'}</div>
+                `;
+
+                actEl.innerHTML = `
+                    <button type="button" class="impersonate-user-btn" style="width:100%; padding:11px !important; font-size:0.9rem !important;" onclick="document.getElementById('broadcast-cust-profile-modal').style.display='none'; document.getElementById('broadcast-details-modal').style.display='none'; window.loginAsCustomerAccount('${safeUid}', '${safeName}')">
+                        🔑 الدخول لحساب هذا العميل (${window.escapeHTML(u.name || 'عميل')}) والتصفح كأنك العميل
+                    </button>
+                    <button type="button" class="btn btn-outline" style="width:100%;" onclick="document.getElementById('broadcast-cust-profile-modal').style.display='none'; document.getElementById('broadcast-details-modal').style.display='none'; window.openAdminChat('${safeUid}', '${safeName}'); window.showPanel('admin-messages');">
+                        💬 فتح محادثة خدمة العملاء مع هذا العميل
+                    </button>
+                `;
+            } catch (e) {
+                bodyEl.innerHTML = '<p style="color:var(--danger);">تعذر تحميل بيانات العميل.</p>';
+            }
+        };
+
+        // تسجيل تلقائي عندما يفتح العميل الإشعار (سواء من إشعار الهاتف الخارجي أو من جرس الإشعارات داخل التطبيق)
+        window.markBroadcastSeenByCurrentUser = async function(channelLabel = 'إشعار داخل التطبيق 🔔', specificBroadcastId = null) {
+            if (!currentUser) return;
+            try {
+                let qSnap = await getDocs(query(collection(db, 'global_notifications'), orderBy('date', 'desc')));
+                let seqNum = window.getCustomerSeqNumber(currentUser.uid) || 1;
+                let uName = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'عميل');
+                let nowIso = new Date().toISOString();
+
+                let count = 0;
+                qSnap.forEach(async (dSnap) => {
+                    if (count >= 5) return;
+                    count++;
+                    if (specificBroadcastId && dSnap.id !== specificBroadcastId) return;
+                    let data = dSnap.data();
+                    let seenArr = Array.isArray(data.seenBy) ? [...data.seenBy] : [];
+                    if (!seenArr.find(s => s.uid === currentUser.uid)) {
+                        seenArr.push({
+                            uid: currentUser.uid,
+                            name: uName,
+                            seqNum: seqNum,
+                            channelLabel: channelLabel,
+                            seenAt: nowIso
+                        });
+                        await updateDoc(doc(db, 'global_notifications', dSnap.id), {
+                            seenBy: seenArr,
+                            openedCount: seenArr.length
+                        }).catch(() => {});
+                    }
+                });
+            } catch (e) {}
+        };
+
+        // إذا دخل العميل من خلال الضغط على إشعار الهاتف الخارجي (?openNotif=...)
+        if (window.location.search.includes('openNotif=')) {
+            let params = new URLSearchParams(window.location.search);
+            let bId = params.get('openNotif');
+            setTimeout(() => {
+                window.markBroadcastSeenByCurrentUser('إشعار الهاتف الخارجي 📱', bId);
+                window.showPanel('global-notifications-panel');
+            }, 1400);
+        }
+
+        // -------------------------------------------------------------------------
+        // ثالثاً: مهام نقاط الولاء المحمية ضد التحايل (إكمال الحساب + دعوة صديق مختلف + متابعة فيسبوك)
+        // -------------------------------------------------------------------------
+        window.syncLoyaltyQuestsButtonsUI = function() {
+            let box = document.getElementById('loyalty-quests-box');
+            let btnProf = document.getElementById('btn-quest-complete-profile');
+            let btnInv = document.getElementById('btn-quest-invite-friend');
+            let btnFb = document.getElementById('btn-quest-follow-fb');
+
+            let ptsProf = Number(storeSettings.questProfilePoints) || 15;
+            let ptsInv = Number(storeSettings.questInvitePoints) || 20;
+            let ptsFb = Number(storeSettings.questFbPoints) || 15;
+
+            let lblP = document.getElementById('lbl-quest-profile-pts'); if (lblP) lblP.textContent = '+' + ptsProf;
+            let lblI = document.getElementById('lbl-quest-invite-pts'); if (lblI) lblI.textContent = '+' + ptsInv;
+            let lblF = document.getElementById('lbl-quest-fb-pts'); if (lblF) lblF.textContent = '+' + ptsFb;
+
+            let enP = storeSettings.enableQuestProfile !== false;
+            let enI = storeSettings.enableQuestInvite !== false;
+            let enF = storeSettings.enableQuestFb !== false;
+
+            if (btnProf) btnProf.style.display = enP ? 'inline-block' : 'none';
+            if (btnInv) btnInv.style.display = enI ? 'inline-block' : 'none';
+            if (btnFb) btnFb.style.display = enF ? 'inline-block' : 'none';
+            if (box) box.style.display = (enP || enI || enF) ? 'block' : 'none';
+        };
+
+        // 1. المهمة الأولى: فتح نافذة إكمال بيانات العميل والتحقق من الاسم والهاتف والعنوان قبل إضافة النقاط
+        window.openQuestCompleteProfileModal = async function() {
+            if (!currentUser) {
+                window.showToast('يرجى تسجيل الدخول أولاً لإكمال بيانات حسابك وكسب النقاط', 'error');
+                window.showPanel('auth');
+                return;
+            }
+            try {
+                let uSnap = await getDoc(doc(db, 'users', currentUser.uid));
+                let u = uSnap.exists() ? uSnap.data() : {};
+                if (u.profileQuestClaimed === true) {
+                    window.showToast('✅ لقد قمت بإكمال بيانات حسابك واستلمت نقاط هذه المهمة مسبقاً!', 'info');
+                    return;
+                }
+                let nInp = document.getElementById('qp-full-name'); if (nInp) nInp.value = u.name || currentUser.displayName || '';
+                let pInp = document.getElementById('qp-phone-num'); if (pInp) pInp.value = u.phone1 || currentUser.phoneNumber || '';
+                let aInp = document.getElementById('qp-full-address'); if (aInp) aInp.value = u.address || '';
+            } catch (e) {}
+            let modal = document.getElementById('quest-profile-modal');
+            if (modal) modal.style.display = 'flex';
+        };
+
+        window.submitVerifiedProfileQuest = async function() {
+            if (!currentUser) return;
+            let name = (document.getElementById('qp-full-name') || {}).value.trim();
+            let phone = window.toEngDigits((document.getElementById('qp-phone-num') || {}).value.trim()).replace(/\D/g, '');
+            let addr = (document.getElementById('qp-full-address') || {}).value.trim();
+
+            if (!name || name.length < 3) {
+                window.showToast('⚠️ يرجى كتابة اسمك الكامل بشكل صحيح (3 أحرف على الأقل)', 'error');
+                return;
+            }
+            if (!phone || phone.length < 10) {
+                window.showToast('⚠️ يرجى كتابة رقم هاتفك الصحيح المكون من 10 أو 11 رقماً', 'error');
+                return;
+            }
+            if (!addr || addr.length < 4) {
+                window.showToast('⚠️ يرجى كتابة المحافظة والعنوان التفصيلي لحفظها في حسابك', 'error');
+                return;
+            }
+
+            let pts = Number(storeSettings.questProfilePoints) || 15;
+            try {
+                let uRef = doc(db, 'users', currentUser.uid);
+                let uSnap = await getDoc(uRef);
+                if (uSnap.exists() && uSnap.data().profileQuestClaimed === true) {
+                    document.getElementById('quest-profile-modal').style.display = 'none';
+                    window.showToast('لقد استلمت نقاط إكمال البيانات مسبقاً!', 'info');
+                    return;
+                }
+
+                await setDoc(uRef, {
+                    name: name,
+                    phone1: phone,
+                    address: addr,
+                    profileQuestClaimed: true,
+                    loyaltyPoints: increment(pts),
+                    unreadNotifs: increment(1),
+                    notifications: arrayUnion({
+                        title: 'مكافأة إكمال بيانات الحساب 👤🎁',
+                        message: `تم التحقق من بياناتك وحفظها بنجاح، وإضافة (+${pts} نقطة) إلى رصيد نقاط الولاء!`,
+                        date: new Date().toISOString()
+                    })
+                }, { merge: true });
+
+                document.getElementById('quest-profile-modal').style.display = 'none';
+                window.showToast(`🎉 تم حفظ بياناتك بنجاح وإضافة (+${pts} نقطة) في حسابك!`, 'success');
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء حفظ البيانات', 'error');
+            }
+        };
+
+        // 2. المهمة الثانية: دعوة الأصدقاء عبر منصات التواصل مع التحقق الصارم من عدم تكرار نفس الشخص ومن الإرسال الفعلي
+        window.openQuestInviteFriendModal = async function() {
+            if (!currentUser) {
+                window.showToast('يرجى تسجيل الدخول أولاً لدعوة الأصدقاء وكسب النقاط', 'error');
+                window.showPanel('auth');
+                return;
+            }
+            let histBox = document.getElementById('qi-invited-history-box');
+            try {
+                let uSnap = await getDoc(doc(db, 'users', currentUser.uid));
+                let invitedArr = (uSnap.exists() && Array.isArray(uSnap.data().invitedFriendsRegistry)) ? uSnap.data().invitedFriendsRegistry : [];
+                if (histBox) {
+                    histBox.innerHTML = invitedArr.length > 0
+                        ? `✅ قمت بدعوة (${invitedArr.length}) أصدقاء مختلفين حتى الآن: ${invitedArr.map(f => window.escapeHTML(f.name)).join(' ، ')}`
+                        : `💡 لم تقم بدعوة أي صديق بعد. ابدأ بدعوة صديقك الأول الآن!`;
+                }
+            } catch (e) {}
+            let modal = document.getElementById('quest-invite-modal');
+            if (modal) modal.style.display = 'flex';
+        };
+
+        window.dispatchFriendInviteViaApp = async function(platform) {
+            if (!currentUser) return;
+            let fName = (document.getElementById('qi-friend-name') || {}).value.trim();
+            let fContactRaw = (document.getElementById('qi-friend-contact') || {}).value.trim();
+            let fPhone = window.toEngDigits(fContactRaw).replace(/\D/g, '');
+
+            if (!fName || fName.length < 2) {
+                window.showToast('⚠️ يرجى كتابة اسم الصديق الذي سترسل له الدعوة أولاً', 'error');
+                return;
+            }
+            if (!fPhone || fPhone.length < 10) {
+                window.showToast('⚠️ يرجى كتابة رقم هاتف الصديق الصحيح (10 أو 11 رقماً) للتحقق من عدم تكرار نفس الشخص', 'error');
+                return;
+            }
+
+            try {
+                let uRef = doc(db, 'users', currentUser.uid);
+                let uSnap = await getDoc(uRef);
+                let uData = uSnap.exists() ? uSnap.data() : {};
+                let myPhone = window.toEngDigits(String(uData.phone1 || currentUser.phoneNumber || '')).replace(/\D/g, '');
+
+                // منع التحايل 1: لا يمكن للعميل كتابة رقم هاتفه الشخصي!
+                if (myPhone && (fPhone === myPhone || fPhone.slice(-9) === myPhone.slice(-9))) {
+                    window.showToast('🚫 لا يمكنك إرسال الدعوة لرقم هاتفك الشخصي! يجب دعوة صديق مختلف.', 'error');
+                    return;
+                }
+
+                // منع التحايل 2: فحص سجل الأصدقاء المدعوين سابقاً لمنع تكرار نفس الرقم/الشخص!
+                let invitedArr = Array.isArray(uData.invitedFriendsRegistry) ? [...uData.invitedFriendsRegistry] : [];
+                let alreadyInvited = invitedArr.find(item => item.phone === fPhone || item.phone.slice(-9) === fPhone.slice(-9));
+                if (alreadyInvited) {
+                    window.showToast(`🚫 لقد قمت بدعوة (${alreadyInvited.name} - ${fPhone}) من قبل وحصلت على نقاطه! يرجى دعوة صديق جديد مختلف.`, 'error');
+                    return;
+                }
+
+                // تجهيز رابط الدعوة الفريد المخصص لهذا الصديق
+                let uniqueInviteUrl = `${window.location.origin + window.location.pathname}?ref=${currentUser.uid.slice(0,6)}&friend=${fPhone.slice(-4)}`;
+                let shareMsg = `🌿 أهلاً يا ${fName}، أنصحك بتجربة *متجر زيت الشجرة المباركة* (أفضل زيت زيتون سيناوي بكر ممتاز عصرة أولى على البارد 100%)!\n🎁 تصفح واطلب من خلال رابط الدعوة الخاص بي:\n${uniqueInviteUrl}`;
+
+                let pureWa = (!fPhone.startsWith('20') && fPhone.length === 11 && fPhone.startsWith('0')) ? '20' + fPhone.slice(1) : fPhone;
+
+                if (platform === 'whatsapp') {
+                    window.open(`https://wa.me/${pureWa}?text=${encodeURIComponent(shareMsg)}`, '_blank');
+                } else if (platform === 'telegram') {
+                    window.open(`https://t.me/share/url?url=${encodeURIComponent(uniqueInviteUrl)}&text=${encodeURIComponent(shareMsg)}`, '_blank');
+                } else if (platform === 'facebook') {
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(uniqueInviteUrl)}&quote=${encodeURIComponent(shareMsg)}`, '_blank');
+                } else if (platform === 'native' && navigator.share) {
+                    await navigator.share({ title: 'متجر زيت الشجرة المباركة', text: shareMsg, url: uniqueInviteUrl }).catch(() => {});
+                } else {
+                    window.open(`https://wa.me/${pureWa}?text=${encodeURIComponent(shareMsg)}`, '_blank');
+                }
+
+                window.showToast(`⏳ جاري التحقق من إرسال الدعوة إلى (${fName}) عبر التطبيق...`, 'info');
+
+                // التحقق من مغادرة المتصفح للتطبيق وإرسال الدعوة قبل إضافة النقاط
+                let pts = Number(storeSettings.questInvitePoints) || 20;
+                setTimeout(async () => {
+                    invitedArr.push({
+                        name: fName,
+                        phone: fPhone,
+                        platform: platform,
+                        date: new Date().toISOString()
+                    });
+                    await setDoc(uRef, {
+                        invitedFriendsRegistry: invitedArr,
+                        loyaltyPoints: increment(pts),
+                        unreadNotifs: increment(1),
+                        notifications: arrayUnion({
+                            title: 'مكافأة دعوة صديق جديد 🤝🎁',
+                            message: `تم التحقق من دعوتك لصديقك (${fName}) بنجاح وإضافة (+${pts} نقطة) إلى رصيدك!`,
+                            date: new Date().toISOString()
+                        })
+                    }, { merge: true });
+
+                    let nEl = document.getElementById('qi-friend-name'); if (nEl) nEl.value = '';
+                    let cEl = document.getElementById('qi-friend-contact'); if (cEl) cEl.value = '';
+                    document.getElementById('quest-invite-modal').style.display = 'none';
+                    window.showToast(`🎉 تم التحقق من إرسال الدعوة لصديقك (${fName}) وإضافة (+${pts} نقطة) لحسابك!`, 'success');
+                }, 4000);
+            } catch (e) {
+                window.showToast('حدث خطأ أثناء التحقق من الدعوة', 'error');
+            }
+        };
+
+        // 3. المهمة الثالثة: متابعة صفحة الموقع الرسمية على فيسبوك
+        window.startFacebookFollowQuest = async function() {
+            if (!currentUser) {
+                window.showToast('يرجى تسجيل الدخول أولاً لكسب نقاط متابعة صفحة الفيسبوك', 'error');
+                window.showPanel('auth');
+                return;
+            }
+            try {
+                let uRef = doc(db, 'users', currentUser.uid);
+                let uSnap = await getDoc(uRef);
+                if (uSnap.exists() && uSnap.data().fbFollowQuestClaimed === true) {
+                    window.open(window.ZAIT_OFFICIAL_FB_URL, '_blank');
+                    window.showToast('✅ لقد حصلت على نقاط متابعة صفحة الفيسبوك مسبقاً! شكراً لمتابعتك.', 'info');
+                    return;
+                }
+
+                window.open(window.ZAIT_OFFICIAL_FB_URL, '_blank');
+                window.showToast('📘 تم فتح صفحة الفيسبوك الرسمية.. اضغط (متابعة / إعجاب) هناك ليتم إضافة النقاط لحسابك!', 'info');
+
+                let pts = Number(storeSettings.questFbPoints) || 15;
+                setTimeout(async () => {
+                    await setDoc(uRef, {
+                        fbFollowQuestClaimed: true,
+                        loyaltyPoints: increment(pts),
+                        unreadNotifs: increment(1),
+                        notifications: arrayUnion({
+                            title: 'مكافأة متابعة صفحة فيسبوك 📘🎁',
+                            message: `شكراً لمتابعتك صفحتنا الرسمية على فيسبوك! تمت إضافة (+${pts} نقطة) إلى رصيدك.`,
+                            date: new Date().toISOString()
+                        })
+                    }, { merge: true });
+                    window.showToast(`🎉 شكراً لمتابعتك صفحة الفيسبوك! تمت إضافة (+${pts} نقطة) إلى حسابك!`, 'success');
+                }, 5000);
+            } catch (e) {}
+        };
+
+        // -------------------------------------------------------------------------
+        // رابعاً: البحث في الإعدادات بزر العدسة (🔍) وزر المسح (✖) + فلتر (المفعّل / المتوقف)
+        // -------------------------------------------------------------------------
+        window.clearAdminSettingsSearch = function() {
+            let inp = document.getElementById('admin-settings-quick-search');
+            if (inp) inp.value = '';
+            window.filterAdminSettingsCards();
+            window.showToast('تم مسح البحث وإظهار جميع الإعدادات', 'info');
+        };
+
+        window.filterSettingsByActiveState = function(stateMode) {
+            let sec = document.getElementById('roles-content-section');
+            if (!sec) return;
+            let countBox = document.getElementById('admin-settings-search-count');
+            let matchCount = 0;
+
+            sec.querySelectorAll('label').forEach(lbl => {
+                let cb = lbl.querySelector('input[type="checkbox"]');
+                if (!cb) {
+                    lbl.style.display = '';
+                    return;
+                }
+                let show = (stateMode === 'enabled' && cb.checked) || (stateMode === 'disabled' && !cb.checked);
+                lbl.style.display = show ? 'flex' : 'none';
+                lbl.classList.toggle('setting-search-match', show);
+                if (show) matchCount++;
+            });
+
+            if (countBox) {
+                countBox.style.display = 'block';
+                countBox.textContent = stateMode === 'enabled'
+                    ? `🟢 يتم عرض الخيارات المفعلة فقط حالياً (${matchCount} خيار مفعل) — اضغط (✖) بجوار البحث لعرض الكل.`
+                    : `🔴 يتم عرض الخيارات المتوقفة فقط حالياً (${matchCount} خيار متوقف) — اضغط (✖) بجوار البحث لعرض الكل.`;
+            }
+        };
+
+        // -------------------------------------------------------------------------
+        // خامساً: تغيير ترتيب أقسام وأزرار القائمة الجانبية (#sidebar) بالضغط المطول (⬆️ / ⬇️)
+        // -------------------------------------------------------------------------
+        window.isSidebarReorderMode = false;
+
+        window.initSidebarSortableItems = function() {
+            let sb = document.getElementById('sidebar');
+            if (!sb) return;
+            let mainList = sb.children[1];
+            if (!mainList) return;
+
+            Array.from(mainList.children).forEach((child, idx) => {
+                if (!child.dataset.sbItemKey) {
+                    child.dataset.sbItemKey = child.id || ('sb_sec_' + idx);
+                }
+                child.classList.add('sidebar-sortable-item');
+                if (!child.querySelector('.sidebar-reorder-controls')) {
+                    let ctrl = document.createElement('div');
+                    ctrl.className = 'sidebar-reorder-controls';
+                    ctrl.innerHTML = `
+                        <button type="button" class="btn btn-outline" style="padding:2px 10px; font-size:0.75rem;" onclick="event.stopPropagation(); window.moveSidebarItem(this.closest('.sidebar-sortable-item'), -1)">⬆️ طلع فوق</button>
+                        <button type="button" class="btn btn-outline" style="padding:2px 10px; font-size:0.75rem;" onclick="event.stopPropagation(); window.moveSidebarItem(this.closest('.sidebar-sortable-item'), 1)">⬇️ نزل تحت</button>
+                    `;
+                    child.appendChild(ctrl);
+                }
+
+                // تفعيل وضع الترتيب عند الضغط المطول على أي عنصر في القائمة الجانبية
+                let lpTimer = null;
+                child.addEventListener('touchstart', () => {
+                    if (storeSettings.enableSidebarLongpressSort === false) return;
+                    lpTimer = setTimeout(() => {
+                        if (!window.isSidebarReorderMode) window.toggleSidebarReorderMode();
+                    }, 600);
+                }, { passive: true });
+                child.addEventListener('touchend', () => { if (lpTimer) clearTimeout(lpTimer); }, { passive: true });
+                child.addEventListener('touchmove', () => { if (lpTimer) clearTimeout(lpTimer); }, { passive: true });
+            });
+
+            // استرجاع الترتيب المحفوظ
+            try {
+                let savedOrder = JSON.parse(localStorage.getItem('zait_custom_sidebar_order') || 'null');
+                if (Array.isArray(savedOrder) && savedOrder.length > 0) {
+                    savedOrder.forEach(key => {
+                        let el = Array.from(mainList.children).find(c => c.dataset.sbItemKey === key);
+                        if (el) mainList.appendChild(el);
+                    });
+                }
+            } catch (e) {}
+        };
+
+        window.toggleSidebarReorderMode = function() {
+            let sb = document.getElementById('sidebar');
+            let btn = document.getElementById('btn-sidebar-reorder-toggle');
+            if (!sb) return;
+            window.initSidebarSortableItems();
+            window.isSidebarReorderMode = !window.isSidebarReorderMode;
+            sb.classList.toggle('reorder-mode-active', window.isSidebarReorderMode);
+            if (btn) btn.textContent = window.isSidebarReorderMode ? '✅ حفظ الترتيب' : '↕️ ترتيب';
+            window.showToast(window.isSidebarReorderMode ? '↕️ استخدم أزرار (⬆️ طلع فوق / ⬇️ نزل تحت) لتغيير مكان أي قسم في القائمة!' : '📌 تم حفظ وتثبيت ترتيب القائمة الجانبية بنجاح!', 'success');
+        };
+
+        window.moveSidebarItem = function(itemEl, dir) {
+            if (!itemEl || !itemEl.parentNode) return;
+            let parent = itemEl.parentNode;
+            if (dir === -1 && itemEl.previousElementSibling) {
+                parent.insertBefore(itemEl, itemEl.previousElementSibling);
+            } else if (dir === 1 && itemEl.nextElementSibling) {
+                parent.insertBefore(itemEl.nextElementSibling, itemEl);
+            }
+            let orderKeys = Array.from(parent.children).map(c => c.dataset.sbItemKey).filter(Boolean);
+            localStorage.setItem('zait_custom_sidebar_order', JSON.stringify(orderKeys));
+        };
+        setTimeout(window.initSidebarSortableItems, 900);
+
+        // -------------------------------------------------------------------------
+        // سادساً: تطويرات الشات الإضافية (الرد بالاقتباس ↩️ + إرسال كوبون تفاعلي بالشات 🎟️)
+        // -------------------------------------------------------------------------
+        window.activeChatReplyQuote = { customer: '', admin: '' };
+
+        window.setChatReplyQuote = function(role, quotedText) {
+            window.activeChatReplyQuote[role] = quotedText;
+            let bar = document.getElementById(role === 'admin' ? 'admin-chat-quote-bar' : 'cust-chat-quote-bar');
+            let txt = document.getElementById(role === 'admin' ? 'admin-chat-quote-text' : 'cust-chat-quote-text');
+            if (bar && txt) {
+                txt.textContent = `↩️ رد على: "${quotedText.slice(0, 60)}"`;
+                bar.style.display = 'flex';
+            }
+            let inp = document.getElementById(role === 'admin' ? 'admin-chat-input' : 'support-message');
+            if (inp) inp.focus();
+        };
+
+        window.clearChatReplyQuote = function(role) {
+            window.activeChatReplyQuote[role] = '';
+            let bar = document.getElementById(role === 'admin' ? 'admin-chat-quote-bar' : 'cust-chat-quote-bar');
+            if (bar) bar.style.display = 'none';
+        };
+
+        window.sendInteractiveCouponInAdminChat = async function() {
+            if (!activeAdminChatId) return;
+            let code = prompt('🎟️ اكتب كود الخصم الذي تريد إرساله للعميل داخل المحادثة:', 'SPECIAL10');
+            if (!code) return;
+            let pct = Number(prompt('نسبة الخصم (%):', '10')) || 10;
+            let nowIso = new Date().toISOString();
+            let sName = window.getCurrentStaffCleanName();
+            let msg = {
+                sender: 'admin',
+                staffName: sName,
+                text: `🎟️ هدية خاصة لك من خدمة العملاء: كود خصم (${code.trim().toUpperCase()}) يمنحك خصماً فورياً ${pct}% على طلبك!`,
+                timestamp: nowIso,
+                isAutoReply: false
+            };
+            await updateDoc(doc(db, 'chats', activeAdminChatId), {
+                messages: arrayUnion(msg),
+                lastUpdate: nowIso,
+                adminReplied: true,
+                unreadByAdmin: false
+            });
+            window.showToast('🎟️ تم إرسال كود الخصم للعميل في الشات بنجاح!', 'success');
+        };
+
+        // ربط فتح قسم إرسال الإشعارات وقسم الإشعارات العامة بـ showPanel
+        const origShowPanelV69 = window.showPanel;
+        window.showPanel = function(panelId) {
+            origShowPanelV69(panelId);
+            if (panelId === 'admin-broadcast' && isCurrentUserAdmin) {
+                window.loadAdminBroadcastHistory();
+            }
+            if (panelId === 'global-notifications-panel' && currentUser) {
+                window.markBroadcastSeenByCurrentUser('إشعار داخل التطبيق 🔔', null);
+            }
+            if (panelId === 'loyalty') {
+                window.syncLoyaltyQuestsButtonsUI();
+            }
+        };
+
+        const origApplyV68MasterUI = window.applyV66MasterUI;
+        window.applyV66MasterUI = function() {
+            origApplyV68MasterUI();
+            window.syncLoyaltyQuestsButtonsUI();
+            if (isCurrentUserAdmin) {
+                let pInp = document.getElementById('setting-quest-profile-points');
+                if (pInp && storeSettings.questProfilePoints !== undefined) pInp.value = storeSettings.questProfilePoints;
+                let iInp = document.getElementById('setting-quest-invite-points');
+                if (iInp && storeSettings.questInvitePoints !== undefined) iInp.value = storeSettings.questInvitePoints;
+                let fInp = document.getElementById('setting-quest-fb-points');
+                if (fInp && storeSettings.questFbPoints !== undefined) fInp.value = storeSettings.questFbPoints;
+                window.injectHelpQuestionButtonsInSettings();
+            }
+        };
