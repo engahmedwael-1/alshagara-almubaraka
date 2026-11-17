@@ -15606,3 +15606,500 @@ window.showUserHistory = function(userId, userName) {
             window.syncZeroFlashSettingsCache();
             window.syncSidebarAdminReorderVisibility();
         }, 500);
+
+
+// =========================================================================
+// === النسخة V72 النهائية المفحوصة: حل جميع الملاحظات الـ 9 جذرياً ===
+// =========================================================================
+
+// 1. المزامنة الفورية للإعدادات المخفية (Zero-Flash) حتى لا يظهر أي زر متوقف عند فتح التطبيق
+window.syncZeroFlashSettingsV72 = function() {
+    try {
+        localStorage.setItem('zait_cached_settings_v72', JSON.stringify(storeSettings || {}));
+        let s = storeSettings || {};
+        let rules = [
+            '#btn-show-auth, #amz-cart-top-sticky-bar, #cart-top-sticky-bar, #home-farm-reels-section, #amazon-sub-header { display: none !important; }'
+        ];
+        let map = [
+            ['enableSpinWheel', '#spin-wheel-fab, #sidebar-spin-wheel-btn'],
+            ['enableBoxBuilder', '#sidebar-box-builder-btn, #pill-box-builder'],
+            ['enableB2BPortal', '#sidebar-b2b-btn'],
+            ['enableBatchTracker', '#sidebar-batch-tracker-btn, #pill-batch-tracker'],
+            ['enableVisualSizeGuide', '#sidebar-size-guide-btn, #btn-modal-size-guide'],
+            ['enableSampleBottle', '#sidebar-sample-bottle-btn'],
+            ['enableGiftByPhone', '#sidebar-gift-by-phone-btn, #btn-modal-gift-phone'],
+            ['enablePreorderHarvest', '#sidebar-preorder-harvest-btn'],
+            ['enableGroupBuy', '#sidebar-group-buy-btn'],
+            ['enableDriverPortal', '#sidebar-driver-portal-btn'],
+            ['enableAffiliateSystem', '#sidebar-affiliate-btn'],
+            ['enableLiveShopping', '#sidebar-live-stream-btn, #home-seasonal-bundles-bar'],
+            ['enableQuickTagFilters', '#v64-quick-tags-bar'],
+            ['enableOfferBanner', '#home-limited-offer-banner'],
+            ['enableTrustMarquee', '#trust-marquee-bar, #home-trust-marquee'],
+            ['enableFloatingCartBar', '#floating-bottom-cart-bar, #header-font-size-btn'],
+            ['enableGuestTracking', '#sidebar-track-order-btn, #guest-order-track-box'],
+            ['enableAnnualCalc', '#sidebar-annual-calc-btn, #btn-open-annual-calc'],
+            ['enableGiftCards', '#sidebar-gift-card-btn, #btn-open-gift-card'],
+            ['enableSeoArticles', '#home-seo-benefits-section'],
+            ['enableAdminFloatBtn', '#admin-floating-launcher-wrap']
+        ];
+        map.forEach(([key, sel]) => {
+            if (s[key] === false) rules.push(sel + ' { display: none !important; }');
+        });
+        if (s.enableTopBar !== true) rules.push('#top-announcement-bar { display: none !important; }');
+        if (s.enableHeroSlider !== true) rules.push('#hero-slider-wrapper { display: none !important; }');
+        else rules.push('#hero-section { display: none !important; }');
+
+        let st = document.getElementById('zait-instant-hide-style-v72');
+        if (!st) {
+            st = document.createElement('style');
+            st.id = 'zait-instant-hide-style-v72';
+            document.head.appendChild(st);
+        }
+        st.textContent = rules.join('\n');
+    } catch (e) {}
+};
+
+// 2. قاموس التصحيح اللغوي والصوتي الذكي لميكروفون الشات (يصلح الكلمات المنطوقة خطأً تلقائياً)
+window.V72_SPEECH_CORRECTION_MAP = [
+    [/\b(ذيت|زت|زيتت|ازيت|الذيت|زايت)\b/g, 'زيت'],
+    [/\b(ذيتون|زتون|زيتان|زاتون|الزتون|الذيتون|زيتونه)\b/g, 'زيتون'],
+    [/\b(سناوي|سينوي|سيماوي|ثيناوي|سيناوى|السيناوي)\b/g, 'سيناوي'],
+    [/\b(سينا|ثيناء|سينه)\b/g, 'سيناء'],
+    [/\b(الشجره|شجره)\s*(المباركه|مباركه)\b/g, 'الشجرة المباركة'],
+    [/\b(عصره|عصرة)\s*(اولى|اولي)\b/g, 'عصرة أولى'],
+    [/\b(عالبارد|علي البارد|ع البارد)\b/g, 'على البارد'],
+    [/\b(غيركن|كيركن|جركم|جاركن|جيركن|قرص)\b/g, 'جركن'],
+    [/\b(عبوه|عبوت|علبه)\b/g, 'عبوة'],
+    [/\b(ليتر|رتل|لترات)\b/g, 'لتر'],
+    [/\b(اوردر|اردر|الاوردر|أوردر)\b/g, 'طلب'],
+    [/\b(بكام|بيكام|كام سعر)\b/g, 'بكم سعر'],
+    [/\b(عايز|عاوز)\b/g, 'أريد'],
+    [/\b(مشكله)\b/g, 'مشكلة'],
+    [/\b(الشحنه|شحنه)\b/g, 'الشحنة'],
+    [/\b(استرجع|مرتجع)\b/g, 'استرجاع'],
+    [/\b(انستا باي|انستاباي|انستا)\b/g, 'إنستاباي'],
+    [/\b(فودافون كاش|فدفون كاش|ودافون كاش)\b/g, 'فودافون كاش']
+];
+
+window.smartCorrectSpeechV72 = function(rawText, alternatives = []) {
+    let candidates = [rawText, ...(alternatives || [])].filter(Boolean);
+    if (candidates.length === 0) return '';
+    let storeWords = ['زيت', 'زيتون', 'سيناوي', 'لتر', 'جركن', 'عبوة', 'طلب', 'شحن', 'سعر', 'خصم', 'استرجاع'];
+    let best = candidates[0];
+    let maxScore = -1;
+    candidates.forEach(c => {
+        let sc = 0;
+        storeWords.forEach(w => { if (c.includes(w)) sc += 3; });
+        if (sc > maxScore) { maxScore = sc; best = c; }
+    });
+    let fixed = String(best).trim();
+    window.V72_SPEECH_CORRECTION_MAP.forEach(([rgx, rep]) => {
+        fixed = fixed.replace(rgx, rep);
+    });
+    fixed = fixed.replace(/\b(\S+)\s+\1\b/g, '$1');
+    return fixed.trim();
+};
+
+window.startVoiceTyping = function(inputId, btnElement) {
+    const inputEl = document.getElementById(inputId);
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        window.showToast('متصفحك لا يدعم تحويل الصوت لنص، يرجى استخدام متصفح Chrome', 'error');
+        return;
+    }
+    if (window.activeSpeechRecInstance) {
+        try { window.activeSpeechRecInstance.stop(); } catch (e) {}
+        window.activeSpeechRecInstance = null;
+        if (btnElement) btnElement.classList.remove('recording');
+        return;
+    }
+    try {
+        const recognition = new SpeechRecognition();
+        window.activeSpeechRecInstance = recognition;
+        recognition.lang = window.currentLang === 'en' ? 'en-US' : 'ar-EG';
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 5;
+
+        const baseVal = inputEl ? inputEl.value.trim() : '';
+
+        recognition.onstart = function() {
+            if (btnElement) {
+                btnElement.classList.add('recording');
+                btnElement.style.background = '#dc2626';
+                btnElement.style.color = '#ffffff';
+            }
+            window.showToast('🎤 تحدث الآن.. المصحح اللغوي الذكي يستمع إليك', 'info');
+        };
+
+        recognition.onresult = function(event) {
+            let finalParts = [];
+            let interimParts = [];
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                let res = event.results[i];
+                let alts = [];
+                for (let j = 1; j < res.length; j++) alts.push(res[j].transcript);
+                let corrected = window.smartCorrectSpeechV72(res[0].transcript, alts);
+                if (res.isFinal) finalParts.push(corrected);
+                else interimParts.push(corrected);
+            }
+            let spoken = (finalParts.join(' ') || interimParts.join(' ')).trim();
+            if (inputEl && spoken) {
+                inputEl.value = baseVal ? (baseVal + ' ' + spoken) : spoken;
+                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        };
+
+        recognition.onerror = function() {
+            if (btnElement) {
+                btnElement.classList.remove('recording');
+                btnElement.style.background = '';
+                btnElement.style.color = '';
+            }
+            window.activeSpeechRecInstance = null;
+        };
+
+        recognition.onend = function() {
+            if (btnElement) {
+                btnElement.classList.remove('recording');
+                btnElement.style.background = '';
+                btnElement.style.color = '';
+            }
+            window.activeSpeechRecInstance = null;
+            if (inputEl) inputEl.focus();
+        };
+
+        recognition.start();
+    } catch (e) {
+        window.activeSpeechRecInstance = null;
+    }
+};
+
+// 3. بناء شريط كتابة الشات الموحد مع زر الكاميرا (📷) يمين مربع الكتابة (تصوير / معرض / فيديو)
+window.initCleanChatBarsV72 = function() {
+    // شات العميل
+    let sForm = document.getElementById('support-form');
+    if (sForm && !sForm.dataset.v72Built) {
+        sForm.dataset.v72Built = '1';
+        sForm.style.display = 'block';
+        sForm.innerHTML = `
+            <div class="v72-chat-composer-bar">
+                <button type="button" class="v72-cam-btn" title="إرسال صورة أو فيديو" onclick="window.toggleV72CamPopup('customer')">📷</button>
+                <div id="v72-cam-popup-customer" class="v72-camera-popup-menu">
+                    <button type="button" onclick="window.pickV72Media('customer', 'cam')">📸 تصوير بالكاميرا</button>
+                    <button type="button" onclick="window.pickV72Media('customer', 'gal')">🖼️ اختيار صورة من المعرض</button>
+                    <button type="button" onclick="window.pickV72Media('customer', 'vid')">🎥 إرفاق أو تصوير فيديو</button>
+                </div>
+                <input type="file" id="v72-inp-customer-cam" accept="image/*" capture="environment" style="display:none" onchange="window.sendChatImageAttachment('customer', this)">
+                <input type="file" id="v72-inp-customer-gal" accept="image/*" style="display:none" onchange="window.sendChatImageAttachment('customer', this)">
+                <input type="file" id="v72-inp-customer-vid" accept="video/*" style="display:none" onchange="window.sendChatVideoAttachment('customer', this)">
+
+                <input type="text" id="support-message" placeholder="اكتب رسالتك هنا..." autocomplete="off" style="flex:1; border:none; background:transparent; margin:0; padding:6px 8px; font-size:0.9rem; outline:none;">
+                <button type="button" id="voice-support-btn" class="v72-mic-btn" title="تحويل الكلام لنص" onclick="window.startVoiceTyping('support-message', this)">🎤</button>
+                <button type="button" id="btn-cust-voice-note-inline" class="v72-voice-rec-btn" title="تسجيل مقطع صوتي" onclick="window.toggleChatVoiceNoteRecording('customer', this)">🎙️</button>
+                <button type="submit" class="v72-send-btn">إرسال 🚀</button>
+            </div>
+        `;
+    }
+
+    // شات المدير
+    let admInp = document.getElementById('admin-chat-input');
+    if (admInp && !admInp.dataset.v72Built) {
+        let row = admInp.closest('div[style*="display:flex; gap:10px"]');
+        if (row) {
+            row.className = 'v72-chat-composer-bar';
+            row.style.cssText = '';
+            row.innerHTML = `
+                <button type="button" class="v72-cam-btn" title="إرسال صورة أو فيديو" onclick="window.toggleV72CamPopup('admin')">📷</button>
+                <div id="v72-cam-popup-admin" class="v72-camera-popup-menu">
+                    <button type="button" onclick="window.pickV72Media('admin', 'cam')">📸 تصوير بالكاميرا</button>
+                    <button type="button" onclick="window.pickV72Media('admin', 'gal')">🖼️ اختيار صورة من المعرض</button>
+                    <button type="button" onclick="window.pickV72Media('admin', 'vid')">🎥 إرفاق أو تصوير فيديو</button>
+                </div>
+                <input type="file" id="v72-inp-admin-cam" accept="image/*" capture="environment" style="display:none" onchange="window.sendChatImageAttachment('admin', this)">
+                <input type="file" id="v72-inp-admin-gal" accept="image/*" style="display:none" onchange="window.sendChatImageAttachment('admin', this)">
+                <input type="file" id="v72-inp-admin-vid" accept="video/*" style="display:none" onchange="window.sendChatVideoAttachment('admin', this)">
+
+                <input type="text" id="admin-chat-input" data-v72-built="1" placeholder="اكتب ردك للعميل..." autocomplete="off" style="flex:1; border:none; background:transparent; margin:0; padding:6px 8px; font-size:0.9rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault(); window.sendAdminMessage();}">
+                <button type="button" id="voice-admin-btn" class="v72-mic-btn" title="تحويل الكلام لنص" onclick="window.startVoiceTyping('admin-chat-input', this)">🎤</button>
+                <button type="button" id="btn-admin-voice-note-inline" class="v72-voice-rec-btn" title="تسجيل مقطع صوتي" onclick="window.toggleChatVoiceNoteRecording('admin', this)">🎙️</button>
+                <button type="button" class="v72-send-btn" onclick="window.sendAdminMessage()">إرسال 🚀</button>
+            `;
+        }
+    }
+};
+
+window.toggleV72CamPopup = function(role) {
+    let el = document.getElementById('v72-cam-popup-' + role);
+    if (!el) return;
+    el.style.display = el.style.display === 'flex' ? 'none' : 'flex';
+};
+
+window.pickV72Media = function(role, type) {
+    let pop = document.getElementById('v72-cam-popup-' + role);
+    if (pop) pop.style.display = 'none';
+    let inp = document.getElementById(`v72-inp-${role}-${type}`);
+    if (inp) {
+        inp.value = '';
+        inp.click();
+    }
+};
+
+// 4. إصلاح جذري لدالة إتمام الطلب (processOrder) لضمان التأكيد والانتقال الفوري لصفحة طلباتي 100%
+window.processOrder = async function(method) {
+    try {
+        let selectedItems = (cart || []).filter(item => item.selected !== false);
+        if (selectedItems.length === 0) {
+            window.showToast('قم بتحديد منتج واحد على الأقل في السلة لإتمام الطلب', 'error');
+            return;
+        }
+
+        const nameEl = document.getElementById('order-name');
+        const phone1El = document.getElementById('order-phone1');
+        const phone2El = document.getElementById('order-phone2');
+        const govEl = document.getElementById('order-gov');
+        const cityEl = document.getElementById('order-city');
+        const mapAddrEl = document.getElementById('order-map-address');
+        const addrEl = document.getElementById('order-address');
+        const payEl = document.getElementById('order-payment-method');
+
+        const name = nameEl ? nameEl.value.trim() : '';
+        const phone1 = phone1El ? window.toEngDigits(phone1El.value.trim()) : '';
+        const phone2 = (phone2El && phone2El.value.trim()) ? window.toEngDigits(phone2El.value.trim()) : 'لا يوجد';
+        const gov = govEl ? govEl.value : '';
+        const city = (cityEl && cityEl.value) ? cityEl.value : 'المركز الرئيسي';
+        const addressDetails = addrEl ? addrEl.value.trim() : '';
+        const payMethod = payEl ? payEl.value : 'كاش عند الاستلام';
+
+        if (!name || name.length < 2) {
+            window.showToast('يرجى كتابة الاسم بالكامل أولاً', 'error');
+            if (nameEl) nameEl.focus();
+            return;
+        }
+        if (!phone1 || phone1.replace(/\D/g, '').length < 9) {
+            window.showToast('يرجى إدخال رقم هاتف صحيح للتواصل والتوصيل', 'error');
+            if (phone1El) phone1El.focus();
+            return;
+        }
+        if (!gov) {
+            window.showToast('يرجى اختيار المحافظة من القائمة', 'error');
+            if (govEl) govEl.focus();
+            return;
+        }
+        if (!addressDetails) {
+            window.showToast('يرجى كتابة العنوان التفصيلي (الشارع / القرية / العلامة المميزة)', 'error');
+            if (addrEl) addrEl.focus();
+            return;
+        }
+
+        // الخريطة اختيارية حتى لا تمنع تأكيد الطلب إذا لم يلمسها العميل
+        const latEl = document.getElementById('order-lat');
+        const lngEl = document.getElementById('order-lng');
+        const lat = (latEl && latEl.value && Number(latEl.value) !== 0) ? latEl.value : '30.0444';
+        const lng = (lngEl && lngEl.value && Number(lngEl.value) !== 0) ? lngEl.value : '31.2357';
+        const mapAddress = (mapAddrEl && mapAddrEl.value) ? mapAddrEl.value : `${gov} - ${city}`;
+        const mapLink = (lat !== '30.0444') ? `https://www.google.com/maps?q=${lat},${lng}` : '';
+
+        let bundleDiscVal = window.getBundleDiscountAmount ? window.getBundleDiscountAmount() : 0;
+        let discountVal = Math.round(currentSubtotal * (currentDiscountPercent / 100)) + bundleDiscVal + (window.loyaltyDiscountFixed || 0);
+        let enableFreeShip = storeSettings.enableFreeShipping !== false;
+        let targetAmount = (storeSettings && storeSettings.freeShippingThreshold) ? Number(storeSettings.freeShippingThreshold) : 1000;
+        if (gov && window.getShippingCostForGov) currentShippingCost = window.getShippingCostForGov(gov);
+        let finalShippingCost = (enableFreeShip && currentSubtotal >= targetAmount) ? 0 : currentShippingCost;
+        let finalTotal = Math.max(0, (currentSubtotal - discountVal) + finalShippingCost);
+
+        let receiptUrl = '';
+        if (payMethod === 'محفظة إلكترونية') {
+            const fileInput = document.getElementById('order-receipt-file');
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                window.showToast('يرجى إرفاق صورة إيصال التحويل لتأكيد الطلب', 'error');
+                return;
+            }
+            document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true);
+            window.showToast('⏳ جاري رفع صورة الإيصال وتأكيد الطلب...', 'info');
+            try {
+                const formData = new FormData();
+                formData.append('image', fileInput.files[0]);
+                const res = await fetch('https://api.imgbb.com/1/upload?key=D37b01ec4b27dcce48777a7b229a1fdb', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data && data.success) receiptUrl = data.data.url;
+            } catch (err) {
+                document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false);
+                window.showToast('فشل رفع صورة الإيصال، حاول مرة أخرى', 'error');
+                return;
+            }
+        }
+
+        document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true);
+        let custEmail = currentUser ? (currentUser.email || currentUser.phoneNumber || phone1) : phone1;
+
+        let orderPayload = {
+            usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0,
+            userId: currentUser ? currentUser.uid : '',
+            customerEmail: custEmail,
+            customerName: name,
+            phones: { primary: phone1, secondary: phone2 },
+            location: { governorate: gov, city: city, mapAddress: mapAddress, details: addressDetails, lat: lat, lng: lng, mapLink: mapLink },
+            items: selectedItems,
+            subtotal: currentSubtotal || 0,
+            discount: discountVal || 0,
+            promoCode: appliedPromoCode || '',
+            shippingCost: finalShippingCost || 0,
+            totalAmount: finalTotal || 0,
+            orderMethod: method || 'عبر الموقع',
+            paymentMethod: payMethod,
+            receiptUrl: receiptUrl,
+            status: 'قيد المراجعة',
+            orderDate: new Date().toISOString()
+        };
+
+        let createdDoc = await addDoc(collection(db, 'orders'), orderPayload);
+
+        let localOrder = { id: createdDoc.id, ...orderPayload };
+        if (!window.customerOrdersArray) window.customerOrdersArray = [];
+        window.customerOrdersArray.unshift(localOrder);
+
+        if (currentUser) {
+            setDoc(doc(db, 'users', currentUser.uid), { name: name, phone1: phone1, phone2: phone2, gov: gov, city: city, address: addressDetails }, { merge: true }).catch(() => {});
+        }
+
+        if (method === 'عبر واتساب') {
+            let waBtnInfo = storeSettings.floatingButtons ? storeSettings.floatingButtons.find(b => b.icon === '📱' || (b.link && b.link.includes('wa.me'))) : null;
+            let pureWa = waBtnInfo ? waBtnInfo.link.split('/').pop() : '201018631768';
+            if (pureWa && !pureWa.startsWith('20') && pureWa.length === 10) pureWa = '20' + pureWa;
+            let msg = `*طلب جديد مؤكد* 🌿\n\n👤 ${name}\n📞 ${phone1}\n📍 ${gov} - ${city}\n🏠 ${addressDetails}\n💳 الدفع: ${payMethod}\n\n🛍️ *المنتجات:*\n`;
+            selectedItems.forEach(item => { msg += `- ${item.name} (${item.quantity}) بـ ${item.price * item.quantity} ج\n`; });
+            msg += `\n💰 *الإجمالي المطلوب:* ${finalTotal} ج (شامل التوصيل)`;
+            window.open(`https://wa.me/${pureWa}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        // تفريغ السلة والانتقال المباشر لصفحة طلباتي
+        cart = cart.filter(item => item.selected === false);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        localStorage.removeItem('cart_last_updated');
+        window.loyaltyDiscountFixed = 0;
+        window.loyaltyPointsUsedTemp = 0;
+        currentDiscountPercent = 0;
+        appliedPromoCode = '';
+        window.updateCartUI();
+
+        document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false);
+        window.showToast('🎉 تم تأكيد طلبك بنجاح! يمكنك متابعة حالته من هنا.', 'success');
+        window.showPanel('customer-orders');
+        window.renderCustomerOrdersWithPhotosV72(window.customerOrdersArray);
+    } catch (error) {
+        console.error('Order Submit Error:', error);
+        document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false);
+        window.showToast('حدث خطأ أثناء إرسال الطلب، تأكد من اتصالك بالإنترنت', 'error');
+    }
+};
+
+// 5. إظهار صور المنتجات داخل صفحة "طلباتي" ونافذة تفاصيل الطلب للعميل (مثل أمازون ونون)
+window.getOrderProductThumbV72 = function(item) {
+    if (item && item.imageUrl && !item.imageUrl.includes('placeholder')) return item.imageUrl;
+    let p = (products || []).find(x => x.id === item.id || x.name === item.name);
+    if (p) {
+        if (p.images && p.images[0]) return p.images[0];
+        if (p.imageUrl) return p.imageUrl;
+    }
+    return '1000392409.jpeg';
+};
+
+window.renderCustomerOrdersWithPhotosV72 = function(userOrders) {
+    const container = document.getElementById('customer-orders-container');
+    if (!container) return;
+    if (!userOrders || userOrders.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;"><span style="font-size:3rem; display:block; margin-bottom:10px;">🛒</span><h3>لا توجد طلبات مسجلة بعد.</h3></div>';
+        return;
+    }
+    let htmlContent = '';
+    userOrders.forEach(order => {
+        let badgeClass = 'status-pending';
+        let statusIcon = '🕒';
+        let st = String(order.status || 'قيد المراجعة');
+        if (st.includes('تجهيز')) { badgeClass = 'status-prep'; statusIcon = '📦'; }
+        else if (st.includes('شحن')) { badgeClass = 'status-shipped'; statusIcon = '🚚'; }
+        else if (st.includes('توصيل')) { badgeClass = 'status-delivered'; statusIcon = '✅'; }
+        else if (st.includes('رفض') || st.includes('لغى')) { badgeClass = 'status-canceled'; statusIcon = '❌'; }
+
+        let dStr = new Date(order.orderDate).toLocaleDateString('ar-EG', { dateStyle: 'long' });
+        let thumbsHtml = '<div class="order-products-thumbs-row">';
+        (order.items || []).forEach(item => {
+            let imgUrl = window.getOrderProductThumbV72(item);
+            thumbsHtml += `
+                <div class="order-prod-thumb-chip">
+                    <img src="${imgUrl}" onerror="this.src='1000392409.jpeg'" alt="${window.escapeHTML(item.name)}">
+                    <div>
+                        <strong style="display:block; color:var(--primary); font-size:0.84rem;">${window.escapeHTML(item.name)}</strong>
+                        <span style="font-size:0.78rem; color:var(--text-muted);">الكمية: <b>${item.quantity}</b> | <b style="color:var(--secondary);">${item.price * item.quantity} ج</b></span>
+                    </div>
+                </div>`;
+        });
+        thumbsHtml += '</div>';
+
+        htmlContent += `
+        <div class="admin-msg-card" style="cursor:pointer; border-right:4px solid #028090; padding:14px; margin-bottom:12px;" onclick="window.openCustomerOrderModal('${order.id}')">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px dashed var(--border-color); padding-bottom:8px;">
+                <div>
+                    <strong style="color:var(--primary); font-size:1.02rem;">📦 طلب #${order.id.slice(0,6).toUpperCase()}</strong>
+                    <span style="font-size:0.8rem; color:var(--text-muted); margin-right:8px;">📅 ${dStr}</span>
+                </div>
+                <span class="order-status-badge ${badgeClass}" style="font-size:0.75rem;">${statusIcon} ${window.escapeHTML(st)}</span>
+            </div>
+            ${thumbsHtml}
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:8px; border-top:1px solid var(--border-color);">
+                <strong style="color:var(--secondary); font-size:1.05rem;">الإجمالي: ${order.totalAmount} ج</strong>
+                ${storeSettings.enableBuyAgain !== false ? `<button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.78rem; border-color:var(--primary); color:var(--primary);" onclick="event.stopPropagation(); window.buyAgainOrder('${order.id}')">🔄 اطلبه مجدداً</button>` : ''}
+            </div>
+        </div>`;
+    });
+    container.innerHTML = htmlContent;
+};
+
+window.loadCustomerOrders = function() {
+    if (!currentUser) return;
+    let filterKey = currentUser.email || currentUser.phoneNumber;
+    if (!filterKey) return;
+    onSnapshot(query(collection(db, 'orders'), where('customerEmail', '==', filterKey)), (snapshot) => {
+        window.customerOrdersArray = [];
+        snapshot.forEach(d => window.customerOrdersArray.push({ id: d.id, ...d.data() }));
+        window.customerOrdersArray.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+        window.renderCustomerOrdersWithPhotosV72(window.customerOrdersArray);
+    });
+};
+
+const origOpenCustModalV71 = window.openCustomerOrderModal;
+window.openCustomerOrderModal = function(orderId) {
+    if (origOpenCustModalV71) origOpenCustModalV71(orderId);
+    let order = (window.customerOrdersArray || []).find(o => o.id === orderId);
+    let com = document.getElementById('com-content');
+    if (!order || !com) return;
+    let ul = com.querySelector('ul');
+    if (ul && order.items) {
+        ul.style.padding = '0';
+        ul.innerHTML = order.items.map(item => {
+            let imgUrl = window.getOrderProductThumbV72(item);
+            return `<li style="list-style:none; display:flex; align-items:center; gap:10px; margin-bottom:8px; background:var(--panel-bg); padding:8px; border-radius:10px; border:1px solid var(--border-color);">
+                <img src="${imgUrl}" onerror="this.src='1000392409.jpeg'" style="width:48px; height:48px; border-radius:8px; object-fit:cover; border:1px solid var(--secondary);">
+                <div style="flex:1;">
+                    <strong style="color:var(--primary); display:block;">${window.escapeHTML(item.name)}</strong>
+                    <span style="font-size:0.84rem; color:var(--text-muted);">الكمية: <b>${item.quantity}</b> × ${item.price} ج = <b style="color:var(--secondary);">${item.price * item.quantity} ج</b></span>
+                </div>
+            </li>`;
+        }).join('');
+    }
+};
+
+// تفعيل التعديلات فور التحميل وعند كل تحديث للإعدادات
+const origApplyV71Master = window.applyV66MasterUI;
+window.applyV66MasterUI = function() {
+    if (origApplyV71Master) origApplyV71Master();
+    window.syncZeroFlashSettingsV72();
+    window.initCleanChatBarsV72();
+};
+
+setTimeout(() => {
+    window.syncZeroFlashSettingsV72();
+    window.initCleanChatBarsV72();
+}, 300);
