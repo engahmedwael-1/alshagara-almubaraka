@@ -3008,7 +3008,7 @@ body.dark-mode .amz-buy-box-card {
 
 
 /* ==========================================================================
-   تحديثات V72 النهائية: الهيدر، اللوجو، الشات، السلة، الدفع، والإشعارات
+   النسخة V75 Fixed VIP: إصلاح الشريط العلوي وزر حسابي + تثبيت التنقل السفلي + شات متطور + شاشة الحظر
    ========================================================================== */
 
 /* 1. ظهور الإشعارات (Toast) فوق عجلة الحظ وفوق أي نافذة مفتوحة */
@@ -3023,582 +3023,67 @@ body.dark-mode .amz-buy-box-card {
 }
 #toast-container .toast {
     pointer-events: auto;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.38) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
     border-radius: 12px !important;
     font-weight: 700 !important;
 }
 
-/* 2. ضبط الشريط العلوي (Header) وإظهار اللوجو بوضوح تام وإخفاء زر "دخول" */
-header {
-    background: linear-gradient(135deg, #1f3a13, #132a13) !important;
-    padding: 8px 12px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 8px !important;
-    min-height: 58px !important;
-}
-header h1 {
-    margin: 0 !important;
-    font-size: 1rem !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    color: #ffffff !important;
-    cursor: pointer !important;
-    white-space: nowrap !important;
-}
-header h1 img {
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    min-height: 40px !important;
-    border-radius: 50% !important;
-    object-fit: cover !important;
-    border: 2px solid #c59b27 !important;
-    background-color: #ffffff !important;
-    display: inline-block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    flex-shrink: 0 !important;
-}
-#btn-show-auth,
-#amazon-sub-header,
-#home-farm-reels-section,
-#amz-cart-top-sticky-bar,
-#cart-top-sticky-bar {
-    display: none !important;
-}
-
-/* 3. تنظيف وتصغير فقاعات شات خدمة العملاء وتوسيع مساحة الرؤية */
-#support-history-container,
-#admin-chat-messages {
-    height: 55vh !important;
-    min-height: 290px !important;
-    max-height: 62vh !important;
-    padding: 12px !important;
-    background: var(--input-bg) !important;
-    border-radius: 14px !important;
-    border: 1.5px solid var(--border-color) !important;
-    overflow-y: auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 6px !important;
-}
-.chat-msg-wrapper {
-    margin-bottom: 2px !important;
-    display: flex !important;
-}
-.chat-bubble {
-    max-width: 75% !important;
-    padding: 7px 12px !important;
-    font-size: 0.88rem !important;
-    line-height: 1.45 !important;
-    border-radius: 14px !important;
-    word-break: break-word !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
-}
-.bubble-customer {
-    border-bottom-right-radius: 4px !important;
-}
-.bubble-admin {
-    border-bottom-left-radius: 4px !important;
-}
-#customer-fixed-voice-bar,
-#admin-fixed-voice-bar,
-#btn-toggle-cust-chat-tools,
-#customer-chat-media-toolbar {
-    display: none !important;
-}
-
-/* شريط كتابة الشات الموحد الأنيق مع زر الكاميرا يمين الكتابة */
-.v72-chat-composer-bar {
-    display: flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    background: var(--panel-bg) !important;
-    border: 1.5px solid var(--border-color) !important;
-    border-radius: 26px !important;
-    padding: 5px 8px !important;
-    margin-top: 8px !important;
-    position: relative !important;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.05) !important;
-}
-.v72-cam-btn,
-.v72-mic-btn,
-.v72-voice-rec-btn {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    border-radius: 50% !important;
-    border: 1px solid var(--border-color) !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 1rem !important;
-    cursor: pointer !important;
-    background: var(--input-bg) !important;
-    color: var(--primary) !important;
-    padding: 0 !important;
-    flex-shrink: 0 !important;
-}
-.v72-send-btn {
-    height: 36px !important;
-    padding: 0 14px !important;
-    border-radius: 20px !important;
-    font-size: 0.86rem !important;
-    font-weight: 800 !important;
-    background: linear-gradient(135deg, #1f3a13, #028090) !important;
-    color: #fff !important;
-    border: none !important;
-    cursor: pointer !important;
-    flex-shrink: 0 !important;
-}
-.v72-camera-popup-menu {
-    position: absolute;
-    bottom: 48px;
-    right: 6px;
-    background: var(--panel-bg);
-    border: 1.5px solid var(--secondary);
-    border-radius: 14px;
-    box-shadow: 0 10px 28px rgba(0,0,0,0.22);
-    padding: 6px;
-    z-index: 9999;
-    display: none;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 195px;
-}
-.v72-camera-popup-menu button {
-    background: transparent;
-    border: none;
-    padding: 8px 10px;
-    text-align: right;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--text-color);
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.v72-camera-popup-menu button:hover {
-    background: var(--input-bg);
-}
-
-/* 4. تنظيم السلة: تصغير الشريط السفلي الثابت وإزالة الشريط العلوي */
-#amz-cart-bottom-fixed-bar {
-    position: sticky !important;
-    bottom: 62px !important;
-    background: var(--panel-bg) !important;
-    color: var(--text-color) !important;
-    border: 1.5px solid var(--secondary) !important;
-    border-radius: 12px !important;
-    padding: 8px 12px !important;
-    margin-top: 12px !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    gap: 10px !important;
-    box-shadow: 0 -4px 14px rgba(0,0,0,0.08) !important;
-    z-index: 90 !important;
-}
-#amz-cart-bottom-fixed-bar strong {
-    color: var(--primary) !important;
-    font-size: 1.05rem !important;
-}
-#amz-cart-bottom-fixed-bar .amz-checkout-gold-btn {
-    padding: 8px 16px !important;
-    font-size: 0.88rem !important;
-    border-radius: 10px !important;
-    width: auto !important;
-}
-
-/* 5. تنظيم صفحة إتمام الطلب وتصغير أزرار التأكيد */
-.amz-checkout-sticky-submit-bar {
-    position: static !important;
-    background: transparent !important;
-    border: none !important;
-    padding: 4px 0 !important;
-    box-shadow: none !important;
-    margin-top: 10px !important;
-}
-#checkout-panel .checkout-submit-btn {
-    padding: 10px 14px !important;
-    font-size: 0.92rem !important;
-    height: 42px !important;
-    border-radius: 10px !important;
-}
-
-/* 6. صور المنتجات داخل كارت طلبات العميل (طراز أمازون ونون) */
-.order-products-thumbs-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 8px;
-}
-.order-prod-thumb-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 5px 8px;
-    font-size: 0.82rem;
-}
-.order-prod-thumb-chip img {
-    width: 42px;
-    height: 42px;
-    border-radius: 8px;
-    object-fit: cover;
-    border: 1px solid var(--secondary);
-    flex-shrink: 0;
-}
-
-
-/* ==========================================================================
-   تحديثات V72 + V73 الشاملة: الهيدر، اللوجو، الشات، السلة، الدفع، وميزات V73
-   ========================================================================== */
-
-/* 1. ظهور الإشعارات (Toast) فوق عجلة الحظ وفوق أي نافذة مفتوحة */
-#toast-container {
-    position: fixed !important;
-    top: 16px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    z-index: 2147483647 !important;
-    width: min(92vw, 380px) !important;
-    pointer-events: none;
-}
-#toast-container .toast {
-    pointer-events: auto;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.38) !important;
-    border-radius: 12px !important;
-    font-weight: 700 !important;
-}
-
-/* 2. ضبط الشريط العلوي (Header) وإظهار اللوجو بوضوح تام وإخفاء زر "دخول" */
-header {
-    background: linear-gradient(135deg, #1f3a13, #132a13) !important;
-    padding: 8px 12px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 8px !important;
-    min-height: 58px !important;
-}
-header h1 {
-    margin: 0 !important;
-    font-size: 1rem !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    color: #ffffff !important;
-    cursor: pointer !important;
-    white-space: nowrap !important;
-}
-header h1 img {
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    min-height: 40px !important;
-    border-radius: 50% !important;
-    object-fit: cover !important;
-    border: 2px solid #c59b27 !important;
-    background-color: #ffffff !important;
-    display: inline-block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    flex-shrink: 0 !important;
-}
-#btn-show-auth,
-#amazon-sub-header,
-#home-farm-reels-section,
-#amz-cart-top-sticky-bar,
-#cart-top-sticky-bar {
-    display: none !important;
-}
-
-/* 3. تنظيف وتصغير فقاعات شات خدمة العملاء وتوسيع مساحة الرؤية */
-#support-history-container,
-#admin-chat-messages {
-    height: 55vh !important;
-    min-height: 290px !important;
-    max-height: 62vh !important;
-    padding: 12px !important;
-    background: var(--input-bg) !important;
-    border-radius: 14px !important;
-    border: 1.5px solid var(--border-color) !important;
-    overflow-y: auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 6px !important;
-}
-.chat-msg-wrapper {
-    margin-bottom: 2px !important;
-    display: flex !important;
-}
-.chat-bubble {
-    max-width: 75% !important;
-    padding: 7px 12px !important;
-    font-size: 0.88rem !important;
-    line-height: 1.45 !important;
-    border-radius: 14px !important;
-    word-break: break-word !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
-}
-.bubble-customer {
-    border-bottom-right-radius: 4px !important;
-}
-.bubble-admin {
-    border-bottom-left-radius: 4px !important;
-}
-#customer-fixed-voice-bar,
-#admin-fixed-voice-bar,
-#btn-toggle-cust-chat-tools,
-#customer-chat-media-toolbar {
-    display: none !important;
-}
-
-/* شريط كتابة الشات الموحد الأنيق مع زر الكاميرا يمين الكتابة */
-.v72-chat-composer-bar {
-    display: flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    background: var(--panel-bg) !important;
-    border: 1.5px solid var(--border-color) !important;
-    border-radius: 26px !important;
-    padding: 5px 8px !important;
-    margin-top: 8px !important;
-    position: relative !important;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.05) !important;
-}
-.v72-cam-btn,
-.v72-mic-btn,
-.v72-voice-rec-btn {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    border-radius: 50% !important;
-    border: 1px solid var(--border-color) !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 1rem !important;
-    cursor: pointer !important;
-    background: var(--input-bg) !important;
-    color: var(--primary) !important;
-    padding: 0 !important;
-    flex-shrink: 0 !important;
-}
-.v72-send-btn {
-    height: 36px !important;
-    padding: 0 14px !important;
-    border-radius: 20px !important;
-    font-size: 0.86rem !important;
-    font-weight: 800 !important;
-    background: linear-gradient(135deg, #1f3a13, #028090) !important;
-    color: #fff !important;
-    border: none !important;
-    cursor: pointer !important;
-    flex-shrink: 0 !important;
-}
-.v72-camera-popup-menu {
-    position: absolute;
-    bottom: 48px;
-    right: 6px;
-    background: var(--panel-bg);
-    border: 1.5px solid var(--secondary);
-    border-radius: 14px;
-    box-shadow: 0 10px 28px rgba(0,0,0,0.22);
-    padding: 6px;
-    z-index: 9999;
-    display: none;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 195px;
-}
-.v72-camera-popup-menu button {
-    background: transparent;
-    border: none;
-    padding: 8px 10px;
-    text-align: right;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--text-color);
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.v72-camera-popup-menu button:hover {
-    background: var(--input-bg);
-}
-
-/* 4. تنظيم السلة: تصغير الشريط السفلي الثابت وإزالة الشريط العلوي */
-#amz-cart-bottom-fixed-bar {
-    position: sticky !important;
-    bottom: 62px !important;
-    background: var(--panel-bg) !important;
-    color: var(--text-color) !important;
-    border: 1.5px solid var(--secondary) !important;
-    border-radius: 12px !important;
-    padding: 8px 12px !important;
-    margin-top: 12px !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    gap: 10px !important;
-    box-shadow: 0 -4px 14px rgba(0,0,0,0.08) !important;
-    z-index: 90 !important;
-}
-#amz-cart-bottom-fixed-bar strong {
-    color: var(--primary) !important;
-    font-size: 1.05rem !important;
-}
-#amz-cart-bottom-fixed-bar .amz-checkout-gold-btn {
-    padding: 8px 16px !important;
-    font-size: 0.88rem !important;
-    border-radius: 10px !important;
-    width: auto !important;
-}
-
-/* 5. تنظيم صفحة إتمام الطلب وتصغير أزرار التأكيد */
-.amz-checkout-sticky-submit-bar {
-    position: static !important;
-    background: transparent !important;
-    border: none !important;
-    padding: 4px 0 !important;
-    box-shadow: none !important;
-    margin-top: 10px !important;
-}
-#checkout-panel .checkout-submit-btn {
-    padding: 10px 14px !important;
-    font-size: 0.92rem !important;
-    height: 42px !important;
-    border-radius: 10px !important;
-}
-
-/* 6. صور المنتجات داخل كارت طلبات العميل (طراز أمازون ونون) */
-.order-products-thumbs-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 8px;
-}
-.order-prod-thumb-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 5px 8px;
-    font-size: 0.82rem;
-}
-.order-prod-thumb-chip img {
-    width: 42px;
-    height: 42px;
-    border-radius: 8px;
-    object-fit: cover;
-    border: 1px solid var(--secondary);
-    flex-shrink: 0;
-}
-
-/* 7. شريط الخبير الذكي في الشات وبطاقة استطلاع الرأي بعد 3 أيام */
-.v73-advisor-chips-row {
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    padding: 6px 2px;
-    margin-bottom: 6px;
-    scrollbar-width: none;
-}
-.v73-advisor-chip {
-    background: var(--panel-bg);
-    border: 1px solid var(--secondary);
-    color: var(--primary);
-    padding: 5px 10px;
-    border-radius: 999px;
-    font-size: 0.76rem;
-    font-weight: 700;
-    white-space: nowrap;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-.v73-followup-banner {
-    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-    border: 2px solid #22c55e;
-    border-radius: 14px;
-    padding: 12px 14px;
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-
-/* ==========================================================================
-   النسخة V74 VIP: الشريط العلوي + إزالة السلة العائمة + تثبيت التنقل السفلي + شات متطور + شاشة الحظر
-   ========================================================================== */
-
-/* 1. إلغاء زر تكبير الخط (A+) وشريط السلة العائم (سلة مشترياتك الجاهزة) نهائياً */
+/* 2. إخفاء زر تكبير الخط (A+) وشريط السلة العائم والشريط الفرعي الزائد نهائياً */
 #header-font-size-btn,
 #floating-bottom-cart-bar,
-.floating-bottom-cart-bar {
+.floating-bottom-cart-bar,
+#amazon-sub-header,
+#amz-cart-top-sticky-bar,
+#cart-top-sticky-bar,
+#home-farm-reels-section {
     display: none !important;
     visibility: hidden !important;
     pointer-events: none !important;
 }
 
-/* 2. استعادة وتنسيق الشريط العلوي (Header) بوضوح تام وإظهار اللوجو والاسم بدون أي قص */
+/* 3. ضبط الشريط العلوي (Header) وإظهار اللوجو وزر "👤 حسابي ▼" (تبديل الحسابات) بوضوح تام */
 header {
     background: linear-gradient(135deg, var(--primary, #3c521e), var(--nav-bg, #1f3a13)) !important;
-    padding: 8px 12px !important;
+    padding: 7px 10px !important;
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    gap: 8px !important;
-    min-height: 58px !important;
+    gap: 6px !important;
+    min-height: 56px !important;
     position: sticky !important;
     top: 0 !important;
-    z-index: 1100 !important;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18) !important;
+    z-index: 1200 !important;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2) !important;
+    overflow: visible !important;
 }
 header > div:first-child,
 .header-brand-wrap {
     display: flex !important;
     align-items: center !important;
-    gap: 8px !important;
+    gap: 6px !important;
     min-width: 0 !important;
     flex: 1 1 auto !important;
 }
 header h1 {
     margin: 0 !important;
-    font-size: 0.98rem !important;
+    font-size: 0.94rem !important;
     display: flex !important;
     align-items: center !important;
-    gap: 7px !important;
-    color: #fff !important;
+    gap: 6px !important;
+    color: #ffffff !important;
     white-space: nowrap !important;
     overflow: hidden !important;
+    min-width: 0 !important;
 }
 header h1 img {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    min-height: 36px !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
     border-radius: 50% !important;
     object-fit: cover !important;
     border: 2px solid #c59b27 !important;
-    background: #fff !important;
+    background: #ffffff !important;
     flex-shrink: 0 !important;
     display: block !important;
 }
@@ -3610,33 +3095,66 @@ header h1 span {
 .header-actions {
     display: flex !important;
     align-items: center !important;
-    gap: 5px !important;
+    gap: 4px !important;
     flex-wrap: nowrap !important;
     flex-shrink: 0 !important;
 }
-.header-actions .hdr-icon-pill,
-.header-actions > button {
-    height: 32px !important;
-    min-width: 32px !important;
+.header-actions .hdr-icon-pill {
+    height: 31px !important;
+    min-width: 31px !important;
     padding: 0 7px !important;
-    font-size: 0.82rem !important;
+    font-size: 0.78rem !important;
     border-radius: 16px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     flex-shrink: 0 !important;
 }
+#user-menu-container {
+    position: relative !important;
+    flex-shrink: 0 !important;
+    z-index: 1250 !important;
+}
+#user-menu-container .hdr-user-pill,
+#btn-show-auth {
+    height: 31px !important;
+    padding: 0 9px !important;
+    border-radius: 16px !important;
+    font-size: 0.78rem !important;
+    font-weight: 800 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+#profile-dropdown {
+    position: absolute !important;
+    left: 0 !important;
+    right: auto !important;
+    top: 38px !important;
+    min-width: 230px !important;
+    z-index: 9999 !important;
+}
+html[dir="ltr"] #profile-dropdown {
+    right: 0 !important;
+    left: auto !important;
+}
 @media (max-width: 480px) {
-    header { padding: 6px 8px !important; gap: 5px !important; }
-    header h1 { font-size: 0.84rem !important; gap: 5px !important; }
-    header h1 img { width: 32px !important; height: 32px !important; min-width: 32px !important; min-height: 32px !important; }
-    .header-actions { gap: 4px !important; }
-    .header-actions .hdr-icon-pill, .header-actions > button { height: 30px !important; min-width: 30px !important; padding: 0 6px !important; font-size: 0.76rem !important; }
-    #user-email-display { max-width: 58px !important; overflow: hidden !important; text-overflow: ellipsis !important; display: inline-block !important; }
+    header { padding: 6px 7px !important; gap: 4px !important; }
+    header h1 { font-size: 0.8rem !important; gap: 5px !important; }
+    header h1 img { width: 30px !important; height: 30px !important; min-width: 30px !important; min-height: 30px !important; }
+    .header-menu-trigger { width: 29px !important; height: 29px !important; font-size: 1.05rem !important; }
+    .header-actions .hdr-icon-pill { height: 28px !important; min-width: 28px !important; padding: 0 5px !important; font-size: 0.72rem !important; }
+    #user-menu-container .hdr-user-pill, #btn-show-auth { height: 28px !important; padding: 0 7px !important; font-size: 0.73rem !important; }
+    #user-email-display { max-width: 56px !important; overflow: hidden !important; text-overflow: ellipsis !important; display: inline-block !important; vertical-align: middle !important; }
 }
 
-/* 3. تثبيت وإظهار شريط التنقل السفلي (Bottom Navigation) بوضوح تام */
-body { padding-bottom: 82px !important; }
+/* 4. تثبيت وإظهار شريط التنقل السفلي (Bottom Navigation) بوضوح تام */
+body { padding-bottom: 84px !important; }
 .bottom-nav, #bottom-nav {
     position: fixed !important;
     bottom: 0 !important;
@@ -3663,8 +3181,50 @@ body { padding-bottom: 82px !important; }
     bottom: 145px !important;
 }
 
-/* 4. شريط تسجيل ومعاينة وحذف المقطع الصوتي بالشات (V74 Voice Studio) */
-.v74-voice-bar {
+/* 5. تصغير الشريط السفلي الثابت في صفحة السلة وصفحة إتمام الطلب */
+#amz-cart-bottom-fixed-bar {
+    position: sticky !important;
+    bottom: 64px !important;
+    background: var(--panel-bg) !important;
+    color: var(--text-color) !important;
+    border: 1.5px solid var(--secondary) !important;
+    border-radius: 12px !important;
+    padding: 8px 12px !important;
+    margin-top: 12px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 10px !important;
+    box-shadow: 0 -4px 14px rgba(0,0,0,0.08) !important;
+    z-index: 90 !important;
+}
+#amz-cart-bottom-fixed-bar strong {
+    color: var(--primary) !important;
+    font-size: 1.05rem !important;
+}
+#amz-cart-bottom-fixed-bar .amz-checkout-gold-btn {
+    padding: 8px 16px !important;
+    font-size: 0.88rem !important;
+    border-radius: 10px !important;
+    width: auto !important;
+}
+.amz-checkout-sticky-submit-bar {
+    position: static !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 4px 0 !important;
+    box-shadow: none !important;
+    margin-top: 10px !important;
+}
+#checkout-panel .checkout-submit-btn {
+    padding: 10px 14px !important;
+    font-size: 0.92rem !important;
+    height: 42px !important;
+    border-radius: 10px !important;
+}
+
+/* 6. شريط تسجيل ومعاينة وحذف المقطع الصوتي بالشات + شريط رفع الفيديوهات */
+.v75-voice-bar {
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -3674,18 +3234,18 @@ body { padding-bottom: 82px !important; }
     padding: 8px 10px;
     margin-bottom: 8px;
 }
-.v74-voice-row {
+.v75-voice-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 6px;
     flex-wrap: wrap;
 }
-.v74-rec-dot {
+.v75-rec-dot {
     width: 10px; height: 10px; border-radius: 50%; background: #dc2626;
     display: inline-block; animation: pulseOffer 0.8s infinite;
 }
-.v74-upload-progress-wrap {
+.v75-upload-progress-wrap {
     display: none;
     background: #eff6ff;
     border: 1.5px solid #3b82f6;
@@ -3696,14 +3256,41 @@ body { padding-bottom: 82px !important; }
     font-weight: bold;
     color: #1d4ed8;
 }
-.v74-upload-progress-track {
+.v75-upload-progress-track {
     width: 100%; height: 8px; background: #dbeafe; border-radius: 6px; overflow: hidden; margin-top: 5px;
 }
-.v74-upload-progress-fill {
+.v75-upload-progress-fill {
     height: 100%; width: 0%; background: linear-gradient(90deg, #2563eb, #16a34a); transition: width 0.2s ease;
 }
 
-/* 5. شاشة الحظر الشاملة غير القابلة للإغلاق للمحظورين من تليفوناتهم */
+/* 7. صور المنتجات داخل طلبات العميل (طراز أمازون ونون) */
+.order-products-thumbs-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+.order-prod-thumb-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 5px 8px;
+    font-size: 0.82rem;
+}
+.order-prod-thumb-chip img {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid var(--secondary);
+    flex-shrink: 0;
+}
+
+/* 8. شاشة الحظر الشاملة غير القابلة للإغلاق للمحظورين من تليفوناتهم */
 #zait-banned-lockout-screen {
     position: fixed !important;
     inset: 0 !important;

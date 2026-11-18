@@ -15608,2207 +15608,858 @@ window.showUserHistory = function(userId, userName) {
         }, 500);
 
 
-// =========================================================================
-// === النسخة V72 النهائية المفحوصة: حل جميع الملاحظات الـ 9 جذرياً ===
-// =========================================================================
 
-// 1. المزامنة الفورية للإعدادات المخفية (Zero-Flash) حتى لا يظهر أي زر متوقف عند فتح التطبيق
-window.syncZeroFlashSettingsV72 = function() {
+/* === ZAIT_V75_FIXED_VIP_START === */
+(function initZaitV75FixedVipBundle() {
     try {
-        localStorage.setItem('zait_cached_settings_v72', JSON.stringify(storeSettings || {}));
-        let s = storeSettings || {};
-        let rules = [
-            '#btn-show-auth, #amz-cart-top-sticky-bar, #cart-top-sticky-bar, #home-farm-reels-section, #amazon-sub-header { display: none !important; }'
-        ];
-        let map = [
-            ['enableSpinWheel', '#spin-wheel-fab, #sidebar-spin-wheel-btn'],
-            ['enableBoxBuilder', '#sidebar-box-builder-btn, #pill-box-builder'],
-            ['enableB2BPortal', '#sidebar-b2b-btn'],
-            ['enableBatchTracker', '#sidebar-batch-tracker-btn, #pill-batch-tracker'],
-            ['enableVisualSizeGuide', '#sidebar-size-guide-btn, #btn-modal-size-guide'],
-            ['enableSampleBottle', '#sidebar-sample-bottle-btn'],
-            ['enableGiftByPhone', '#sidebar-gift-by-phone-btn, #btn-modal-gift-phone'],
-            ['enablePreorderHarvest', '#sidebar-preorder-harvest-btn'],
-            ['enableGroupBuy', '#sidebar-group-buy-btn'],
-            ['enableDriverPortal', '#sidebar-driver-portal-btn'],
-            ['enableAffiliateSystem', '#sidebar-affiliate-btn'],
-            ['enableLiveShopping', '#sidebar-live-stream-btn, #home-seasonal-bundles-bar'],
-            ['enableQuickTagFilters', '#v64-quick-tags-bar'],
-            ['enableOfferBanner', '#home-limited-offer-banner'],
-            ['enableTrustMarquee', '#trust-marquee-bar, #home-trust-marquee'],
-            ['enableFloatingCartBar', '#floating-bottom-cart-bar, #header-font-size-btn'],
-            ['enableGuestTracking', '#sidebar-track-order-btn, #guest-order-track-box'],
-            ['enableAnnualCalc', '#sidebar-annual-calc-btn, #btn-open-annual-calc'],
-            ['enableGiftCards', '#sidebar-gift-card-btn, #btn-open-gift-card'],
-            ['enableSeoArticles', '#home-seo-benefits-section'],
-            ['enableAdminFloatBtn', '#admin-floating-launcher-wrap']
-        ];
-        map.forEach(([key, sel]) => {
-            if (s[key] === false) rules.push(sel + ' { display: none !important; }');
-        });
-        if (s.enableTopBar !== true) rules.push('#top-announcement-bar { display: none !important; }');
-        if (s.enableHeroSlider !== true) rules.push('#hero-slider-wrapper { display: none !important; }');
-        else rules.push('#hero-section { display: none !important; }');
+        window.V75_DEFAULT_CLOUDINARY_CLOUD = 'jj2qrpnb';
+        window.V75_DEFAULT_CLOUDINARY_PRESET = 'bfu87mf0';
 
-        let st = document.getElementById('zait-instant-hide-style-v72');
-        if (!st) {
-            st = document.createElement('style');
-            st.id = 'zait-instant-hide-style-v72';
-            document.head.appendChild(st);
-        }
-        st.textContent = rules.join('\n');
-    } catch (e) {}
-};
-
-// 2. قاموس التصحيح اللغوي والصوتي الذكي لميكروفون الشات (يصلح الكلمات المنطوقة خطأً تلقائياً)
-window.V72_SPEECH_CORRECTION_MAP = [
-    [/\b(ذيت|زت|زيتت|ازيت|الذيت|زايت)\b/g, 'زيت'],
-    [/\b(ذيتون|زتون|زيتان|زاتون|الزتون|الذيتون|زيتونه)\b/g, 'زيتون'],
-    [/\b(سناوي|سينوي|سيماوي|ثيناوي|سيناوى|السيناوي)\b/g, 'سيناوي'],
-    [/\b(سينا|ثيناء|سينه)\b/g, 'سيناء'],
-    [/\b(الشجره|شجره)\s*(المباركه|مباركه)\b/g, 'الشجرة المباركة'],
-    [/\b(عصره|عصرة)\s*(اولى|اولي)\b/g, 'عصرة أولى'],
-    [/\b(عالبارد|علي البارد|ع البارد)\b/g, 'على البارد'],
-    [/\b(غيركن|كيركن|جركم|جاركن|جيركن|قرص)\b/g, 'جركن'],
-    [/\b(عبوه|عبوت|علبه)\b/g, 'عبوة'],
-    [/\b(ليتر|رتل|لترات)\b/g, 'لتر'],
-    [/\b(اوردر|اردر|الاوردر|أوردر)\b/g, 'طلب'],
-    [/\b(بكام|بيكام|كام سعر)\b/g, 'بكم سعر'],
-    [/\b(عايز|عاوز)\b/g, 'أريد'],
-    [/\b(مشكله)\b/g, 'مشكلة'],
-    [/\b(الشحنه|شحنه)\b/g, 'الشحنة'],
-    [/\b(استرجع|مرتجع)\b/g, 'استرجاع'],
-    [/\b(انستا باي|انستاباي|انستا)\b/g, 'إنستاباي'],
-    [/\b(فودافون كاش|فدفون كاش|ودافون كاش)\b/g, 'فودافون كاش']
-];
-
-window.smartCorrectSpeechV72 = function(rawText, alternatives = []) {
-    let candidates = [rawText, ...(alternatives || [])].filter(Boolean);
-    if (candidates.length === 0) return '';
-    let storeWords = ['زيت', 'زيتون', 'سيناوي', 'لتر', 'جركن', 'عبوة', 'طلب', 'شحن', 'سعر', 'خصم', 'استرجاع'];
-    let best = candidates[0];
-    let maxScore = -1;
-    candidates.forEach(c => {
-        let sc = 0;
-        storeWords.forEach(w => { if (c.includes(w)) sc += 3; });
-        if (sc > maxScore) { maxScore = sc; best = c; }
-    });
-    let fixed = String(best).trim();
-    window.V72_SPEECH_CORRECTION_MAP.forEach(([rgx, rep]) => {
-        fixed = fixed.replace(rgx, rep);
-    });
-    fixed = fixed.replace(/\b(\S+)\s+\1\b/g, '$1');
-    return fixed.trim();
-};
-
-window.startVoiceTyping = function(inputId, btnElement) {
-    const inputEl = document.getElementById(inputId);
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        window.showToast('متصفحك لا يدعم تحويل الصوت لنص، يرجى استخدام متصفح Chrome', 'error');
-        return;
-    }
-    if (window.activeSpeechRecInstance) {
-        try { window.activeSpeechRecInstance.stop(); } catch (e) {}
-        window.activeSpeechRecInstance = null;
-        if (btnElement) btnElement.classList.remove('recording');
-        return;
-    }
-    try {
-        const recognition = new SpeechRecognition();
-        window.activeSpeechRecInstance = recognition;
-        recognition.lang = window.currentLang === 'en' ? 'en-US' : 'ar-EG';
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.maxAlternatives = 5;
-
-        const baseVal = inputEl ? inputEl.value.trim() : '';
-
-        recognition.onstart = function() {
-            if (btnElement) {
-                btnElement.classList.add('recording');
-                btnElement.style.background = '#dc2626';
-                btnElement.style.color = '#ffffff';
-            }
-            window.showToast('🎤 تحدث الآن.. المصحح اللغوي الذكي يستمع إليك', 'info');
-        };
-
-        recognition.onresult = function(event) {
-            let finalParts = [];
-            let interimParts = [];
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                let res = event.results[i];
-                let alts = [];
-                for (let j = 1; j < res.length; j++) alts.push(res[j].transcript);
-                let corrected = window.smartCorrectSpeechV72(res[0].transcript, alts);
-                if (res.isFinal) finalParts.push(corrected);
-                else interimParts.push(corrected);
-            }
-            let spoken = (finalParts.join(' ') || interimParts.join(' ')).trim();
-            if (inputEl && spoken) {
-                inputEl.value = baseVal ? (baseVal + ' ' + spoken) : spoken;
-                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        };
-
-        recognition.onerror = function() {
-            if (btnElement) {
-                btnElement.classList.remove('recording');
-                btnElement.style.background = '';
-                btnElement.style.color = '';
-            }
-            window.activeSpeechRecInstance = null;
-        };
-
-        recognition.onend = function() {
-            if (btnElement) {
-                btnElement.classList.remove('recording');
-                btnElement.style.background = '';
-                btnElement.style.color = '';
-            }
-            window.activeSpeechRecInstance = null;
-            if (inputEl) inputEl.focus();
-        };
-
-        recognition.start();
-    } catch (e) {
-        window.activeSpeechRecInstance = null;
-    }
-};
-
-// 3. بناء شريط كتابة الشات الموحد مع زر الكاميرا (📷) يمين مربع الكتابة (تصوير / معرض / فيديو)
-window.initCleanChatBarsV72 = function() {
-    // شات العميل
-    let sForm = document.getElementById('support-form');
-    if (sForm && !sForm.dataset.v72Built) {
-        sForm.dataset.v72Built = '1';
-        sForm.style.display = 'block';
-        sForm.innerHTML = `
-            <div class="v72-chat-composer-bar">
-                <button type="button" class="v72-cam-btn" title="إرسال صورة أو فيديو" onclick="window.toggleV72CamPopup('customer')">📷</button>
-                <div id="v72-cam-popup-customer" class="v72-camera-popup-menu">
-                    <button type="button" onclick="window.pickV72Media('customer', 'cam')">📸 تصوير بالكاميرا</button>
-                    <button type="button" onclick="window.pickV72Media('customer', 'gal')">🖼️ اختيار صورة من المعرض</button>
-                    <button type="button" onclick="window.pickV72Media('customer', 'vid')">🎥 إرفاق أو تصوير فيديو</button>
-                </div>
-                <input type="file" id="v72-inp-customer-cam" accept="image/*" capture="environment" style="display:none" onchange="window.sendChatImageAttachment('customer', this)">
-                <input type="file" id="v72-inp-customer-gal" accept="image/*" style="display:none" onchange="window.sendChatImageAttachment('customer', this)">
-                <input type="file" id="v72-inp-customer-vid" accept="video/*" style="display:none" onchange="window.sendChatVideoAttachment('customer', this)">
-
-                <input type="text" id="support-message" placeholder="اكتب رسالتك هنا..." autocomplete="off" style="flex:1; border:none; background:transparent; margin:0; padding:6px 8px; font-size:0.9rem; outline:none;">
-                <button type="button" id="voice-support-btn" class="v72-mic-btn" title="تحويل الكلام لنص" onclick="window.startVoiceTyping('support-message', this)">🎤</button>
-                <button type="button" id="btn-cust-voice-note-inline" class="v72-voice-rec-btn" title="تسجيل مقطع صوتي" onclick="window.toggleChatVoiceNoteRecording('customer', this)">🎙️</button>
-                <button type="submit" class="v72-send-btn">إرسال 🚀</button>
-            </div>
-        `;
-    }
-
-    // شات المدير
-    let admInp = document.getElementById('admin-chat-input');
-    if (admInp && !admInp.dataset.v72Built) {
-        let row = admInp.closest('div[style*="display:flex; gap:10px"]');
-        if (row) {
-            row.className = 'v72-chat-composer-bar';
-            row.style.cssText = '';
-            row.innerHTML = `
-                <button type="button" class="v72-cam-btn" title="إرسال صورة أو فيديو" onclick="window.toggleV72CamPopup('admin')">📷</button>
-                <div id="v72-cam-popup-admin" class="v72-camera-popup-menu">
-                    <button type="button" onclick="window.pickV72Media('admin', 'cam')">📸 تصوير بالكاميرا</button>
-                    <button type="button" onclick="window.pickV72Media('admin', 'gal')">🖼️ اختيار صورة من المعرض</button>
-                    <button type="button" onclick="window.pickV72Media('admin', 'vid')">🎥 إرفاق أو تصوير فيديو</button>
-                </div>
-                <input type="file" id="v72-inp-admin-cam" accept="image/*" capture="environment" style="display:none" onchange="window.sendChatImageAttachment('admin', this)">
-                <input type="file" id="v72-inp-admin-gal" accept="image/*" style="display:none" onchange="window.sendChatImageAttachment('admin', this)">
-                <input type="file" id="v72-inp-admin-vid" accept="video/*" style="display:none" onchange="window.sendChatVideoAttachment('admin', this)">
-
-                <input type="text" id="admin-chat-input" data-v72-built="1" placeholder="اكتب ردك للعميل..." autocomplete="off" style="flex:1; border:none; background:transparent; margin:0; padding:6px 8px; font-size:0.9rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault(); window.sendAdminMessage();}">
-                <button type="button" id="voice-admin-btn" class="v72-mic-btn" title="تحويل الكلام لنص" onclick="window.startVoiceTyping('admin-chat-input', this)">🎤</button>
-                <button type="button" id="btn-admin-voice-note-inline" class="v72-voice-rec-btn" title="تسجيل مقطع صوتي" onclick="window.toggleChatVoiceNoteRecording('admin', this)">🎙️</button>
-                <button type="button" class="v72-send-btn" onclick="window.sendAdminMessage()">إرسال 🚀</button>
-            `;
-        }
-    }
-};
-
-window.toggleV72CamPopup = function(role) {
-    let el = document.getElementById('v72-cam-popup-' + role);
-    if (!el) return;
-    el.style.display = el.style.display === 'flex' ? 'none' : 'flex';
-};
-
-window.pickV72Media = function(role, type) {
-    let pop = document.getElementById('v72-cam-popup-' + role);
-    if (pop) pop.style.display = 'none';
-    let inp = document.getElementById(`v72-inp-${role}-${type}`);
-    if (inp) {
-        inp.value = '';
-        inp.click();
-    }
-};
-
-// 4. إصلاح جذري لدالة إتمام الطلب (processOrder) لضمان التأكيد والانتقال الفوري لصفحة طلباتي 100%
-window.processOrder = async function(method) {
-    try {
-        let selectedItems = (cart || []).filter(item => item.selected !== false);
-        if (selectedItems.length === 0) {
-            window.showToast('قم بتحديد منتج واحد على الأقل في السلة لإتمام الطلب', 'error');
-            return;
-        }
-
-        const nameEl = document.getElementById('order-name');
-        const phone1El = document.getElementById('order-phone1');
-        const phone2El = document.getElementById('order-phone2');
-        const govEl = document.getElementById('order-gov');
-        const cityEl = document.getElementById('order-city');
-        const mapAddrEl = document.getElementById('order-map-address');
-        const addrEl = document.getElementById('order-address');
-        const payEl = document.getElementById('order-payment-method');
-
-        const name = nameEl ? nameEl.value.trim() : '';
-        const phone1 = phone1El ? window.toEngDigits(phone1El.value.trim()) : '';
-        const phone2 = (phone2El && phone2El.value.trim()) ? window.toEngDigits(phone2El.value.trim()) : 'لا يوجد';
-        const gov = govEl ? govEl.value : '';
-        const city = (cityEl && cityEl.value) ? cityEl.value : 'المركز الرئيسي';
-        const addressDetails = addrEl ? addrEl.value.trim() : '';
-        const payMethod = payEl ? payEl.value : 'كاش عند الاستلام';
-
-        if (!name || name.length < 2) {
-            window.showToast('يرجى كتابة الاسم بالكامل أولاً', 'error');
-            if (nameEl) nameEl.focus();
-            return;
-        }
-        if (!phone1 || phone1.replace(/\D/g, '').length < 9) {
-            window.showToast('يرجى إدخال رقم هاتف صحيح للتواصل والتوصيل', 'error');
-            if (phone1El) phone1El.focus();
-            return;
-        }
-        if (!gov) {
-            window.showToast('يرجى اختيار المحافظة من القائمة', 'error');
-            if (govEl) govEl.focus();
-            return;
-        }
-        if (!addressDetails) {
-            window.showToast('يرجى كتابة العنوان التفصيلي (الشارع / القرية / العلامة المميزة)', 'error');
-            if (addrEl) addrEl.focus();
-            return;
-        }
-
-        // الخريطة اختيارية حتى لا تمنع تأكيد الطلب إذا لم يلمسها العميل
-        const latEl = document.getElementById('order-lat');
-        const lngEl = document.getElementById('order-lng');
-        const lat = (latEl && latEl.value && Number(latEl.value) !== 0) ? latEl.value : '30.0444';
-        const lng = (lngEl && lngEl.value && Number(lngEl.value) !== 0) ? lngEl.value : '31.2357';
-        const mapAddress = (mapAddrEl && mapAddrEl.value) ? mapAddrEl.value : `${gov} - ${city}`;
-        const mapLink = (lat !== '30.0444') ? `https://www.google.com/maps?q=${lat},${lng}` : '';
-
-        let bundleDiscVal = window.getBundleDiscountAmount ? window.getBundleDiscountAmount() : 0;
-        let discountVal = Math.round(currentSubtotal * (currentDiscountPercent / 100)) + bundleDiscVal + (window.loyaltyDiscountFixed || 0);
-        let enableFreeShip = storeSettings.enableFreeShipping !== false;
-        let targetAmount = (storeSettings && storeSettings.freeShippingThreshold) ? Number(storeSettings.freeShippingThreshold) : 1000;
-        if (gov && window.getShippingCostForGov) currentShippingCost = window.getShippingCostForGov(gov);
-        let finalShippingCost = (enableFreeShip && currentSubtotal >= targetAmount) ? 0 : currentShippingCost;
-        let finalTotal = Math.max(0, (currentSubtotal - discountVal) + finalShippingCost);
-
-        let receiptUrl = '';
-        if (payMethod === 'محفظة إلكترونية') {
-            const fileInput = document.getElementById('order-receipt-file');
-            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-                window.showToast('يرجى إرفاق صورة إيصال التحويل لتأكيد الطلب', 'error');
-                return;
-            }
-            document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true);
-            window.showToast('⏳ جاري رفع صورة الإيصال وتأكيد الطلب...', 'info');
+        // 1. تنظيف فوري للشريط العلوي والسفلي وإلغاء زر A+ وشريط السلة العائم
+        window.applyV75HeaderAndNavFixes = function() {
             try {
-                const formData = new FormData();
-                formData.append('image', fileInput.files[0]);
-                const res = await fetch('https://api.imgbb.com/1/upload?key=D37b01ec4b27dcce48777a7b229a1fdb', { method: 'POST', body: formData });
-                const data = await res.json();
-                if (data && data.success) receiptUrl = data.data.url;
-            } catch (err) {
-                document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false);
-                window.showToast('فشل رفع صورة الإيصال، حاول مرة أخرى', 'error');
-                return;
-            }
+                localStorage.removeItem('zait_large_font');
+                document.body.classList.remove('large-comfort-font');
+                var fBtn = document.getElementById('header-font-size-btn');
+                if (fBtn) fBtn.remove();
+                var floatCart = document.getElementById('floating-bottom-cart-bar');
+                if (floatCart) floatCart.style.setProperty('display', 'none', 'important');
+                var subHdr = document.getElementById('amazon-sub-header');
+                if (subHdr) subHdr.style.setProperty('display', 'none', 'important');
+                var bNav = document.querySelector('.bottom-nav') || document.getElementById('bottom-nav');
+                if (bNav) bNav.style.setProperty('display', 'flex', 'important');
+
+                // ضمان ظهور زر "حسابي ▼" لو مسجل دخول، أو زر "دخول" لو زائر
+                var authBtn = document.getElementById('btn-show-auth');
+                var userMenu = document.getElementById('user-menu-container');
+                var loggedIn = (typeof currentUser !== 'undefined' && currentUser);
+                if (loggedIn) {
+                    if (userMenu) userMenu.style.setProperty('display', 'block', 'important');
+                    if (authBtn) authBtn.style.setProperty('display', 'none', 'important');
+                } else {
+                    if (userMenu) userMenu.style.setProperty('display', 'none', 'important');
+                    if (authBtn) authBtn.style.setProperty('display', 'inline-flex', 'important');
+                }
+            } catch (e) {}
+        };
+        window.applyV75HeaderAndNavFixes();
+
+        if (typeof window.updateFloatingBottomCartBarAndMilestones === 'function') {
+            window._v75OrigFloatCart = window.updateFloatingBottomCartBarAndMilestones;
+            window.updateFloatingBottomCartBarAndMilestones = function() {
+                try { window._v75OrigFloatCart(); } catch (e) {}
+                var bar = document.getElementById('floating-bottom-cart-bar');
+                if (bar) bar.style.setProperty('display', 'none', 'important');
+            };
         }
 
-        document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true);
-        let custEmail = currentUser ? (currentUser.email || currentUser.phoneNumber || phone1) : phone1;
+        // ربط لوحة الحظر وحذف الحسابات بـ showPanel
+        if (typeof panels !== 'undefined' && panels) {
+            panels['admin-security'] = document.getElementById('admin-security-panel');
+        }
+        if (typeof window.showPanel === 'function') {
+            window._v75OrigShowPanel = window.showPanel;
+            window.showPanel = function(panelId) {
+                if (panelId === 'admin-security' && !(typeof isCurrentUserAdmin !== 'undefined' && isCurrentUserAdmin)) {
+                    if (window.showToast) window.showToast('هذا القسم مخصص للمدير فقط', 'error');
+                    return;
+                }
+                window._v75OrigShowPanel(panelId);
+                if (panelId === 'admin-security' && typeof isCurrentUserAdmin !== 'undefined' && isCurrentUserAdmin) {
+                    var pEl = document.getElementById('admin-security-panel');
+                    if (pEl) pEl.classList.add('active');
+                    window.loadAdminSecurityPanel();
+                }
+                window.applyV75HeaderAndNavFixes();
+            };
+        }
 
-        let orderPayload = {
-            usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0,
-            userId: currentUser ? currentUser.uid : '',
-            customerEmail: custEmail,
-            customerName: name,
-            phones: { primary: phone1, secondary: phone2 },
-            location: { governorate: gov, city: city, mapAddress: mapAddress, details: addressDetails, lat: lat, lng: lng, mapLink: mapLink },
-            items: selectedItems,
-            subtotal: currentSubtotal || 0,
-            discount: discountVal || 0,
-            promoCode: appliedPromoCode || '',
-            shippingCost: finalShippingCost || 0,
-            totalAmount: finalTotal || 0,
-            orderMethod: method || 'عبر الموقع',
-            paymentMethod: payMethod,
-            receiptUrl: receiptUrl,
-            status: 'قيد المراجعة',
-            orderDate: new Date().toISOString()
+        // ---------------------------------------------------------------------
+        // 2. نظام تسجيل ومعاينة وحذف المقطع الصوتي في الشات (للعميل والمدير)
+        // ---------------------------------------------------------------------
+        window.v75VoiceState = {
+            recorder: null, stream: null, chunks: [], timer: null, secs: 0,
+            canceled: false, sendImmediately: false, role: 'customer',
+            pendingBlob: null, pendingUrl: null, pendingDuration: 0
         };
 
-        let createdDoc = await addDoc(collection(db, 'orders'), orderPayload);
-
-        let localOrder = { id: createdDoc.id, ...orderPayload };
-        if (!window.customerOrdersArray) window.customerOrdersArray = [];
-        window.customerOrdersArray.unshift(localOrder);
-
-        if (currentUser) {
-            setDoc(doc(db, 'users', currentUser.uid), { name: name, phone1: phone1, phone2: phone2, gov: gov, city: city, address: addressDetails }, { merge: true }).catch(() => {});
-        }
-
-        if (method === 'عبر واتساب') {
-            let waBtnInfo = storeSettings.floatingButtons ? storeSettings.floatingButtons.find(b => b.icon === '📱' || (b.link && b.link.includes('wa.me'))) : null;
-            let pureWa = waBtnInfo ? waBtnInfo.link.split('/').pop() : '201018631768';
-            if (pureWa && !pureWa.startsWith('20') && pureWa.length === 10) pureWa = '20' + pureWa;
-            let msg = `*طلب جديد مؤكد* 🌿\n\n👤 ${name}\n📞 ${phone1}\n📍 ${gov} - ${city}\n🏠 ${addressDetails}\n💳 الدفع: ${payMethod}\n\n🛍️ *المنتجات:*\n`;
-            selectedItems.forEach(item => { msg += `- ${item.name} (${item.quantity}) بـ ${item.price * item.quantity} ج\n`; });
-            msg += `\n💰 *الإجمالي المطلوب:* ${finalTotal} ج (شامل التوصيل)`;
-            window.open(`https://wa.me/${pureWa}?text=${encodeURIComponent(msg)}`, '_blank');
-        }
-
-        // تفريغ السلة والانتقال المباشر لصفحة طلباتي
-        cart = cart.filter(item => item.selected === false);
-        localStorage.setItem('cart', JSON.stringify(cart));
-        localStorage.removeItem('cart_last_updated');
-        window.loyaltyDiscountFixed = 0;
-        window.loyaltyPointsUsedTemp = 0;
-        currentDiscountPercent = 0;
-        appliedPromoCode = '';
-        window.updateCartUI();
-
-        document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false);
-        window.showToast('🎉 تم تأكيد طلبك بنجاح! يمكنك متابعة حالته من هنا.', 'success');
-        window.showPanel('customer-orders');
-        window.renderCustomerOrdersWithPhotosV72(window.customerOrdersArray);
-    } catch (error) {
-        console.error('Order Submit Error:', error);
-        document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false);
-        window.showToast('حدث خطأ أثناء إرسال الطلب، تأكد من اتصالك بالإنترنت', 'error');
-    }
-};
-
-// 5. إظهار صور المنتجات داخل صفحة "طلباتي" ونافذة تفاصيل الطلب للعميل (مثل أمازون ونون)
-window.getOrderProductThumbV72 = function(item) {
-    if (item && item.imageUrl && !item.imageUrl.includes('placeholder')) return item.imageUrl;
-    let p = (products || []).find(x => x.id === item.id || x.name === item.name);
-    if (p) {
-        if (p.images && p.images[0]) return p.images[0];
-        if (p.imageUrl) return p.imageUrl;
-    }
-    return '1000392409.jpeg';
-};
-
-window.renderCustomerOrdersWithPhotosV72 = function(userOrders) {
-    const container = document.getElementById('customer-orders-container');
-    if (!container) return;
-    if (!userOrders || userOrders.length === 0) {
-        container.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;"><span style="font-size:3rem; display:block; margin-bottom:10px;">🛒</span><h3>لا توجد طلبات مسجلة بعد.</h3></div>';
-        return;
-    }
-    let htmlContent = '';
-    userOrders.forEach(order => {
-        let badgeClass = 'status-pending';
-        let statusIcon = '🕒';
-        let st = String(order.status || 'قيد المراجعة');
-        if (st.includes('تجهيز')) { badgeClass = 'status-prep'; statusIcon = '📦'; }
-        else if (st.includes('شحن')) { badgeClass = 'status-shipped'; statusIcon = '🚚'; }
-        else if (st.includes('توصيل')) { badgeClass = 'status-delivered'; statusIcon = '✅'; }
-        else if (st.includes('رفض') || st.includes('لغى')) { badgeClass = 'status-canceled'; statusIcon = '❌'; }
-
-        let dStr = new Date(order.orderDate).toLocaleDateString('ar-EG', { dateStyle: 'long' });
-        let thumbsHtml = '<div class="order-products-thumbs-row">';
-        (order.items || []).forEach(item => {
-            let imgUrl = window.getOrderProductThumbV72(item);
-            thumbsHtml += `
-                <div class="order-prod-thumb-chip">
-                    <img src="${imgUrl}" onerror="this.src='1000392409.jpeg'" alt="${window.escapeHTML(item.name)}">
-                    <div>
-                        <strong style="display:block; color:var(--primary); font-size:0.84rem;">${window.escapeHTML(item.name)}</strong>
-                        <span style="font-size:0.78rem; color:var(--text-muted);">الكمية: <b>${item.quantity}</b> | <b style="color:var(--secondary);">${item.price * item.quantity} ج</b></span>
-                    </div>
-                </div>`;
-        });
-        thumbsHtml += '</div>';
-
-        htmlContent += `
-        <div class="admin-msg-card" style="cursor:pointer; border-right:4px solid #028090; padding:14px; margin-bottom:12px;" onclick="window.openCustomerOrderModal('${order.id}')">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px dashed var(--border-color); padding-bottom:8px;">
-                <div>
-                    <strong style="color:var(--primary); font-size:1.02rem;">📦 طلب #${order.id.slice(0,6).toUpperCase()}</strong>
-                    <span style="font-size:0.8rem; color:var(--text-muted); margin-right:8px;">📅 ${dStr}</span>
-                </div>
-                <span class="order-status-badge ${badgeClass}" style="font-size:0.75rem;">${statusIcon} ${window.escapeHTML(st)}</span>
-            </div>
-            ${thumbsHtml}
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:8px; border-top:1px solid var(--border-color);">
-                <strong style="color:var(--secondary); font-size:1.05rem;">الإجمالي: ${order.totalAmount} ج</strong>
-                ${storeSettings.enableBuyAgain !== false ? `<button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.78rem; border-color:var(--primary); color:var(--primary);" onclick="event.stopPropagation(); window.buyAgainOrder('${order.id}')">🔄 اطلبه مجدداً</button>` : ''}
-            </div>
-        </div>`;
-    });
-    container.innerHTML = htmlContent;
-};
-
-window.loadCustomerOrders = function() {
-    if (!currentUser) return;
-    let filterKey = currentUser.email || currentUser.phoneNumber;
-    if (!filterKey) return;
-    onSnapshot(query(collection(db, 'orders'), where('customerEmail', '==', filterKey)), (snapshot) => {
-        window.customerOrdersArray = [];
-        snapshot.forEach(d => window.customerOrdersArray.push({ id: d.id, ...d.data() }));
-        window.customerOrdersArray.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
-        window.renderCustomerOrdersWithPhotosV72(window.customerOrdersArray);
-    });
-};
-
-const origOpenCustModalV71 = window.openCustomerOrderModal;
-window.openCustomerOrderModal = function(orderId) {
-    if (origOpenCustModalV71) origOpenCustModalV71(orderId);
-    let order = (window.customerOrdersArray || []).find(o => o.id === orderId);
-    let com = document.getElementById('com-content');
-    if (!order || !com) return;
-    let ul = com.querySelector('ul');
-    if (ul && order.items) {
-        ul.style.padding = '0';
-        ul.innerHTML = order.items.map(item => {
-            let imgUrl = window.getOrderProductThumbV72(item);
-            return `<li style="list-style:none; display:flex; align-items:center; gap:10px; margin-bottom:8px; background:var(--panel-bg); padding:8px; border-radius:10px; border:1px solid var(--border-color);">
-                <img src="${imgUrl}" onerror="this.src='1000392409.jpeg'" style="width:48px; height:48px; border-radius:8px; object-fit:cover; border:1px solid var(--secondary);">
-                <div style="flex:1;">
-                    <strong style="color:var(--primary); display:block;">${window.escapeHTML(item.name)}</strong>
-                    <span style="font-size:0.84rem; color:var(--text-muted);">الكمية: <b>${item.quantity}</b> × ${item.price} ج = <b style="color:var(--secondary);">${item.price * item.quantity} ج</b></span>
-                </div>
-            </li>`;
-        }).join('');
-    }
-};
-
-// تفعيل التعديلات فور التحميل وعند كل تحديث للإعدادات
-const origApplyV71Master = window.applyV66MasterUI;
-window.applyV66MasterUI = function() {
-    if (origApplyV71Master) origApplyV71Master();
-    window.syncZeroFlashSettingsV72();
-    window.initCleanChatBarsV72();
-};
-
-setTimeout(() => {
-    window.syncZeroFlashSettingsV72();
-    window.initCleanChatBarsV72();
-}, 300);
-
-
-// =========================================================================
-// === النسخة V73 الشاملة النهائية: جميع إصلاحات V72 + الـ 5 ميزات لـ V73 ===
-// =========================================================================
-
-// 1. المزامنة الفورية للإعدادات المخفية (Zero-Flash V73) حتى لا يظهر أي زر متوقف عند فتح التطبيق
-window.syncZeroFlashSettingsV73 = function() {
-    try {
-        localStorage.setItem('zait_cached_settings_v73', JSON.stringify(storeSettings || {}));
-        let s = storeSettings || {};
-        let rules = [
-            '#btn-show-auth, #amz-cart-top-sticky-bar, #cart-top-sticky-bar, #home-farm-reels-section, #amazon-sub-header { display: none !important; }'
-        ];
-        let map = [
-            ['enableSpinWheel', '#spin-wheel-fab, #sidebar-spin-wheel-btn'],
-            ['enableBoxBuilder', '#sidebar-box-builder-btn, #pill-box-builder'],
-            ['enableB2BPortal', '#sidebar-b2b-btn'],
-            ['enableBatchTracker', '#sidebar-batch-tracker-btn, #pill-batch-tracker'],
-            ['enableVisualSizeGuide', '#sidebar-size-guide-btn, #btn-modal-size-guide'],
-            ['enableSampleBottle', '#sidebar-sample-bottle-btn'],
-            ['enableGiftByPhone', '#sidebar-gift-by-phone-btn, #btn-modal-gift-phone'],
-            ['enablePreorderHarvest', '#sidebar-preorder-harvest-btn'],
-            ['enableGroupBuy', '#sidebar-group-buy-btn'],
-            ['enableDriverPortal', '#sidebar-driver-portal-btn'],
-            ['enableAffiliateSystem', '#sidebar-affiliate-btn'],
-            ['enableLiveShopping', '#sidebar-live-stream-btn, #home-seasonal-bundles-bar'],
-            ['enableQuickTagFilters', '#v64-quick-tags-bar'],
-            ['enableOfferBanner', '#home-limited-offer-banner'],
-            ['enableTrustMarquee', '#trust-marquee-bar, #home-trust-marquee'],
-            ['enableFloatingCartBar', '#floating-bottom-cart-bar, #header-font-size-btn'],
-            ['enableGuestTracking', '#sidebar-track-order-btn, #guest-order-track-box'],
-            ['enableAnnualCalc', '#sidebar-annual-calc-btn, #btn-open-annual-calc'],
-            ['enableGiftCards', '#sidebar-gift-card-btn, #btn-open-gift-card'],
-            ['enableSeoArticles', '#home-seo-benefits-section'],
-            ['enableAdminFloatBtn', '#admin-floating-launcher-wrap'],
-            ['enablePackagingErp', '#admin-packaging-erp-card'],
-            ['enableOliveAdvisorBot', '#v73-olive-advisor-chips']
-        ];
-        map.forEach(([key, sel]) => {
-            if (s[key] === false) rules.push(sel + ' { display: none !important; }');
-        });
-        if (s.enableTopBar !== true) rules.push('#top-announcement-bar { display: none !important; }');
-        if (s.enableHeroSlider !== true) rules.push('#hero-slider-wrapper { display: none !important; }');
-        else rules.push('#hero-section { display: none !important; }');
-
-        let st = document.getElementById('zait-instant-hide-style-v73');
-        if (!st) {
-            st = document.createElement('style');
-            st.id = 'zait-instant-hide-style-v73';
-            document.head.appendChild(st);
-        }
-        st.textContent = rules.join('\n');
-    } catch (e) {}
-};
-
-// 2. قاموس التصحيح اللغوي والصوتي الذكي لميكروفون الشات
-window.V73_SPEECH_CORRECTION_MAP = [
-    [/\b(ذيت|زت|زيتت|ازيت|الذيت|زايت)\b/g, 'زيت'],
-    [/\b(ذيتون|زتون|زيتان|زاتون|الزتون|الذيتون|زيتونه)\b/g, 'زيتون'],
-    [/\b(سناوي|سينوي|سيماوي|ثيناوي|سيناوى|السيناوي)\b/g, 'سيناوي'],
-    [/\b(سينا|ثيناء|سينه)\b/g, 'سيناء'],
-    [/\b(الشجره|شجره)\s*(المباركه|مباركه)\b/g, 'الشجرة المباركة'],
-    [/\b(عصره|عصرة)\s*(اولى|اولي)\b/g, 'عصرة أولى'],
-    [/\b(عالبارد|علي البارد|ع البارد)\b/g, 'على البارد'],
-    [/\b(غيركن|كيركن|جركم|جاركن|جيركن|قرص)\b/g, 'جركن'],
-    [/\b(عبوه|عبوت|علبه)\b/g, 'عبوة'],
-    [/\b(ليتر|رتل|لترات)\b/g, 'لتر'],
-    [/\b(اوردر|اردر|الاوردر|أوردر)\b/g, 'طلب'],
-    [/\b(بكام|بيكام|كام سعر)\b/g, 'بكم سعر'],
-    [/\b(عايز|عاوز)\b/g, 'أريد'],
-    [/\b(مشكله)\b/g, 'مشكلة'],
-    [/\b(الشحنه|شحنه)\b/g, 'الشحنة'],
-    [/\b(استرجع|مرتجع)\b/g, 'استرجاع'],
-    [/\b(انستا باي|انستاباي|انستا)\b/g, 'إنستاباي'],
-    [/\b(فودافون كاش|فدفون كاش|ودافون كاش)\b/g, 'فودافون كاش']
-];
-
-window.smartCorrectSpeechV73 = function(rawText, alternatives = []) {
-    let candidates = [rawText, ...(alternatives || [])].filter(Boolean);
-    if (candidates.length === 0) return '';
-    let storeWords = ['زيت', 'زيتون', 'سيناوي', 'لتر', 'جركن', 'عبوة', 'طلب', 'شحن', 'سعر', 'خصم', 'استرجاع'];
-    let best = candidates[0];
-    let maxScore = -1;
-    candidates.forEach(c => {
-        let sc = 0;
-        storeWords.forEach(w => { if (c.includes(w)) sc += 3; });
-        if (sc > maxScore) { maxScore = sc; best = c; }
-    });
-    let fixed = String(best).trim();
-    window.V73_SPEECH_CORRECTION_MAP.forEach(([rgx, rep]) => {
-        fixed = fixed.replace(rgx, rep);
-    });
-    fixed = fixed.replace(/\b(\S+)\s+\1\b/g, '$1');
-    return fixed.trim();
-};
-
-window.startVoiceTyping = function(inputId, btnElement) {
-    const inputEl = document.getElementById(inputId);
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        window.showToast('متصفحك لا يدعم تحويل الصوت لنص، يرجى استخدام متصفح Chrome', 'error');
-        return;
-    }
-    if (window.activeSpeechRecInstance) {
-        try { window.activeSpeechRecInstance.stop(); } catch (e) {}
-        window.activeSpeechRecInstance = null;
-        if (btnElement) btnElement.classList.remove('recording');
-        return;
-    }
-    try {
-        const recognition = new SpeechRecognition();
-        window.activeSpeechRecInstance = recognition;
-        recognition.lang = window.currentLang === 'en' ? 'en-US' : 'ar-EG';
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.maxAlternatives = 5;
-
-        const baseVal = inputEl ? inputEl.value.trim() : '';
-
-        recognition.onstart = function() {
-            if (btnElement) {
-                btnElement.classList.add('recording');
-                btnElement.style.background = '#dc2626';
-                btnElement.style.color = '#ffffff';
-            }
-            window.showToast('🎤 تحدث الآن.. المصحح اللغوي الذكي يستمع إليك', 'info');
-        };
-
-        recognition.onresult = function(event) {
-            let finalParts = [];
-            let interimParts = [];
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                let res = event.results[i];
-                let alts = [];
-                for (let j = 1; j < res.length; j++) alts.push(res[j].transcript);
-                let corrected = window.smartCorrectSpeechV73(res[0].transcript, alts);
-                if (res.isFinal) finalParts.push(corrected);
-                else interimParts.push(corrected);
-            }
-            let spoken = (finalParts.join(' ') || interimParts.join(' ')).trim();
-            if (inputEl && spoken) {
-                inputEl.value = baseVal ? (baseVal + ' ' + spoken) : spoken;
-                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        };
-
-        recognition.onerror = function() {
-            if (btnElement) {
-                btnElement.classList.remove('recording');
-                btnElement.style.background = '';
-                btnElement.style.color = '';
-            }
-            window.activeSpeechRecInstance = null;
-        };
-
-        recognition.onend = function() {
-            if (btnElement) {
-                btnElement.classList.remove('recording');
-                btnElement.style.background = '';
-                btnElement.style.color = '';
-            }
-            window.activeSpeechRecInstance = null;
-            if (inputEl) inputEl.focus();
-        };
-
-        recognition.start();
-    } catch (e) {
-        window.activeSpeechRecInstance = null;
-    }
-};
-
-// 3. بناء شريط كتابة الشات الموحد مع زر الكاميرا (📷) يمين مربع الكتابة + أزرار الخبير الذكي لزيت الزيتون
-window.initCleanChatBarsV73 = function() {
-    let sForm = document.getElementById('support-form');
-    if (sForm && !sForm.dataset.v73Built) {
-        sForm.dataset.v73Built = '1';
-        sForm.style.display = 'block';
-        sForm.innerHTML = `
-            <div id="v73-olive-advisor-chips" class="v73-advisor-chips-row">
-                <button type="button" class="v73-advisor-chip" onclick="window.triggerSmartOliveAdvisorV73('hair')">💆‍♀️ للشعر والبشرة</button>
-                <button type="button" class="v73-advisor-chip" onclick="window.triggerSmartOliveAdvisorV73('health')">🫀 للقولون والمناعة</button>
-                <button type="button" class="v73-advisor-chip" onclick="window.triggerSmartOliveAdvisorV73('storage')">🏺 طريقة الحفظ الصحيحة</button>
-                <button type="button" class="v73-advisor-chip" onclick="window.triggerSmartOliveAdvisorV73('sizes')">⚖️ الفرق بين الأحجام</button>
-            </div>
-            <div class="v72-chat-composer-bar">
-                <button type="button" class="v72-cam-btn" title="إرسال صورة أو فيديو" onclick="window.toggleV72CamPopup('customer')">📷</button>
-                <div id="v72-cam-popup-customer" class="v72-camera-popup-menu">
-                    <button type="button" onclick="window.pickV72Media('customer', 'cam')">📸 تصوير بالكاميرا</button>
-                    <button type="button" onclick="window.pickV72Media('customer', 'gal')">🖼️ اختيار صورة من المعرض</button>
-                    <button type="button" onclick="window.pickV72Media('customer', 'vid')">🎥 إرفاق أو تصوير فيديو</button>
-                </div>
-                <input type="file" id="v72-inp-customer-cam" accept="image/*" capture="environment" style="display:none" onchange="window.sendChatImageAttachment('customer', this)">
-                <input type="file" id="v72-inp-customer-gal" accept="image/*" style="display:none" onchange="window.sendChatImageAttachment('customer', this)">
-                <input type="file" id="v72-inp-customer-vid" accept="video/*" style="display:none" onchange="window.sendChatVideoAttachment('customer', this)">
-
-                <input type="text" id="support-message" placeholder="اكتب رسالتك هنا..." autocomplete="off" style="flex:1; border:none; background:transparent; margin:0; padding:6px 8px; font-size:0.9rem; outline:none;">
-                <button type="button" id="voice-support-btn" class="v72-mic-btn" title="تحويل الكلام لنص" onclick="window.startVoiceTyping('support-message', this)">🎤</button>
-                <button type="button" id="btn-cust-voice-note-inline" class="v72-voice-rec-btn" title="تسجيل مقطع صوتي" onclick="window.toggleChatVoiceNoteRecording('customer', this)">🎙️</button>
-                <button type="submit" class="v72-send-btn">إرسال 🚀</button>
-            </div>
-        `;
-    }
-
-    let admInp = document.getElementById('admin-chat-input');
-    if (admInp && !admInp.dataset.v73Built) {
-        let row = admInp.closest('div[style*="display:flex; gap:10px"]') || admInp.parentElement;
-        if (row) {
-            row.className = 'v72-chat-composer-bar';
-            row.style.cssText = '';
-            row.innerHTML = `
-                <button type="button" class="v72-cam-btn" title="إرسال صورة أو فيديو" onclick="window.toggleV72CamPopup('admin')">📷</button>
-                <div id="v72-cam-popup-admin" class="v72-camera-popup-menu">
-                    <button type="button" onclick="window.pickV72Media('admin', 'cam')">📸 تصوير بالكاميرا</button>
-                    <button type="button" onclick="window.pickV72Media('admin', 'gal')">🖼️ اختيار صورة من المعرض</button>
-                    <button type="button" onclick="window.pickV72Media('admin', 'vid')">🎥 إرفاق أو تصوير فيديو</button>
-                </div>
-                <input type="file" id="v72-inp-admin-cam" accept="image/*" capture="environment" style="display:none" onchange="window.sendChatImageAttachment('admin', this)">
-                <input type="file" id="v72-inp-admin-gal" accept="image/*" style="display:none" onchange="window.sendChatImageAttachment('admin', this)">
-                <input type="file" id="v72-inp-admin-vid" accept="video/*" style="display:none" onchange="window.sendChatVideoAttachment('admin', this)">
-
-                <input type="text" id="admin-chat-input" data-v73-built="1" placeholder="اكتب ردك للعميل..." autocomplete="off" style="flex:1; border:none; background:transparent; margin:0; padding:6px 8px; font-size:0.9rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault(); window.sendAdminMessage();}">
-                <button type="button" id="voice-admin-btn" class="v72-mic-btn" title="تحويل الكلام لنص" onclick="window.startVoiceTyping('admin-chat-input', this)">🎤</button>
-                <button type="button" id="btn-admin-voice-note-inline" class="v72-voice-rec-btn" title="تسجيل مقطع صوتي" onclick="window.toggleChatVoiceNoteRecording('admin', this)">🎙️</button>
-                <button type="button" class="v72-send-btn" onclick="window.sendAdminMessage()">إرسال 🚀</button>
-            `;
-        }
-    }
-};
-
-window.toggleV72CamPopup = function(role) {
-    let el = document.getElementById('v72-cam-popup-' + role);
-    if (!el) return;
-    el.style.display = el.style.display === 'flex' ? 'none' : 'flex';
-};
-
-window.pickV72Media = function(role, type) {
-    let pop = document.getElementById('v72-cam-popup-' + role);
-    if (pop) pop.style.display = 'none';
-    let inp = document.getElementById(`v72-inp-${role}-${type}`);
-    if (inp) {
-        inp.value = '';
-        inp.click();
-    }
-};
-
-// 4. الخبير الذكي لزيت الزيتون داخل الشات (Smart Olive Oil Advisor V73)
-window.triggerSmartOliveAdvisorV73 = function(topic) {
-    if (storeSettings.enableOliveAdvisorBot === false) return;
-    let container = document.getElementById('support-history-container');
-    if (!container) return;
-    let q = '', a = '';
-    if (topic === 'hair') {
-        q = '💆‍♀️ ما هي أفضل طريقة لاستخدام الزيت للشعر والبشرة؟';
-        a = '🌿 للعناية بالشعر والبشرة: يُدلك الشعر وفروة الرأس بكمية دافئة من زيت الزيتون السيناوي البكر لمدة 45 دقيقة أسبوعياً لمنع التساقط وتكثيف الشعر، وللبشرة تُوضع قطرات خفيفة قبل النوم لترطيب عميق بفضل فيتامين E الخام.';
-    } else if (topic === 'health') {
-        q = '🫀 ما فوائد زيت الزيتون للقولون والمناعة والقلب؟';
-        a = '🫀 زيت الزيتون السيناوي عصرة أولى على البارد غني بأوميجا 9 ومضادات الأكسدة الطبيعية؛ تناول ملعقة كبيرة صباحاً على الريق يهدئ القولون، ينشط الكبد، يدعم صحة القلب، ويرفع المناعة.';
-    } else if (topic === 'storage') {
-        q = '🏺 ما هي الطريقة الصحيحة لتخزين الزيت؟';
-        a = '🏺 يُحفظ الزيت في عبوته المحكمة في مكان مظلم وجاف بدرجة حرارة الغرفة بعيداً عن ضوء الشمس المباشر أو حرارة البوتاجاز، ولا يحتاج للثلاجة ليحتفظ بنكهته السيناوية الطازجة لأطول فترة.';
-    } else if (topic === 'sizes') {
-        q = '⚖️ ما الفرق بين العبوات وأي حجم أوفر لي؟';
-        a = '⚖️ جميع العبوات من نفس العصرة الأولى على البارد 100%؛ عبوة 1 لتر مثالية للاستخدام الشهري، بينما جركن 5 لتر العائلي يوفر لك في سعر اللتر الواحد ويمنحك شحناً مجانياً وهدية إضافية!';
-    }
-    container.innerHTML += `<div class="chat-msg-wrapper chat-msg-customer"><div class="chat-bubble bubble-customer">${window.escapeHTML(q)}</div></div>`;
-    container.innerHTML += `<div class="chat-msg-wrapper chat-msg-admin"><div class="chat-bubble bubble-admin"><strong style="color:var(--secondary);font-size:0.8rem;">🤖 الخبير الذكي لزيت الزيتون:</strong><br>${window.escapeHTML(a)}</div></div>`;
-    container.scrollTop = container.scrollHeight;
-};
-
-// 5. إدارة مستلزمات التعبئة والفوارغ (Packaging & Raw Materials ERP V73) والخصم التلقائي مع كل طلب
-window.getPackagingItemsListV73 = function() {
-    return Array.isArray(storeSettings.packagingItemsList) ? storeSettings.packagingItemsList : [
-        { id: 'pk_bottle_1l', name: '🍾 زجاجات فارغة (1 لتر / 500 مل)', stock: 120, alertAt: 25 },
-        { id: 'pk_jerrycan_5l', name: '🛢️ جراكن بلاستيك غذائي (5 لتر)', stock: 40, alertAt: 10 },
-        { id: 'pk_carton_box', name: '📦 كراتين شحن مقواة ومبطنة', stock: 95, alertAt: 20 },
-        { id: 'pk_warranty_seal', name: '🏷️ استيكرات الهوية وختم الضمان الذهبي', stock: 300, alertAt: 50 }
-    ];
-};
-
-window.updatePackagingStockCountV73 = async function(pkgId, delta) {
-    let list = [...window.getPackagingItemsListV73()];
-    let item = list.find(x => x.id === pkgId);
-    if (!item) return;
-    item.stock = Math.max(0, Number(item.stock || 0) + Number(delta));
-    storeSettings.packagingItemsList = list;
-    window.renderPackagingErpCardV73();
-    try {
-        await updateDoc(doc(db, 'settings', 'main'), { packagingItemsList: list });
-        window.showToast('📦 تم تحديث رصيد مستلزمات التعبئة بنجاح', 'success');
-    } catch (e) {}
-};
-
-window.autoDeductPackagingOnOrderV73 = async function(itemsArray) {
-    if (storeSettings.enablePackagingErp === false) return;
-    try {
-        let list = [...window.getPackagingItemsListV73()];
-        let totalUnits = (itemsArray || []).reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
-        let b1 = list.find(x => x.id === 'pk_bottle_1l');
-        let c1 = list.find(x => x.id === 'pk_carton_box');
-        let s1 = list.find(x => x.id === 'pk_warranty_seal');
-        if (b1) b1.stock = Math.max(0, Number(b1.stock || 0) - totalUnits);
-        if (c1) c1.stock = Math.max(0, Number(c1.stock || 0) - 1);
-        if (s1) s1.stock = Math.max(0, Number(s1.stock || 0) - totalUnits);
-        storeSettings.packagingItemsList = list;
-        await updateDoc(doc(db, 'settings', 'main'), { packagingItemsList: list });
-    } catch (e) {}
-};
-
-window.renderPackagingErpCardV73 = function() {
-    let dash = document.getElementById('admin-dashboard-panel');
-    if (!dash || !isCurrentUserAdmin) return;
-    let card = document.getElementById('admin-packaging-erp-card');
-    if (!card) {
-        card = document.createElement('div');
-        card.id = 'admin-packaging-erp-card';
-        card.style.cssText = 'background:var(--panel-bg); padding:15px; border-radius:12px; border:2px solid #028090; margin-bottom:20px;';
-        card.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-                <h4 style="margin:0; color:#028090;">🍾 إدارة مخزون الفوارغ ومستلزمات التعبئة (يُخصم تلقائياً مع كل طلب)</h4>
-                <button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.78rem; border-color:#028090; color:#028090;" onclick="window.openBarcodeScannerPromptV73()">📷 مسح باركود بوليصة سريع</button>
-            </div>
-            <div id="admin-packaging-erp-list"></div>
-        `;
-        dash.appendChild(card);
-    }
-    card.style.display = storeSettings.enablePackagingErp !== false ? 'block' : 'none';
-    let listEl = document.getElementById('admin-packaging-erp-list');
-    if (!listEl) return;
-
-    let list = window.getPackagingItemsListV73();
-    listEl.innerHTML = list.map(pk => {
-        let isLow = Number(pk.stock) <= Number(pk.alertAt);
-        return `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--input-bg); border:1px solid ${isLow ? '#ef4444' : 'var(--border-color)'}; border-radius:10px; margin-bottom:6px; font-size:0.84rem; flex-wrap:wrap; gap:8px;">
-            <div>
-                <strong>${window.escapeHTML(pk.name)}</strong><br>
-                <span style="color:${isLow ? '#dc2626' : '#166534'}; font-weight:bold;">المتاح حالياً: ${pk.stock} قطعة ${isLow ? '⚠️ (أوشك على النفاد!)' : ''}</span>
-            </div>
-            <div style="display:flex; gap:6px;">
-                <button type="button" class="btn" style="padding:4px 10px; font-size:0.76rem; background:#16a34a;" onclick="window.updatePackagingStockCountV73('${pk.id}', 20)">+20 توريد</button>
-                <button type="button" class="btn btn-danger" style="padding:4px 10px; font-size:0.76rem;" onclick="window.updatePackagingStockCountV73('${pk.id}', -1)">-1 سحب</button>
-            </div>
-        </div>`;
-    }).join('');
-};
-
-// 6. الطباعة الحرارية 80mm لماكينات الكاشير + ماسح الباركود السريع لتحديث حالة الطلبات
-window.printThermal80mmReceiptV73 = function(orderId) {
-    let o = (adminOrdersArray || []).find(x => x.id === orderId) || (window.customerOrdersArray || []).find(x => x.id === orderId);
-    if (!o) return;
-    let itemsRows = (o.items || []).map(i => `<tr><td style="padding:4px 2px; border-bottom:1px dashed #000;">${window.escapeHTML(i.name)}</td><td style="padding:4px 2px; border-bottom:1px dashed #000; text-align:center;">${i.quantity}</td><td style="padding:4px 2px; border-bottom:1px dashed #000; text-align:left;">${i.price * i.quantity}ج</td></tr>`).join('');
-    let w = window.open('', '_blank', 'width=360,height=620');
-    if (!w) return;
-    w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>إيصال كاشير 80mm - #${o.id.slice(0,6).toUpperCase()}</title></head>
-    <body style="font-family:Tahoma,monospace; width:76mm; margin:0 auto; padding:8px; font-size:12px; color:#000;" onload="window.print()">
-        <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:6px; margin-bottom:6px;">
-            <strong style="font-size:15px;">🌿 زيت الشجرة المباركة</strong><br>
-            <span>زيت زيتون سيناوي عصرة أولى عالبارد</span><br>
-            <strong>بوليصة رقم: #${o.id.slice(0,6).toUpperCase()}</strong><br>
-            <small>${new Date(o.orderDate).toLocaleString('ar-EG')}</small>
-        </div>
-        <div style="line-height:1.5; margin-bottom:6px;">
-            <div><strong>العميل:</strong> ${window.escapeHTML(o.customerName)}</div>
-            <div><strong>الهاتف:</strong> ${window.escapeHTML((o.phones && o.phones.primary) || '')}</div>
-            <div><strong>العنوان:</strong> ${window.escapeHTML((o.location && o.location.governorate) || '')} - ${window.escapeHTML((o.location && o.location.details) || '')}</div>
-        </div>
-        <table style="width:100%; border-collapse:collapse; margin-bottom:6px; font-size:11.5px;">
-            <thead><tr style="border-bottom:1px solid #000;"><th style="text-align:right;">الصنف</th><th>كمية</th><th style="text-align:left;">إجمالي</th></tr></thead>
-            <tbody>${itemsRows}</tbody>
-        </table>
-        <div style="border-top:2px dashed #000; padding-top:6px; font-size:14px; font-weight:bold; display:flex; justify-content:space-between;">
-            <span>المطلوب تحصيله:</span>
-            <span>${o.totalAmount} ج</span>
-        </div>
-        <div style="text-align:center; margin-top:8px; font-size:10px;">شكراً لثقتكم في مزارع الشجرة المباركة 🌿</div>
-    </body></html>`);
-    w.document.close();
-};
-
-window.openBarcodeScannerPromptV73 = async function() {
-    let code = prompt('📷 امسح أو اكتب أول 6 حروف/أرقام من رقم البوليصة لتحديث حالتها فوراً إلى (تم التوصيل ✅):');
-    if (!code || !code.trim()) return;
-    let clean = code.trim().replace('#', '').toLowerCase();
-    let target = (adminOrdersArray || []).find(o => o.id.toLowerCase().startsWith(clean));
-    if (!target) {
-        window.showToast('لم يتم العثور على طلب بهذا الكود', 'error');
-        return;
-    }
-    await window.updateOrderStatus(target.id, 'تم التوصيل ✅');
-    window.showToast(`✅ تم تحديث الطلب #${target.id.slice(0,6).toUpperCase()} (${target.customerName}) إلى تم التوصيل!`, 'success');
-};
-
-// 7. تتبع المندوب الحي على الخريطة يوم التوصيل (Live Driver GPS Tracking V73)
-window.shareDriverLiveGpsForOrderV73 = function(orderId) {
-    if (!navigator.geolocation) {
-        window.showToast('جهازك لا يدعم تحديد الموقع الجغرافي', 'error');
-        return;
-    }
-    window.showToast('📡 جاري تفعيل ومشاركة موقع المندوب الحي مع العميل...', 'info');
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-        let lat = pos.coords.latitude;
-        let lng = pos.coords.longitude;
-        let liveLink = `https://www.google.com/maps?q=${lat},${lng}`;
-        try {
-            await updateDoc(doc(db, 'orders', orderId), {
-                driverLiveLocation: { lat, lng, link: liveLink, updatedAt: new Date().toISOString() },
-                status: 'تم الشحن'
-            });
-            window.showToast('🛵 تم تحديث موقع المندوب الحي على خريطة العميل بنجاح!', 'success');
-        } catch (e) {}
-    }, () => {
-        window.showToast('يرجى السماح بصلاحية الـ GPS في الهاتف', 'error');
-    });
-};
-
-const origOpenDriverPortalV71 = window.openDriverPortalModal;
-window.openDriverPortalModal = function() {
-    if (origOpenDriverPortalV71) origOpenDriverPortalV71();
-    if (storeSettings.enableLiveDriverGps === false) return;
-    let listEl = document.getElementById('driver-portal-orders-list');
-    if (!listEl) return;
-    let activeOrds = (adminOrdersArray || []).filter(o => {
-        let st = String(o.status || '');
-        return st.includes('تجهيز') || st.includes('شحن') || st === 'قيد المراجعة';
-    });
-    let cards = listEl.children;
-    for (let i = 0; i < cards.length; i++) {
-        if (activeOrds[i] && !cards[i].innerHTML.includes('shareDriverLiveGpsForOrderV73')) {
-            cards[i].insertAdjacentHTML('beforeend', `
-                <button type="button" class="btn btn-outline" style="width:100%; margin-top:6px; padding:5px 10px; font-size:0.78rem; border-color:#028090; color:#028090;" onclick="window.shareDriverLiveGpsForOrderV73('${activeOrds[i].id}')">
-                    📡 مشاركة موقعي الحي الآن مع العميل على الخريطة (Live GPS)
-                </button>
-            `);
-        }
-    }
-};
-
-// 8. إصلاح جذري لدالة إتمام الطلب (processOrder) + خصم مستلزمات التعبئة تلقائياً
-window.processOrder = async function(method) {
-    try {
-        let selectedItems = (cart || []).filter(item => item.selected !== false);
-        if (selectedItems.length === 0) {
-            window.showToast('قم بتحديد منتج واحد على الأقل في السلة لإتمام الطلب', 'error');
-            return;
-        }
-
-        const nameEl = document.getElementById('order-name');
-        const phone1El = document.getElementById('order-phone1');
-        const phone2El = document.getElementById('order-phone2');
-        const govEl = document.getElementById('order-gov');
-        const cityEl = document.getElementById('order-city');
-        const mapAddrEl = document.getElementById('order-map-address');
-        const addrEl = document.getElementById('order-address');
-        const payEl = document.getElementById('order-payment-method');
-
-        const name = nameEl ? nameEl.value.trim() : '';
-        const phone1 = phone1El ? window.toEngDigits(phone1El.value.trim()) : '';
-        const phone2 = (phone2El && phone2El.value.trim()) ? window.toEngDigits(phone2El.value.trim()) : 'لا يوجد';
-        const gov = govEl ? govEl.value : '';
-        const city = (cityEl && cityEl.value) ? cityEl.value : 'المركز الرئيسي';
-        const addressDetails = addrEl ? addrEl.value.trim() : '';
-        const payMethod = payEl ? payEl.value : 'كاش عند الاستلام';
-
-        if (!name || name.length < 2) {
-            window.showToast('يرجى كتابة الاسم بالكامل أولاً', 'error');
-            if (nameEl) nameEl.focus();
-            return;
-        }
-        if (!phone1 || phone1.replace(/\D/g, '').length < 9) {
-            window.showToast('يرجى إدخال رقم هاتف صحيح للتواصل والتوصيل', 'error');
-            if (phone1El) phone1El.focus();
-            return;
-        }
-        if (!gov) {
-            window.showToast('يرجى اختيار المحافظة من القائمة', 'error');
-            if (govEl) govEl.focus();
-            return;
-        }
-        if (!addressDetails) {
-            window.showToast('يرجى كتابة العنوان التفصيلي (الشارع / القرية / العلامة المميزة)', 'error');
-            if (addrEl) addrEl.focus();
-            return;
-        }
-
-        const latEl = document.getElementById('order-lat');
-        const lngEl = document.getElementById('order-lng');
-        const lat = (latEl && latEl.value && Number(latEl.value) !== 0) ? latEl.value : '30.0444';
-        const lng = (lngEl && lngEl.value && Number(lngEl.value) !== 0) ? lngEl.value : '31.2357';
-        const mapAddress = (mapAddrEl && mapAddrEl.value) ? mapAddrEl.value : `${gov} - ${city}`;
-        const mapLink = (lat !== '30.0444') ? `https://www.google.com/maps?q=${lat},${lng}` : '';
-
-        let bundleDiscVal = window.getBundleDiscountAmount ? window.getBundleDiscountAmount() : 0;
-        let discountVal = Math.round(currentSubtotal * (currentDiscountPercent / 100)) + bundleDiscVal + (window.loyaltyDiscountFixed || 0);
-        let enableFreeShip = storeSettings.enableFreeShipping !== false;
-        let targetAmount = (storeSettings && storeSettings.freeShippingThreshold) ? Number(storeSettings.freeShippingThreshold) : 1000;
-        if (gov && window.getShippingCostForGov) currentShippingCost = window.getShippingCostForGov(gov);
-        let finalShippingCost = (enableFreeShip && currentSubtotal >= targetAmount) ? 0 : currentShippingCost;
-        let finalTotal = Math.max(0, (currentSubtotal - discountVal) + finalShippingCost);
-
-        let receiptUrl = '';
-        if (payMethod === 'محفظة إلكترونية') {
-            const fileInput = document.getElementById('order-receipt-file');
-            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-                window.showToast('يرجى إرفاق صورة إيصال التحويل لتأكيد الطلب', 'error');
-                return;
-            }
-            document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true);
-            window.showToast('⏳ جاري رفع صورة الإيصال وتأكيد الطلب...', 'info');
-            try {
-                const formData = new FormData();
-                formData.append('image', fileInput.files[0]);
-                const res = await fetch('https://api.imgbb.com/1/upload?key=D37b01ec4b27dcce48777a7b229a1fdb', { method: 'POST', body: formData });
-                const data = await res.json();
-                if (data && data.success) receiptUrl = data.data.url;
-            } catch (err) {
-                document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false);
-                window.showToast('فشل رفع صورة الإيصال، حاول مرة أخرى', 'error');
-                return;
-            }
-        }
-
-        document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true);
-        let custEmail = currentUser ? (currentUser.email || currentUser.phoneNumber || phone1) : phone1;
-
-        let orderPayload = {
-            usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0,
-            userId: currentUser ? currentUser.uid : '',
-            customerEmail: custEmail,
-            customerName: name,
-            phones: { primary: phone1, secondary: phone2 },
-            location: { governorate: gov, city: city, mapAddress: mapAddress, details: addressDetails, lat: lat, lng: lng, mapLink: mapLink },
-            items: selectedItems,
-            subtotal: currentSubtotal || 0,
-            discount: discountVal || 0,
-            promoCode: appliedPromoCode || '',
-            shippingCost: finalShippingCost || 0,
-            totalAmount: finalTotal || 0,
-            orderMethod: method || 'عبر الموقع',
-            paymentMethod: payMethod,
-            receiptUrl: receiptUrl,
-            status: 'قيد المراجعة',
-            orderDate: new Date().toISOString()
-        };
-
-        let createdDoc = await addDoc(collection(db, 'orders'), orderPayload);
-        window.autoDeductPackagingOnOrderV73(selectedItems);
-
-        let localOrder = { id: createdDoc.id, ...orderPayload };
-        if (!window.customerOrdersArray) window.customerOrdersArray = [];
-        window.customerOrdersArray.unshift(localOrder);
-
-        if (currentUser) {
-            setDoc(doc(db, 'users', currentUser.uid), { name: name, phone1: phone1, phone2: phone2, gov: gov, city: city, address: addressDetails }, { merge: true }).catch(() => {});
-        }
-
-        if (method === 'عبر واتساب') {
-            let waBtnInfo = storeSettings.floatingButtons ? storeSettings.floatingButtons.find(b => b.icon === '📱' || (b.link && b.link.includes('wa.me'))) : null;
-            let pureWa = waBtnInfo ? waBtnInfo.link.split('/').pop() : '201018631768';
-            if (pureWa && !pureWa.startsWith('20') && pureWa.length === 10) pureWa = '20' + pureWa;
-            let msg = `*طلب جديد مؤكد* 🌿\n\n👤 ${name}\n📞 ${phone1}\n📍 ${gov} - ${city}\n🏠 ${addressDetails}\n💳 الدفع: ${payMethod}\n\n🛍️ *المنتجات:*\n`;
-            selectedItems.forEach(item => { msg += `- ${item.name} (${item.quantity}) بـ ${item.price * item.quantity} ج\n`; });
-            msg += `\n💰 *الإجمالي المطلوب:* ${finalTotal} ج (شامل التوصيل)`;
-            window.open(`https://wa.me/${pureWa}?text=${encodeURIComponent(msg)}`, '_blank');
-        }
-
-        cart = cart.filter(item => item.selected === false);
-        localStorage.setItem('cart', JSON.stringify(cart));
-        localStorage.removeItem('cart_last_updated');
-        window.loyaltyDiscountFixed = 0;
-        window.loyaltyPointsUsedTemp = 0;
-        currentDiscountPercent = 0;
-        appliedPromoCode = '';
-        window.updateCartUI();
-
-        document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false);
-        window.showToast('🎉 تم تأكيد طلبك بنجاح! جاري عرض تفاصيل طلبك الآن...', 'success');
-        window.showPanel('customer-orders');
-        window.renderCustomerOrdersWithPhotosV73(window.customerOrdersArray);
-    } catch (error) {
-        console.error('Order Submit Error:', error);
-        document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false);
-        window.showToast('حدث خطأ أثناء إرسال الطلب، تأكد من اتصالك بالإنترنت', 'error');
-    }
-};
-
-// 9. عرض صور المنتجات داخل "طلباتي" + تتبع المندوب الحي + استطلاع الرأي بعد 3 أيام (+25 نقطة)
-window.getOrderProductThumbV73 = function(item) {
-    if (item && item.imageUrl && !item.imageUrl.includes('placeholder')) return item.imageUrl;
-    let p = (products || []).find(x => x.id === item.id || x.name === item.name);
-    if (p) {
-        if (p.images && p.images[0]) return p.images[0];
-        if (p.imageUrl) return p.imageUrl;
-    }
-    return '1000392409.jpeg';
-};
-
-window.claim3DayPostDeliverySurveyPointsV73 = async function(orderId) {
-    if (!currentUser) return;
-    let key = 'zait_survey_claimed_' + orderId;
-    if (localStorage.getItem(key)) {
-        window.showToast('حصلت على مكافأة تقييم هذا الطلب مسبقاً', 'info');
-        return;
-    }
-    localStorage.setItem(key, '1');
-    try {
-        await updateDoc(doc(db, 'users', currentUser.uid), {
-            loyaltyPoints: increment(25),
-            unreadNotifs: increment(1),
-            notifications: arrayUnion({
-                title: 'هدية تقييم الطلب (+25 نقطة) 🎁',
-                message: 'شكراً لمشاركتنا رأيك في جودة زيت الشجرة المباركة! تمت إضافة 25 نقطة ولاء لرصيدك.',
-                date: new Date().toISOString()
-            })
-        });
-    } catch (e) {}
-    window.showToast('🎉 شكراً لك! تمت إضافة +25 نقطة ولاء لحسابك، اكتب تقييمك الآن.', 'success');
-    window.loadAllReviews();
-};
-
-window.renderCustomerOrdersWithPhotosV73 = function(userOrders) {
-    const container = document.getElementById('customer-orders-container');
-    if (!container) return;
-    if (!userOrders || userOrders.length === 0) {
-        container.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;"><span style="font-size:3rem; display:block; margin-bottom:10px;">🛒</span><h3>لا توجد طلبات مسجلة بعد.</h3></div>';
-        return;
-    }
-    let htmlContent = '';
-
-    // التحقق من وجود طلب مستلم منذ 3 أيام لعرض بطاقة استطلاع الرأي بمكافأة +25 نقطة
-    if (storeSettings.enablePostDeliverySurvey !== false) {
-        let eligibleOrder = userOrders.find(o => {
-            let isDeliv = String(o.status || '').includes('توصيل');
-            let days = (Date.now() - new Date(o.orderDate).getTime()) / 86400000;
-            return isDeliv && days >= 3 && !localStorage.getItem('zait_survey_claimed_' + o.id);
-        });
-        if (eligibleOrder) {
-            htmlContent += `
-            <div class="v73-followup-banner">
-                <div>
-                    <strong style="color:#166534; font-size:0.95rem; display:block;">🌿 مر أكثر من 3 أيام على استلام طلبك #${eligibleOrder.id.slice(0,6).toUpperCase()}!</strong>
-                    <span style="font-size:0.82rem; color:#15803d;">ما رأيك في طعم ونقاء زيت الشجرة المباركة؟ شاركنا تقييمك واكسب <b>+25 نقطة ولاء فورية</b>!</span>
-                </div>
-                <button type="button" class="btn" style="background:#16a34a; padding:7px 14px; font-size:0.82rem;" onclick="window.claim3DayPostDeliverySurveyPointsV73('${eligibleOrder.id}')">⭐ قيّم الطلب واكسب +25 نقطة</button>
-            </div>`;
-        }
-    }
-
-    userOrders.forEach(order => {
-        let badgeClass = 'status-pending';
-        let statusIcon = '🕒';
-        let st = String(order.status || 'قيد المراجعة');
-        if (st.includes('تجهيز')) { badgeClass = 'status-prep'; statusIcon = '📦'; }
-        else if (st.includes('شحن')) { badgeClass = 'status-shipped'; statusIcon = '🚚'; }
-        else if (st.includes('توصيل')) { badgeClass = 'status-delivered'; statusIcon = '✅'; }
-        else if (st.includes('رفض') || st.includes('لغى')) { badgeClass = 'status-canceled'; statusIcon = '❌'; }
-
-        let dStr = new Date(order.orderDate).toLocaleDateString('ar-EG', { dateStyle: 'long' });
-        let thumbsHtml = '<div class="order-products-thumbs-row">';
-        (order.items || []).forEach(item => {
-            let imgUrl = window.getOrderProductThumbV73(item);
-            thumbsHtml += `
-                <div class="order-prod-thumb-chip">
-                    <img src="${imgUrl}" onerror="this.src='1000392409.jpeg'" alt="${window.escapeHTML(item.name)}">
-                    <div>
-                        <strong style="display:block; color:var(--primary); font-size:0.84rem;">${window.escapeHTML(item.name)}</strong>
-                        <span style="font-size:0.78rem; color:var(--text-muted);">الكمية: <b>${item.quantity}</b> | <b style="color:var(--secondary);">${item.price * item.quantity} ج</b></span>
-                    </div>
-                </div>`;
-        });
-        thumbsHtml += '</div>';
-
-        let liveGpsBtn = (order.driverLiveLocation && order.driverLiveLocation.link && storeSettings.enableLiveDriverGps !== false)
-            ? `<a href="${order.driverLiveLocation.link}" target="_blank" class="btn" style="background:#028090; padding:5px 10px; font-size:0.78rem; text-decoration:none;" onclick="event.stopPropagation();">🛵 تتبع موقع المندوب الحي على الخريطة</a>`
-            : '';
-
-        htmlContent += `
-        <div class="admin-msg-card" style="cursor:pointer; border-right:4px solid #028090; padding:14px; margin-bottom:12px;" onclick="window.openCustomerOrderModal('${order.id}')">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px dashed var(--border-color); padding-bottom:8px;">
-                <div>
-                    <strong style="color:var(--primary); font-size:1.02rem;">📦 طلب #${order.id.slice(0,6).toUpperCase()}</strong>
-                    <span style="font-size:0.8rem; color:var(--text-muted); margin-right:8px;">📅 ${dStr}</span>
-                </div>
-                <span class="order-status-badge ${badgeClass}" style="font-size:0.75rem;">${statusIcon} ${window.escapeHTML(st)}</span>
-            </div>
-            ${thumbsHtml}
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:10px; padding-top:8px; border-top:1px solid var(--border-color);">
-                <strong style="color:var(--secondary); font-size:1.05rem;">الإجمالي: ${order.totalAmount} ج</strong>
-                <div style="display:flex; gap:6px; align-items:center;">
-                    ${liveGpsBtn}
-                    ${storeSettings.enableBuyAgain !== false ? `<button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.78rem; border-color:var(--primary); color:var(--primary);" onclick="event.stopPropagation(); window.buyAgainOrder('${order.id}')">🔄 اطلبه مجدداً</button>` : ''}
-                </div>
-            </div>
-        </div>`;
-    });
-    container.innerHTML = htmlContent;
-};
-
-window.loadCustomerOrders = function() {
-    if (!currentUser) return;
-    let filterKey = currentUser.email || currentUser.phoneNumber;
-    if (!filterKey) return;
-    onSnapshot(query(collection(db, 'orders'), where('customerEmail', '==', filterKey)), (snapshot) => {
-        window.customerOrdersArray = [];
-        snapshot.forEach(d => window.customerOrdersArray.push({ id: d.id, ...d.data() }));
-        window.customerOrdersArray.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
-        window.renderCustomerOrdersWithPhotosV73(window.customerOrdersArray);
-    });
-};
-
-const origOpenCustModalV72 = window.openCustomerOrderModal;
-window.openCustomerOrderModal = function(orderId) {
-    if (origOpenCustModalV72) origOpenCustModalV72(orderId);
-    let order = (window.customerOrdersArray || []).find(o => o.id === orderId);
-    let com = document.getElementById('com-content');
-    if (!order || !com) return;
-    let ul = com.querySelector('ul');
-    if (ul && order.items) {
-        ul.style.padding = '0';
-        ul.innerHTML = order.items.map(item => {
-            let imgUrl = window.getOrderProductThumbV73(item);
-            return `<li style="list-style:none; display:flex; align-items:center; gap:10px; margin-bottom:8px; background:var(--panel-bg); padding:8px; border-radius:10px; border:1px solid var(--border-color);">
-                <img src="${imgUrl}" onerror="this.src='1000392409.jpeg'" style="width:48px; height:48px; border-radius:8px; object-fit:cover; border:1px solid var(--secondary);">
-                <div style="flex:1;">
-                    <strong style="color:var(--primary); display:block;">${window.escapeHTML(item.name)}</strong>
-                    <span style="font-size:0.84rem; color:var(--text-muted);">الكمية: <b>${item.quantity}</b> × ${item.price} ج = <b style="color:var(--secondary);">${item.price * item.quantity} ج</b></span>
-                </div>
-            </li>`;
-        }).join('');
-    }
-    if (order.driverLiveLocation && order.driverLiveLocation.link && !com.innerHTML.includes('driverLiveLocation')) {
-        com.insertAdjacentHTML('beforeend', `
-            <a href="${order.driverLiveLocation.link}" target="_blank" class="btn btn-full" style="margin-top:8px; background:#028090; text-decoration:none; display:block; text-align:center;">
-                🛵 فتح خريطة تتبع موقع المندوب الحي الآن (Live GPS)
-            </a>
-        `);
-    }
-};
-
-// إضافة زر الطباعة الحرارية 80mm داخل تفاصيل طلب الإدارة
-const origOpenAdminOrderModalV72 = window.openAdminOrderModal;
-window.openAdminOrderModal = function(id) {
-    if (origOpenAdminOrderModalV72) origOpenAdminOrderModalV72(id);
-    if (storeSettings.enableThermalReceipt80mm === false) return;
-    let aom = document.getElementById('aom-content');
-    if (aom && !aom.innerHTML.includes('printThermal80mmReceiptV73')) {
-        aom.insertAdjacentHTML('beforeend', `
-            <button type="button" class="btn btn-outline" style="width:100%; margin-top:8px; border-color:#111; color:var(--text-color); font-weight:bold;" onclick="window.printThermal80mmReceiptV73('${id}')">
-                🧾 طباعة إيصال كاشير حراري سريع (80mm Thermal) + مسح باركود
-            </button>
-        `);
-    }
-};
-
-// 10. حقن مفاتيح إيقاف وتشغيل ميزات V73 الخمس داخل لوحة الإعدادات المحمية مع زر (؟) للشرح
-window.injectV73SettingsCheckboxes = function() {
-    let sec = document.getElementById('roles-content-section');
-    if (!sec || document.getElementById('v73-admin-settings-group')) return;
-
-    let box = document.createElement('div');
-    box.id = 'v73-admin-settings-group';
-    box.className = 'admin-setting-card-pro';
-    box.style.cssText = 'background:var(--input-bg); padding:15px; border-radius:12px; border:2px solid #028090; margin-bottom:15px;';
-    box.innerHTML = `
-        <h4 style="margin-top:0; color:#028090;">🚀 إعدادات ومميزات الإصدار V73 المتقدمة (تفعيل / إيقاف):</h4>
-        <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer; font-weight:bold;">
-            <input type="checkbox" id="setting-enable-packaging-erp" checked onchange="window.saveSettings()">
-            <span>🍾 تفعيل نظام إدارة مستلزمات التعبئة والفوارغ والخصم التلقائي مع كل طلب</span>
-        </label>
-        <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer; font-weight:bold;">
-            <input type="checkbox" id="setting-enable-live-driver-gps" checked onchange="window.saveSettings()">
-            <span>🛵 تفعيل تتبع موقع المندوب الحي على الخريطة يوم التوصيل (Live Driver GPS)</span>
-        </label>
-        <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer; font-weight:bold;">
-            <input type="checkbox" id="setting-enable-thermal-80mm" checked onchange="window.saveSettings()">
-            <span>🧾 تفعيل طباعة إيصالات الكاشير الحرارية (80mm) وماسح باركود البوليصة السريع</span>
-        </label>
-        <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer; font-weight:bold;">
-            <input type="checkbox" id="setting-enable-olive-advisor-bot" checked onchange="window.saveSettings()">
-            <span>🤖 تفعيل أزرار الخبير الذكي لزيت الزيتون في شات خدمة العملاء</span>
-        </label>
-        <label style="display:flex; align-items:center; gap:8px; margin-bottom:4px; cursor:pointer; font-weight:bold;">
-            <input type="checkbox" id="setting-enable-post-delivery-survey" checked onchange="window.saveSettings()">
-            <span>🎁 تفعيل استطلاع الرأي التلقائي للعميل بعد الاستلام بـ 3 أيام بمكافأة (+25 نقطة)</span>
-        </label>
-    `;
-    sec.insertBefore(box, sec.children[2] || sec.firstChild);
-
-    if (Array.isArray(window.MASTER_SETTINGS_CHECKBOX_MAP)) {
-        const v73Map = [
-            ['setting-enable-packaging-erp', 'enablePackagingErp', true],
-            ['setting-enable-live-driver-gps', 'enableLiveDriverGps', true],
-            ['setting-enable-thermal-80mm', 'enableThermalReceipt80mm', true],
-            ['setting-enable-olive-advisor-bot', 'enableOliveAdvisorBot', true],
-            ['setting-enable-post-delivery-survey', 'enablePostDeliverySurvey', true]
-        ];
-        v73Map.forEach(item => {
-            if (!window.MASTER_SETTINGS_CHECKBOX_MAP.some(x => x[0] === item[0])) {
-                window.MASTER_SETTINGS_CHECKBOX_MAP.push(item);
-            }
-        });
-    }
-    if (window.injectHelpQuestionButtonsInSettings) window.injectHelpQuestionButtonsInSettings();
-};
-
-const origApplyV71Master = window.applyV66MasterUI;
-window.applyV66MasterUI = function() {
-    if (origApplyV71Master) origApplyV71Master();
-    window.injectV73SettingsCheckboxes();
-    window.syncZeroFlashSettingsV73();
-    window.initCleanChatBarsV73();
-    if (isCurrentUserAdmin) {
-        window.renderPackagingErpCardV73();
-    }
-};
-
-setTimeout(() => {
-    window.injectV73SettingsCheckboxes();
-    window.syncZeroFlashSettingsV73();
-    window.initCleanChatBarsV73();
-    if (isCurrentUserAdmin) window.renderPackagingErpCardV73();
-}, 350);
-
-
-// =========================================================================
-// === النسخة V74 VIP الشاملة: الشريط العلوي والسفلي + حذف ومعاينة الصوت + فيديو 100MB مجاني مفعّل تلقائياً + قسم الحظر وحذف الحسابات ===
-// =========================================================================
-
-window.V74_DEFAULT_CLOUDINARY_CLOUD = 'jj2qrpnb';
-window.V74_DEFAULT_CLOUDINARY_PRESET = 'bfu87mf0';
-
-(function initV74ImmediateCleanups() {
-    try {
-        localStorage.removeItem('zait_large_font');
-        document.body.classList.remove('large-comfort-font');
-        var fBtn = document.getElementById('header-font-size-btn');
-        if (fBtn) fBtn.remove();
-        var floatCartBar = document.getElementById('floating-bottom-cart-bar');
-        if (floatCartBar) floatCartBar.style.setProperty('display', 'none', 'important');
-        var bNav = document.querySelector('.bottom-nav') || document.getElementById('bottom-nav');
-        if (bNav) bNav.style.setProperty('display', 'flex', 'important');
-    } catch (e) {}
-})();
-
-const origUpdateFloatAndMsV74 = window.updateFloatingBottomCartBarAndMilestones;
-window.updateFloatingBottomCartBarAndMilestones = function() {
-    if (origUpdateFloatAndMsV74) origUpdateFloatAndMsV74();
-    let bar = document.getElementById('floating-bottom-cart-bar');
-    if (bar) bar.style.setProperty('display', 'none', 'important');
-};
-
-if (typeof panels !== 'undefined' && panels) {
-    panels['admin-security'] = document.getElementById('admin-security-panel');
-}
-
-const origShowPanelV74 = window.showPanel;
-window.showPanel = function(panelId) {
-    if (panelId === 'admin-security' && !isCurrentUserAdmin) {
-        window.showToast('هذا القسم مخصص للمدير فقط', 'error');
-        return;
-    }
-    if (origShowPanelV74) origShowPanelV74(panelId);
-    if (panelId === 'admin-security' && isCurrentUserAdmin) {
-        let pEl = document.getElementById('admin-security-panel');
-        if (pEl) pEl.classList.add('active');
-        window.loadAdminSecurityPanel();
-    }
-    let fBar = document.getElementById('floating-bottom-cart-bar');
-    if (fBar) fBar.style.setProperty('display', 'none', 'important');
-    let bNav = document.querySelector('.bottom-nav') || document.getElementById('bottom-nav');
-    if (bNav) bNav.style.setProperty('display', 'flex', 'important');
-};
-
-// -------------------------------------------------------------------------
-// أولاً: نظام تسجيل الصوت الاحترافي مع (🗑️ حذف وإلغاء أثناء التسجيل + 🎧 استماع ومعاينة وحذف قبل الإرسال)
-// -------------------------------------------------------------------------
-window.v74VoiceState = {
-    recorder: null,
-    stream: null,
-    chunks: [],
-    timer: null,
-    secs: 0,
-    canceled: false,
-    sendImmediately: false,
-    role: 'customer',
-    pendingBlob: null,
-    pendingUrl: null,
-    pendingDuration: 0
-};
-
-window.ensureV74VoiceUIContainers = function(role) {
-    let previewId = role === 'admin' ? 'admin-voice-preview-box' : 'cust-voice-preview-box';
-    let previewBox = document.getElementById(previewId);
-    if (!previewBox) {
-        let anchor = document.getElementById(role === 'admin' ? 'admin-fixed-voice-bar' : 'customer-fixed-voice-bar')
-            || document.getElementById(role === 'admin' ? 'admin-chat-input' : 'support-form');
-        if (anchor && anchor.parentNode) {
-            previewBox = document.createElement('div');
-            previewBox.id = previewId;
-            previewBox.className = 'v74-voice-bar';
-            previewBox.style.display = 'none';
-            anchor.parentNode.insertBefore(previewBox, anchor);
-        }
-    }
-    return previewBox;
-};
-
-window.renderV74RecordingActiveUI = function(role) {
-    let box = window.ensureV74VoiceUIContainers(role);
-    if (!box) return;
-    box.style.display = 'flex';
-    box.innerHTML =
-        '<div class="v74-voice-row">' +
-            '<div style="display:flex; align-items:center; gap:8px; font-weight:900; color:#dc2626; font-size:0.86rem;">' +
-                '<span class="v74-rec-dot"></span>' +
-                '<span>جاري التسجيل الصوتي...</span>' +
-                '<strong id="v74-rec-timer-' + role + '">00:00</strong>' +
-            '</div>' +
-            '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
-                '<button type="button" class="btn btn-danger" style="padding:5px 10px; font-size:0.78rem; border-radius:10px;" onclick="window.v74CancelAndDeleteVoice(\'' + role + '\')">🗑️ حذف وإلغاء</button>' +
-                '<button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem; border-radius:10px; border-color:#028090; color:#028090;" onclick="window.v74StopForPreviewVoice(\'' + role + '\')">🎧 إيقاف ومعاينة</button>' +
-                '<button type="button" class="btn" style="padding:5px 10px; font-size:0.78rem; border-radius:10px; background:#16a34a;" onclick="window.v74StopAndSendNowVoice(\'' + role + '\')">🚀 إرسال الآن</button>' +
-            '</div>' +
-        '</div>';
-};
-
-window.renderV74VoicePreviewUI = function(role, audioObjUrl, secs) {
-    let box = window.ensureV74VoiceUIContainers(role);
-    if (!box) return;
-    box.style.display = 'flex';
-    box.innerHTML =
-        '<div class="v74-voice-row" style="width:100%;">' +
-            '<strong style="font-size:0.82rem; color:var(--primary);">🎧 استمع لمقطعك الصوتي (' + secs + ' ثانية) قبل الإرسال:</strong>' +
-            '<audio controls src="' + audioObjUrl + '" style="height:36px; width:100%; max-width:260px;"></audio>' +
-            '<div style="display:flex; gap:8px; width:100%; margin-top:4px;">' +
-                '<button type="button" class="btn btn-danger" style="flex:1; padding:7px 10px; font-size:0.82rem; border-radius:10px;" onclick="window.v74DiscardPendingVoice(\'' + role + '\')">🗑️ حذف المقطع وإعادة التسجيل</button>' +
-                '<button type="button" class="btn" style="flex:1.2; padding:7px 10px; font-size:0.82rem; border-radius:10px; background:#16a34a;" onclick="window.v74ConfirmSendPendingVoice(\'' + role + '\')">🚀 إرسال المقطع الصوتي الآن</button>' +
-            '</div>' +
-        '</div>';
-};
-
-window.v74CancelAndDeleteVoice = function(role) {
-    let st = window.v74VoiceState;
-    st.canceled = true;
-    st.sendImmediately = false;
-    if (st.timer) clearInterval(st.timer);
-    if (st.recorder && st.recorder.state === 'recording') {
-        try { st.recorder.stop(); } catch (e) {}
-    }
-    if (st.stream) {
-        try { st.stream.getTracks().forEach(t => t.stop()); } catch (e) {}
-    }
-    st.chunks = [];
-    st.pendingBlob = null;
-    if (st.pendingUrl) { try { URL.revokeObjectURL(st.pendingUrl); } catch (e) {} st.pendingUrl = null; }
-    let box = document.getElementById(role === 'admin' ? 'admin-voice-preview-box' : 'cust-voice-preview-box');
-    if (box) { box.style.display = 'none'; box.innerHTML = ''; }
-    let recBtn = document.getElementById(role === 'admin' ? 'btn-admin-voice-note' : 'btn-cust-voice-note');
-    if (recBtn) { recBtn.classList.remove('recording-audio'); recBtn.innerHTML = '🎙️ اضغط لتسجيل مقطع صوتي'; }
-    let inlineBtn = document.getElementById(role === 'admin' ? 'btn-admin-voice-note-inline' : 'btn-cust-voice-note-inline');
-    if (inlineBtn) inlineBtn.classList.remove('recording-audio');
-    let cancelBtn = document.getElementById(role === 'admin' ? 'btn-admin-cancel-voice' : 'btn-cust-cancel-voice');
-    if (cancelBtn) cancelBtn.style.display = 'none';
-    window.showToast('🗑️ تم حذف وإلغاء المقطع الصوتي! لم يتم إرسال أي شيء.', 'info');
-};
-
-window.cancelActiveVoiceRecording = window.v74CancelAndDeleteVoice;
-
-window.v74StopForPreviewVoice = function(role) {
-    let st = window.v74VoiceState;
-    st.canceled = false;
-    st.sendImmediately = false;
-    if (st.recorder && st.recorder.state === 'recording') {
-        try { st.recorder.stop(); } catch (e) {}
-    }
-};
-
-window.v74StopAndSendNowVoice = function(role) {
-    let st = window.v74VoiceState;
-    st.canceled = false;
-    st.sendImmediately = true;
-    if (st.recorder && st.recorder.state === 'recording') {
-        try { st.recorder.stop(); } catch (e) {}
-    }
-};
-
-window.v74DiscardPendingVoice = function(role) {
-    window.v74CancelAndDeleteVoice(role);
-};
-
-window.v74ConfirmSendPendingVoice = async function(role) {
-    let st = window.v74VoiceState;
-    if (!st.pendingBlob) return;
-    let blob = st.pendingBlob;
-    let secs = st.pendingDuration || 1;
-    let targetChatId = role === 'customer'
-        ? (currentUser ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
-        : activeAdminChatId;
-    if (!targetChatId) {
-        window.showToast('يرجى تسجيل الدخول أولاً', 'error');
-        return;
-    }
-    window.showToast('⏳ جاري إرسال المقطع الصوتي...', 'info');
-    let reader = new FileReader();
-    reader.onloadend = async () => {
-        let base64Audio = reader.result;
-        if (!base64Audio) return;
-        let nowIso = new Date().toISOString();
-        let sName = role === 'admin'
-            ? (window.getCurrentStaffCleanName ? window.getCurrentStaffCleanName() : 'الإدارة')
-            : ((currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'عميل');
-
-        let msg = {
-            sender: role,
-            staffName: sName,
-            text: '🎙️ رسالة صوتية (' + secs + ' ثانية)',
-            audioDataUrl: base64Audio,
-            timestamp: nowIso
-        };
-        let updateObj = { messages: arrayUnion(msg), lastUpdate: nowIso };
-        if (role === 'customer') {
-            updateObj.customerName = sName;
-            updateObj.lastCustomerMsgAt = nowIso;
-            updateObj.unreadByAdmin = true;
-        } else {
-            updateObj.adminReplied = true;
-            updateObj.unreadByAdmin = false;
-        }
-        try {
-            await setDoc(doc(db, 'chats', targetChatId), updateObj, { merge: true });
-            window.v74CancelAndDeleteVoice(role);
-            window.showToast('✅ تم إرسال الرسالة الصوتية بنجاح!', 'success');
-        } catch (err) {
-            window.showToast('تعذر إرسال الصوت، جرب مقطعاً أقصر قليلاً', 'error');
-        }
-    };
-    reader.readAsDataURL(blob);
-};
-
-window.toggleChatVoiceNoteRecording = async function(senderRole, btnEl) {
-    let targetChatId = senderRole === 'customer'
-        ? (currentUser ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
-        : activeAdminChatId;
-    if (!targetChatId) {
-        window.showToast('يرجى تسجيل الدخول أولاً لإرسال رسالة صوتية', 'error');
-        if (senderRole === 'customer') window.showPanel('auth');
-        return;
-    }
-    let st = window.v74VoiceState;
-    if (st.recorder && st.recorder.state === 'recording') {
-        window.v74StopForPreviewVoice(senderRole);
-        return;
-    }
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        window.showToast('متصفحك لا يدعم تسجيل الصوت المباشر', 'error');
-        return;
-    }
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        st.stream = stream;
-        st.chunks = [];
-        st.secs = 0;
-        st.canceled = false;
-        st.sendImmediately = false;
-        st.role = senderRole;
-
-        let mimeOpts = {};
-        if (typeof MediaRecorder !== 'undefined') {
-            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) mimeOpts = { mimeType: 'audio/webm;codecs=opus' };
-            else if (MediaRecorder.isTypeSupported('audio/mp4')) mimeOpts = { mimeType: 'audio/mp4' };
-            else if (MediaRecorder.isTypeSupported('audio/webm')) mimeOpts = { mimeType: 'audio/webm' };
-        }
-
-        const recorder = new MediaRecorder(stream, mimeOpts);
-        st.recorder = recorder;
-        if (btnEl) {
-            btnEl.classList.add('recording-audio');
-            if (btnEl.id === 'btn-cust-voice-note' || btnEl.id === 'btn-admin-voice-note') {
-                btnEl.innerHTML = '⏹️ إيقاف للمعاينة...';
-            }
-        }
-        let cancelBtn = document.getElementById(senderRole === 'admin' ? 'btn-admin-cancel-voice' : 'btn-cust-cancel-voice');
-        if (cancelBtn) cancelBtn.style.display = 'inline-flex';
-
-        window.renderV74RecordingActiveUI(senderRole);
-
-        st.timer = setInterval(() => {
-            st.secs++;
-            let mm = String(Math.floor(st.secs / 60)).padStart(2, '0');
-            let ss = String(st.secs % 60).padStart(2, '0');
-            let tEl = document.getElementById('v74-rec-timer-' + senderRole);
-            if (tEl) tEl.textContent = mm + ':' + ss;
-            if (st.secs >= 45 && recorder.state === 'recording') {
-                window.v74StopForPreviewVoice(senderRole);
-            }
-        }, 1000);
-
-        recorder.ondataavailable = (e) => {
-            if (e.data && e.data.size > 0) st.chunks.push(e.data);
-        };
-
-        recorder.onstop = () => {
-            clearInterval(st.timer);
-            try { stream.getTracks().forEach(t => t.stop()); } catch (e) {}
-            if (btnEl) {
-                btnEl.classList.remove('recording-audio');
-                if (btnEl.id === 'btn-cust-voice-note' || btnEl.id === 'btn-admin-voice-note') {
-                    btnEl.innerHTML = '🎙️ اضغط لتسجيل مقطع صوتي';
+        window.ensureV75VoiceUIContainers = function(role) {
+            var previewId = role === 'admin' ? 'admin-voice-preview-box' : 'cust-voice-preview-box';
+            var previewBox = document.getElementById(previewId);
+            if (!previewBox) {
+                var anchor = document.getElementById(role === 'admin' ? 'admin-fixed-voice-bar' : 'customer-fixed-voice-bar')
+                    || document.getElementById(role === 'admin' ? 'admin-chat-input' : 'support-form');
+                if (anchor && anchor.parentNode) {
+                    previewBox = document.createElement('div');
+                    previewBox.id = previewId;
+                    previewBox.className = 'v75-voice-bar';
+                    previewBox.style.display = 'none';
+                    anchor.parentNode.insertBefore(previewBox, anchor);
                 }
             }
+            return previewBox;
+        };
+
+        window.renderV75RecordingActiveUI = function(role) {
+            var box = window.ensureV75VoiceUIContainers(role);
+            if (!box) return;
+            box.style.display = 'flex';
+            box.innerHTML =
+                '<div class="v75-voice-row">' +
+                    '<div style="display:flex; align-items:center; gap:8px; font-weight:900; color:#dc2626; font-size:0.86rem;">' +
+                        '<span class="v75-rec-dot"></span>' +
+                        '<span>جاري التسجيل الصوتي...</span>' +
+                        '<strong id="v75-rec-timer-' + role + '">00:00</strong>' +
+                    '</div>' +
+                    '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
+                        '<button type="button" class="btn btn-danger" style="padding:5px 10px; font-size:0.78rem; border-radius:10px;" onclick="window.v75CancelAndDeleteVoice(\'' + role + '\')">🗑️ حذف وإلغاء</button>' +
+                        '<button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem; border-radius:10px; border-color:#028090; color:#028090;" onclick="window.v75StopForPreviewVoice(\'' + role + '\')">🎧 إيقاف ومعاينة</button>' +
+                        '<button type="button" class="btn" style="padding:5px 10px; font-size:0.78rem; border-radius:10px; background:#16a34a;" onclick="window.v75StopAndSendNowVoice(\'' + role + '\')">🚀 إرسال الآن</button>' +
+                    '</div>' +
+                '</div>';
+        };
+
+        window.renderV75VoicePreviewUI = function(role, audioObjUrl, secs) {
+            var box = window.ensureV75VoiceUIContainers(role);
+            if (!box) return;
+            box.style.display = 'flex';
+            box.innerHTML =
+                '<div class="v75-voice-row" style="width:100%;">' +
+                    '<strong style="font-size:0.82rem; color:var(--primary);">🎧 استمع لمقطعك الصوتي (' + secs + ' ثانية) قبل الإرسال:</strong>' +
+                    '<audio controls src="' + audioObjUrl + '" style="height:36px; width:100%; max-width:260px;"></audio>' +
+                    '<div style="display:flex; gap:8px; width:100%; margin-top:4px;">' +
+                        '<button type="button" class="btn btn-danger" style="flex:1; padding:7px 10px; font-size:0.82rem; border-radius:10px;" onclick="window.v75CancelAndDeleteVoice(\'' + role + '\')">🗑️ حذف المقطع وإعادة التسجيل</button>' +
+                        '<button type="button" class="btn" style="flex:1.2; padding:7px 10px; font-size:0.82rem; border-radius:10px; background:#16a34a;" onclick="window.v75ConfirmSendPendingVoice(\'' + role + '\')">🚀 إرسال المقطع الصوتي الآن</button>' +
+                    '</div>' +
+                '</div>';
+        };
+
+        window.v75CancelAndDeleteVoice = function(role) {
+            var st = window.v75VoiceState;
+            st.canceled = true;
+            st.sendImmediately = false;
+            if (st.timer) clearInterval(st.timer);
+            if (st.recorder && st.recorder.state === 'recording') {
+                try { st.recorder.stop(); } catch (e) {}
+            }
+            if (st.stream) {
+                try { st.stream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
+            }
+            st.chunks = [];
+            st.pendingBlob = null;
+            if (st.pendingUrl) { try { URL.revokeObjectURL(st.pendingUrl); } catch (e) {} st.pendingUrl = null; }
+            var box = document.getElementById(role === 'admin' ? 'admin-voice-preview-box' : 'cust-voice-preview-box');
+            if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+            var recBtn = document.getElementById(role === 'admin' ? 'btn-admin-voice-note' : 'btn-cust-voice-note');
+            if (recBtn) { recBtn.classList.remove('recording-audio'); recBtn.innerHTML = '🎙️ اضغط لتسجيل مقطع صوتي'; }
+            var cancelBtn = document.getElementById(role === 'admin' ? 'btn-admin-cancel-voice' : 'btn-cust-cancel-voice');
             if (cancelBtn) cancelBtn.style.display = 'none';
-            if (st.canceled || st.chunks.length === 0) return;
+            if (window.showToast) window.showToast('🗑️ تم حذف وإلغاء المقطع الصوتي!', 'info');
+        };
+        window.cancelActiveVoiceRecording = window.v75CancelAndDeleteVoice;
 
-            let blob = new Blob(st.chunks, { type: recorder.mimeType || 'audio/webm' });
-            st.pendingBlob = blob;
-            st.pendingDuration = Math.max(1, st.secs);
-            if (st.pendingUrl) { try { URL.revokeObjectURL(st.pendingUrl); } catch (e) {} }
-            st.pendingUrl = URL.createObjectURL(blob);
-
-            if (st.sendImmediately) {
-                window.v74ConfirmSendPendingVoice(senderRole);
-            } else {
-                window.renderV74VoicePreviewUI(senderRole, st.pendingUrl, st.pendingDuration);
-                window.showToast('🎧 يمكنك الآن سماع المقطع أو حذفه أو إرساله', 'info');
+        window.v75StopForPreviewVoice = function() {
+            var st = window.v75VoiceState;
+            st.canceled = false;
+            st.sendImmediately = false;
+            if (st.recorder && st.recorder.state === 'recording') {
+                try { st.recorder.stop(); } catch (e) {}
             }
         };
-        recorder.start();
-    } catch (e) {
-        window.showToast('يرجى السماح بصلاحية الميكروفون لتسجيل الرسالة الصوتية', 'error');
-    }
-};
 
-window.startCustomerVoiceNote = function() {
-    window.toggleChatVoiceNoteRecording('customer', document.getElementById('btn-cust-voice-note') || document.getElementById('btn-cust-voice-note-inline'));
-};
-window.startAdminVoiceNote = function() {
-    window.toggleChatVoiceNoteRecording('admin', document.getElementById('btn-admin-voice-note') || document.getElementById('btn-admin-voice-note-inline'));
-};
-
-// -------------------------------------------------------------------------
-// ثانياً: رفع فيديوهات الشات حتى 100 ميجابايت مجاناً 100% عبر Cloudinary (مُفعّل تلقائياً بحسابك jj2qrpnb / bfu87mf0)
-// -------------------------------------------------------------------------
-window.injectV74CloudinarySettingsCard = function() {
-    let sec = document.getElementById('roles-content-section');
-    if (!sec || document.getElementById('v74-cloudinary-settings-card')) return;
-    let card = document.createElement('div');
-    card.id = 'v74-cloudinary-settings-card';
-    card.className = 'admin-setting-card-pro';
-    card.style.cssText = 'background:var(--input-bg); padding:14px; border-radius:12px; border:2px solid #2563eb; margin-bottom:14px;';
-    card.innerHTML =
-        '<h4 style="margin:0 0 8px 0; color:#1d4ed8;">🎥 إعدادات رفع فيديوهات الشات حتى 100 ميجابايت (مُفعّل تلقائياً ✅):</h4>' +
-        '<p style="margin:0 0 8px 0; font-size:0.8rem; color:var(--text-muted);">تم إدخال بيانات Cloudinary الخاصة بك تلقائياً وتعمل مباشرة بدون أي تعديل:</p>' +
-        '<div class="form-row" style="margin-bottom:8px;">' +
-            '<input type="text" id="v74-cloudinary-cloud" placeholder="Cloud Name" value="jj2qrpnb" style="margin:0;">' +
-            '<input type="text" id="v74-cloudinary-preset" placeholder="Upload Preset" value="bfu87mf0" style="margin:0;">' +
-        '</div>' +
-        '<button type="button" class="btn" style="background:#2563eb; padding:7px 16px; font-size:0.84rem;" onclick="window.saveV74CloudinaryConfig()">💾 حفظ وتحديث بيانات Cloudinary</button>';
-    sec.insertBefore(card, sec.children[2] || sec.firstChild);
-    window.syncV74CloudinaryInputs();
-};
-
-window.syncV74CloudinaryInputs = function() {
-    let cInp = document.getElementById('v74-cloudinary-cloud');
-    let pInp = document.getElementById('v74-cloudinary-preset');
-    if (cInp) cInp.value = (storeSettings && storeSettings.cloudinaryCloudName) ? storeSettings.cloudinaryCloudName : window.V74_DEFAULT_CLOUDINARY_CLOUD;
-    if (pInp) pInp.value = (storeSettings && storeSettings.cloudinaryUploadPreset) ? storeSettings.cloudinaryUploadPreset : window.V74_DEFAULT_CLOUDINARY_PRESET;
-};
-
-window.saveV74CloudinaryConfig = async function() {
-    let cn = ((document.getElementById('v74-cloudinary-cloud') || {}).value || '').trim();
-    let pr = ((document.getElementById('v74-cloudinary-preset') || {}).value || '').trim();
-    if (!cn || !pr) {
-        window.showToast('يرجى كتابة Cloud Name و Upload Preset معاً', 'error');
-        return;
-    }
-    try {
-        await setDoc(doc(db, 'settings', 'main'), {
-            cloudinaryCloudName: cn,
-            cloudinaryUploadPreset: pr
-        }, { merge: true });
-        storeSettings.cloudinaryCloudName = cn;
-        storeSettings.cloudinaryUploadPreset = pr;
-        window.showToast('✅ تم حفظ وتفعيل رفع فيديوهات الشات حتى 100 ميجابايت مجاناً!', 'success');
-    } catch (e) {
-        window.showToast('حدث خطأ أثناء الحفظ', 'error');
-    }
-};
-
-const origApplyV74Ui = window.applyV66MasterUI;
-window.applyV66MasterUI = function() {
-    if (origApplyV74Ui) origApplyV74Ui();
-    if (isCurrentUserAdmin) {
-        window.injectV74CloudinarySettingsCard();
-        window.syncV74CloudinaryInputs();
-    }
-};
-setTimeout(() => {
-    if (isCurrentUserAdmin) window.injectV74CloudinarySettingsCard();
-}, 1200);
-
-window.showChatVideoUploadProgress = function(role, pct, labelText) {
-    let id = 'v74-vid-prog-' + role;
-    let el = document.getElementById(id);
-    if (!el) {
-        let anchor = document.getElementById(role === 'admin' ? 'admin-chat-messages' : 'support-history-container');
-        if (anchor && anchor.parentNode) {
-            el = document.createElement('div');
-            el.id = id;
-            el.className = 'v74-upload-progress-wrap';
-            el.innerHTML = '<div id="' + id + '-lbl"></div><div class="v74-upload-progress-track"><div id="' + id + '-fill" class="v74-upload-progress-fill"></div></div>';
-            anchor.parentNode.insertBefore(el, anchor.nextSibling);
-        }
-    }
-    if (!el) return;
-    if (pct < 0) { el.style.display = 'none'; return; }
-    el.style.display = 'block';
-    let lbl = document.getElementById(id + '-lbl');
-    let fill = document.getElementById(id + '-fill');
-    if (lbl) lbl.textContent = labelText || ('🎥 جاري رفع الفيديو: ' + pct + '%');
-    if (fill) fill.style.width = Math.min(100, Math.max(0, pct)) + '%';
-};
-
-window.uploadVideoToCloudinaryFree = function(file, cloudName, uploadPreset, onProgress) {
-    return new Promise((resolve, reject) => {
-        let xhr = new XMLHttpRequest();
-        let fd = new FormData();
-        fd.append('file', file);
-        fd.append('upload_preset', uploadPreset);
-        xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + encodeURIComponent(cloudName) + '/video/upload', true);
-        xhr.upload.onprogress = function(ev) {
-            if (ev.lengthComputable && onProgress) {
-                onProgress(Math.round((ev.loaded / ev.total) * 100));
+        window.v75StopAndSendNowVoice = function() {
+            var st = window.v75VoiceState;
+            st.canceled = false;
+            st.sendImmediately = true;
+            if (st.recorder && st.recorder.state === 'recording') {
+                try { st.recorder.stop(); } catch (e) {}
             }
         };
-        xhr.onload = function() {
-            if (xhr.status >= 200 && xhr.status < 300) {
+
+        window.v75ConfirmSendPendingVoice = async function(role) {
+            var st = window.v75VoiceState;
+            if (!st.pendingBlob) return;
+            var blob = st.pendingBlob;
+            var secs = st.pendingDuration || 1;
+            var targetChatId = role === 'customer'
+                ? ((typeof currentUser !== 'undefined' && currentUser) ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
+                : (typeof activeAdminChatId !== 'undefined' ? activeAdminChatId : null);
+            if (!targetChatId) {
+                if (window.showToast) window.showToast('يرجى تسجيل الدخول أولاً', 'error');
+                return;
+            }
+            if (window.showToast) window.showToast('⏳ جاري إرسال المقطع الصوتي...', 'info');
+            var reader = new FileReader();
+            reader.onloadend = async function() {
+                var base64Audio = reader.result;
+                if (!base64Audio) return;
+                var nowIso = new Date().toISOString();
+                var sName = role === 'admin'
+                    ? (window.getCurrentStaffCleanName ? window.getCurrentStaffCleanName() : 'الإدارة')
+                    : ((typeof currentUser !== 'undefined' && currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'عميل');
+
+                var msg = {
+                    sender: role,
+                    staffName: sName,
+                    text: '🎙️ رسالة صوتية (' + secs + ' ثانية)',
+                    audioDataUrl: base64Audio,
+                    timestamp: nowIso
+                };
+                var updateObj = { messages: arrayUnion(msg), lastUpdate: nowIso };
+                if (role === 'customer') {
+                    updateObj.customerName = sName;
+                    updateObj.lastCustomerMsgAt = nowIso;
+                    updateObj.unreadByAdmin = true;
+                } else {
+                    updateObj.adminReplied = true;
+                    updateObj.unreadByAdmin = false;
+                }
                 try {
-                    let res = JSON.parse(xhr.responseText);
-                    if (res && res.secure_url) resolve(res.secure_url);
-                    else reject(new Error('لم يرجع رابط الفيديو'));
-                } catch (e) { reject(e); }
-            } else {
-                reject(new Error('HTTP ' + xhr.status));
+                    await setDoc(doc(db, 'chats', targetChatId), updateObj, { merge: true });
+                    window.v75CancelAndDeleteVoice(role);
+                    if (window.showToast) window.showToast('✅ تم إرسال الرسالة الصوتية بنجاح!', 'success');
+                } catch (err) {
+                    if (window.showToast) window.showToast('تعذر إرسال الصوت، جرب مقطعاً أقصر قليلاً', 'error');
+                }
+            };
+            reader.readAsDataURL(blob);
+        };
+
+        window.toggleChatVoiceNoteRecording = async function(senderRole, btnEl) {
+            var targetChatId = senderRole === 'customer'
+                ? ((typeof currentUser !== 'undefined' && currentUser) ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
+                : (typeof activeAdminChatId !== 'undefined' ? activeAdminChatId : null);
+            if (!targetChatId) {
+                if (window.showToast) window.showToast('يرجى تسجيل الدخول أولاً لإرسال رسالة صوتية', 'error');
+                if (senderRole === 'customer' && window.showPanel) window.showPanel('auth');
+                return;
+            }
+            var st = window.v75VoiceState;
+            if (st.recorder && st.recorder.state === 'recording') {
+                window.v75StopForPreviewVoice();
+                return;
+            }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                if (window.showToast) window.showToast('متصفحك لا يدعم تسجيل الصوت المباشر', 'error');
+                return;
+            }
+            try {
+                var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                st.stream = stream;
+                st.chunks = [];
+                st.secs = 0;
+                st.canceled = false;
+                st.sendImmediately = false;
+                st.role = senderRole;
+
+                var mimeOpts = {};
+                if (typeof MediaRecorder !== 'undefined') {
+                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) mimeOpts = { mimeType: 'audio/webm;codecs=opus' };
+                    else if (MediaRecorder.isTypeSupported('audio/mp4')) mimeOpts = { mimeType: 'audio/mp4' };
+                    else if (MediaRecorder.isTypeSupported('audio/webm')) mimeOpts = { mimeType: 'audio/webm' };
+                }
+
+                var recorder = new MediaRecorder(stream, mimeOpts);
+                st.recorder = recorder;
+                if (btnEl) {
+                    btnEl.classList.add('recording-audio');
+                    if (btnEl.id === 'btn-cust-voice-note' || btnEl.id === 'btn-admin-voice-note') {
+                        btnEl.innerHTML = '⏹️ إيقاف للمعاينة...';
+                    }
+                }
+                window.renderV75RecordingActiveUI(senderRole);
+
+                st.timer = setInterval(function() {
+                    st.secs++;
+                    var mm = String(Math.floor(st.secs / 60)).padStart(2, '0');
+                    var ss = String(st.secs % 60).padStart(2, '0');
+                    var tEl = document.getElementById('v75-rec-timer-' + senderRole);
+                    if (tEl) tEl.textContent = mm + ':' + ss;
+                    if (st.secs >= 45 && recorder.state === 'recording') {
+                        window.v75StopForPreviewVoice();
+                    }
+                }, 1000);
+
+                recorder.ondataavailable = function(e) {
+                    if (e.data && e.data.size > 0) st.chunks.push(e.data);
+                };
+
+                recorder.onstop = function() {
+                    clearInterval(st.timer);
+                    try { stream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
+                    if (btnEl) {
+                        btnEl.classList.remove('recording-audio');
+                        if (btnEl.id === 'btn-cust-voice-note' || btnEl.id === 'btn-admin-voice-note') {
+                            btnEl.innerHTML = '🎙️ اضغط لتسجيل مقطع صوتي';
+                        }
+                    }
+                    if (st.canceled || st.chunks.length === 0) return;
+
+                    var blob = new Blob(st.chunks, { type: recorder.mimeType || 'audio/webm' });
+                    st.pendingBlob = blob;
+                    st.pendingDuration = Math.max(1, st.secs);
+                    if (st.pendingUrl) { try { URL.revokeObjectURL(st.pendingUrl); } catch (e) {} }
+                    st.pendingUrl = URL.createObjectURL(blob);
+
+                    if (st.sendImmediately) {
+                        window.v75ConfirmSendPendingVoice(senderRole);
+                    } else {
+                        window.renderV75VoicePreviewUI(senderRole, st.pendingUrl, st.pendingDuration);
+                        if (window.showToast) window.showToast('🎧 يمكنك الآن سماع المقطع أو حذفه أو إرساله', 'info');
+                    }
+                };
+                recorder.start();
+            } catch (e) {
+                if (window.showToast) window.showToast('يرجى السماح بصلاحية الميكروفون لتسجيل الصوت', 'error');
             }
         };
-        xhr.onerror = function() { reject(new Error('فشل الاتصال بالخادم')); };
-        xhr.send(fd);
-    });
-};
 
-window.sendChatVideoAttachment = async function(senderRole, fileInp) {
-    if (!fileInp || !fileInp.files || fileInp.files.length === 0) return;
-    let file = fileInp.files[0];
-    let maxBytes = 100 * 1024 * 1024;
-    if (file.size > maxBytes) {
-        window.showToast('الحد الأقصى لحجم الفيديو هو 100 ميجابايت', 'error');
-        fileInp.value = '';
-        return;
-    }
-    let targetChatId = senderRole === 'customer'
-        ? (currentUser ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
-        : activeAdminChatId;
-    if (!targetChatId) {
-        window.showToast('يرجى تسجيل الدخول أولاً', 'error');
-        fileInp.value = '';
-        return;
-    }
-
-    let sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-    let cloudName = ((storeSettings && storeSettings.cloudinaryCloudName) || window.V74_DEFAULT_CLOUDINARY_CLOUD).trim();
-    let uploadPreset = ((storeSettings && storeSettings.cloudinaryUploadPreset) || window.V74_DEFAULT_CLOUDINARY_PRESET).trim();
-
-    let finalVideoUrl = '';
-    window.showToast('🎥 جاري رفع الفيديو (' + sizeMB + ' ميجابايت)... يرجى الانتظار', 'info');
-    window.showChatVideoUploadProgress(senderRole, 4, '🎥 جاري رفع الفيديو (' + sizeMB + ' MB): 0%');
-    try {
-        finalVideoUrl = await window.uploadVideoToCloudinaryFree(file, cloudName, uploadPreset, (pct) => {
-            window.showChatVideoUploadProgress(senderRole, pct, '🎥 جاري رفع الفيديو (' + sizeMB + ' MB): ' + pct + '%');
-        });
-    } catch (err) {
-        window.showChatVideoUploadProgress(senderRole, -1);
-        window.showToast('⚠️ تعذر رفع الفيديو الآن، تأكد من اتصال الإنترنت وحاول مرة أخرى', 'error');
-        fileInp.value = '';
-        return;
-    }
-
-    window.showChatVideoUploadProgress(senderRole, 100, '✅ اكتمل الرفع! جاري الإرسال للشات...');
-    let nowIso = new Date().toISOString();
-    let sName = senderRole === 'admin'
-        ? (window.getCurrentStaffCleanName ? window.getCurrentStaffCleanName() : 'الإدارة')
-        : ((currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'عميل');
-
-    let msg = {
-        sender: senderRole,
-        staffName: sName,
-        text: '🎥 مرفق فيديو (' + sizeMB + ' MB)',
-        videoDataUrl: finalVideoUrl,
-        timestamp: nowIso
-    };
-    try {
-        let updateObj = { messages: arrayUnion(msg), lastUpdate: nowIso };
-        if (senderRole === 'customer') {
-            updateObj.customerName = sName;
-            updateObj.lastCustomerMsgAt = nowIso;
-            updateObj.unreadByAdmin = true;
-        } else {
-            updateObj.adminReplied = true;
-            updateObj.unreadByAdmin = false;
-        }
-        await setDoc(doc(db, 'chats', targetChatId), updateObj, { merge: true });
-        window.showToast('🎥 تم إرسال الفيديو في المحادثة بنجاح!', 'success');
-    } catch (e) {
-        window.showToast('حدث خطأ أثناء حفظ رسالة الفيديو', 'error');
-    }
-    setTimeout(() => window.showChatVideoUploadProgress(senderRole, -1), 1200);
-    fileInp.value = '';
-};
-
-// -------------------------------------------------------------------------
-// ثالثاً: نظام الحظر الصارم من الهاتف والحساب + حذف الحسابات نهائياً (V74 Security Center)
-// -------------------------------------------------------------------------
-window.v74SecurityState = {
-    bannedList: [],
-    deletedUids: [],
-    allUsers: [],
-    currentSubTab: 'all'
-};
-
-window.getZaitDeviceFingerprint = function() {
-    let saved = localStorage.getItem('zait_device_fp_v74');
-    if (saved) return saved;
-    let raw = [
-        navigator.userAgent || '',
-        screen.width + 'x' + screen.height,
-        (Intl.DateTimeFormat().resolvedOptions().timeZone || ''),
-        navigator.language || '',
-        navigator.hardwareConcurrency || ''
-    ].join('|');
-    let hash = 0;
-    for (let i = 0; i < raw.length; i++) {
-        hash = ((hash << 5) - hash) + raw.charCodeAt(i);
-        hash |= 0;
-    }
-    let fp = 'DEV_' + Math.abs(hash).toString(36).toUpperCase() + '_' + (localStorage.getItem('zait_visitor_uid') || Date.now().toString(36)).slice(-5).toUpperCase();
-    localStorage.setItem('zait_device_fp_v74', fp);
-    return fp;
-};
-
-window.savePermanentBanMarkerLocally = function(reasonText) {
-    try {
-        localStorage.setItem('zait_device_banned_flag', 'YES');
-        localStorage.setItem('zait_device_banned_reason', reasonText || 'مخالفة سياسة المتجر');
-        let req = indexedDB.open('ZaitSecDB', 1);
-        req.onupgradeneeded = (e) => { e.target.result.createObjectStore('flags'); };
-        req.onsuccess = (e) => {
-            let tx = e.target.result.transaction('flags', 'readwrite');
-            tx.objectStore('flags').put(reasonText || 'محظور', 'banned');
+        // ---------------------------------------------------------------------
+        // 3. رفع فيديوهات الشات حتى 100 ميجابايت مجاناً عبر Cloudinary (jj2qrpnb / bfu87mf0)
+        // ---------------------------------------------------------------------
+        window.injectV75CloudinarySettingsCard = function() {
+            var sec = document.getElementById('roles-content-section');
+            if (!sec || document.getElementById('v75-cloudinary-settings-card')) return;
+            var card = document.createElement('div');
+            card.id = 'v75-cloudinary-settings-card';
+            card.className = 'admin-setting-card-pro';
+            card.style.cssText = 'background:var(--input-bg); padding:14px; border-radius:12px; border:2px solid #2563eb; margin-bottom:14px;';
+            card.innerHTML =
+                '<h4 style="margin:0 0 8px 0; color:#1d4ed8;">🎥 إعدادات رفع فيديوهات الشات حتى 100 ميجابايت (مُفعّل تلقائياً ✅):</h4>' +
+                '<div class="form-row" style="margin-bottom:8px;">' +
+                    '<input type="text" id="v75-cloudinary-cloud" placeholder="Cloud Name" value="jj2qrpnb" style="margin:0;">' +
+                    '<input type="text" id="v75-cloudinary-preset" placeholder="Upload Preset" value="bfu87mf0" style="margin:0;">' +
+                '</div>' +
+                '<button type="button" class="btn" style="background:#2563eb; padding:7px 16px; font-size:0.84rem;" onclick="window.saveV75CloudinaryConfig()">💾 حفظ وتحديث بيانات Cloudinary</button>';
+            sec.insertBefore(card, sec.children[2] || sec.firstChild);
+            window.syncV75CloudinaryInputs();
         };
-    } catch (e) {}
-};
 
-window.clearPermanentBanMarkerLocally = function() {
-    try {
-        localStorage.removeItem('zait_device_banned_flag');
-        localStorage.removeItem('zait_device_banned_reason');
-        let req = indexedDB.open('ZaitSecDB', 1);
-        req.onupgradeneeded = (e) => { e.target.result.createObjectStore('flags'); };
-        req.onsuccess = (e) => {
-            let tx = e.target.result.transaction('flags', 'readwrite');
-            tx.objectStore('flags').delete('banned');
+        window.syncV75CloudinaryInputs = function() {
+            var cInp = document.getElementById('v75-cloudinary-cloud');
+            var pInp = document.getElementById('v75-cloudinary-preset');
+            if (cInp) cInp.value = (typeof storeSettings !== 'undefined' && storeSettings && storeSettings.cloudinaryCloudName) ? storeSettings.cloudinaryCloudName : window.V75_DEFAULT_CLOUDINARY_CLOUD;
+            if (pInp) pInp.value = (typeof storeSettings !== 'undefined' && storeSettings && storeSettings.cloudinaryUploadPreset) ? storeSettings.cloudinaryUploadPreset : window.V75_DEFAULT_CLOUDINARY_PRESET;
         };
-    } catch (e) {}
-};
 
-window.applyDeviceBanLockoutUI = function(isBanned, reasonText) {
-    let screenEl = document.getElementById('zait-banned-lockout-screen');
-    let reasonEl = document.getElementById('zait-banned-reason-box');
-    if (!screenEl) return;
-    if (isBanned) {
-        if (reasonEl) reasonEl.textContent = 'سبب الحظر: ' + (reasonText || 'مخالفة شروط استخدام المتجر');
-        screenEl.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    } else {
-        screenEl.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-};
+        window.saveV75CloudinaryConfig = async function() {
+            var cn = ((document.getElementById('v75-cloudinary-cloud') || {}).value || '').trim();
+            var pr = ((document.getElementById('v75-cloudinary-preset') || {}).value || '').trim();
+            if (!cn || !pr) { if (window.showToast) window.showToast('يرجى كتابة Cloud Name و Upload Preset', 'error'); return; }
+            try {
+                await setDoc(doc(db, 'settings', 'main'), { cloudinaryCloudName: cn, cloudinaryUploadPreset: pr }, { merge: true });
+                if (typeof storeSettings !== 'undefined' && storeSettings) {
+                    storeSettings.cloudinaryCloudName = cn;
+                    storeSettings.cloudinaryUploadPreset = pr;
+                }
+                if (window.showToast) window.showToast('✅ تم حفظ وتفعيل رفع الفيديوهات حتى 100MB بنجاح!', 'success');
+            } catch (e) {}
+        };
 
-window.evaluateCurrentDeviceBanStatus = function() {
-    let myEmail = (currentUser && currentUser.email) ? currentUser.email.toLowerCase().trim() : '';
-    if (typeof SUPER_ADMINS !== 'undefined' && myEmail && SUPER_ADMINS.includes(myEmail)) {
-        window.applyDeviceBanLockoutUI(false);
-        return;
-    }
+        window.showChatVideoUploadProgress = function(role, pct, labelText) {
+            var id = 'v75-vid-prog-' + role;
+            var el = document.getElementById(id);
+            if (!el) {
+                var anchor = document.getElementById(role === 'admin' ? 'admin-chat-messages' : 'support-history-container');
+                if (anchor && anchor.parentNode) {
+                    el = document.createElement('div');
+                    el.id = id;
+                    el.className = 'v75-upload-progress-wrap';
+                    el.innerHTML = '<div id="' + id + '-lbl"></div><div class="v75-upload-progress-track"><div id="' + id + '-fill" class="v75-upload-progress-fill"></div></div>';
+                    anchor.parentNode.insertBefore(el, anchor.nextSibling);
+                }
+            }
+            if (!el) return;
+            if (pct < 0) { el.style.display = 'none'; return; }
+            el.style.display = 'block';
+            var lbl = document.getElementById(id + '-lbl');
+            var fill = document.getElementById(id + '-fill');
+            if (lbl) lbl.textContent = labelText || ('🎥 جاري رفع الفيديو: ' + pct + '%');
+            if (fill) fill.style.width = Math.min(100, Math.max(0, pct)) + '%';
+        };
 
-    let myUid = currentUser ? currentUser.uid : '';
-    let myPhone = (currentUser && currentUser.phoneNumber) ? currentUser.phoneNumber.replace(/\D/g, '') : (localStorage.getItem('zait_wheel_saved_phone') || '').replace(/\D/g, '');
-    let myVid = localStorage.getItem('zait_visitor_uid') || '';
-    let myFp = window.getZaitDeviceFingerprint();
+        window.uploadVideoToCloudinaryFree = function(file, cloudName, uploadPreset, onProgress) {
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                var fd = new FormData();
+                fd.append('file', file);
+                fd.append('upload_preset', uploadPreset);
+                xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + encodeURIComponent(cloudName) + '/video/upload', true);
+                xhr.upload.onprogress = function(ev) {
+                    if (ev.lengthComputable && onProgress) onProgress(Math.round((ev.loaded / ev.total) * 100));
+                };
+                xhr.onload = function() {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            var res = JSON.parse(xhr.responseText);
+                            if (res && res.secure_url) resolve(res.secure_url);
+                            else reject(new Error('No URL'));
+                        } catch (e) { reject(e); }
+                    } else reject(new Error('HTTP ' + xhr.status));
+                };
+                xhr.onerror = function() { reject(new Error('Network error')); };
+                xhr.send(fd);
+            });
+        };
 
-    let deletedList = window.v74SecurityState.deletedUids || [];
-    if (myUid && (deletedList.includes(myUid) || (myEmail && deletedList.includes(myEmail)))) {
-        signOut(auth).catch(() => {});
-        window.showToast('⚠️ تم حذف هذا الحساب من قِبل إدارة المتجر.', 'error');
-        return;
-    }
+        window.sendChatVideoAttachment = async function(senderRole, fileInp) {
+            if (!fileInp || !fileInp.files || fileInp.files.length === 0) return;
+            var file = fileInp.files[0];
+            if (file.size > 100 * 1024 * 1024) {
+                if (window.showToast) window.showToast('الحد الأقصى لحجم الفيديو هو 100 ميجابايت', 'error');
+                fileInp.value = '';
+                return;
+            }
+            var targetChatId = senderRole === 'customer'
+                ? ((typeof currentUser !== 'undefined' && currentUser) ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
+                : (typeof activeAdminChatId !== 'undefined' ? activeAdminChatId : null);
+            if (!targetChatId) {
+                if (window.showToast) window.showToast('يرجى تسجيل الدخول أولاً', 'error');
+                fileInp.value = '';
+                return;
+            }
+            var sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+            var cloudName = ((typeof storeSettings !== 'undefined' && storeSettings && storeSettings.cloudinaryCloudName) || window.V75_DEFAULT_CLOUDINARY_CLOUD).trim();
+            var uploadPreset = ((typeof storeSettings !== 'undefined' && storeSettings && storeSettings.cloudinaryUploadPreset) || window.V75_DEFAULT_CLOUDINARY_PRESET).trim();
 
-    let bannedList = window.v74SecurityState.bannedList || [];
-    let matchedBan = bannedList.find(b => {
-        if (!b) return false;
-        if (myUid && b.uid && b.uid === myUid) return true;
-        if (myEmail && b.email && b.email.toLowerCase() === myEmail) return true;
-        if (myPhone && b.phone && String(b.phone).replace(/\D/g, '') === myPhone && myPhone.length >= 9) return true;
-        if (myVid && b.visitorId && b.visitorId === myVid) return true;
-        if (myFp && b.deviceFp && b.deviceFp === myFp) return true;
-        return false;
-    });
+            if (window.showToast) window.showToast('🎥 جاري رفع الفيديو (' + sizeMB + ' ميجابايت)...', 'info');
+            window.showChatVideoUploadProgress(senderRole, 4, '🎥 جاري رفع الفيديو (' + sizeMB + ' MB): 0%');
+            var finalVideoUrl = '';
+            try {
+                finalVideoUrl = await window.uploadVideoToCloudinaryFree(file, cloudName, uploadPreset, function(pct) {
+                    window.showChatVideoUploadProgress(senderRole, pct, '🎥 جاري رفع الفيديو (' + sizeMB + ' MB): ' + pct + '%');
+                });
+            } catch (err) {
+                window.showChatVideoUploadProgress(senderRole, -1);
+                if (window.showToast) window.showToast('⚠️ تعذر رفع الفيديو الآن، تأكد من الاتصال وحاول مرة أخرى', 'error');
+                fileInp.value = '';
+                return;
+            }
 
-    if (matchedBan) {
-        window.savePermanentBanMarkerLocally(matchedBan.reason);
-        window.applyDeviceBanLockoutUI(true, matchedBan.reason);
-        if (currentUser) signOut(auth).catch(() => {});
-    } else {
-        if (window.v74SecurityDocLoaded) {
-            window.clearPermanentBanMarkerLocally();
-            window.applyDeviceBanLockoutUI(false);
-        } else if (localStorage.getItem('zait_device_banned_flag') === 'YES') {
-            window.applyDeviceBanLockoutUI(true, localStorage.getItem('zait_device_banned_reason'));
+            var nowIso = new Date().toISOString();
+            var sName = senderRole === 'admin'
+                ? (window.getCurrentStaffCleanName ? window.getCurrentStaffCleanName() : 'الإدارة')
+                : ((typeof currentUser !== 'undefined' && currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'عميل');
+
+            var msg = {
+                sender: senderRole, staffName: sName,
+                text: '🎥 مرفق فيديو (' + sizeMB + ' MB)',
+                videoDataUrl: finalVideoUrl, timestamp: nowIso
+            };
+            try {
+                var updateObj = { messages: arrayUnion(msg), lastUpdate: nowIso };
+                if (senderRole === 'customer') { updateObj.customerName = sName; updateObj.lastCustomerMsgAt = nowIso; updateObj.unreadByAdmin = true; }
+                else { updateObj.adminReplied = true; updateObj.unreadByAdmin = false; }
+                await setDoc(doc(db, 'chats', targetChatId), updateObj, { merge: true });
+                if (window.showToast) window.showToast('🎥 تم إرسال الفيديو في المحادثة بنجاح!', 'success');
+            } catch (e) {}
+            setTimeout(function() { window.showChatVideoUploadProgress(senderRole, -1); }, 1000);
+            fileInp.value = '';
+        };
+
+        // ---------------------------------------------------------------------
+        // 4. نظام الحظر الصارم من الهاتف والحساب + حذف الحسابات نهائياً (بدون getDocs!)
+        // ---------------------------------------------------------------------
+        window.v75SecurityState = {
+            bannedList: [], deletedUids: [], allUsers: [], currentSubTab: 'all', loaded: false
+        };
+        window._v75UsersSecUnsub = null;
+
+        window.getZaitDeviceFingerprint = function() {
+            var saved = localStorage.getItem('zait_device_fp_v75');
+            if (saved) return saved;
+            var raw = [
+                navigator.userAgent || '',
+                screen.width + 'x' + screen.height,
+                (Intl.DateTimeFormat().resolvedOptions().timeZone || ''),
+                navigator.language || ''
+            ].join('|');
+            var hash = 0;
+            for (var i = 0; i < raw.length; i++) {
+                hash = ((hash << 5) - hash) + raw.charCodeAt(i);
+                hash |= 0;
+            }
+            var fp = 'DEV_' + Math.abs(hash).toString(36).toUpperCase() + '_' + (localStorage.getItem('zait_visitor_uid') || Date.now().toString(36)).slice(-5).toUpperCase();
+            localStorage.setItem('zait_device_fp_v75', fp);
+            return fp;
+        };
+
+        window.applyDeviceBanLockoutUI = function(isBanned, reasonText) {
+            var screenEl = document.getElementById('zait-banned-lockout-screen');
+            var reasonEl = document.getElementById('zait-banned-reason-box');
+            if (!screenEl) return;
+            if (isBanned) {
+                if (reasonEl) reasonEl.textContent = 'سبب الحظر: ' + (reasonText || 'مخالفة شروط استخدام المتجر');
+                screenEl.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            } else {
+                screenEl.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        };
+
+        window.evaluateCurrentDeviceBanStatus = function() {
+            try {
+                var u = (typeof currentUser !== 'undefined') ? currentUser : null;
+                var myEmail = (u && u.email) ? u.email.toLowerCase().trim() : '';
+                if (typeof SUPER_ADMINS !== 'undefined' && myEmail && SUPER_ADMINS.includes(myEmail)) {
+                    window.applyDeviceBanLockoutUI(false);
+                    return;
+                }
+                var myUid = u ? u.uid : '';
+                var myPhone = (u && u.phoneNumber) ? u.phoneNumber.replace(/\D/g, '') : (localStorage.getItem('zait_wheel_saved_phone') || '').replace(/\D/g, '');
+                var myVid = localStorage.getItem('zait_visitor_uid') || '';
+                var myFp = window.getZaitDeviceFingerprint();
+
+                var deletedList = window.v75SecurityState.deletedUids || [];
+                if (myUid && (deletedList.includes(myUid) || (myEmail && deletedList.includes(myEmail)))) {
+                    if (typeof signOut === 'function' && typeof auth !== 'undefined') signOut(auth).catch(function() {});
+                    if (window.showToast) window.showToast('⚠️ تم حذف هذا الحساب من قِبل إدارة المتجر.', 'error');
+                    return;
+                }
+
+                var bannedList = window.v75SecurityState.bannedList || [];
+                var matchedBan = bannedList.find(function(b) {
+                    if (!b) return false;
+                    if (myUid && b.uid && b.uid === myUid) return true;
+                    if (myEmail && b.email && b.email.toLowerCase() === myEmail) return true;
+                    if (myPhone && b.phone && String(b.phone).replace(/\D/g, '') === myPhone && myPhone.length >= 9) return true;
+                    if (myVid && b.visitorId && b.visitorId === myVid) return true;
+                    if (myFp && b.deviceFp && b.deviceFp === myFp) return true;
+                    return false;
+                });
+
+                if (matchedBan) {
+                    localStorage.setItem('zait_device_banned_flag', 'YES');
+                    localStorage.setItem('zait_device_banned_reason', matchedBan.reason || 'مخالفة سياسة المتجر');
+                    window.applyDeviceBanLockoutUI(true, matchedBan.reason);
+                    if (u && typeof signOut === 'function' && typeof auth !== 'undefined') signOut(auth).catch(function() {});
+                } else if (window.v75SecurityState.loaded) {
+                    localStorage.removeItem('zait_device_banned_flag');
+                    localStorage.removeItem('zait_device_banned_reason');
+                    window.applyDeviceBanLockoutUI(false);
+                }
+            } catch (e) {}
+        };
+
+        if (typeof onSnapshot === 'function' && typeof doc === 'function' && typeof db !== 'undefined') {
+            try {
+                onSnapshot(doc(db, 'settings', 'security'), function(snap) {
+                    window.v75SecurityState.loaded = true;
+                    if (snap.exists()) {
+                        var d = snap.data();
+                        window.v75SecurityState.bannedList = Array.isArray(d.bannedList) ? d.bannedList : [];
+                        window.v75SecurityState.deletedUids = Array.isArray(d.deletedUids) ? d.deletedUids : [];
+                    } else {
+                        window.v75SecurityState.bannedList = [];
+                        window.v75SecurityState.deletedUids = [];
+                    }
+                    window.evaluateCurrentDeviceBanStatus();
+                    if (typeof isCurrentUserAdmin !== 'undefined' && isCurrentUserAdmin) window.renderAdminSecurityLists();
+                }, function() {});
+            } catch (e) {}
         }
-    }
-};
 
-window.v74SecurityDocLoaded = false;
-onSnapshot(doc(db, 'settings', 'security'), (snap) => {
-    window.v74SecurityDocLoaded = true;
-    if (snap.exists()) {
-        let d = snap.data();
-        window.v74SecurityState.bannedList = Array.isArray(d.bannedList) ? d.bannedList : [];
-        window.v74SecurityState.deletedUids = Array.isArray(d.deletedUids) ? d.deletedUids : [];
-    } else {
-        window.v74SecurityState.bannedList = [];
-        window.v74SecurityState.deletedUids = [];
-    }
-    window.evaluateCurrentDeviceBanStatus();
-    if (isCurrentUserAdmin) window.renderAdminSecurityLists();
-}, () => {});
-
-onAuthStateChanged(auth, async (u) => {
-    if (u) {
-        let fp = window.getZaitDeviceFingerprint();
-        let vid = localStorage.getItem('zait_visitor_uid') || '';
-        try {
-            await setDoc(doc(db, 'users', u.uid), {
-                deviceFp: fp,
-                visitorId: vid,
-                lastDeviceSummary: window.detectVisitorDeviceDetails ? window.detectVisitorDeviceDetails().deviceSummary : 'هاتف'
-            }, { merge: true });
-        } catch (e) {}
-    }
-    setTimeout(window.evaluateCurrentDeviceBanStatus, 300);
-});
-
-window.switchSecuritySubTab = function(tab) {
-    window.v74SecurityState.currentSubTab = tab;
-    let bAll = document.getElementById('sec-tab-all-btn');
-    let bBan = document.getElementById('sec-tab-banned-btn');
-    let lAll = document.getElementById('sec-all-users-list');
-    let lBan = document.getElementById('sec-banned-users-list');
-    if (tab === 'all') {
-        if (lAll) lAll.style.display = 'block';
-        if (lBan) lBan.style.display = 'none';
-        if (bAll) { bAll.className = 'btn'; bAll.style.background = 'var(--primary)'; bAll.style.color = '#fff'; }
-        if (bBan) { bBan.className = 'btn btn-outline'; bBan.style.background = 'transparent'; bBan.style.color = '#dc2626'; }
-    } else {
-        if (lAll) lAll.style.display = 'none';
-        if (lBan) lBan.style.display = 'block';
-        if (bBan) { bBan.className = 'btn btn-danger'; bBan.style.background = '#dc2626'; bBan.style.color = '#fff'; }
-        if (bAll) { bAll.className = 'btn btn-outline'; bAll.style.background = 'transparent'; bAll.style.color = 'var(--primary)'; }
-    }
-    window.renderAdminSecurityLists();
-};
-
-window.loadAdminSecurityPanel = async function() {
-    if (!isCurrentUserAdmin) return;
-    try {
-        let snap = await getDocs(collection(db, 'users'));
-        let arr = [];
-        snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
-        arr.sort((a, b) => (Number(a.customerSeqNumber || 9999)) - (Number(b.customerSeqNumber || 9999)));
-        window.v74SecurityState.allUsers = arr;
-        window.renderAdminSecurityLists();
-    } catch (e) {}
-};
-
-window.renderAdminSecurityLists = function() {
-    let q = ((document.getElementById('sec-search-inp') || {}).value || '').trim().toLowerCase();
-    let allUsers = window.v74SecurityState.allUsers || [];
-    let bannedList = window.v74SecurityState.bannedList || [];
-
-    let cAll = document.getElementById('sec-all-count'); if (cAll) cAll.textContent = allUsers.length;
-    let cBan = document.getElementById('sec-banned-count'); if (cBan) cBan.textContent = bannedList.length;
-
-    let lAll = document.getElementById('sec-all-users-list');
-    if (lAll) {
-        let filtered = allUsers.filter(u => {
-            if (!q) return true;
-            let hay = ((u.name || '') + ' ' + (u.email || '') + ' ' + (u.phone1 || '') + ' ' + (u.customerSeqNumber || '')).toLowerCase();
-            return hay.includes(q);
-        });
-        if (filtered.length === 0) {
-            lAll.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">لا توجد حسابات مطابقة.</p>';
-        } else {
-            lAll.innerHTML = filtered.map(u => {
-                let isSuper = typeof SUPER_ADMINS !== 'undefined' && u.email && SUPER_ADMINS.includes(u.email.toLowerCase());
-                let isAlreadyBanned = bannedList.some(b => (b.uid && b.uid === u.id) || (b.email && u.email && b.email.toLowerCase() === u.email.toLowerCase()));
-                let seqTxt = u.customerSeqNumber ? '🆔 عميل #' + u.customerSeqNumber : '';
-                let cleanEmail = (u.email || '').replace(/'/g, '');
-                let actions = isSuper
-                    ? '<span style="color:#16a34a; font-weight:bold; font-size:0.8rem;">👑 مؤسس المتجر (محمي)</span>'
-                    : '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">' +
-                        (isAlreadyBanned
-                            ? '<button type="button" class="btn" style="background:#16a34a; padding:5px 12px; font-size:0.78rem;" onclick="window.unbanUserByUidOrEmail(\'' + u.id + '\', \'' + cleanEmail + '\')">✅ فك الحظر</button>'
-                            : '<button type="button" class="btn btn-danger" style="padding:5px 12px; font-size:0.78rem;" onclick="window.banUserAndDevicePermanently(\'' + u.id + '\')">🚫 حظر الحساب وهاتفه نهائياً</button>') +
-                        '<button type="button" class="btn btn-outline" style="border-color:#991b1b; color:#991b1b; padding:5px 12px; font-size:0.78rem;" onclick="window.deleteUserAccountPermanently(\'' + u.id + '\')">🗑️ حذف الحساب نهائياً</button>' +
-                      '</div>';
-                return '<div class="security-user-card ' + (isAlreadyBanned ? 'is-banned-card' : '') + '">' +
-                    '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">' +
-                        '<strong style="color:var(--primary); font-size:0.95rem;">👤 ' + window.escapeHTML(u.name || 'عميل') + ' ' + seqTxt + '</strong>' +
-                        (isAlreadyBanned ? '<span style="background:#dc2626; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.74rem; font-weight:bold;">🚫 محظور حالياً</span>' : '') +
-                    '</div>' +
-                    '<div style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;">📧 ' + window.escapeHTML(u.email || 'بدون إيميل') + ' &nbsp;|&nbsp; 📞 ' + window.escapeHTML(u.phone1 || 'بدون هاتف') + '</div>' +
-                    '<div style="font-size:0.76rem; color:var(--text-muted); margin-top:2px;">📱 الجهاز: ' + window.escapeHTML(u.lastDeviceSummary || 'مسجل') + (u.deviceFp ? ' • 🔑 ' + window.escapeHTML(u.deviceFp) : '') + '</div>' +
-                    actions +
-                '</div>';
-            }).join('');
+        if (typeof onAuthStateChanged === 'function' && typeof auth !== 'undefined') {
+            try {
+                onAuthStateChanged(auth, function(u) {
+                    if (u) {
+                        var fp = window.getZaitDeviceFingerprint();
+                        var vid = localStorage.getItem('zait_visitor_uid') || '';
+                        try {
+                            setDoc(doc(db, 'users', u.uid), {
+                                deviceFp: fp,
+                                visitorId: vid,
+                                lastDeviceSummary: window.detectVisitorDeviceDetails ? window.detectVisitorDeviceDetails().deviceSummary : 'هاتف'
+                            }, { merge: true }).catch(function() {});
+                        } catch (e) {}
+                    }
+                    setTimeout(function() {
+                        window.applyV75HeaderAndNavFixes();
+                        window.evaluateCurrentDeviceBanStatus();
+                    }, 300);
+                });
+            } catch (e) {}
         }
-    }
 
-    let lBan = document.getElementById('sec-banned-users-list');
-    if (lBan) {
-        let fBan = bannedList.filter(b => {
-            if (!q) return true;
-            return JSON.stringify(b).toLowerCase().includes(q);
-        });
-        if (fBan.length === 0) {
-            lBan.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">✅ لا يوجد أشخاص محظورون حالياً.</p>';
-        } else {
-            lBan.innerHTML = fBan.map((b, idx) => {
-                let dStr = b.bannedAt ? new Date(b.bannedAt).toLocaleString('ar-EG') : '';
-                return '<div class="security-user-card is-banned-card">' +
-                    '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">' +
-                        '<div>' +
-                            '<strong style="color:#991b1b; font-size:0.95rem;">🚫 ' + window.escapeHTML(b.name || b.phone || b.email || 'جهاز محظور') + '</strong>' +
-                            '<div style="font-size:0.8rem; color:var(--text-color); margin-top:3px;">📧 ' + window.escapeHTML(b.email || '-') + ' | 📞 ' + window.escapeHTML(b.phone || '-') + '</div>' +
-                            '<div style="font-size:0.78rem; color:#b91c1c; margin-top:2px;">السبب: ' + window.escapeHTML(b.reason || 'مخالفة سياسة المتجر') + ' • 🕒 ' + dStr + '</div>' +
-                        '</div>' +
-                        '<button type="button" class="btn" style="background:#16a34a; padding:6px 14px; font-size:0.8rem;" onclick="window.unbanByIndex(' + idx + ')">✅ فك الحظر الآن</button>' +
-                    '</div>' +
-                '</div>';
-            }).join('');
+        window.switchSecuritySubTab = function(tab) {
+            window.v75SecurityState.currentSubTab = tab;
+            var bAll = document.getElementById('sec-tab-all-btn');
+            var bBan = document.getElementById('sec-tab-banned-btn');
+            var lAll = document.getElementById('sec-all-users-list');
+            var lBan = document.getElementById('sec-banned-users-list');
+            if (tab === 'all') {
+                if (lAll) lAll.style.display = 'block';
+                if (lBan) lBan.style.display = 'none';
+                if (bAll) { bAll.className = 'btn'; bAll.style.background = 'var(--primary)'; bAll.style.color = '#fff'; }
+                if (bBan) { bBan.className = 'btn btn-outline'; bBan.style.background = 'transparent'; bBan.style.color = '#dc2626'; }
+            } else {
+                if (lAll) lAll.style.display = 'none';
+                if (lBan) lBan.style.display = 'block';
+                if (bBan) { bBan.className = 'btn btn-danger'; bBan.style.background = '#dc2626'; bBan.style.color = '#fff'; }
+                if (bAll) { bAll.className = 'btn btn-outline'; bAll.style.background = 'transparent'; bAll.style.color = 'var(--primary)'; }
+            }
+            window.renderAdminSecurityLists();
+        };
+
+        window.loadAdminSecurityPanel = function() {
+            if (!(typeof isCurrentUserAdmin !== 'undefined' && isCurrentUserAdmin)) return;
+            if (window._v75UsersSecUnsub) { try { window._v75UsersSecUnsub(); } catch (e) {} }
+            try {
+                window._v75UsersSecUnsub = onSnapshot(collection(db, 'users'), function(snap) {
+                    var arr = [];
+                    snap.forEach(function(d) { arr.push(Object.assign({ id: d.id }, d.data())); });
+                    arr.sort(function(a, b) { return (Number(a.customerSeqNumber || 9999)) - (Number(b.customerSeqNumber || 9999)); });
+                    window.v75SecurityState.allUsers = arr;
+                    window.renderAdminSecurityLists();
+                });
+            } catch (e) {}
+        };
+
+        window.renderAdminSecurityLists = function() {
+            var q = ((document.getElementById('sec-search-inp') || {}).value || '').trim().toLowerCase();
+            var allUsers = window.v75SecurityState.allUsers || [];
+            var bannedList = window.v75SecurityState.bannedList || [];
+            var cAll = document.getElementById('sec-all-count'); if (cAll) cAll.textContent = allUsers.length;
+            var cBan = document.getElementById('sec-banned-count'); if (cBan) cBan.textContent = bannedList.length;
+
+            var lAll = document.getElementById('sec-all-users-list');
+            if (lAll) {
+                var filtered = allUsers.filter(function(u) {
+                    if (!q) return true;
+                    return ((u.name || '') + ' ' + (u.email || '') + ' ' + (u.phone1 || '') + ' ' + (u.customerSeqNumber || '')).toLowerCase().includes(q);
+                });
+                lAll.innerHTML = filtered.length === 0
+                    ? '<p style="text-align:center; color:var(--text-muted); padding:20px;">لا توجد حسابات مطابقة.</p>'
+                    : filtered.map(function(u) {
+                        var isSuper = typeof SUPER_ADMINS !== 'undefined' && u.email && SUPER_ADMINS.includes(u.email.toLowerCase());
+                        var isBanned = bannedList.some(function(b) { return (b.uid && b.uid === u.id) || (b.email && u.email && b.email.toLowerCase() === u.email.toLowerCase()); });
+                        var seqTxt = u.customerSeqNumber ? '🆔 عميل #' + u.customerSeqNumber : '';
+                        var cleanEmail = (u.email || '').replace(/'/g, '');
+                        var actions = isSuper
+                            ? '<span style="color:#16a34a; font-weight:bold; font-size:0.8rem;">👑 مؤسس المتجر (محمي)</span>'
+                            : '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">' +
+                                (isBanned
+                                    ? '<button type="button" class="btn" style="background:#16a34a; padding:5px 12px; font-size:0.78rem;" onclick="window.unbanUserByUidOrEmail(\'' + u.id + '\', \'' + cleanEmail + '\')">✅ فك الحظر</button>'
+                                    : '<button type="button" class="btn btn-danger" style="padding:5px 12px; font-size:0.78rem;" onclick="window.banUserAndDevicePermanently(\'' + u.id + '\')">🚫 حظر الحساب وهاتفه نهائياً</button>') +
+                                '<button type="button" class="btn btn-outline" style="border-color:#991b1b; color:#991b1b; padding:5px 12px; font-size:0.78rem;" onclick="window.deleteUserAccountPermanently(\'' + u.id + '\')">🗑️ حذف الحساب نهائياً</button>' +
+                              '</div>';
+                        return '<div class="security-user-card ' + (isBanned ? 'is-banned-card' : '') + '">' +
+                            '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">' +
+                                '<strong style="color:var(--primary); font-size:0.95rem;">👤 ' + window.escapeHTML(u.name || 'عميل') + ' ' + seqTxt + '</strong>' +
+                                (isBanned ? '<span style="background:#dc2626; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.74rem; font-weight:bold;">🚫 محظور حالياً</span>' : '') +
+                            '</div>' +
+                            '<div style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;">📧 ' + window.escapeHTML(u.email || 'بدون إيميل') + ' | 📞 ' + window.escapeHTML(u.phone1 || 'بدون هاتف') + '</div>' +
+                            '<div style="font-size:0.76rem; color:var(--text-muted); margin-top:2px;">📱 الجهاز: ' + window.escapeHTML(u.lastDeviceSummary || 'مسجل') + (u.deviceFp ? ' • 🔑 ' + window.escapeHTML(u.deviceFp) : '') + '</div>' +
+                            actions +
+                        '</div>';
+                    }).join('');
+            }
+
+            var lBan = document.getElementById('sec-banned-users-list');
+            if (lBan) {
+                var fBan = bannedList.filter(function(b) { return !q || JSON.stringify(b).toLowerCase().includes(q); });
+                lBan.innerHTML = fBan.length === 0
+                    ? '<p style="text-align:center; color:var(--text-muted); padding:20px;">✅ لا يوجد أشخاص محظورون حالياً.</p>'
+                    : fBan.map(function(b, idx) {
+                        var dStr = b.bannedAt ? new Date(b.bannedAt).toLocaleString('ar-EG') : '';
+                        return '<div class="security-user-card is-banned-card">' +
+                            '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">' +
+                                '<div>' +
+                                    '<strong style="color:#991b1b; font-size:0.95rem;">🚫 ' + window.escapeHTML(b.name || b.phone || b.email || 'جهاز محظور') + '</strong>' +
+                                    '<div style="font-size:0.8rem; margin-top:3px;">📧 ' + window.escapeHTML(b.email || '-') + ' | 📞 ' + window.escapeHTML(b.phone || '-') + '</div>' +
+                                    '<div style="font-size:0.78rem; color:#b91c1c; margin-top:2px;">السبب: ' + window.escapeHTML(b.reason || 'مخالفة سياسة المتجر') + ' • 🕒 ' + dStr + '</div>' +
+                                '</div>' +
+                                '<button type="button" class="btn" style="background:#16a34a; padding:6px 14px; font-size:0.8rem;" onclick="window.unbanByIndex(' + idx + ')">✅ فك الحظر الآن</button>' +
+                            '</div>' +
+                        '</div>';
+                    }).join('');
+            }
+        };
+
+        window.banUserAndDevicePermanently = async function(uid) {
+            var u = (window.v75SecurityState.allUsers || []).find(function(x) { return x.id === uid; });
+            if (!u) {
+                try { var s = await getDoc(doc(db, 'users', uid)); if (s.exists()) u = Object.assign({ id: s.id }, s.data()); } catch (e) {}
+            }
+            if (!u) return;
+            var reason = prompt('🚫 اكتب سبب حظر العميل (' + (u.name || u.email || u.phone1) + ') وهاتفه من دخول الموقع:', 'مخالفة شروط المتجر / طلبات وهمية');
+            if (reason === null) return;
+            var newEntry = {
+                id: 'ban_' + Date.now(), uid: u.id, name: u.name || 'عميل محظور',
+                email: (u.email || '').toLowerCase(), phone: String(u.phone1 || '').replace(/\D/g, ''),
+                visitorId: u.visitorId || '', deviceFp: u.deviceFp || '',
+                reason: reason.trim() || 'مخالفة شروط الاستخدام', bannedAt: new Date().toISOString()
+            };
+            var list = (window.v75SecurityState.bannedList || []).slice();
+            list.unshift(newEntry);
+            try {
+                await setDoc(doc(db, 'settings', 'security'), { bannedList: list }, { merge: true });
+                if (window.showToast) window.showToast('🚫 تم حظر الشخص وهاتفه نهائياً!', 'success');
+            } catch (e) { if (window.showToast) window.showToast('تعذر حفظ الحظر', 'error'); }
+        };
+
+        window.executeManualBanFromPanel = async function() {
+            var raw = ((document.getElementById('sec-manual-ban-id') || {}).value || '').trim();
+            var reason = ((document.getElementById('sec-manual-ban-reason') || {}).value || '').trim() || 'مخالفة سياسة المتجر';
+            if (!raw) { if (window.showToast) window.showToast('يرجى كتابة رقم الهاتف أو الإيميل المراد حظره', 'error'); return; }
+            var isEmail = raw.includes('@');
+            var list = (window.v75SecurityState.bannedList || []).slice();
+            list.unshift({
+                id: 'ban_' + Date.now(), uid: '', name: raw,
+                email: isEmail ? raw.toLowerCase() : '', phone: !isEmail ? raw.replace(/\D/g, '') : '',
+                visitorId: raw.startsWith('vis_') ? raw : '', deviceFp: raw.startsWith('DEV_') ? raw : '',
+                reason: reason, bannedAt: new Date().toISOString()
+            });
+            try {
+                await setDoc(doc(db, 'settings', 'security'), { bannedList: list }, { merge: true });
+                var inp = document.getElementById('sec-manual-ban-id'); if (inp) inp.value = '';
+                if (window.showToast) window.showToast('🚫 تم تنفيذ الحظر اليدوي بنجاح!', 'success');
+            } catch (e) {}
+        };
+
+        window.unbanByIndex = async function(idx) {
+            var list = (window.v75SecurityState.bannedList || []).slice();
+            if (idx < 0 || idx >= list.length) return;
+            list.splice(idx, 1);
+            try {
+                await setDoc(doc(db, 'settings', 'security'), { bannedList: list }, { merge: true });
+                if (window.showToast) window.showToast('✅ تم فك الحظر بنجاح!', 'success');
+            } catch (e) {}
+        };
+
+        window.unbanUserByUidOrEmail = async function(uid, email) {
+            var list = (window.v75SecurityState.bannedList || []).filter(function(b) {
+                if (uid && b.uid === uid) return false;
+                if (email && b.email && b.email.toLowerCase() === email.toLowerCase()) return false;
+                return true;
+            });
+            try {
+                await setDoc(doc(db, 'settings', 'security'), { bannedList: list }, { merge: true });
+                if (window.showToast) window.showToast('✅ تم فك الحظر عن هذا الحساب وهاتفه بنجاح!', 'success');
+            } catch (e) {}
+        };
+
+        window.deleteUserAccountPermanently = async function(uid) {
+            var u = (window.v75SecurityState.allUsers || []).find(function(x) { return x.id === uid; });
+            var label = u ? (u.name || u.email || uid) : uid;
+            if (!confirm('⚠️ هل أنت متأكد من حذف حساب (' + label + ') نهائياً من الموقع وطرده فوراً؟')) return;
+            try {
+                await deleteDoc(doc(db, 'users', uid));
+                var delList = (window.v75SecurityState.deletedUids || []).slice();
+                if (!delList.includes(uid)) delList.push(uid);
+                if (u && u.email && !delList.includes(u.email.toLowerCase())) delList.push(u.email.toLowerCase());
+                await setDoc(doc(db, 'settings', 'security'), { deletedUids: delList }, { merge: true });
+                window.v75SecurityState.allUsers = (window.v75SecurityState.allUsers || []).filter(function(x) { return x.id !== uid; });
+                window.renderAdminSecurityLists();
+                if (window.showToast) window.showToast('🗑️ تم حذف حساب (' + label + ') نهائياً!', 'success');
+            } catch (e) { if (window.showToast) window.showToast('حدث خطأ أثناء حذف الحساب', 'error'); }
+        };
+
+        // إضافة أزرار الحظر وحذف الحساب داخل قائمة العملاء
+        window.loadAdminUsers = function() {
+            if (typeof adminUsersUnsubscribe !== 'undefined' && adminUsersUnsubscribe) {
+                try { adminUsersUnsubscribe(); } catch (e) {}
+            }
+            adminUsersUnsubscribe = onSnapshot(collection(db, 'users'), function(snapshot) {
+                var container = document.getElementById('admin-users-container');
+                if (!container) return;
+                var usersList = [];
+                snapshot.forEach(function(docSnap) { usersList.push(Object.assign({ id: docSnap.id }, docSnap.data())); });
+                window.v75SecurityState.allUsers = usersList;
+                usersList.sort(function(a, b) { return (Number(a.customerSeqNumber || 9999)) - (Number(b.customerSeqNumber || 9999)); });
+
+                if (usersList.length === 0) {
+                    container.innerHTML = '<h3 style="text-align:center; color:var(--text-muted);">لا يوجد عملاء مسجلين.</h3>';
+                    return;
+                }
+                var showImpBtn = (typeof storeSettings === 'undefined') || storeSettings.enableImpersonateInUsers !== false;
+                var showSeq = (typeof storeSettings === 'undefined') || storeSettings.enableCustomerSeqId !== false;
+                var html = '';
+                usersList.forEach(function(u, idx) {
+                    var seqNum = u.customerSeqNumber || (idx + 1);
+                    var seqBadgeHtml = showSeq ? '<span class="cust-seq-id-badge" style="margin-right:6px;">🆔 عميل #' + seqNum + '</span>' : '';
+                    var loginDate = u.lastLogin ? new Date(u.lastLogin).toLocaleString('ar-EG') : 'غير محدد';
+                    var safeName = (u.name || 'عميل').replace(/'/g, '');
+                    var isSuper = typeof SUPER_ADMINS !== 'undefined' && u.email && SUPER_ADMINS.includes(u.email.toLowerCase());
+                    var impBtnHtml = showImpBtn
+                        ? '<button type="button" class="impersonate-user-btn" onclick="event.stopPropagation(); window.loginAsCustomerAccount(\'' + u.id + '\', \'' + safeName + '\')">🔑 دخول لحساب العميل</button>'
+                        : '';
+                    var secBtnsHtml = isSuper ? '' :
+                        '<button type="button" class="btn btn-danger" style="padding:5px 10px; font-size:0.76rem;" onclick="event.stopPropagation(); window.banUserAndDevicePermanently(\'' + u.id + '\')">🚫 حظر الهاتف</button>' +
+                        '<button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.76rem; border-color:#991b1b; color:#991b1b;" onclick="event.stopPropagation(); window.deleteUserAccountPermanently(\'' + u.id + '\')">🗑️ حذف الحساب</button>';
+                    html += '<div class="admin-msg-card" style="border-right: 4px solid #6f42c1; cursor:pointer;" onclick="window.showUserHistory(\'' + u.id + '\', \'' + safeName + '\')">' +
+                        '<h4 style="margin:0 0 5px 0; color:var(--primary);">👤 ' + window.escapeHTML(u.name || 'عميل') + ' ' + seqBadgeHtml + '</h4>' +
+                        '<p style="margin: 3px 0;"><strong>التواصل:</strong> ' + window.escapeHTML(u.email || u.phone1 || 'غير متوفر') + (u.phone1 && u.email ? ' | 📞 ' + window.escapeHTML(u.phone1) : '') + '</p>' +
+                        '<p style="margin: 3px 0;"><strong>المحافظة:</strong> ' + window.escapeHTML(u.gov || 'غير محدد') + ' - ' + window.escapeHTML(u.city || '') + '</p>' +
+                        '<p style="margin: 3px 0; color:var(--text-muted); font-size:0.82rem;"><strong>آخر دخول:</strong> ' + loginDate + '</p>' +
+                        '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">' + impBtnHtml + secBtnsHtml + '</div>' +
+                    '</div>';
+                });
+                container.innerHTML = html;
+            });
+        };
+
+        // ---------------------------------------------------------------------
+        // 5. عرض صور المنتجات داخل صفحة "طلباتي" للعميل (طراز أمازون ونون)
+        // ---------------------------------------------------------------------
+        window.getV75OrderProductImg = function(item) {
+            if (item && item.imageUrl && !item.imageUrl.includes('placeholder')) return item.imageUrl;
+            var list = (typeof products !== 'undefined' && Array.isArray(products)) ? products : [];
+            var p = list.find(function(x) { return x.id === item.id || x.name === item.name; });
+            if (p) {
+                if (p.images && p.images[0]) return p.images[0];
+                if (p.imageUrl) return p.imageUrl;
+            }
+            return '1000392409.jpeg';
+        };
+
+        if (typeof window.openCustomerOrderModal === 'function') {
+            window._v75OrigOpenCustOrderModal = window.openCustomerOrderModal;
+            window.openCustomerOrderModal = function(orderId) {
+                window._v75OrigOpenCustOrderModal(orderId);
+                try {
+                    var order = (window.customerOrdersArray || []).find(function(o) { return o.id === orderId; });
+                    var com = document.getElementById('com-content');
+                    if (!order || !com) return;
+                    var ul = com.querySelector('ul');
+                    if (ul && order.items) {
+                        ul.style.padding = '0';
+                        ul.innerHTML = order.items.map(function(item) {
+                            var imgUrl = window.getV75OrderProductImg(item);
+                            return '<li style="list-style:none; display:flex; align-items:center; gap:10px; margin-bottom:8px; background:var(--panel-bg); padding:8px; border-radius:10px; border:1px solid var(--border-color);">' +
+                                '<img src="' + imgUrl + '" onerror="this.src=\'1000392409.jpeg\'" style="width:48px; height:48px; border-radius:8px; object-fit:cover; border:1px solid var(--secondary);">' +
+                                '<div style="flex:1;"><strong style="color:var(--primary); display:block;">' + window.escapeHTML(item.name) + '</strong>' +
+                                '<span style="font-size:0.84rem; color:var(--text-muted);">الكمية: <b>' + item.quantity + '</b> × ' + item.price + ' ج = <b style="color:var(--secondary);">' + (item.price * item.quantity) + ' ج</b></span></div>' +
+                            '</li>';
+                        }).join('');
+                    }
+                } catch (e) {}
+            };
         }
-    }
-};
 
-window.banUserAndDevicePermanently = async function(uid) {
-    let u = (window.v74SecurityState.allUsers || []).find(x => x.id === uid);
-    if (!u) {
-        try {
-            let s = await getDoc(doc(db, 'users', uid));
-            if (s.exists()) u = { id: s.id, ...s.data() };
-        } catch (e) {}
-    }
-    if (!u) return;
-    let reason = prompt('🚫 اكتب سبب حظر العميل (' + (u.name || u.email || u.phone1) + ') وهاتفه من دخول الموقع:', 'مخالفة شروط المتجر / طلبات وهمية');
-    if (reason === null) return;
-
-    let newEntry = {
-        id: 'ban_' + Date.now(),
-        uid: u.id,
-        name: u.name || 'عميل محظور',
-        email: (u.email || '').toLowerCase(),
-        phone: String(u.phone1 || '').replace(/\D/g, ''),
-        visitorId: u.visitorId || '',
-        deviceFp: u.deviceFp || '',
-        reason: reason.trim() || 'مخالفة شروط الاستخدام',
-        bannedAt: new Date().toISOString()
-    };
-    let list = [...(window.v74SecurityState.bannedList || [])];
-    list.unshift(newEntry);
-    try {
-        await setDoc(doc(db, 'settings', 'security'), { bannedList: list }, { merge: true });
-        if (window.recordAdminAuditLog) window.recordAdminAuditLog('حظر نهائي للحساب والهاتف: ' + newEntry.name);
-        window.showToast('🚫 تم حظر الشخص وهاتفه نهائياً! لن يتمكن من دخول المتجر من هاتفه.', 'success');
-    } catch (e) {
-        window.showToast('تعذر حفظ الحظر، تأكد من قواعد Firestore', 'error');
-    }
-};
-
-window.executeManualBanFromPanel = async function() {
-    let raw = ((document.getElementById('sec-manual-ban-id') || {}).value || '').trim();
-    let reason = ((document.getElementById('sec-manual-ban-reason') || {}).value || '').trim() || 'مخالفة سياسة المتجر';
-    if (!raw) {
-        window.showToast('يرجى كتابة رقم الهاتف أو الإيميل المراد حظره', 'error');
-        return;
-    }
-    let isEmail = raw.includes('@');
-    let newEntry = {
-        id: 'ban_' + Date.now(),
-        uid: '',
-        name: raw,
-        email: isEmail ? raw.toLowerCase() : '',
-        phone: !isEmail ? raw.replace(/\D/g, '') : '',
-        visitorId: raw.startsWith('vis_') ? raw : '',
-        deviceFp: raw.startsWith('DEV_') ? raw : '',
-        reason: reason,
-        bannedAt: new Date().toISOString()
-    };
-    let list = [...(window.v74SecurityState.bannedList || [])];
-    list.unshift(newEntry);
-    try {
-        await setDoc(doc(db, 'settings', 'security'), { bannedList: list }, { merge: true });
-        let inp = document.getElementById('sec-manual-ban-id'); if (inp) inp.value = '';
-        window.showToast('🚫 تم تنفيذ الحظر اليدوي بنجاح!', 'success');
-    } catch (e) {
-        window.showToast('حدث خطأ أثناء تنفيذ الحظر', 'error');
-    }
-};
-
-window.unbanByIndex = async function(idx) {
-    let list = [...(window.v74SecurityState.bannedList || [])];
-    if (idx < 0 || idx >= list.length) return;
-    list.splice(idx, 1);
-    try {
-        await setDoc(doc(db, 'settings', 'security'), { bannedList: list }, { merge: true });
-        window.showToast('✅ تم فك الحظر بنجاح! يمكنه الدخول للمتجر الآن.', 'success');
-    } catch (e) {}
-};
-
-window.unbanUserByUidOrEmail = async function(uid, email) {
-    let list = (window.v74SecurityState.bannedList || []).filter(b => {
-        if (uid && b.uid === uid) return false;
-        if (email && b.email && b.email.toLowerCase() === email.toLowerCase()) return false;
-        return true;
-    });
-    try {
-        await setDoc(doc(db, 'settings', 'security'), { bannedList: list }, { merge: true });
-        window.showToast('✅ تم فك الحظر عن هذا الحساب وهاتفه بنجاح!', 'success');
-    } catch (e) {}
-};
-
-window.deleteUserAccountPermanently = async function(uid) {
-    let u = (window.v74SecurityState.allUsers || []).find(x => x.id === uid);
-    let label = u ? (u.name || u.email || uid) : uid;
-    if (!confirm('⚠️ هل أنت متأكد من حذف حساب (' + label + ') نهائياً من الموقع وطرده فوراً؟')) return;
-    try {
-        await deleteDoc(doc(db, 'users', uid));
-        let delList = [...(window.v74SecurityState.deletedUids || [])];
-        if (!delList.includes(uid)) delList.push(uid);
-        if (u && u.email && !delList.includes(u.email.toLowerCase())) delList.push(u.email.toLowerCase());
-        await setDoc(doc(db, 'settings', 'security'), { deletedUids: delList }, { merge: true });
-        window.v74SecurityState.allUsers = (window.v74SecurityState.allUsers || []).filter(x => x.id !== uid);
-        window.renderAdminSecurityLists();
-        if (window.recordAdminAuditLog) window.recordAdminAuditLog('حذف حساب العميل نهائياً: ' + label);
-        window.showToast('🗑️ تم حذف حساب (' + label + ') نهائياً من قاعدة البيانات!', 'success');
-    } catch (e) {
-        window.showToast('حدث خطأ أثناء حذف الحساب', 'error');
-    }
-};
-
-window.loadAdminUsers = function() {
-    if (adminUsersUnsubscribe) adminUsersUnsubscribe();
-    adminUsersUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-        let container = document.getElementById('admin-users-container');
-        if (!container) return;
-        let usersList = [];
-        snapshot.forEach(docSnap => { usersList.push({ id: docSnap.id, ...docSnap.data() }); });
-        window.v74SecurityState.allUsers = usersList;
-        usersList.sort((a, b) => (Number(a.customerSeqNumber || 9999)) - (Number(b.customerSeqNumber || 9999)));
-
-        if (usersList.length === 0) {
-            container.innerHTML = '<h3 style="text-align:center; color:var(--text-muted);">لا يوجد عملاء مسجلين.</h3>';
-            return;
+        // ربط applyV66MasterUI
+        if (typeof window.applyV66MasterUI === 'function') {
+            window._v75OrigApplyMaster = window.applyV66MasterUI;
+            window.applyV66MasterUI = function() {
+                try { window._v75OrigApplyMaster(); } catch (e) {}
+                window.applyV75HeaderAndNavFixes();
+                if (typeof isCurrentUserAdmin !== 'undefined' && isCurrentUserAdmin) {
+                    window.injectV75CloudinarySettingsCard();
+                    window.syncV75CloudinaryInputs();
+                }
+            };
         }
-        let showImpBtn = storeSettings.enableImpersonateInUsers !== false;
-        let showSeq = storeSettings.enableCustomerSeqId !== false;
-        let html = '';
-        usersList.forEach((u, idx) => {
-            let seqNum = u.customerSeqNumber || (idx + 1);
-            let seqBadgeHtml = showSeq ? '<span class="cust-seq-id-badge" style="margin-right:6px;">🆔 عميل #' + seqNum + '</span>' : '';
-            let loginDate = u.lastLogin ? new Date(u.lastLogin).toLocaleString('ar-EG') : 'غير محدد';
-            let safeName = (u.name || 'عميل').replace(/'/g, '');
-            let isSuper = typeof SUPER_ADMINS !== 'undefined' && u.email && SUPER_ADMINS.includes(u.email.toLowerCase());
-            let impBtnHtml = showImpBtn
-                ? '<button type="button" class="impersonate-user-btn" onclick="event.stopPropagation(); window.loginAsCustomerAccount(\'' + u.id + '\', \'' + safeName + '\')">🔑 دخول لحساب العميل</button>'
-                : '';
-            let secBtnsHtml = isSuper ? '' :
-                '<button type="button" class="btn btn-danger" style="padding:5px 10px; font-size:0.76rem;" onclick="event.stopPropagation(); window.banUserAndDevicePermanently(\'' + u.id + '\')">🚫 حظر الهاتف</button>' +
-                '<button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.76rem; border-color:#991b1b; color:#991b1b;" onclick="event.stopPropagation(); window.deleteUserAccountPermanently(\'' + u.id + '\')">🗑️ حذف الحساب</button>';
-            html += '<div class="admin-msg-card" style="border-right: 4px solid #6f42c1; cursor:pointer;" onclick="window.showUserHistory(\'' + u.id + '\', \'' + safeName + '\')">' +
-                '<h4 style="margin:0 0 5px 0; color:var(--primary);">👤 ' + window.escapeHTML(u.name || 'عميل') + ' ' + seqBadgeHtml + '</h4>' +
-                '<p style="margin: 3px 0;"><strong>التواصل:</strong> ' + window.escapeHTML(u.email || u.phone1 || 'غير متوفر') + (u.phone1 && u.email ? ' | 📞 ' + window.escapeHTML(u.phone1) : '') + '</p>' +
-                '<p style="margin: 3px 0;"><strong>المحافظة:</strong> ' + window.escapeHTML(u.gov || 'غير محدد') + ' - ' + window.escapeHTML(u.city || '') + '</p>' +
-                '<p style="margin: 3px 0; color:var(--text-muted); font-size:0.82rem;"><strong>آخر دخول:</strong> ' + loginDate + '</p>' +
-                '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">' + impBtnHtml + secBtnsHtml + '</div>' +
-            '</div>';
-        });
-        container.innerHTML = html;
-    });
-};
+
+        setTimeout(function() {
+            window.applyV75HeaderAndNavFixes();
+            if (typeof isCurrentUserAdmin !== 'undefined' && isCurrentUserAdmin) {
+                window.injectV75CloudinarySettingsCard();
+            }
+        }, 700);
+    } catch (fatalErr) {
+        console.error('V75 Init Safe Catch:', fatalErr);
+    }
+})();
+/* === ZAIT_V75_FIXED_VIP_END === */
     

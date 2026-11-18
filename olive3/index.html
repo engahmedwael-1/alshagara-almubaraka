@@ -38,7 +38,7 @@
     <link rel="apple-touch-icon" href="1000392409.jpeg">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="style.css?v=74">
+    <link rel="stylesheet" href="style.css?v=75">
     <script type="application/ld+json" id="dynamic-json-ld-schema">
     {
       "@context": "https://schema.org",
@@ -117,105 +117,7 @@
         } catch (e) {}
     })();
     </script>
-
-    <script id="zait-zero-flash-v72">
-    (function() {
-        try {
-            var s = JSON.parse(localStorage.getItem('zait_cached_settings_v72') || localStorage.getItem('zait_cached_settings_v71') || '{}');
-            var rules = [
-                '#btn-show-auth, #amz-cart-top-sticky-bar, #cart-top-sticky-bar, #home-farm-reels-section, #amazon-sub-header { display: none !important; }'
-            ];
-            var map = [
-                ['enableSpinWheel', '#spin-wheel-fab, #sidebar-spin-wheel-btn'],
-                ['enableBoxBuilder', '#sidebar-box-builder-btn, #pill-box-builder'],
-                ['enableB2BPortal', '#sidebar-b2b-btn'],
-                ['enableBatchTracker', '#sidebar-batch-tracker-btn, #pill-batch-tracker'],
-                ['enableVisualSizeGuide', '#sidebar-size-guide-btn, #btn-modal-size-guide'],
-                ['enableSampleBottle', '#sidebar-sample-bottle-btn'],
-                ['enableGiftByPhone', '#sidebar-gift-by-phone-btn, #btn-modal-gift-phone'],
-                ['enablePreorderHarvest', '#sidebar-preorder-harvest-btn'],
-                ['enableGroupBuy', '#sidebar-group-buy-btn'],
-                ['enableDriverPortal', '#sidebar-driver-portal-btn'],
-                ['enableAffiliateSystem', '#sidebar-affiliate-btn'],
-                ['enableLiveShopping', '#sidebar-live-stream-btn, #home-seasonal-bundles-bar'],
-                ['enableQuickTagFilters', '#v64-quick-tags-bar'],
-                ['enableOfferBanner', '#home-limited-offer-banner'],
-                ['enableTrustMarquee', '#trust-marquee-bar, #home-trust-marquee'],
-                ['enableFloatingCartBar', '#floating-bottom-cart-bar, #header-font-size-btn'],
-                ['enableGuestTracking', '#sidebar-track-order-btn, #guest-order-track-box'],
-                ['enableAnnualCalc', '#sidebar-annual-calc-btn, #btn-open-annual-calc'],
-                ['enableGiftCards', '#sidebar-gift-card-btn, #btn-open-gift-card'],
-                ['enableSeoArticles', '#home-seo-benefits-section'],
-                ['enableAdminFloatBtn', '#admin-floating-launcher-wrap']
-            ];
-            for (var i = 0; i < map.length; i++) {
-                if (s[map[i][0]] === false) {
-                    rules.push(map[i][1] + ' { display: none !important; }');
-                }
-            }
-            if (s.enableTopBar !== true) rules.push('#top-announcement-bar { display: none !important; }');
-            if (s.enableHeroSlider !== true) rules.push('#hero-slider-wrapper { display: none !important; }');
-            else rules.push('#hero-section { display: none !important; }');
-
-            var st = document.createElement('style');
-            st.id = 'zait-instant-hide-style-v72';
-            st.textContent = rules.join('\n');
-            document.head.appendChild(st);
-        } catch (e) {}
-    })();
-    </script>
-
-
-    <script id="zait-zero-flash-v73">
-    (function() {
-        try {
-            var s = JSON.parse(localStorage.getItem('zait_cached_settings_v73') || localStorage.getItem('zait_cached_settings_v72') || localStorage.getItem('zait_cached_settings_v71') || '{}');
-            var rules = [
-                '#btn-show-auth, #amz-cart-top-sticky-bar, #cart-top-sticky-bar, #home-farm-reels-section, #amazon-sub-header { display: none !important; }'
-            ];
-            var map = [
-                ['enableSpinWheel', '#spin-wheel-fab, #sidebar-spin-wheel-btn'],
-                ['enableBoxBuilder', '#sidebar-box-builder-btn, #pill-box-builder'],
-                ['enableB2BPortal', '#sidebar-b2b-btn'],
-                ['enableBatchTracker', '#sidebar-batch-tracker-btn, #pill-batch-tracker'],
-                ['enableVisualSizeGuide', '#sidebar-size-guide-btn, #btn-modal-size-guide'],
-                ['enableSampleBottle', '#sidebar-sample-bottle-btn'],
-                ['enableGiftByPhone', '#sidebar-gift-by-phone-btn, #btn-modal-gift-phone'],
-                ['enablePreorderHarvest', '#sidebar-preorder-harvest-btn'],
-                ['enableGroupBuy', '#sidebar-group-buy-btn'],
-                ['enableDriverPortal', '#sidebar-driver-portal-btn'],
-                ['enableAffiliateSystem', '#sidebar-affiliate-btn'],
-                ['enableLiveShopping', '#sidebar-live-stream-btn, #home-seasonal-bundles-bar'],
-                ['enableQuickTagFilters', '#v64-quick-tags-bar'],
-                ['enableOfferBanner', '#home-limited-offer-banner'],
-                ['enableTrustMarquee', '#trust-marquee-bar, #home-trust-marquee'],
-                ['enableFloatingCartBar', '#floating-bottom-cart-bar, #header-font-size-btn'],
-                ['enableGuestTracking', '#sidebar-track-order-btn, #guest-order-track-box'],
-                ['enableAnnualCalc', '#sidebar-annual-calc-btn, #btn-open-annual-calc'],
-                ['enableGiftCards', '#sidebar-gift-card-btn, #btn-open-gift-card'],
-                ['enableSeoArticles', '#home-seo-benefits-section'],
-                ['enableAdminFloatBtn', '#admin-floating-launcher-wrap'],
-                ['enablePackagingErp', '#admin-packaging-erp-card'],
-                ['enableOliveAdvisorBot', '#v73-olive-advisor-chips']
-            ];
-            for (var i = 0; i < map.length; i++) {
-                if (s[map[i][0]] === false) {
-                    rules.push(map[i][1] + ' { display: none !important; }');
-                }
-            }
-            if (s.enableTopBar !== true) rules.push('#top-announcement-bar { display: none !important; }');
-            if (s.enableHeroSlider !== true) rules.push('#hero-slider-wrapper { display: none !important; }');
-            else rules.push('#hero-section { display: none !important; }');
-
-            var st = document.createElement('style');
-            st.id = 'zait-instant-hide-style-v73';
-            st.textContent = rules.join('\n');
-            document.head.appendChild(st);
-        } catch (e) {}
-    })();
-    </script>
-
-<style id="v74-instant-lock-css">#header-font-size-btn, #floating-bottom-cart-bar, .floating-bottom-cart-bar { display: none !important; }</style>
+<style id="v75-instant-lock-css">#header-font-size-btn, #floating-bottom-cart-bar, .floating-bottom-cart-bar, #amazon-sub-header, #amz-cart-top-sticky-bar { display: none !important; }</style>
 </head>
 <body class="compact-ui">
     <div id="social-proof-toast" class="social-proof-toast">
@@ -341,7 +243,7 @@
         <div class="header-brand-wrap">
             <button type="button" class="header-menu-trigger" onclick="window.openSidebar()" title="القائمة الرئيسية">☰</button>
             <h1 onclick="window.showPanel('home')">
-                <img loading="lazy" src="1000392409.jpeg" alt="Logo" onerror="this.src='1000392409.jpeg'"> 
+                <img loading="lazy" src="1000392409.jpeg" alt="Logo" onerror="this.src='icon-192.png'"> 
                 <span class="translatable">زيت الشجرة المباركة</span>
             </h1>
         </div>
@@ -1127,8 +1029,7 @@
         </div>
     </div>
 
-    <!-- قسم الحظر وحذف الحسابات للمدير (V74 VIP Security Center) -->
-<div class="panel" id="admin-security-panel">
+    <div class="panel" id="admin-security-panel">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid var(--border-color); padding-bottom:12px; margin-bottom:15px;">
         <div>
             <h2 style="color:#dc2626; margin:0;">🛡️ مركز الحظر وحذف الحسابات (حماية المتجر)</h2>
@@ -1140,7 +1041,7 @@
         <strong style="color:#b91c1c; display:block; margin-bottom:8px; font-size:0.9rem;">🚫 حظر يدوي سريع (برقم الهاتف أو البريد الإلكتروني أو معرف الجهاز):</strong>
         <div class="form-row" style="margin-bottom:8px;">
             <input type="text" id="sec-manual-ban-id" placeholder="اكتب رقم الهاتف أو الإيميل المراد حظره..." style="margin:0;">
-            <input type="text" id="sec-manual-ban-reason" placeholder="سبب الحظر (مثال: طلبات وهمية متكررة)" value="مخالفة سياسة المتجر" style="margin:0;">
+            <input type="text" id="sec-manual-ban-reason" placeholder="سبب الحظر" value="مخالفة سياسة المتجر" style="margin:0;">
         </div>
         <button type="button" class="btn btn-danger btn-full" style="padding:9px;" onclick="window.executeManualBanFromPanel()">🚫 تنفيذ الحظر الفوري الآن</button>
     </div>
@@ -1148,7 +1049,7 @@
         <button type="button" id="sec-tab-all-btn" class="btn" style="flex:1; background:var(--primary);" onclick="window.switchSecuritySubTab('all')">👥 جميع الحسابات المسجلة (<span id="sec-all-count">0</span>)</button>
         <button type="button" id="sec-tab-banned-btn" class="btn btn-outline" style="flex:1; border-color:#dc2626; color:#dc2626;" onclick="window.switchSecuritySubTab('banned')">🚫 قائمة المحظورين (<span id="sec-banned-count">0</span>)</button>
     </div>
-    <input type="search" id="sec-search-inp" placeholder="🔍 ابحث بالاسم أو رقم الهاتف أو الإيميل أو رقم العميل..." oninput="window.renderAdminSecurityLists()" style="margin-bottom:12px;">
+    <input type="search" id="sec-search-inp" placeholder="🔍 ابحث بالاسم أو رقم الهاتف أو الإيميل..." oninput="window.renderAdminSecurityLists()" style="margin-bottom:12px;">
     <div id="sec-all-users-list"></div>
     <div id="sec-banned-users-list" style="display:none;"></div>
 </div>
@@ -2883,7 +2784,7 @@
                         <div style="background:var(--panel-bg); padding:12px; border-radius:10px; border:2px solid #4f46e5; margin-bottom:8px;">
                             <label style="font-weight:bold; color:#4f46e5; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem; margin-bottom:8px;">
                                 <input type="checkbox" id="setting-enable-impersonate-chat" style="width:18px; height:18px; margin:0; accent-color:#4f46e5;" onchange="window.saveSettings()">
-                                <span>💬 إظهار زر (������ الدخول لحساب العميل والتصفح كأنك العميل) داخل قسم خدمة العملاء (الشات)</span>
+                                <span>💬 إظهار زر (🔑 الدخول لحساب العميل والتصفح كأنك العميل) داخل قسم خدمة العملاء (الشات)</span>
                             </label>
                             <label style="font-weight:bold; color:#4f46e5; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                                 <input type="checkbox" id="setting-enable-impersonate-users" style="width:18px; height:18px; margin:0; accent-color:#4f46e5;" onchange="window.saveSettings()">
@@ -3432,6 +3333,6 @@
             <p class="dev-signature">تم الإنشاء بواسطة المهندس أحمد وائل</p>
         </div>
     </footer>
-    <script type="module" src="script.js?v=74"></script>
+    <script type="module" src="script.js?v=75"></script>
 </body>
 </html>
