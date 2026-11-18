@@ -16924,3 +16924,891 @@ setTimeout(() => {
     window.initCleanChatBarsV73();
     if (isCurrentUserAdmin) window.renderPackagingErpCardV73();
 }, 350);
+
+
+// =========================================================================
+// === النسخة V74 VIP الشاملة: الشريط العلوي والسفلي + حذف ومعاينة الصوت + فيديو 100MB مجاني مفعّل تلقائياً + قسم الحظر وحذف الحسابات ===
+// =========================================================================
+
+window.V74_DEFAULT_CLOUDINARY_CLOUD = 'jj2qrpnb';
+window.V74_DEFAULT_CLOUDINARY_PRESET = 'bfu87mf0';
+
+(function initV74ImmediateCleanups() {
+    try {
+        localStorage.removeItem('zait_large_font');
+        document.body.classList.remove('large-comfort-font');
+        var fBtn = document.getElementById('header-font-size-btn');
+        if (fBtn) fBtn.remove();
+        var floatCartBar = document.getElementById('floating-bottom-cart-bar');
+        if (floatCartBar) floatCartBar.style.setProperty('display', 'none', 'important');
+        var bNav = document.querySelector('.bottom-nav') || document.getElementById('bottom-nav');
+        if (bNav) bNav.style.setProperty('display', 'flex', 'important');
+    } catch (e) {}
+})();
+
+const origUpdateFloatAndMsV74 = window.updateFloatingBottomCartBarAndMilestones;
+window.updateFloatingBottomCartBarAndMilestones = function() {
+    if (origUpdateFloatAndMsV74) origUpdateFloatAndMsV74();
+    let bar = document.getElementById('floating-bottom-cart-bar');
+    if (bar) bar.style.setProperty('display', 'none', 'important');
+};
+
+if (typeof panels !== 'undefined' && panels) {
+    panels['admin-security'] = document.getElementById('admin-security-panel');
+}
+
+const origShowPanelV74 = window.showPanel;
+window.showPanel = function(panelId) {
+    if (panelId === 'admin-security' && !isCurrentUserAdmin) {
+        window.showToast('هذا القسم مخصص للمدير فقط', 'error');
+        return;
+    }
+    if (origShowPanelV74) origShowPanelV74(panelId);
+    if (panelId === 'admin-security' && isCurrentUserAdmin) {
+        let pEl = document.getElementById('admin-security-panel');
+        if (pEl) pEl.classList.add('active');
+        window.loadAdminSecurityPanel();
+    }
+    let fBar = document.getElementById('floating-bottom-cart-bar');
+    if (fBar) fBar.style.setProperty('display', 'none', 'important');
+    let bNav = document.querySelector('.bottom-nav') || document.getElementById('bottom-nav');
+    if (bNav) bNav.style.setProperty('display', 'flex', 'important');
+};
+
+// -------------------------------------------------------------------------
+// أولاً: نظام تسجيل الصوت الاحترافي مع (🗑️ حذف وإلغاء أثناء التسجيل + 🎧 استماع ومعاينة وحذف قبل الإرسال)
+// -------------------------------------------------------------------------
+window.v74VoiceState = {
+    recorder: null,
+    stream: null,
+    chunks: [],
+    timer: null,
+    secs: 0,
+    canceled: false,
+    sendImmediately: false,
+    role: 'customer',
+    pendingBlob: null,
+    pendingUrl: null,
+    pendingDuration: 0
+};
+
+window.ensureV74VoiceUIContainers = function(role) {
+    let previewId = role === 'admin' ? 'admin-voice-preview-box' : 'cust-voice-preview-box';
+    let previewBox = document.getElementById(previewId);
+    if (!previewBox) {
+        let anchor = document.getElementById(role === 'admin' ? 'admin-fixed-voice-bar' : 'customer-fixed-voice-bar')
+            || document.getElementById(role === 'admin' ? 'admin-chat-input' : 'support-form');
+        if (anchor && anchor.parentNode) {
+            previewBox = document.createElement('div');
+            previewBox.id = previewId;
+            previewBox.className = 'v74-voice-bar';
+            previewBox.style.display = 'none';
+            anchor.parentNode.insertBefore(previewBox, anchor);
+        }
+    }
+    return previewBox;
+};
+
+window.renderV74RecordingActiveUI = function(role) {
+    let box = window.ensureV74VoiceUIContainers(role);
+    if (!box) return;
+    box.style.display = 'flex';
+    box.innerHTML =
+        '<div class="v74-voice-row">' +
+            '<div style="display:flex; align-items:center; gap:8px; font-weight:900; color:#dc2626; font-size:0.86rem;">' +
+                '<span class="v74-rec-dot"></span>' +
+                '<span>جاري التسجيل الصوتي...</span>' +
+                '<strong id="v74-rec-timer-' + role + '">00:00</strong>' +
+            '</div>' +
+            '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
+                '<button type="button" class="btn btn-danger" style="padding:5px 10px; font-size:0.78rem; border-radius:10px;" onclick="window.v74CancelAndDeleteVoice(\'' + role + '\')">🗑️ حذف وإلغاء</button>' +
+                '<button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.78rem; border-radius:10px; border-color:#028090; color:#028090;" onclick="window.v74StopForPreviewVoice(\'' + role + '\')">🎧 إيقاف ومعاينة</button>' +
+                '<button type="button" class="btn" style="padding:5px 10px; font-size:0.78rem; border-radius:10px; background:#16a34a;" onclick="window.v74StopAndSendNowVoice(\'' + role + '\')">🚀 إرسال الآن</button>' +
+            '</div>' +
+        '</div>';
+};
+
+window.renderV74VoicePreviewUI = function(role, audioObjUrl, secs) {
+    let box = window.ensureV74VoiceUIContainers(role);
+    if (!box) return;
+    box.style.display = 'flex';
+    box.innerHTML =
+        '<div class="v74-voice-row" style="width:100%;">' +
+            '<strong style="font-size:0.82rem; color:var(--primary);">🎧 استمع لمقطعك الصوتي (' + secs + ' ثانية) قبل الإرسال:</strong>' +
+            '<audio controls src="' + audioObjUrl + '" style="height:36px; width:100%; max-width:260px;"></audio>' +
+            '<div style="display:flex; gap:8px; width:100%; margin-top:4px;">' +
+                '<button type="button" class="btn btn-danger" style="flex:1; padding:7px 10px; font-size:0.82rem; border-radius:10px;" onclick="window.v74DiscardPendingVoice(\'' + role + '\')">🗑️ حذف المقطع وإعادة التسجيل</button>' +
+                '<button type="button" class="btn" style="flex:1.2; padding:7px 10px; font-size:0.82rem; border-radius:10px; background:#16a34a;" onclick="window.v74ConfirmSendPendingVoice(\'' + role + '\')">🚀 إرسال المقطع الصوتي الآن</button>' +
+            '</div>' +
+        '</div>';
+};
+
+window.v74CancelAndDeleteVoice = function(role) {
+    let st = window.v74VoiceState;
+    st.canceled = true;
+    st.sendImmediately = false;
+    if (st.timer) clearInterval(st.timer);
+    if (st.recorder && st.recorder.state === 'recording') {
+        try { st.recorder.stop(); } catch (e) {}
+    }
+    if (st.stream) {
+        try { st.stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+    }
+    st.chunks = [];
+    st.pendingBlob = null;
+    if (st.pendingUrl) { try { URL.revokeObjectURL(st.pendingUrl); } catch (e) {} st.pendingUrl = null; }
+    let box = document.getElementById(role === 'admin' ? 'admin-voice-preview-box' : 'cust-voice-preview-box');
+    if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+    let recBtn = document.getElementById(role === 'admin' ? 'btn-admin-voice-note' : 'btn-cust-voice-note');
+    if (recBtn) { recBtn.classList.remove('recording-audio'); recBtn.innerHTML = '🎙️ اضغط لتسجيل مقطع صوتي'; }
+    let inlineBtn = document.getElementById(role === 'admin' ? 'btn-admin-voice-note-inline' : 'btn-cust-voice-note-inline');
+    if (inlineBtn) inlineBtn.classList.remove('recording-audio');
+    let cancelBtn = document.getElementById(role === 'admin' ? 'btn-admin-cancel-voice' : 'btn-cust-cancel-voice');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    window.showToast('🗑️ تم حذف وإلغاء المقطع الصوتي! لم يتم إرسال أي شيء.', 'info');
+};
+
+window.cancelActiveVoiceRecording = window.v74CancelAndDeleteVoice;
+
+window.v74StopForPreviewVoice = function(role) {
+    let st = window.v74VoiceState;
+    st.canceled = false;
+    st.sendImmediately = false;
+    if (st.recorder && st.recorder.state === 'recording') {
+        try { st.recorder.stop(); } catch (e) {}
+    }
+};
+
+window.v74StopAndSendNowVoice = function(role) {
+    let st = window.v74VoiceState;
+    st.canceled = false;
+    st.sendImmediately = true;
+    if (st.recorder && st.recorder.state === 'recording') {
+        try { st.recorder.stop(); } catch (e) {}
+    }
+};
+
+window.v74DiscardPendingVoice = function(role) {
+    window.v74CancelAndDeleteVoice(role);
+};
+
+window.v74ConfirmSendPendingVoice = async function(role) {
+    let st = window.v74VoiceState;
+    if (!st.pendingBlob) return;
+    let blob = st.pendingBlob;
+    let secs = st.pendingDuration || 1;
+    let targetChatId = role === 'customer'
+        ? (currentUser ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
+        : activeAdminChatId;
+    if (!targetChatId) {
+        window.showToast('يرجى تسجيل الدخول أولاً', 'error');
+        return;
+    }
+    window.showToast('⏳ جاري إرسال المقطع الصوتي...', 'info');
+    let reader = new FileReader();
+    reader.onloadend = async () => {
+        let base64Audio = reader.result;
+        if (!base64Audio) return;
+        let nowIso = new Date().toISOString();
+        let sName = role === 'admin'
+            ? (window.getCurrentStaffCleanName ? window.getCurrentStaffCleanName() : 'الإدارة')
+            : ((currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'عميل');
+
+        let msg = {
+            sender: role,
+            staffName: sName,
+            text: '🎙️ رسالة صوتية (' + secs + ' ثانية)',
+            audioDataUrl: base64Audio,
+            timestamp: nowIso
+        };
+        let updateObj = { messages: arrayUnion(msg), lastUpdate: nowIso };
+        if (role === 'customer') {
+            updateObj.customerName = sName;
+            updateObj.lastCustomerMsgAt = nowIso;
+            updateObj.unreadByAdmin = true;
+        } else {
+            updateObj.adminReplied = true;
+            updateObj.unreadByAdmin = false;
+        }
+        try {
+            await setDoc(doc(db, 'chats', targetChatId), updateObj, { merge: true });
+            window.v74CancelAndDeleteVoice(role);
+            window.showToast('✅ تم إرسال الرسالة الصوتية بنجاح!', 'success');
+        } catch (err) {
+            window.showToast('تعذر إرسال الصوت، جرب مقطعاً أقصر قليلاً', 'error');
+        }
+    };
+    reader.readAsDataURL(blob);
+};
+
+window.toggleChatVoiceNoteRecording = async function(senderRole, btnEl) {
+    let targetChatId = senderRole === 'customer'
+        ? (currentUser ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
+        : activeAdminChatId;
+    if (!targetChatId) {
+        window.showToast('يرجى تسجيل الدخول أولاً لإرسال رسالة صوتية', 'error');
+        if (senderRole === 'customer') window.showPanel('auth');
+        return;
+    }
+    let st = window.v74VoiceState;
+    if (st.recorder && st.recorder.state === 'recording') {
+        window.v74StopForPreviewVoice(senderRole);
+        return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        window.showToast('متصفحك لا يدعم تسجيل الصوت المباشر', 'error');
+        return;
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        st.stream = stream;
+        st.chunks = [];
+        st.secs = 0;
+        st.canceled = false;
+        st.sendImmediately = false;
+        st.role = senderRole;
+
+        let mimeOpts = {};
+        if (typeof MediaRecorder !== 'undefined') {
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) mimeOpts = { mimeType: 'audio/webm;codecs=opus' };
+            else if (MediaRecorder.isTypeSupported('audio/mp4')) mimeOpts = { mimeType: 'audio/mp4' };
+            else if (MediaRecorder.isTypeSupported('audio/webm')) mimeOpts = { mimeType: 'audio/webm' };
+        }
+
+        const recorder = new MediaRecorder(stream, mimeOpts);
+        st.recorder = recorder;
+        if (btnEl) {
+            btnEl.classList.add('recording-audio');
+            if (btnEl.id === 'btn-cust-voice-note' || btnEl.id === 'btn-admin-voice-note') {
+                btnEl.innerHTML = '⏹️ إيقاف للمعاينة...';
+            }
+        }
+        let cancelBtn = document.getElementById(senderRole === 'admin' ? 'btn-admin-cancel-voice' : 'btn-cust-cancel-voice');
+        if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+
+        window.renderV74RecordingActiveUI(senderRole);
+
+        st.timer = setInterval(() => {
+            st.secs++;
+            let mm = String(Math.floor(st.secs / 60)).padStart(2, '0');
+            let ss = String(st.secs % 60).padStart(2, '0');
+            let tEl = document.getElementById('v74-rec-timer-' + senderRole);
+            if (tEl) tEl.textContent = mm + ':' + ss;
+            if (st.secs >= 45 && recorder.state === 'recording') {
+                window.v74StopForPreviewVoice(senderRole);
+            }
+        }, 1000);
+
+        recorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) st.chunks.push(e.data);
+        };
+
+        recorder.onstop = () => {
+            clearInterval(st.timer);
+            try { stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+            if (btnEl) {
+                btnEl.classList.remove('recording-audio');
+                if (btnEl.id === 'btn-cust-voice-note' || btnEl.id === 'btn-admin-voice-note') {
+                    btnEl.innerHTML = '🎙️ اضغط لتسجيل مقطع صوتي';
+                }
+            }
+            if (cancelBtn) cancelBtn.style.display = 'none';
+            if (st.canceled || st.chunks.length === 0) return;
+
+            let blob = new Blob(st.chunks, { type: recorder.mimeType || 'audio/webm' });
+            st.pendingBlob = blob;
+            st.pendingDuration = Math.max(1, st.secs);
+            if (st.pendingUrl) { try { URL.revokeObjectURL(st.pendingUrl); } catch (e) {} }
+            st.pendingUrl = URL.createObjectURL(blob);
+
+            if (st.sendImmediately) {
+                window.v74ConfirmSendPendingVoice(senderRole);
+            } else {
+                window.renderV74VoicePreviewUI(senderRole, st.pendingUrl, st.pendingDuration);
+                window.showToast('🎧 يمكنك الآن سماع المقطع أو حذفه أو إرساله', 'info');
+            }
+        };
+        recorder.start();
+    } catch (e) {
+        window.showToast('يرجى السماح بصلاحية الميكروفون لتسجيل الرسالة الصوتية', 'error');
+    }
+};
+
+window.startCustomerVoiceNote = function() {
+    window.toggleChatVoiceNoteRecording('customer', document.getElementById('btn-cust-voice-note') || document.getElementById('btn-cust-voice-note-inline'));
+};
+window.startAdminVoiceNote = function() {
+    window.toggleChatVoiceNoteRecording('admin', document.getElementById('btn-admin-voice-note') || document.getElementById('btn-admin-voice-note-inline'));
+};
+
+// -------------------------------------------------------------------------
+// ثانياً: رفع فيديوهات الشات حتى 100 ميجابايت مجاناً 100% عبر Cloudinary (مُفعّل تلقائياً بحسابك jj2qrpnb / bfu87mf0)
+// -------------------------------------------------------------------------
+window.injectV74CloudinarySettingsCard = function() {
+    let sec = document.getElementById('roles-content-section');
+    if (!sec || document.getElementById('v74-cloudinary-settings-card')) return;
+    let card = document.createElement('div');
+    card.id = 'v74-cloudinary-settings-card';
+    card.className = 'admin-setting-card-pro';
+    card.style.cssText = 'background:var(--input-bg); padding:14px; border-radius:12px; border:2px solid #2563eb; margin-bottom:14px;';
+    card.innerHTML =
+        '<h4 style="margin:0 0 8px 0; color:#1d4ed8;">🎥 إعدادات رفع فيديوهات الشات حتى 100 ميجابايت (مُفعّل تلقائياً ✅):</h4>' +
+        '<p style="margin:0 0 8px 0; font-size:0.8rem; color:var(--text-muted);">تم إدخال بيانات Cloudinary الخاصة بك تلقائياً وتعمل مباشرة بدون أي تعديل:</p>' +
+        '<div class="form-row" style="margin-bottom:8px;">' +
+            '<input type="text" id="v74-cloudinary-cloud" placeholder="Cloud Name" value="jj2qrpnb" style="margin:0;">' +
+            '<input type="text" id="v74-cloudinary-preset" placeholder="Upload Preset" value="bfu87mf0" style="margin:0;">' +
+        '</div>' +
+        '<button type="button" class="btn" style="background:#2563eb; padding:7px 16px; font-size:0.84rem;" onclick="window.saveV74CloudinaryConfig()">💾 حفظ وتحديث بيانات Cloudinary</button>';
+    sec.insertBefore(card, sec.children[2] || sec.firstChild);
+    window.syncV74CloudinaryInputs();
+};
+
+window.syncV74CloudinaryInputs = function() {
+    let cInp = document.getElementById('v74-cloudinary-cloud');
+    let pInp = document.getElementById('v74-cloudinary-preset');
+    if (cInp) cInp.value = (storeSettings && storeSettings.cloudinaryCloudName) ? storeSettings.cloudinaryCloudName : window.V74_DEFAULT_CLOUDINARY_CLOUD;
+    if (pInp) pInp.value = (storeSettings && storeSettings.cloudinaryUploadPreset) ? storeSettings.cloudinaryUploadPreset : window.V74_DEFAULT_CLOUDINARY_PRESET;
+};
+
+window.saveV74CloudinaryConfig = async function() {
+    let cn = ((document.getElementById('v74-cloudinary-cloud') || {}).value || '').trim();
+    let pr = ((document.getElementById('v74-cloudinary-preset') || {}).value || '').trim();
+    if (!cn || !pr) {
+        window.showToast('يرجى كتابة Cloud Name و Upload Preset معاً', 'error');
+        return;
+    }
+    try {
+        await setDoc(doc(db, 'settings', 'main'), {
+            cloudinaryCloudName: cn,
+            cloudinaryUploadPreset: pr
+        }, { merge: true });
+        storeSettings.cloudinaryCloudName = cn;
+        storeSettings.cloudinaryUploadPreset = pr;
+        window.showToast('✅ تم حفظ وتفعيل رفع فيديوهات الشات حتى 100 ميجابايت مجاناً!', 'success');
+    } catch (e) {
+        window.showToast('حدث خطأ أثناء الحفظ', 'error');
+    }
+};
+
+const origApplyV74Ui = window.applyV66MasterUI;
+window.applyV66MasterUI = function() {
+    if (origApplyV74Ui) origApplyV74Ui();
+    if (isCurrentUserAdmin) {
+        window.injectV74CloudinarySettingsCard();
+        window.syncV74CloudinaryInputs();
+    }
+};
+setTimeout(() => {
+    if (isCurrentUserAdmin) window.injectV74CloudinarySettingsCard();
+}, 1200);
+
+window.showChatVideoUploadProgress = function(role, pct, labelText) {
+    let id = 'v74-vid-prog-' + role;
+    let el = document.getElementById(id);
+    if (!el) {
+        let anchor = document.getElementById(role === 'admin' ? 'admin-chat-messages' : 'support-history-container');
+        if (anchor && anchor.parentNode) {
+            el = document.createElement('div');
+            el.id = id;
+            el.className = 'v74-upload-progress-wrap';
+            el.innerHTML = '<div id="' + id + '-lbl"></div><div class="v74-upload-progress-track"><div id="' + id + '-fill" class="v74-upload-progress-fill"></div></div>';
+            anchor.parentNode.insertBefore(el, anchor.nextSibling);
+        }
+    }
+    if (!el) return;
+    if (pct < 0) { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    let lbl = document.getElementById(id + '-lbl');
+    let fill = document.getElementById(id + '-fill');
+    if (lbl) lbl.textContent = labelText || ('🎥 جاري رفع الفيديو: ' + pct + '%');
+    if (fill) fill.style.width = Math.min(100, Math.max(0, pct)) + '%';
+};
+
+window.uploadVideoToCloudinaryFree = function(file, cloudName, uploadPreset, onProgress) {
+    return new Promise((resolve, reject) => {
+        let xhr = new XMLHttpRequest();
+        let fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', uploadPreset);
+        xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + encodeURIComponent(cloudName) + '/video/upload', true);
+        xhr.upload.onprogress = function(ev) {
+            if (ev.lengthComputable && onProgress) {
+                onProgress(Math.round((ev.loaded / ev.total) * 100));
+            }
+        };
+        xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    let res = JSON.parse(xhr.responseText);
+                    if (res && res.secure_url) resolve(res.secure_url);
+                    else reject(new Error('لم يرجع رابط الفيديو'));
+                } catch (e) { reject(e); }
+            } else {
+                reject(new Error('HTTP ' + xhr.status));
+            }
+        };
+        xhr.onerror = function() { reject(new Error('فشل الاتصال بالخادم')); };
+        xhr.send(fd);
+    });
+};
+
+window.sendChatVideoAttachment = async function(senderRole, fileInp) {
+    if (!fileInp || !fileInp.files || fileInp.files.length === 0) return;
+    let file = fileInp.files[0];
+    let maxBytes = 100 * 1024 * 1024;
+    if (file.size > maxBytes) {
+        window.showToast('الحد الأقصى لحجم الفيديو هو 100 ميجابايت', 'error');
+        fileInp.value = '';
+        return;
+    }
+    let targetChatId = senderRole === 'customer'
+        ? (currentUser ? (currentUser.email || currentUser.phoneNumber || currentUser.uid) : null)
+        : activeAdminChatId;
+    if (!targetChatId) {
+        window.showToast('يرجى تسجيل الدخول أولاً', 'error');
+        fileInp.value = '';
+        return;
+    }
+
+    let sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+    let cloudName = ((storeSettings && storeSettings.cloudinaryCloudName) || window.V74_DEFAULT_CLOUDINARY_CLOUD).trim();
+    let uploadPreset = ((storeSettings && storeSettings.cloudinaryUploadPreset) || window.V74_DEFAULT_CLOUDINARY_PRESET).trim();
+
+    let finalVideoUrl = '';
+    window.showToast('🎥 جاري رفع الفيديو (' + sizeMB + ' ميجابايت)... يرجى الانتظار', 'info');
+    window.showChatVideoUploadProgress(senderRole, 4, '🎥 جاري رفع الفيديو (' + sizeMB + ' MB): 0%');
+    try {
+        finalVideoUrl = await window.uploadVideoToCloudinaryFree(file, cloudName, uploadPreset, (pct) => {
+            window.showChatVideoUploadProgress(senderRole, pct, '🎥 جاري رفع الفيديو (' + sizeMB + ' MB): ' + pct + '%');
+        });
+    } catch (err) {
+        window.showChatVideoUploadProgress(senderRole, -1);
+        window.showToast('⚠️ تعذر رفع الفيديو الآن، تأكد من اتصال الإنترنت وحاول مرة أخرى', 'error');
+        fileInp.value = '';
+        return;
+    }
+
+    window.showChatVideoUploadProgress(senderRole, 100, '✅ اكتمل الرفع! جاري الإرسال للشات...');
+    let nowIso = new Date().toISOString();
+    let sName = senderRole === 'admin'
+        ? (window.getCurrentStaffCleanName ? window.getCurrentStaffCleanName() : 'الإدارة')
+        : ((currentUser && (currentUser.displayName || currentUser.email)) ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'عميل');
+
+    let msg = {
+        sender: senderRole,
+        staffName: sName,
+        text: '🎥 مرفق فيديو (' + sizeMB + ' MB)',
+        videoDataUrl: finalVideoUrl,
+        timestamp: nowIso
+    };
+    try {
+        let updateObj = { messages: arrayUnion(msg), lastUpdate: nowIso };
+        if (senderRole === 'customer') {
+            updateObj.customerName = sName;
+            updateObj.lastCustomerMsgAt = nowIso;
+            updateObj.unreadByAdmin = true;
+        } else {
+            updateObj.adminReplied = true;
+            updateObj.unreadByAdmin = false;
+        }
+        await setDoc(doc(db, 'chats', targetChatId), updateObj, { merge: true });
+        window.showToast('🎥 تم إرسال الفيديو في المحادثة بنجاح!', 'success');
+    } catch (e) {
+        window.showToast('حدث خطأ أثناء حفظ رسالة الفيديو', 'error');
+    }
+    setTimeout(() => window.showChatVideoUploadProgress(senderRole, -1), 1200);
+    fileInp.value = '';
+};
+
+// -------------------------------------------------------------------------
+// ثالثاً: نظام الحظر الصارم من الهاتف والحساب + حذف الحسابات نهائياً (V74 Security Center)
+// -------------------------------------------------------------------------
+window.v74SecurityState = {
+    bannedList: [],
+    deletedUids: [],
+    allUsers: [],
+    currentSubTab: 'all'
+};
+
+window.getZaitDeviceFingerprint = function() {
+    let saved = localStorage.getItem('zait_device_fp_v74');
+    if (saved) return saved;
+    let raw = [
+        navigator.userAgent || '',
+        screen.width + 'x' + screen.height,
+        (Intl.DateTimeFormat().resolvedOptions().timeZone || ''),
+        navigator.language || '',
+        navigator.hardwareConcurrency || ''
+    ].join('|');
+    let hash = 0;
+    for (let i = 0; i < raw.length; i++) {
+        hash = ((hash << 5) - hash) + raw.charCodeAt(i);
+        hash |= 0;
+    }
+    let fp = 'DEV_' + Math.abs(hash).toString(36).toUpperCase() + '_' + (localStorage.getItem('zait_visitor_uid') || Date.now().toString(36)).slice(-5).toUpperCase();
+    localStorage.setItem('zait_device_fp_v74', fp);
+    return fp;
+};
+
+window.savePermanentBanMarkerLocally = function(reasonText) {
+    try {
+        localStorage.setItem('zait_device_banned_flag', 'YES');
+        localStorage.setItem('zait_device_banned_reason', reasonText || 'مخالفة سياسة المتجر');
+        let req = indexedDB.open('ZaitSecDB', 1);
+        req.onupgradeneeded = (e) => { e.target.result.createObjectStore('flags'); };
+        req.onsuccess = (e) => {
+            let tx = e.target.result.transaction('flags', 'readwrite');
+            tx.objectStore('flags').put(reasonText || 'محظور', 'banned');
+        };
+    } catch (e) {}
+};
+
+window.clearPermanentBanMarkerLocally = function() {
+    try {
+        localStorage.removeItem('zait_device_banned_flag');
+        localStorage.removeItem('zait_device_banned_reason');
+        let req = indexedDB.open('ZaitSecDB', 1);
+        req.onupgradeneeded = (e) => { e.target.result.createObjectStore('flags'); };
+        req.onsuccess = (e) => {
+            let tx = e.target.result.transaction('flags', 'readwrite');
+            tx.objectStore('flags').delete('banned');
+        };
+    } catch (e) {}
+};
+
+window.applyDeviceBanLockoutUI = function(isBanned, reasonText) {
+    let screenEl = document.getElementById('zait-banned-lockout-screen');
+    let reasonEl = document.getElementById('zait-banned-reason-box');
+    if (!screenEl) return;
+    if (isBanned) {
+        if (reasonEl) reasonEl.textContent = 'سبب الحظر: ' + (reasonText || 'مخالفة شروط استخدام المتجر');
+        screenEl.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    } else {
+        screenEl.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+};
+
+window.evaluateCurrentDeviceBanStatus = function() {
+    let myEmail = (currentUser && currentUser.email) ? currentUser.email.toLowerCase().trim() : '';
+    if (typeof SUPER_ADMINS !== 'undefined' && myEmail && SUPER_ADMINS.includes(myEmail)) {
+        window.applyDeviceBanLockoutUI(false);
+        return;
+    }
+
+    let myUid = currentUser ? currentUser.uid : '';
+    let myPhone = (currentUser && currentUser.phoneNumber) ? currentUser.phoneNumber.replace(/\D/g, '') : (localStorage.getItem('zait_wheel_saved_phone') || '').replace(/\D/g, '');
+    let myVid = localStorage.getItem('zait_visitor_uid') || '';
+    let myFp = window.getZaitDeviceFingerprint();
+
+    let deletedList = window.v74SecurityState.deletedUids || [];
+    if (myUid && (deletedList.includes(myUid) || (myEmail && deletedList.includes(myEmail)))) {
+        signOut(auth).catch(() => {});
+        window.showToast('⚠️ تم حذف هذا الحساب من قِبل إدارة المتجر.', 'error');
+        return;
+    }
+
+    let bannedList = window.v74SecurityState.bannedList || [];
+    let matchedBan = bannedList.find(b => {
+        if (!b) return false;
+        if (myUid && b.uid && b.uid === myUid) return true;
+        if (myEmail && b.email && b.email.toLowerCase() === myEmail) return true;
+        if (myPhone && b.phone && String(b.phone).replace(/\D/g, '') === myPhone && myPhone.length >= 9) return true;
+        if (myVid && b.visitorId && b.visitorId === myVid) return true;
+        if (myFp && b.deviceFp && b.deviceFp === myFp) return true;
+        return false;
+    });
+
+    if (matchedBan) {
+        window.savePermanentBanMarkerLocally(matchedBan.reason);
+        window.applyDeviceBanLockoutUI(true, matchedBan.reason);
+        if (currentUser) signOut(auth).catch(() => {});
+    } else {
+        if (window.v74SecurityDocLoaded) {
+            window.clearPermanentBanMarkerLocally();
+            window.applyDeviceBanLockoutUI(false);
+        } else if (localStorage.getItem('zait_device_banned_flag') === 'YES') {
+            window.applyDeviceBanLockoutUI(true, localStorage.getItem('zait_device_banned_reason'));
+        }
+    }
+};
+
+window.v74SecurityDocLoaded = false;
+onSnapshot(doc(db, 'settings', 'security'), (snap) => {
+    window.v74SecurityDocLoaded = true;
+    if (snap.exists()) {
+        let d = snap.data();
+        window.v74SecurityState.bannedList = Array.isArray(d.bannedList) ? d.bannedList : [];
+        window.v74SecurityState.deletedUids = Array.isArray(d.deletedUids) ? d.deletedUids : [];
+    } else {
+        window.v74SecurityState.bannedList = [];
+        window.v74SecurityState.deletedUids = [];
+    }
+    window.evaluateCurrentDeviceBanStatus();
+    if (isCurrentUserAdmin) window.renderAdminSecurityLists();
+}, () => {});
+
+onAuthStateChanged(auth, async (u) => {
+    if (u) {
+        let fp = window.getZaitDeviceFingerprint();
+        let vid = localStorage.getItem('zait_visitor_uid') || '';
+        try {
+            await setDoc(doc(db, 'users', u.uid), {
+                deviceFp: fp,
+                visitorId: vid,
+                lastDeviceSummary: window.detectVisitorDeviceDetails ? window.detectVisitorDeviceDetails().deviceSummary : 'هاتف'
+            }, { merge: true });
+        } catch (e) {}
+    }
+    setTimeout(window.evaluateCurrentDeviceBanStatus, 300);
+});
+
+window.switchSecuritySubTab = function(tab) {
+    window.v74SecurityState.currentSubTab = tab;
+    let bAll = document.getElementById('sec-tab-all-btn');
+    let bBan = document.getElementById('sec-tab-banned-btn');
+    let lAll = document.getElementById('sec-all-users-list');
+    let lBan = document.getElementById('sec-banned-users-list');
+    if (tab === 'all') {
+        if (lAll) lAll.style.display = 'block';
+        if (lBan) lBan.style.display = 'none';
+        if (bAll) { bAll.className = 'btn'; bAll.style.background = 'var(--primary)'; bAll.style.color = '#fff'; }
+        if (bBan) { bBan.className = 'btn btn-outline'; bBan.style.background = 'transparent'; bBan.style.color = '#dc2626'; }
+    } else {
+        if (lAll) lAll.style.display = 'none';
+        if (lBan) lBan.style.display = 'block';
+        if (bBan) { bBan.className = 'btn btn-danger'; bBan.style.background = '#dc2626'; bBan.style.color = '#fff'; }
+        if (bAll) { bAll.className = 'btn btn-outline'; bAll.style.background = 'transparent'; bAll.style.color = 'var(--primary)'; }
+    }
+    window.renderAdminSecurityLists();
+};
+
+window.loadAdminSecurityPanel = async function() {
+    if (!isCurrentUserAdmin) return;
+    try {
+        let snap = await getDocs(collection(db, 'users'));
+        let arr = [];
+        snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+        arr.sort((a, b) => (Number(a.customerSeqNumber || 9999)) - (Number(b.customerSeqNumber || 9999)));
+        window.v74SecurityState.allUsers = arr;
+        window.renderAdminSecurityLists();
+    } catch (e) {}
+};
+
+window.renderAdminSecurityLists = function() {
+    let q = ((document.getElementById('sec-search-inp') || {}).value || '').trim().toLowerCase();
+    let allUsers = window.v74SecurityState.allUsers || [];
+    let bannedList = window.v74SecurityState.bannedList || [];
+
+    let cAll = document.getElementById('sec-all-count'); if (cAll) cAll.textContent = allUsers.length;
+    let cBan = document.getElementById('sec-banned-count'); if (cBan) cBan.textContent = bannedList.length;
+
+    let lAll = document.getElementById('sec-all-users-list');
+    if (lAll) {
+        let filtered = allUsers.filter(u => {
+            if (!q) return true;
+            let hay = ((u.name || '') + ' ' + (u.email || '') + ' ' + (u.phone1 || '') + ' ' + (u.customerSeqNumber || '')).toLowerCase();
+            return hay.includes(q);
+        });
+        if (filtered.length === 0) {
+            lAll.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">لا توجد حسابات مطابقة.</p>';
+        } else {
+            lAll.innerHTML = filtered.map(u => {
+                let isSuper = typeof SUPER_ADMINS !== 'undefined' && u.email && SUPER_ADMINS.includes(u.email.toLowerCase());
+                let isAlreadyBanned = bannedList.some(b => (b.uid && b.uid === u.id) || (b.email && u.email && b.email.toLowerCase() === u.email.toLowerCase()));
+                let seqTxt = u.customerSeqNumber ? '🆔 عميل #' + u.customerSeqNumber : '';
+                let cleanEmail = (u.email || '').replace(/'/g, '');
+                let actions = isSuper
+                    ? '<span style="color:#16a34a; font-weight:bold; font-size:0.8rem;">👑 مؤسس المتجر (محمي)</span>'
+                    : '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">' +
+                        (isAlreadyBanned
+                            ? '<button type="button" class="btn" style="background:#16a34a; padding:5px 12px; font-size:0.78rem;" onclick="window.unbanUserByUidOrEmail(\'' + u.id + '\', \'' + cleanEmail + '\')">✅ فك الحظر</button>'
+                            : '<button type="button" class="btn btn-danger" style="padding:5px 12px; font-size:0.78rem;" onclick="window.banUserAndDevicePermanently(\'' + u.id + '\')">🚫 حظر الحساب وهاتفه نهائياً</button>') +
+                        '<button type="button" class="btn btn-outline" style="border-color:#991b1b; color:#991b1b; padding:5px 12px; font-size:0.78rem;" onclick="window.deleteUserAccountPermanently(\'' + u.id + '\')">🗑️ حذف الحساب نهائياً</button>' +
+                      '</div>';
+                return '<div class="security-user-card ' + (isAlreadyBanned ? 'is-banned-card' : '') + '">' +
+                    '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">' +
+                        '<strong style="color:var(--primary); font-size:0.95rem;">👤 ' + window.escapeHTML(u.name || 'عميل') + ' ' + seqTxt + '</strong>' +
+                        (isAlreadyBanned ? '<span style="background:#dc2626; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.74rem; font-weight:bold;">🚫 محظور حالياً</span>' : '') +
+                    '</div>' +
+                    '<div style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;">📧 ' + window.escapeHTML(u.email || 'بدون إيميل') + ' &nbsp;|&nbsp; 📞 ' + window.escapeHTML(u.phone1 || 'بدون هاتف') + '</div>' +
+                    '<div style="font-size:0.76rem; color:var(--text-muted); margin-top:2px;">📱 الجهاز: ' + window.escapeHTML(u.lastDeviceSummary || 'مسجل') + (u.deviceFp ? ' • 🔑 ' + window.escapeHTML(u.deviceFp) : '') + '</div>' +
+                    actions +
+                '</div>';
+            }).join('');
+        }
+    }
+
+    let lBan = document.getElementById('sec-banned-users-list');
+    if (lBan) {
+        let fBan = bannedList.filter(b => {
+            if (!q) return true;
+            return JSON.stringify(b).toLowerCase().includes(q);
+        });
+        if (fBan.length === 0) {
+            lBan.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">✅ لا يوجد أشخاص محظورون حالياً.</p>';
+        } else {
+            lBan.innerHTML = fBan.map((b, idx) => {
+                let dStr = b.bannedAt ? new Date(b.bannedAt).toLocaleString('ar-EG') : '';
+                return '<div class="security-user-card is-banned-card">' +
+                    '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">' +
+                        '<div>' +
+                            '<strong style="color:#991b1b; font-size:0.95rem;">🚫 ' + window.escapeHTML(b.name || b.phone || b.email || 'جهاز محظور') + '</strong>' +
+                            '<div style="font-size:0.8rem; color:var(--text-color); margin-top:3px;">📧 ' + window.escapeHTML(b.email || '-') + ' | 📞 ' + window.escapeHTML(b.phone || '-') + '</div>' +
+                            '<div style="font-size:0.78rem; color:#b91c1c; margin-top:2px;">السبب: ' + window.escapeHTML(b.reason || 'مخالفة سياسة المتجر') + ' • 🕒 ' + dStr + '</div>' +
+                        '</div>' +
+                        '<button type="button" class="btn" style="background:#16a34a; padding:6px 14px; font-size:0.8rem;" onclick="window.unbanByIndex(' + idx + ')">✅ فك الحظر الآن</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+    }
+};
+
+window.banUserAndDevicePermanently = async function(uid) {
+    let u = (window.v74SecurityState.allUsers || []).find(x => x.id === uid);
+    if (!u) {
+        try {
+            let s = await getDoc(doc(db, 'users', uid));
+            if (s.exists()) u = { id: s.id, ...s.data() };
+        } catch (e) {}
+    }
+    if (!u) return;
+    let reason = prompt('🚫 اكتب سبب حظر العميل (' + (u.name || u.email || u.phone1) + ') وهاتفه من دخول الموقع:', 'مخالفة شروط المتجر / طلبات وهمية');
+    if (reason === null) return;
+
+    let newEntry = {
+        id: 'ban_' + Date.now(),
+        uid: u.id,
+        name: u.name || 'عميل محظور',
+        email: (u.email || '').toLowerCase(),
+        phone: String(u.phone1 || '').replace(/\D/g, ''),
+        visitorId: u.visitorId || '',
+        deviceFp: u.deviceFp || '',
+        reason: reason.trim() || 'مخالفة شروط الاستخدام',
+        bannedAt: new Date().toISOString()
+    };
+    let list = [...(window.v74SecurityState.bannedList || [])];
+    list.unshift(newEntry);
+    try {
+        await setDoc(doc(db, 'settings', 'security'), { bannedList: list }, { merge: true });
+        if (window.recordAdminAuditLog) window.recordAdminAuditLog('حظر نهائي للحساب والهاتف: ' + newEntry.name);
+        window.showToast('🚫 تم حظر الشخص وهاتفه نهائياً! لن يتمكن من دخول المتجر من هاتفه.', 'success');
+    } catch (e) {
+        window.showToast('تعذر حفظ الحظر، تأكد من قواعد Firestore', 'error');
+    }
+};
+
+window.executeManualBanFromPanel = async function() {
+    let raw = ((document.getElementById('sec-manual-ban-id') || {}).value || '').trim();
+    let reason = ((document.getElementById('sec-manual-ban-reason') || {}).value || '').trim() || 'مخالفة سياسة المتجر';
+    if (!raw) {
+        window.showToast('يرجى كتابة رقم الهاتف أو الإيميل المراد حظره', 'error');
+        return;
+    }
+    let isEmail = raw.includes('@');
+    let newEntry = {
+        id: 'ban_' + Date.now(),
+        uid: '',
+        name: raw,
+        email: isEmail ? raw.toLowerCase() : '',
+        phone: !isEmail ? raw.replace(/\D/g, '') : '',
+        visitorId: raw.startsWith('vis_') ? raw : '',
+        deviceFp: raw.startsWith('DEV_') ? raw : '',
+        reason: reason,
+        bannedAt: new Date().toISOString()
+    };
+    let list = [...(window.v74SecurityState.bannedList || [])];
+    list.unshift(newEntry);
+    try {
+        await setDoc(doc(db, 'settings', 'security'), { bannedList: list }, { merge: true });
+        let inp = document.getElementById('sec-manual-ban-id'); if (inp) inp.value = '';
+        window.showToast('🚫 تم تنفيذ الحظر اليدوي بنجاح!', 'success');
+    } catch (e) {
+        window.showToast('حدث خطأ أثناء تنفيذ الحظر', 'error');
+    }
+};
+
+window.unbanByIndex = async function(idx) {
+    let list = [...(window.v74SecurityState.bannedList || [])];
+    if (idx < 0 || idx >= list.length) return;
+    list.splice(idx, 1);
+    try {
+        await setDoc(doc(db, 'settings', 'security'), { bannedList: list }, { merge: true });
+        window.showToast('✅ تم فك الحظر بنجاح! يمكنه الدخول للمتجر الآن.', 'success');
+    } catch (e) {}
+};
+
+window.unbanUserByUidOrEmail = async function(uid, email) {
+    let list = (window.v74SecurityState.bannedList || []).filter(b => {
+        if (uid && b.uid === uid) return false;
+        if (email && b.email && b.email.toLowerCase() === email.toLowerCase()) return false;
+        return true;
+    });
+    try {
+        await setDoc(doc(db, 'settings', 'security'), { bannedList: list }, { merge: true });
+        window.showToast('✅ تم فك الحظر عن هذا الحساب وهاتفه بنجاح!', 'success');
+    } catch (e) {}
+};
+
+window.deleteUserAccountPermanently = async function(uid) {
+    let u = (window.v74SecurityState.allUsers || []).find(x => x.id === uid);
+    let label = u ? (u.name || u.email || uid) : uid;
+    if (!confirm('⚠️ هل أنت متأكد من حذف حساب (' + label + ') نهائياً من الموقع وطرده فوراً؟')) return;
+    try {
+        await deleteDoc(doc(db, 'users', uid));
+        let delList = [...(window.v74SecurityState.deletedUids || [])];
+        if (!delList.includes(uid)) delList.push(uid);
+        if (u && u.email && !delList.includes(u.email.toLowerCase())) delList.push(u.email.toLowerCase());
+        await setDoc(doc(db, 'settings', 'security'), { deletedUids: delList }, { merge: true });
+        window.v74SecurityState.allUsers = (window.v74SecurityState.allUsers || []).filter(x => x.id !== uid);
+        window.renderAdminSecurityLists();
+        if (window.recordAdminAuditLog) window.recordAdminAuditLog('حذف حساب العميل نهائياً: ' + label);
+        window.showToast('🗑️ تم حذف حساب (' + label + ') نهائياً من قاعدة البيانات!', 'success');
+    } catch (e) {
+        window.showToast('حدث خطأ أثناء حذف الحساب', 'error');
+    }
+};
+
+window.loadAdminUsers = function() {
+    if (adminUsersUnsubscribe) adminUsersUnsubscribe();
+    adminUsersUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+        let container = document.getElementById('admin-users-container');
+        if (!container) return;
+        let usersList = [];
+        snapshot.forEach(docSnap => { usersList.push({ id: docSnap.id, ...docSnap.data() }); });
+        window.v74SecurityState.allUsers = usersList;
+        usersList.sort((a, b) => (Number(a.customerSeqNumber || 9999)) - (Number(b.customerSeqNumber || 9999)));
+
+        if (usersList.length === 0) {
+            container.innerHTML = '<h3 style="text-align:center; color:var(--text-muted);">لا يوجد عملاء مسجلين.</h3>';
+            return;
+        }
+        let showImpBtn = storeSettings.enableImpersonateInUsers !== false;
+        let showSeq = storeSettings.enableCustomerSeqId !== false;
+        let html = '';
+        usersList.forEach((u, idx) => {
+            let seqNum = u.customerSeqNumber || (idx + 1);
+            let seqBadgeHtml = showSeq ? '<span class="cust-seq-id-badge" style="margin-right:6px;">🆔 عميل #' + seqNum + '</span>' : '';
+            let loginDate = u.lastLogin ? new Date(u.lastLogin).toLocaleString('ar-EG') : 'غير محدد';
+            let safeName = (u.name || 'عميل').replace(/'/g, '');
+            let isSuper = typeof SUPER_ADMINS !== 'undefined' && u.email && SUPER_ADMINS.includes(u.email.toLowerCase());
+            let impBtnHtml = showImpBtn
+                ? '<button type="button" class="impersonate-user-btn" onclick="event.stopPropagation(); window.loginAsCustomerAccount(\'' + u.id + '\', \'' + safeName + '\')">🔑 دخول لحساب العميل</button>'
+                : '';
+            let secBtnsHtml = isSuper ? '' :
+                '<button type="button" class="btn btn-danger" style="padding:5px 10px; font-size:0.76rem;" onclick="event.stopPropagation(); window.banUserAndDevicePermanently(\'' + u.id + '\')">🚫 حظر الهاتف</button>' +
+                '<button type="button" class="btn btn-outline" style="padding:5px 10px; font-size:0.76rem; border-color:#991b1b; color:#991b1b;" onclick="event.stopPropagation(); window.deleteUserAccountPermanently(\'' + u.id + '\')">🗑️ حذف الحساب</button>';
+            html += '<div class="admin-msg-card" style="border-right: 4px solid #6f42c1; cursor:pointer;" onclick="window.showUserHistory(\'' + u.id + '\', \'' + safeName + '\')">' +
+                '<h4 style="margin:0 0 5px 0; color:var(--primary);">👤 ' + window.escapeHTML(u.name || 'عميل') + ' ' + seqBadgeHtml + '</h4>' +
+                '<p style="margin: 3px 0;"><strong>التواصل:</strong> ' + window.escapeHTML(u.email || u.phone1 || 'غير متوفر') + (u.phone1 && u.email ? ' | 📞 ' + window.escapeHTML(u.phone1) : '') + '</p>' +
+                '<p style="margin: 3px 0;"><strong>المحافظة:</strong> ' + window.escapeHTML(u.gov || 'غير محدد') + ' - ' + window.escapeHTML(u.city || '') + '</p>' +
+                '<p style="margin: 3px 0; color:var(--text-muted); font-size:0.82rem;"><strong>آخر دخول:</strong> ' + loginDate + '</p>' +
+                '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">' + impBtnHtml + secBtnsHtml + '</div>' +
+            '</div>';
+        });
+        container.innerHTML = html;
+    });
+};
+    

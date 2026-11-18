@@ -3543,3 +3543,192 @@ header h1 img {
     flex-wrap: wrap;
     gap: 10px;
 }
+
+
+/* ==========================================================================
+   النسخة V74 VIP: الشريط العلوي + إزالة السلة العائمة + تثبيت التنقل السفلي + شات متطور + شاشة الحظر
+   ========================================================================== */
+
+/* 1. إلغاء زر تكبير الخط (A+) وشريط السلة العائم (سلة مشترياتك الجاهزة) نهائياً */
+#header-font-size-btn,
+#floating-bottom-cart-bar,
+.floating-bottom-cart-bar {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* 2. استعادة وتنسيق الشريط العلوي (Header) بوضوح تام وإظهار اللوجو والاسم بدون أي قص */
+header {
+    background: linear-gradient(135deg, var(--primary, #3c521e), var(--nav-bg, #1f3a13)) !important;
+    padding: 8px 12px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: 58px !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1100 !important;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18) !important;
+}
+header > div:first-child,
+.header-brand-wrap {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+}
+header h1 {
+    margin: 0 !important;
+    font-size: 0.98rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    color: #fff !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+}
+header h1 img {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 2px solid #c59b27 !important;
+    background: #fff !important;
+    flex-shrink: 0 !important;
+    display: block !important;
+}
+header h1 span {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+.header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    flex-wrap: nowrap !important;
+    flex-shrink: 0 !important;
+}
+.header-actions .hdr-icon-pill,
+.header-actions > button {
+    height: 32px !important;
+    min-width: 32px !important;
+    padding: 0 7px !important;
+    font-size: 0.82rem !important;
+    border-radius: 16px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+@media (max-width: 480px) {
+    header { padding: 6px 8px !important; gap: 5px !important; }
+    header h1 { font-size: 0.84rem !important; gap: 5px !important; }
+    header h1 img { width: 32px !important; height: 32px !important; min-width: 32px !important; min-height: 32px !important; }
+    .header-actions { gap: 4px !important; }
+    .header-actions .hdr-icon-pill, .header-actions > button { height: 30px !important; min-width: 30px !important; padding: 0 6px !important; font-size: 0.76rem !important; }
+    #user-email-display { max-width: 58px !important; overflow: hidden !important; text-overflow: ellipsis !important; display: inline-block !important; }
+}
+
+/* 3. تثبيت وإظهار شريط التنقل السفلي (Bottom Navigation) بوضوح تام */
+body { padding-bottom: 82px !important; }
+.bottom-nav, #bottom-nav {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 4960 !important;
+    display: flex !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    background: var(--panel-bg, #ffffff) !important;
+    border-top: 2px solid var(--secondary, #c59b27) !important;
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.15) !important;
+    padding: 6px 4px !important;
+    min-height: 60px !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+#floating-menu-container {
+    bottom: 78px !important;
+    z-index: 4920 !important;
+}
+.admin-floating-launcher-wrap {
+    bottom: 145px !important;
+}
+
+/* 4. شريط تسجيل ومعاينة وحذف المقطع الصوتي بالشات (V74 Voice Studio) */
+.v74-voice-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--input-bg);
+    border: 1.5px solid var(--border-color);
+    border-radius: 14px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+}
+.v74-voice-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.v74-rec-dot {
+    width: 10px; height: 10px; border-radius: 50%; background: #dc2626;
+    display: inline-block; animation: pulseOffer 0.8s infinite;
+}
+.v74-upload-progress-wrap {
+    display: none;
+    background: #eff6ff;
+    border: 1.5px solid #3b82f6;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #1d4ed8;
+}
+.v74-upload-progress-track {
+    width: 100%; height: 8px; background: #dbeafe; border-radius: 6px; overflow: hidden; margin-top: 5px;
+}
+.v74-upload-progress-fill {
+    height: 100%; width: 0%; background: linear-gradient(90deg, #2563eb, #16a34a); transition: width 0.2s ease;
+}
+
+/* 5. شاشة الحظر الشاملة غير القابلة للإغلاق للمحظورين من تليفوناتهم */
+#zait-banned-lockout-screen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 2147483647 !important;
+    background: linear-gradient(160deg, #1a0505, #450a0a, #09090b) !important;
+    color: #ffffff !important;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+}
+.security-user-card {
+    background: var(--input-bg);
+    border: 1.5px solid var(--border-color);
+    border-right: 4px solid #dc2626;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+.security-user-card.is-banned-card {
+    border-right-color: #991b1b;
+    background: rgba(220, 38, 38, 0.08);
+}
+    
