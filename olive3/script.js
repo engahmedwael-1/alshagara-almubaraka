@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, updateDoc, setDoc, getDoc, getDocs, increment, arrayUnion, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -15635,10 +15634,10 @@ window.showUserHistory = function(userId, userName) {
                 var loggedIn = (typeof currentUser !== 'undefined' && currentUser);
                 if (loggedIn) {
                     if (userMenu) userMenu.style.setProperty('display', 'block', 'important');
-                    if (authBtn) authBtn.style.setProperty('display', 'none', 'important');
+                    
                 } else {
                     if (userMenu) userMenu.style.setProperty('display', 'none', 'important');
-                    if (authBtn) authBtn.style.setProperty('display', 'inline-flex', 'important');
+                    
                 }
             } catch (e) {}
         };
@@ -16462,4 +16461,1345 @@ window.showUserHistory = function(userId, userName) {
     }
 })();
 /* === ZAIT_V75_FIXED_VIP_END === */
-    
+
+/* === START_V76_VIP_ENGINE === */
+(function () {
+    'use strict';
+
+    const V76_CLOUD_DEFAULT_NAME = 'jj2qrpnb';
+    const V76_CLOUD_DEFAULT_PRESET = 'bfu87mf0';
+    const V76_CACHE_PRODUCTS_KEY = 'zait_v76_products_cache_v1';
+    const V76_CACHE_SETTINGS_KEY = 'zait_v76_settings_cache_v1';
+    const V76_DEVICE_ID_KEY = 'zait_v76_device_uid';
+    const V76_DEVICE_LOCK_KEY = 'zait_v76_device_locked_flag';
+
+    // دوال مساعدة آمنة للوصول لمتغيرات المتجر الأساسية دون أي تعارض
+    const getDb = () => (typeof db !== 'undefined' ? db : window.db);
+    const getAuth = () => (typeof auth !== 'undefined' ? auth : window.auth);
+    const getUser = () => (typeof currentUser !== 'undefined' ? currentUser : window.currentUser);
+    const getIsAdmin = () => {
+        try {
+            if (typeof isCurrentUserAdmin !== 'undefined' && isCurrentUserAdmin) return true;
+            if (window.isCurrentUserAdmin) return true;
+            const u = getUser();
+            const em = u && u.email ? String(u.email).toLowerCase() : '';
+            if (em === 'aw734622@gmail.com' || em === 'mhmwdaltahrahmdwayl@gmail.com') return true;
+        } catch (e) {}
+        return false;
+    };
+    const getSettings = () => (typeof storeSettings !== 'undefined' && storeSettings ? storeSettings : (window.storeSettings || {}));
+    const safeEsc = (s) => {
+        if (typeof window.escapeHTML === 'function') return window.escapeHTML(String(s || ''));
+        return String(s || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    };
+    const toast = (msg, type) => {
+        if (typeof window.showToast === 'function') window.showToast(msg, type || 'info');
+        else console.log('[V76]', msg);
+    };
+
+    // =========================================================================
+    // 1. تسريع فتح المتجر الفوري (Instant Cache Render + Lazy Images)
+    // =========================================================================
+    function applyInstantProductCache() {
+        try {
+            const rawProds = localStorage.getItem(V76_CACHE_PRODUCTS_KEY);
+            if (rawProds && typeof products !== 'undefined' && Array.isArray(products) && products.length === 0) {
+                const parsed = JSON.parse(rawProds);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    products.push(...parsed);
+                    if (typeof window.renderProducts === 'function') window.renderProducts();
+                    else if (typeof renderProducts === 'function') renderProducts();
+                    if (typeof window.renderCategories === 'function') window.renderCategories();
+                }
+            }
+        } catch (e) {}
+    }
+
+    function saveLiveCachesPeriodically() {
+        try {
+            if (typeof products !== 'undefined' && Array.isArray(products) && products.length > 0) {
+                const slim = products.slice(0, 60).map((p) => ({
+                    id: p.id, name: p.name, price: p.price, oldPrice: p.oldPrice || 0,
+                    category: p.category || '', imageUrl: p.imageUrl || '', images: (p.images || []).slice(0, 2),
+                    stock: p.stock, description: (p.description || '').slice(0, 180), featured: !!p.featured
+                }));
+                localStorage.setItem(V76_CACHE_PRODUCTS_KEY, JSON.stringify(slim));
+            }
+            const s = getSettings();
+            if (s && Object.keys(s).length > 2) {
+                localStorage.setItem(V76_CACHE_SETTINGS_KEY, JSON.stringify(s));
+            }
+        } catch (e) {}
+    }
+
+    function optimizeImagesLazy() {
+        document.querySelectorAll('img').forEach((img, idx) => {
+            if (idx > 2 && !img.getAttribute('loading')) img.setAttribute('loading', 'lazy');
+            if (!img.getAttribute('decoding')) img.setAttribute('decoding', 'async');
+        });
+    }
+
+    // =========================================================================
+    // 2. رقم العميل الثابت + بصمة الهاتف الثابتة (Device ID & Customer Code)
+    // =========================================================================
+    function hashToDigits(str, len) {
+        let h = 2166136261;
+        const s = String(str || 'zait');
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+        }
+        const n = Math.abs(h) % Math.pow(10, len);
+        return String(n).padStart(len, '0');
+    }
+
+    window.V76_getDeviceId = function () {
+        let id = '';
+        try { id = localStorage.getItem(V76_DEVICE_ID_KEY) || ''; } catch (e) {}
+        if (!id) {
+            const m = document.cookie.match(/zait_v76_dev=([^;]+)/);
+            if (m && m[1]) id = decodeURIComponent(m[1]);
+        }
+        if (!id) {
+            const raw = [
+                navigator.userAgent || '',
+                screen.width + 'x' + screen.height,
+                Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+                navigator.language || '',
+                navigator.hardwareConcurrency || ''
+            ].join('|');
+            id = 'DEV-' + hashToDigits(raw + '|' + Math.random().toString(36).slice(2, 6), 8);
+        }
+        try {
+            localStorage.setItem(V76_DEVICE_ID_KEY, id);
+            document.cookie = 'zait_v76_dev=' + encodeURIComponent(id) + '; path=/; max-age=315360000; SameSite=Lax';
+        } catch (e) {}
+        return id;
+    };
+
+    window.V76_getCustomerCode = function (userObj) {
+        if (!userObj) return '';
+        if (userObj.customerCode) return String(userObj.customerCode).toUpperCase();
+        if (userObj.customerNumber) return String(userObj.customerNumber).toUpperCase();
+        const seed = userObj.uid || userObj.id || userObj.email || userObj.phone || 'guest';
+        return 'Z-' + hashToDigits(seed, 5);
+    };
+
+    function normalizeCode(val) {
+        return String(val || '').trim().toUpperCase().replace(/^#/, '').replace(/^Z-/, '');
+    }
+
+    function normalizePhone(val) {
+        return String(val || '').replace(/\D/g, '').replace(/^20/, '0');
+    }
+
+    async function stampCurrentUserRecord() {
+        const u = getUser();
+        const d = getDb();
+        if (!u || !u.uid || !d) return;
+        const code = window.V76_getCustomerCode(u);
+        const devId = window.V76_getDeviceId();
+        window.__V76_MY_CUSTOMER_CODE = code;
+        try {
+            await setDoc(doc(d, 'users', u.uid), {
+                uid: u.uid,
+                email: u.email || '',
+                name: u.displayName || (u.email ? u.email.split('@')[0] : 'عميل'),
+                phone: u.phoneNumber || '',
+                customerCode: code,
+                deviceId: devId,
+                lastSeenAt: new Date().toISOString()
+            }, { merge: true });
+        } catch (e) {}
+    }
+
+    // =========================================================================
+    // 3. نظام الحظر الشامل (هاتف / حساب / شامل / حذف) + وضع الطعن (خدمة العملاء فقط)
+    // =========================================================================
+    let v76BanEntries = [];
+    let v76ActiveBanMatch = null;
+    window.__V76_APPEAL_MODE = false;
+
+    function ensureBanOverlayDOM() {
+        if (!document.getElementById('v76-ban-overlay')) {
+            const ov = document.createElement('div');
+            ov.id = 'v76-ban-overlay';
+            ov.innerHTML = `
+                <div class="v76-ban-card">
+                    <div id="v76-ban-icon" style="font-size:3rem; margin-bottom:8px;">🚫</div>
+                    <h2 id="v76-ban-title" style="margin:0 0 8px; color:#f87171; font-size:1.3rem;">تم حظر الوصول للمتجر</h2>
+                    <p id="v76-ban-desc" style="font-size:0.9rem; color:#e4e4e7; line-height:1.7; margin:0 0 12px;"></p>
+                    <div id="v76-ban-meta" style="background:#27272a; border-radius:10px; padding:10px; font-size:0.82rem; color:#fde68a; margin-bottom:14px; line-height:1.6;"></div>
+                    <button type="button" class="v76-ban-btn" style="background:#16a34a; color:#fff;" onclick="window.V76_openBannedAppealChat()">
+                        💬 التحدث لخدمة العملاء وتقديم طعن
+                    </button>
+                    <button type="button" id="v76-ban-logout-btn" class="v76-ban-btn" style="background:#d97706; color:#fff; display:none;" onclick="window.V76_logoutFromAccountBan()">
+                        🚪 تسجيل الخروج والتبديل لحساب آخر
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(ov);
+        }
+        if (!document.getElementById('v76-appeal-top-banner')) {
+            const bn = document.createElement('div');
+            bn.id = 'v76-appeal-top-banner';
+            bn.innerHTML = `
+                <span>⚖️ وضع تقديم الطعن — متاح لك صفحة خدمة العملاء فقط</span>
+                <button type="button" onclick="window.V76_returnToBanOverlay()" style="background:#fff; color:#991b1b; border:none; border-radius:8px; padding:5px 10px; font-weight:800; cursor:pointer; font-size:0.78rem;">🔙 شاشة الحظر</button>
+            `;
+            document.body.appendChild(bn);
+        }
+    }
+
+    function evaluateCurrentUserBan() {
+        if (getIsAdmin()) {
+            v76ActiveBanMatch = null;
+            hideBanScreens();
+            return;
+        }
+        const devId = window.V76_getDeviceId();
+        const u = getUser();
+        const myUid = u && u.uid ? u.uid : '';
+        const myEmail = u && u.email ? u.email.toLowerCase().trim() : '';
+        const myPhone = u && u.phoneNumber ? normalizePhone(u.phoneNumber) : '';
+        const myCode = u ? normalizeCode(window.V76_getCustomerCode(u)) : '';
+
+        const matchDevice = (e) => e.deviceId && String(e.deviceId).trim().toUpperCase() === devId.toUpperCase();
+        const matchAccount = (e) => {
+            if (!u) return false;
+            if (e.uid && myUid && e.uid === myUid) return true;
+            if (e.email && myEmail && String(e.email).toLowerCase().trim() === myEmail) return true;
+            if (e.phone && myPhone && normalizePhone(e.phone) === myPhone) return true;
+            if (e.customerCode && myCode && normalizeCode(e.customerCode) === myCode) return true;
+            return false;
+        };
+
+        // 1. أولوية أولى: حظر الهاتف أو الحظر الشامل (هاتف + حساب)
+        let hit = v76BanEntries.find((e) => (e.type === 'device' || e.type === 'both') && (matchDevice(e) || (e.type === 'both' && matchAccount(e))));
+        if (hit && hit.type === 'both' && !matchDevice(hit)) {
+            // تثبيت الحظر على هذا الهاتف محلياً أيضاً
+            try { localStorage.setItem(V76_DEVICE_LOCK_KEY, JSON.stringify({ reason: hit.reason || '', id: hit.id })); } catch (e) {}
+        }
+
+        // التحقق من قفل الهاتف المحلي لو كان هناك حظر شامل سابق ما زال سارياً
+        if (!hit) {
+            try {
+                const locked = JSON.parse(localStorage.getItem(V76_DEVICE_LOCK_KEY) || 'null');
+                if (locked && locked.id) {
+                    const stillExists = v76BanEntries.find((e) => e.id === locked.id);
+                    if (stillExists) hit = stillExists;
+                    else localStorage.removeItem(V76_DEVICE_LOCK_KEY);
+                }
+            } catch (e) {}
+        }
+
+        // 2. أولوية ثانية: الحساب محذوف نهائياً
+        if (!hit) {
+            const delHit = v76BanEntries.find((e) => e.type === 'deleted' && matchAccount(e));
+            if (delHit) {
+                forceSignOutDeletedAccount(delHit);
+                return;
+            }
+        }
+
+        // 3. أولوية ثالثة: حظر الحساب فقط (الهاتف غير محظور)
+        if (!hit) {
+            hit = v76BanEntries.find((e) => e.type === 'account' && matchAccount(e));
+        }
+
+        v76ActiveBanMatch = hit || null;
+        if (v76ActiveBanMatch) {
+            renderBanOverlay(v76ActiveBanMatch);
+        } else {
+            hideBanScreens();
+        }
+    }
+
+    async function forceSignOutDeletedAccount(delEntry) {
+        try {
+            const a = getAuth();
+            if (a && typeof a.signOut === 'function') await a.signOut();
+        } catch (e) {}
+        toast('🗑️ تم حذف هذا الحساب نهائياً من قبل إدارة المتجر.' + (delEntry.reason ? ' السبب: ' + delEntry.reason : ''), 'error');
+    }
+
+    function renderBanOverlay(entry) {
+        ensureBanOverlayDOM();
+        const ov = document.getElementById('v76-ban-overlay');
+        const titleEl = document.getElementById('v76-ban-title');
+        const descEl = document.getElementById('v76-ban-desc');
+        const metaEl = document.getElementById('v76-ban-meta');
+        const logoutBtn = document.getElementById('v76-ban-logout-btn');
+
+        const isAccountOnly = entry.type === 'account';
+        if (isAccountOnly) {
+            titleEl.textContent = '⚠️ تم حظر حسابك في المتجر';
+            descEl.textContent = 'تم إيقاف هذا الحساب مؤقتاً من قِبل الإدارة (هاتفك غير محظور). يمكنك تقديم طعن لخدمة العملاء أو تسجيل الخروج والدخول بحساب آخر.';
+            logoutBtn.style.display = 'inline-flex';
+        } else if (entry.type === 'device') {
+            titleEl.textContent = '📱 تم حظر هذا الهاتف من المتجر';
+            descEl.textContent = 'لا يمكنك تصفح المتجر من هذا الجهاز حالياً. إذا كنت تعتقد أن الحظر حدث بالخطأ، يمكنك التواصل مع خدمة العملاء لتقديم طعن.';
+            logoutBtn.style.display = 'none';
+        } else {
+            titleEl.textContent = '🚫 تم حظر حسابك وهاتفك نهائياً';
+            descEl.textContent = 'تم تقييد الوصول للمتجر على هذا الحساب والجهاز من قِبل الإدارة. يمكنك فقط التواصل مع خدمة العملاء لتقديم طعن ومراجعة حالتك.';
+            logoutBtn.style.display = 'none';
+        }
+
+        const codeTxt = entry.customerCode ? `رقم العميل: <b>${safeEsc(entry.customerCode)}</b><br>` : '';
+        const reasonTxt = entry.reason ? `السبب: <b>${safeEsc(entry.reason)}</b>` : 'السبب: مخالفة سياسة الاستخدام';
+        metaEl.innerHTML = `${codeTxt}${reasonTxt}<br><span style="opacity:0.75; font-size:0.75rem;">معرف الجهاز: ${safeEsc(window.V76_getDeviceId())}</span>`;
+
+        if (!window.__V76_APPEAL_MODE) {
+            ov.classList.add('visible');
+        }
+    }
+
+    function hideBanScreens() {
+        window.__V76_APPEAL_MODE = false;
+        document.body.classList.remove('v76-appeal-locked');
+        const ov = document.getElementById('v76-ban-overlay');
+        if (ov) ov.classList.remove('visible');
+        const bn = document.getElementById('v76-appeal-top-banner');
+        if (bn) bn.style.display = 'none';
+    }
+
+    window.V76_openBannedAppealChat = function () {
+        ensureBanOverlayDOM();
+        window.__V76_APPEAL_MODE = true;
+        document.body.classList.add('v76-appeal-locked');
+        const ov = document.getElementById('v76-ban-overlay');
+        if (ov) ov.classList.remove('visible');
+        const bn = document.getElementById('v76-appeal-top-banner');
+        if (bn) bn.style.display = 'flex';
+
+        if (typeof window.__V76_origShowPanel === 'function') {
+            window.__V76_origShowPanel('support');
+        } else if (typeof window.showPanel === 'function') {
+            window.showPanel('support');
+        }
+        setTimeout(() => {
+            window.V76_setupChatComposers();
+            const inp = document.getElementById('support-message');
+            if (inp && !inp.value.trim()) {
+                const code = v76ActiveBanMatch && v76ActiveBanMatch.customerCode ? v76ActiveBanMatch.customerCode : window.V76_getDeviceId();
+                inp.value = `طلب طعن ومراجعة حظر (${code}): `;
+                inp.focus();
+            }
+        }, 250);
+    };
+
+    window.V76_returnToBanOverlay = function () {
+        window.__V76_APPEAL_MODE = false;
+        document.body.classList.remove('v76-appeal-locked');
+        const bn = document.getElementById('v76-appeal-top-banner');
+        if (bn) bn.style.display = 'none';
+        if (v76ActiveBanMatch) renderBanOverlay(v76ActiveBanMatch);
+    };
+
+    window.V76_logoutFromAccountBan = async function () {
+        try {
+            const a = getAuth();
+            if (a && typeof a.signOut === 'function') await a.signOut();
+            hideBanScreens();
+            toast('🚪 تم تسجيل الخروج بنجاح، يمكنك التصفح أو الدخول بحساب آخر', 'success');
+            if (typeof window.showPanel === 'function') window.showPanel('home');
+        } catch (e) {
+            toast('تعذر تسجيل الخروج، أعد تحميل الصفحة', 'error');
+        }
+    };
+
+    // حارس التنقل: في وضع الطعن يمنع فتح أي صفحة غير خدمة العملاء
+    function wrapShowPanelGuard() {
+        if (typeof window.showPanel === 'function' && !window.__V76_origShowPanel) {
+            window.__V76_origShowPanel = window.showPanel;
+            window.showPanel = function (panelId) {
+                if (window.__V76_APPEAL_MODE && panelId !== 'support') {
+                    toast('⚖️ متاح لك صفحة خدمة العملاء فقط لتقديم الطعن', 'error');
+                    return window.__V76_origShowPanel('support');
+                }
+                const res = window.__V76_origShowPanel.apply(this, arguments);
+                setTimeout(() => {
+                    window.V76_setupChatComposers();
+                    if (getIsAdmin()) window.V76_injectAdminTools();
+                }, 150);
+                return res;
+            };
+        }
+    }
+
+    function startBanRealtimeListener() {
+        const d = getDb();
+        if (!d) return;
+        try {
+            onSnapshot(doc(d, 'settings', 'v76_security_bans'), (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data() || {};
+                    v76BanEntries = Array.isArray(data.entries) ? data.entries : [];
+                } else {
+                    v76BanEntries = [];
+                }
+                evaluateCurrentUserBan();
+                if (getIsAdmin()) window.V76_renderBansListUI();
+            });
+        } catch (e) {}
+    }
+
+    // =========================================================================
+    // 4. شات خدمة العملاء الجديد V76 (كاميرا يمين الكتابة + كتابة واضحة + حذف الصوت + فيديو 100MB)
+    // =========================================================================
+    const V76_SPEECH_FIX = {
+        'ذيت': 'زيت', 'زت': 'زيت', 'ذيتون': 'زيتون', 'زتون': 'زيتون',
+        'سناوي': 'سيناوي', 'سنوي': 'سيناوي', 'سيماوي': 'سيناوي',
+        'جركم': 'جركن', 'غيركن': 'جركن', 'ليتر': 'لتر', 'رتل': 'لتر',
+        'عبوه': 'عبوة', 'اوردر': 'طلب', 'الاوردر': 'الطلب', 'الأوردر': 'الطلب',
+        'شحنه': 'شحنة', 'الشحنه': 'الشحنة', 'مشكله': 'مشكلة', 'بكام': 'بكم سعر',
+        'عايز': 'أريد', 'عاوز': 'أريد', 'محفظه': 'محفظة', 'انستا باي': 'إنستاباي'
+    };
+
+    function smartFixArabicSpeech(txt) {
+        return String(txt || '').trim().replace(/\s+/g, ' ').split(' ').map((w) => {
+            const clean = w.replace(/[،,.؟?!]/g, '');
+            return V76_SPEECH_FIX[clean] || w;
+        }).join(' ');
+    }
+
+    function getCloudinaryCreds() {
+        const s = getSettings();
+        return {
+            cloudName: (s.cloudinaryCloudName || V76_CLOUD_DEFAULT_NAME).trim(),
+            uploadPreset: (s.cloudinaryUploadPreset || V76_CLOUD_DEFAULT_PRESET).trim()
+        };
+    }
+
+    function uploadToCloudinaryWithProgress(fileBlob, resourceType, onProgress) {
+        return new Promise((resolve, reject) => {
+            const { cloudName, uploadPreset } = getCloudinaryCreds();
+            const url = `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/${resourceType || 'auto'}/upload`;
+            const fd = new FormData();
+            fd.append('file', fileBlob);
+            fd.append('upload_preset', uploadPreset);
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', url, true);
+            xhr.upload.onprogress = (ev) => {
+                if (ev.lengthComputable && typeof onProgress === 'function') {
+                    onProgress(Math.round((ev.loaded / ev.total) * 100));
+                }
+            };
+            xhr.onload = () => {
+                try {
+                    const res = JSON.parse(xhr.responseText);
+                    if (xhr.status >= 200 && xhr.status < 300 && res.secure_url) resolve(res.secure_url);
+                    else reject(new Error(res.error ? res.error.message : 'Upload failed'));
+                } catch (e) { reject(e); }
+            };
+            xhr.onerror = () => reject(new Error('Network error'));
+            xhr.send(fd);
+        });
+    }
+
+    function showChatProgress(who, pct, label) {
+        const box = document.getElementById('v76-prog-' + who);
+        const txt = document.getElementById('v76-prog-txt-' + who);
+        const fill = document.getElementById('v76-prog-fill-' + who);
+        if (!box) return;
+        if (pct < 0) { box.style.display = 'none'; return; }
+        box.style.display = 'block';
+        if (txt) txt.textContent = `${label} (${pct}%)`;
+        if (fill) fill.style.width = pct + '%';
+    }
+
+    function dispatchChatText(who, msgText) {
+        if (who === 'cust') {
+            const inp = document.getElementById('support-message');
+            const form = document.getElementById('support-form');
+            if (inp && form) {
+                inp.value = msgText;
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                if (typeof form.requestSubmit === 'function') form.requestSubmit();
+                else form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                setTimeout(() => { inp.value = ''; autoGrowTextarea(inp); syncTypingClass(inp); }, 120);
+            }
+        } else {
+            const inp = document.getElementById('admin-chat-input');
+            if (inp) {
+                inp.value = msgText;
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                if (typeof window.sendAdminMessage === 'function') window.sendAdminMessage();
+                setTimeout(() => { inp.value = ''; autoGrowTextarea(inp); syncTypingClass(inp); }, 120);
+            }
+        }
+    }
+
+    function autoGrowTextarea(el) {
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = Math.min(120, Math.max(40, el.scrollHeight)) + 'px';
+    }
+
+    function syncTypingClass(el) {
+        if (!el) return;
+        const row = el.closest('.v76-composer-row');
+        if (!row) return;
+        if (el.value.trim().length > 0) row.classList.add('is-typing');
+        else row.classList.remove('is-typing');
+    }
+
+    window.V76_toggleCamMenu = function (who, ev) {
+        if (ev) ev.stopPropagation();
+        const menu = document.getElementById('v76-cam-popup-' + who);
+        if (!menu) return;
+        const wasOpen = menu.classList.contains('open');
+        document.querySelectorAll('.v76-cam-popup').forEach((m) => m.classList.remove('open'));
+        if (!wasOpen) menu.classList.add('open');
+    };
+
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.v76-cam-popup').forEach((m) => m.classList.remove('open'));
+    });
+
+    window.V76_pickMedia = function (who, mode) {
+        const menu = document.getElementById('v76-cam-popup-' + who);
+        if (menu) menu.classList.remove('open');
+        const f = document.getElementById(`v76-file-${who}-${mode}`);
+        if (f) f.click();
+    };
+
+    window.V76_handleMediaFile = async function (inputEl, who, kind) {
+        if (!inputEl.files || inputEl.files.length === 0) return;
+        const file = inputEl.files[0];
+        if (kind === 'video' && file.size > 100 * 1024 * 1024) {
+            toast('الحد الأقصى لحجم الفيديو هو 100 ميجابايت', 'error');
+            inputEl.value = '';
+            return;
+        }
+        try {
+            const label = kind === 'video' ? '🎥 جاري رفع الفيديو' : '📸 جاري رفع الصورة';
+            showChatProgress(who, 5, label);
+            const url = await uploadToCloudinaryWithProgress(file, kind === 'video' ? 'video' : 'image', (pct) => {
+                showChatProgress(who, pct, label);
+            });
+            showChatProgress(who, -1, '');
+            const tag = kind === 'video' ? `[فيديو مرفق 🎥]: ${url}` : `[صورة مرفقة 📸]: ${url}`;
+            dispatchChatText(who, tag);
+            toast(kind === 'video' ? '✅ تم إرسال الفيديو بنجاح' : '✅ تم إرسال الصورة بنجاح', 'success');
+        } catch (err) {
+            showChatProgress(who, -1, '');
+            toast('تعذر رفع الملف، تأكد من الاتصال بالإنترنت وحاول مرة أخرى', 'error');
+        }
+        inputEl.value = '';
+    };
+
+    window.V76_startSpeechToText = function (who, btnEl) {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) {
+            toast('متصفحك لا يدعم الإملاء الصوتي، جرب متصفح Chrome', 'error');
+            return;
+        }
+        const inputId = who === 'cust' ? 'support-message' : 'admin-chat-input';
+        const inp = document.getElementById(inputId);
+        const rec = new SR();
+        rec.lang = (window.currentLang === 'en') ? 'en-US' : 'ar-EG';
+        rec.continuous = false;
+        rec.interimResults = true;
+        rec.maxAlternatives = 5;
+        const base = inp ? inp.value.trim() : '';
+
+        rec.onstart = () => {
+            if (btnEl) { btnEl.style.background = '#dc2626'; btnEl.style.color = '#fff'; }
+            toast('🎤 تحدث الآن بوضوح... جاري الكتابة والتصحيح التلقائي', 'info');
+        };
+        rec.onresult = (ev) => {
+            let best = '';
+            for (let i = ev.resultIndex; i < ev.results.length; i++) {
+                const res = ev.results[i];
+                let pick = res[0].transcript;
+                for (let j = 0; j < res.length; j++) {
+                    if (/زيت|زيتون|سيناوي|لتر|جركن|طلب|شحن|عبوة|سعر/.test(res[j].transcript)) {
+                        pick = res[j].transcript; break;
+                    }
+                }
+                best += pick;
+            }
+            if (inp) {
+                inp.value = (base ? base + ' ' : '') + smartFixArabicSpeech(best);
+                autoGrowTextarea(inp);
+                syncTypingClass(inp);
+            }
+        };
+        rec.onerror = () => toast('لم يتم التقاط الصوت، تأكد من إذن الميكروفون', 'error');
+        rec.onend = () => { if (btnEl) { btnEl.style.background = ''; btnEl.style.color = ''; } };
+        try { rec.start(); } catch (e) {}
+    };
+
+    // نظام تسجيل الصوت + المعاينة + الحذف قبل الإرسال
+    const v76RecState = { cust: {}, adm: {} };
+
+    window.V76_startVoiceNote = async function (who) {
+        const st = v76RecState[who];
+        if (st.recorder && st.recorder.state === 'recording') return;
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            toast('المتصفح لا يدعم تسجيل المقاطع الصوتية', 'error');
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream);
+            st.stream = stream;
+            st.recorder = recorder;
+            st.chunks = [];
+            st.canceled = false;
+            st.seconds = 0;
+            st.blob = null;
+
+            recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) st.chunks.push(e.data); };
+            recorder.onstop = () => {
+                clearInterval(st.timer);
+                if (st.stream) st.stream.getTracks().forEach((t) => t.stop());
+                if (st.canceled) {
+                    hideVoiceBar(who);
+                    toast('🗑️ تم حذف وإلغاء التسجيل الصوتي', 'info');
+                    return;
+                }
+                const blob = new Blob(st.chunks, { type: recorder.mimeType || 'audio/webm' });
+                st.blob = blob;
+                const url = URL.createObjectURL(blob);
+                showVoicePreviewUI(who, url);
+            };
+            recorder.start();
+            showVoiceRecordingUI(who);
+            st.timer = setInterval(() => {
+                st.seconds++;
+                const mm = String(Math.floor(st.seconds / 60)).padStart(2, '0');
+                const ss = String(st.seconds % 60).padStart(2, '0');
+                const tEl = document.getElementById('v76-vtime-' + who);
+                if (tEl) tEl.textContent = `${mm}:${ss}`;
+            }, 1000);
+        } catch (e) {
+            toast('يرجى السماح بصلاحية الميكروفون لتسجيل مقطع صوتي', 'error');
+        }
+    };
+
+    function showVoiceRecordingUI(who) {
+        const bar = document.getElementById('v76-vbar-' + who);
+        if (!bar) return;
+        bar.classList.add('active');
+        bar.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px; font-weight:800; font-size:0.86rem;">
+                <span class="v76-voice-dot"></span>
+                <span>جاري التسجيل...</span>
+                <span id="v76-vtime-${who}" style="color:#dc2626;">00:00</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+                <button type="button" onclick="window.V76_cancelVoiceNote('${who}')" style="background:#dc2626; color:#fff; border:none; border-radius:8px; padding:6px 10px; font-weight:800; font-size:0.8rem; cursor:pointer;">🗑️ حذف وإلغاء</button>
+                <button type="button" onclick="window.V76_stopToPreviewVoice('${who}')" style="background:#1f4e2e; color:#fff; border:none; border-radius:8px; padding:6px 10px; font-weight:800; font-size:0.8rem; cursor:pointer;">⏹️ إيقاف ومعاينة</button>
+            </div>
+        `;
+    }
+
+    function showVoicePreviewUI(who, audioUrl) {
+        const bar = document.getElementById('v76-vbar-' + who);
+        if (!bar) return;
+        bar.classList.add('active');
+        bar.innerHTML = `
+            <audio controls src="${audioUrl}" style="height:34px; max-width:210px; flex:1;"></audio>
+            <div style="display:flex; gap:6px;">
+                <button type="button" onclick="window.V76_discardVoicePreview('${who}')" style="background:#dc2626; color:#fff; border:none; border-radius:8px; padding:6px 10px; font-weight:800; font-size:0.8rem; cursor:pointer;">🗑️ حذف</button>
+                <button type="button" onclick="window.V76_sendVoicePreview('${who}')" style="background:#16a34a; color:#fff; border:none; border-radius:8px; padding:6px 12px; font-weight:800; font-size:0.8rem; cursor:pointer;">🚀 إرسال الصوت</button>
+            </div>
+        `;
+    }
+
+    function hideVoiceBar(who) {
+        const bar = document.getElementById('v76-vbar-' + who);
+        if (bar) { bar.classList.remove('active'); bar.innerHTML = ''; }
+    }
+
+    window.V76_cancelVoiceNote = function (who) {
+        const st = v76RecState[who];
+        st.canceled = true;
+        if (st.recorder && st.recorder.state === 'recording') st.recorder.stop();
+        else hideVoiceBar(who);
+    };
+
+    window.V76_stopToPreviewVoice = function (who) {
+        const st = v76RecState[who];
+        st.canceled = false;
+        if (st.recorder && st.recorder.state === 'recording') st.recorder.stop();
+    };
+
+    window.V76_discardVoicePreview = function (who) {
+        v76RecState[who].blob = null;
+        hideVoiceBar(who);
+        toast('🗑️ تم حذف المقطع الصوتي قبل الإرسال', 'info');
+    };
+
+    window.V76_sendVoicePreview = async function (who) {
+        const st = v76RecState[who];
+        if (!st.blob) return;
+        hideVoiceBar(who);
+        try {
+            showChatProgress(who, 10, '🎙️ جاري إرسال المقطع الصوتي');
+            const url = await uploadToCloudinaryWithProgress(st.blob, 'video', (pct) => {
+                showChatProgress(who, pct, '🎙️ جاري إرسال المقطع الصوتي');
+            });
+            showChatProgress(who, -1, '');
+            dispatchChatText(who, `[مقطع صوتي 🎙️]: ${url}`);
+            st.blob = null;
+            toast('✅ تم إرسال المقطع الصوتي بنجاح', 'success');
+        } catch (e) {
+            showChatProgress(who, -1, '');
+            toast('تعذر إرسال المقطع الصوتي، حاول مرة أخرى', 'error');
+        }
+    };
+
+    function buildComposerHTML(who, inputId, placeholder) {
+        return `
+            <div class="v76-chat-shell" data-v76-composer="${who}">
+                <div id="v76-prog-${who}" class="v76-upload-progress">
+                    <span id="v76-prog-txt-${who}">جاري الرفع...</span>
+                    <div class="v76-upload-progress-track"><div id="v76-prog-fill-${who}" class="v76-upload-progress-fill"></div></div>
+                </div>
+                <div id="v76-vbar-${who}" class="v76-voice-bar"></div>
+                <div id="v76-cam-popup-${who}" class="v76-cam-popup" onclick="event.stopPropagation()">
+                    <button type="button" onclick="window.V76_pickMedia('${who}', 'camera')">📸 تصوير صورة بالكاميرا الآن</button>
+                    <button type="button" onclick="window.V76_pickMedia('${who}', 'gallery')">🖼️ اختيار صورة من المعرض</button>
+                    <button type="button" onclick="window.V76_pickMedia('${who}', 'video')">🎥 إرسال فيديو (حتى 100 ميجا)</button>
+                </div>
+                <input type="file" id="v76-file-${who}-camera" accept="image/*" capture="environment" style="display:none" onchange="window.V76_handleMediaFile(this, '${who}', 'image')">
+                <input type="file" id="v76-file-${who}-gallery" accept="image/*" style="display:none" onchange="window.V76_handleMediaFile(this, '${who}', 'image')">
+                <input type="file" id="v76-file-${who}-video" accept="video/*" style="display:none" onchange="window.V76_handleMediaFile(this, '${who}', 'video')">
+
+                <div class="v76-composer-row">
+                    <button type="button" class="v76-icon-btn v76-cam-btn" title="إرفاق صورة أو فيديو" onclick="window.V76_toggleCamMenu('${who}', event)">📷</button>
+                    <textarea id="${inputId}" class="v76-chat-textarea" rows="1" placeholder="${placeholder}"></textarea>
+                    <button type="button" class="v76-icon-btn v76-typing-hide" title="تحويل الكلام لكتابة ذكية" onclick="window.V76_startSpeechToText('${who}', this)">🎤</button>
+                    <button type="button" class="v76-icon-btn v76-typing-hide" title="تسجيل مقطع صوتي مع معاينة وحذف" onclick="window.V76_startVoiceNote('${who}')">🎙️</button>
+                    <button type="${who === 'cust' ? 'submit' : 'button'}" class="v76-icon-btn v76-send-btn" title="إرسال الرسالة" ${who === 'adm' ? 'onclick="if(window.sendAdminMessage) window.sendAdminMessage();"' : ''}>➤</button>
+                </div>
+            </div>
+        `;
+    }
+
+    window.V76_setupChatComposers = function () {
+        // شات العميل
+        const suppForm = document.getElementById('support-form');
+        if (suppForm && !suppForm.querySelector('[data-v76-composer="cust"]')) {
+            // إخفاء القوائم القديمة المزدحمة فوق الشات
+            const oldDrawer = document.getElementById('customer-chat-tools-drawer');
+            if (oldDrawer) oldDrawer.style.display = 'none';
+            document.querySelectorAll('[onclick*="toggleChatToolsDrawer"]').forEach((el) => { el.style.display = 'none'; });
+
+            suppForm.innerHTML = buildComposerHTML('cust', 'support-message', 'اكتب رسالتك هنا بوضوح...');
+            const ta = document.getElementById('support-message');
+            if (ta) {
+                ta.addEventListener('input', () => { autoGrowTextarea(ta); syncTypingClass(ta); });
+                ta.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (typeof suppForm.requestSubmit === 'function') suppForm.requestSubmit();
+                    }
+                });
+            }
+        }
+
+        // شات المدير
+        const admInput = document.getElementById('admin-chat-input');
+        if (admInput && !admInput.closest('[data-v76-composer="adm"]')) {
+            const parent = admInput.parentElement;
+            if (parent) {
+                parent.innerHTML = buildComposerHTML('adm', 'admin-chat-input', 'اكتب ردك للعميل...');
+                const ta = document.getElementById('admin-chat-input');
+                if (ta) {
+                    ta.addEventListener('input', () => { autoGrowTextarea(ta); syncTypingClass(ta); });
+                    ta.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (typeof window.sendAdminMessage === 'function') window.sendAdminMessage();
+                        }
+                    });
+                }
+            }
+        }
+    };
+
+    // تحويل روابط الصور والفيديو والصوت داخل فقاعات الشات لمشغلات حقيقية
+    function enhanceChatMediaBubbles() {
+        document.querySelectorAll('.chat-bubble').forEach((b) => {
+            if (b.dataset.v76MediaDone) return;
+            const txt = b.textContent || '';
+            const vidMatch = txt.match(/\[فيديو مرفق 🎥\]:\s*(https?:\/\/\S+|data:video\/\S+)/);
+            const audMatch = txt.match(/\[مقطع صوتي 🎙️\]:\s*(https?:\/\/\S+|data:audio\/\S+)/);
+            const imgMatch = txt.match(/\[صورة مرفقة 📸\]:\s*(https?:\/\/\S+)/);
+            if (vidMatch) {
+                b.dataset.v76MediaDone = '1';
+                b.innerHTML = `<video controls playsinline style="max-width:100%; max-height:240px; border-radius:10px; display:block;" src="${safeEsc(vidMatch[1])}"></video>`;
+            } else if (audMatch) {
+                b.dataset.v76MediaDone = '1';
+                b.innerHTML = `<audio controls style="max-width:230px; height:36px; display:block;" src="${safeEsc(audMatch[1])}"></audio>`;
+            } else if (imgMatch && !b.querySelector('img')) {
+                b.dataset.v76MediaDone = '1';
+                b.innerHTML = `<a href="${safeEsc(imgMatch[1])}" target="_blank"><img src="${safeEsc(imgMatch[1])}" style="max-width:100%; max-height:220px; border-radius:10px; display:block;" loading="lazy"></a>`;
+            }
+        });
+    }
+
+    // =========================================================================
+    // 5. قسم المدير: الحظر وحذف الحسابات + البحث الشامل عن العملاء + تيليجرام + النسخ الاحتياطي
+    // =========================================================================
+    let v76AllCustomersCache = [];
+
+    window.V76_loadAllCustomers = async function () {
+        const d = getDb();
+        if (!d || !getIsAdmin()) return [];
+        const map = new Map();
+        try {
+            const uSnap = await getDocs(collection(d, 'users'));
+            uSnap.forEach((docSnap) => {
+                const u = docSnap.data() || {};
+                const rec = {
+                    uid: docSnap.id,
+                    name: u.name || u.displayName || (u.email ? u.email.split('@')[0] : 'عميل'),
+                    email: (u.email || '').toLowerCase(),
+                    phone: u.phone || u.phoneNumber || '',
+                    deviceId: u.deviceId || '',
+                    customerCode: window.V76_getCustomerCode({ uid: docSnap.id, ...u }),
+                    source: 'مسجل'
+                };
+                map.set(rec.uid, rec);
+            });
+        } catch (e) {}
+        try {
+            const oSnap = await getDocs(collection(d, 'orders'));
+            oSnap.forEach((docSnap) => {
+                const o = docSnap.data() || {};
+                const key = o.userId || o.customerEmail || (o.phones && o.phones.primary) || docSnap.id;
+                if (!map.has(key)) {
+                    map.set(key, {
+                        uid: o.userId || '',
+                        name: o.customerName || 'عميل طلب',
+                        email: (o.customerEmail || '').toLowerCase(),
+                        phone: (o.phones && o.phones.primary) || '',
+                        deviceId: o.deviceId || '',
+                        customerCode: window.V76_getCustomerCode({ uid: o.userId || key, email: o.customerEmail }),
+                        source: 'من الطلبات'
+                    });
+                } else {
+                    const ex = map.get(key);
+                    if (!ex.phone && o.phones && o.phones.primary) ex.phone = o.phones.primary;
+                    if (ex.name === 'عميل' && o.customerName) ex.name = o.customerName;
+                }
+            });
+        } catch (e) {}
+        v76AllCustomersCache = Array.from(map.values());
+        window.V76_renderCustomersDirectoryUI();
+        return v76AllCustomersCache;
+    };
+
+    window.V76_findCustomerByQuery = function (rawQuery) {
+        const q = String(rawQuery || '').trim();
+        if (!q) return null;
+        const qLow = q.toLowerCase();
+        const qCode = normalizeCode(q);
+        const qPhone = normalizePhone(q);
+        return v76AllCustomersCache.find((c) => {
+            if (c.customerCode && normalizeCode(c.customerCode) === qCode && qCode.length >= 3) return true;
+            if (c.email && c.email.toLowerCase() === qLow) return true;
+            if (c.phone && qPhone.length >= 8 && normalizePhone(c.phone) === qPhone) return true;
+            if (c.deviceId && c.deviceId.toUpperCase() === q.toUpperCase()) return true;
+            if (c.uid && c.uid === q) return true;
+            return false;
+        }) || null;
+    };
+
+    window.V76_executeAdminSecurityAction = async function (actionType, presetTarget) {
+        if (!getIsAdmin()) return toast('هذه الصلاحية للمدير فقط', 'error');
+        const d = getDb();
+        if (!d) return;
+
+        let target = presetTarget || null;
+        const rawInput = (document.getElementById('v76-ban-target-input') || {}).value || '';
+        const reasonInput = ((document.getElementById('v76-ban-reason-input') || {}).value || '').trim();
+
+        if (!target) {
+            const cleanQ = rawInput.trim();
+            if (!cleanQ) {
+                toast('يرجى كتابة رقم العميل أو الإيميل أو رقم الهاتف أو معرف الجهاز أولاً', 'error');
+                return;
+            }
+            if (v76AllCustomersCache.length === 0) await window.V76_loadAllCustomers();
+            const found = window.V76_findCustomerByQuery(cleanQ);
+            if (found) {
+                target = { ...found };
+            } else {
+                target = {
+                    uid: '',
+                    name: cleanQ,
+                    email: cleanQ.includes('@') ? cleanQ.toLowerCase() : '',
+                    phone: /^\+?\d{9,15}$/.test(cleanQ.replace(/\s/g, '')) ? cleanQ : '',
+                    deviceId: /^DEV-/i.test(cleanQ) ? cleanQ.toUpperCase() : '',
+                    customerCode: (/^#?Z?-?\d{4,6}$/i.test(cleanQ)) ? ('Z-' + normalizeCode(cleanQ)) : ''
+                };
+            }
+        }
+
+        if ((actionType === 'device' || actionType === 'both') && !target.deviceId && actionType === 'device') {
+            toast('تنبيه: لم يتم العثور على بصمة هاتف مسجلة لهذا العميل بعد، سيتم حفظ الحظر على معرفه وتفعيله فور دخوله', 'info');
+        }
+
+        if (actionType === 'deleted') {
+            const ok = confirm(`⚠️ هل أنت متأكد من حذف حساب "${target.name || target.customerCode || target.email}" نهائياً من قاعدة البيانات؟`);
+            if (!ok) return;
+            if (target.uid) {
+                try { await deleteDoc(doc(d, 'users', target.uid)); } catch (e) {}
+            }
+        }
+
+        const newEntry = {
+            id: 'ban_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            type: actionType, // 'account' | 'device' | 'both' | 'deleted'
+            uid: target.uid || '',
+            name: target.name || 'عميل',
+            email: target.email || '',
+            phone: target.phone || '',
+            deviceId: target.deviceId || '',
+            customerCode: target.customerCode || '',
+            reason: reasonInput || (actionType === 'deleted' ? 'تم حذف الحساب من الإدارة' : 'مخالفة سياسة المتجر'),
+            createdAt: new Date().toISOString()
+        };
+
+        // منع التكرار لنفس العميل
+        const updated = [newEntry, ...v76BanEntries.filter((e) => {
+            if (newEntry.uid && e.uid === newEntry.uid && e.type === newEntry.type) return false;
+            if (newEntry.customerCode && e.customerCode === newEntry.customerCode && e.type === newEntry.type) return false;
+            if (newEntry.deviceId && e.deviceId === newEntry.deviceId && e.type === newEntry.type) return false;
+            return true;
+        })];
+
+        try {
+            await setDoc(doc(d, 'settings', 'v76_security_bans'), {
+                entries: updated,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+
+            const labels = {
+                account: '👤 تم حظر الحساب فقط بنجاح',
+                device: '📱 تم حظر الهاتف بنجاح',
+                both: '🚫 تم حظر الحساب والهاتف معاً بنجاح',
+                deleted: '🗑️ تم حذف الحساب نهائياً وطرده بنجاح'
+            };
+            toast(labels[actionType] || 'تم التنفيذ بنجاح', 'success');
+            if (!presetTarget) {
+                const inp = document.getElementById('v76-ban-target-input');
+                if (inp) inp.value = '';
+            }
+            window.V76_loadAllCustomers();
+        } catch (err) {
+            toast('حدث خطأ أثناء حفظ الإجراء في القاعدة', 'error');
+        }
+    };
+
+    window.V76_unbanEntry = async function (banId) {
+        if (!getIsAdmin()) return;
+        const d = getDb();
+        const updated = v76BanEntries.filter((e) => e.id !== banId);
+        try {
+            await setDoc(doc(d, 'settings', 'v76_security_bans'), {
+                entries: updated,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+            toast('✅ تم فك الحظر / استعادة السماح بنجاح', 'success');
+        } catch (e) {
+            toast('تعذر فك الحظر', 'error');
+        }
+    };
+
+    window.V76_renderBansListUI = function () {
+        const cont = document.getElementById('v76-bans-list-container');
+        if (!cont) return;
+        if (v76BanEntries.length === 0) {
+            cont.innerHTML = '<div style="text-align:center; padding:18px; color:var(--text-muted); font-size:0.86rem;">لا توجد حسابات أو هواتف محظورة حالياً ✅</div>';
+            return;
+        }
+        const typeBadge = {
+            account: '<span style="background:#d97706;color:#fff;padding:2px 8px;border-radius:99px;font-size:0.74rem;font-weight:800;">👤 حظر حساب فقط</span>',
+            device: '<span style="background:#dc2626;color:#fff;padding:2px 8px;border-radius:99px;font-size:0.74rem;font-weight:800;">📱 حظر هاتف فقط</span>',
+            both: '<span style="background:#7f1d1d;color:#fff;padding:2px 8px;border-radius:99px;font-size:0.74rem;font-weight:800;">🚫 حظر حساب + هاتف</span>',
+            deleted: '<span style="background:#18181b;color:#fca5a5;padding:2px 8px;border-radius:99px;font-size:0.74rem;font-weight:800;">🗑️ حساب محذوف</span>'
+        };
+        cont.innerHTML = v76BanEntries.map((e) => `
+            <div style="background:var(--input-bg,#f8faf9); border:1px solid var(--border-color,#d5e2d9); border-radius:12px; padding:10px 12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div style="font-size:0.83rem; line-height:1.6;">
+                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                        <strong>${safeEsc(e.name || 'عميل')}</strong>
+                        ${typeBadge[e.type] || ''}
+                        ${e.customerCode ? `<span class="v76-code-pill">${safeEsc(e.customerCode)}</span>` : ''}
+                    </div>
+                    <div style="color:var(--text-muted,#555); font-size:0.78rem;">
+                        ${e.phone ? '📞 ' + safeEsc(e.phone) + ' • ' : ''}
+                        ${e.email ? '📧 ' + safeEsc(e.email) + ' • ' : ''}
+                        ${e.deviceId ? '📱 ' + safeEsc(e.deviceId) : ''}
+                    </div>
+                    <div style="color:#b91c1c; font-size:0.78rem;">السبب: ${safeEsc(e.reason || '-')}</div>
+                </div>
+                <button type="button" onclick="window.V76_unbanEntry('${safeEsc(e.id)}')" style="background:#16a34a; color:#fff; border:none; border-radius:8px; padding:7px 12px; font-weight:800; font-size:0.8rem; cursor:pointer;">✅ فك الحظر</button>
+            </div>
+        `).join('');
+    };
+
+    window.V76_renderCustomersDirectoryUI = function (filterText) {
+        const cont = document.getElementById('v76-customers-dir-list');
+        if (!cont) return;
+        const q = String(filterText !== undefined ? filterText : ((document.getElementById('v76-cust-search-inp') || {}).value || '')).trim().toLowerCase();
+        const qCode = normalizeCode(q);
+        const qPhone = normalizePhone(q);
+
+        const filtered = v76AllCustomersCache.filter((c) => {
+            if (!q) return true;
+            if ((c.name || '').toLowerCase().includes(q)) return true;
+            if ((c.email || '').toLowerCase().includes(q)) return true;
+            if (qPhone && normalizePhone(c.phone).includes(qPhone)) return true;
+            if (qCode && normalizeCode(c.customerCode).includes(qCode)) return true;
+            if ((c.customerCode || '').toLowerCase().includes(q)) return true;
+            return false;
+        });
+
+        if (filtered.length === 0) {
+            cont.innerHTML = '<div style="text-align:center; padding:18px; color:var(--text-muted); font-size:0.86rem;">لا يوجد عملاء مطابقون لبحثك 🔍</div>';
+            return;
+        }
+
+        cont.innerHTML = filtered.slice(0, 80).map((c, idx) => `
+            <div style="background:var(--input-bg,#f8faf9); border:1px solid var(--border-color,#d5e2d9); border-radius:12px; padding:11px; margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                    <div>
+                        <strong style="font-size:0.94rem;">${safeEsc(c.name)}</strong>
+                        <span class="v76-code-pill" title="نسخ رقم العميل" onclick="navigator.clipboard && navigator.clipboard.writeText('${safeEsc(c.customerCode)}'); if(window.showToast) window.showToast('تم نسخ رقم العميل: ${safeEsc(c.customerCode)}','success');">🆔 ${safeEsc(c.customerCode)}</span>
+                    </div>
+                    <span style="font-size:0.74rem; color:var(--text-muted);">${safeEsc(c.source)}</span>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px; line-height:1.5;">
+                    ${c.phone ? `📞 <b>${safeEsc(c.phone)}</b> &nbsp;` : ''}
+                    ${c.email ? `📧 ${safeEsc(c.email)} &nbsp;` : ''}
+                    ${c.deviceId ? `<br>📱 معرف الهاتف: <code>${safeEsc(c.deviceId)}</code>` : ''}
+                </div>
+                <div class="v76-action-grid" style="margin-top:8px;">
+                    <button type="button" class="v76-act-btn v76-act-account" onclick="window.V76_quickCustAction(${idx}, 'account')">👤 حظر الحساب</button>
+                    <button type="button" class="v76-act-btn v76-act-device" onclick="window.V76_quickCustAction(${idx}, 'device')">📱 حظر الهاتف</button>
+                    <button type="button" class="v76-act-btn v76-act-both" onclick="window.V76_quickCustAction(${idx}, 'both')">🚫 حظر شامل</button>
+                    <button type="button" class="v76-act-btn v76-act-delete" onclick="window.V76_quickCustAction(${idx}, 'deleted')">🗑️ حذف الحساب</button>
+                </div>
+            </div>
+        `).join('');
+        window.__V76_LAST_FILTERED_CUSTS = filtered.slice(0, 80);
+    };
+
+    window.V76_quickCustAction = function (idx, actionType) {
+        const list = window.__V76_LAST_FILTERED_CUSTS || [];
+        const c = list[idx];
+        if (!c) return;
+        window.V76_executeAdminSecurityAction(actionType, c);
+    };
+
+    // =========================================================================
+    // 6. تنبيهات تيليجرام الفورية للطلبات + النسخ الاحتياطي الكامل JSON
+    // =========================================================================
+    window.V76_saveTelegramSettings = async function () {
+        if (!getIsAdmin()) return;
+        const d = getDb();
+        const token = ((document.getElementById('v76-tg-token') || {}).value || '').trim();
+        const chatId = ((document.getElementById('v76-tg-chatid') || {}).value || '').trim();
+        const enabled = !!(document.getElementById('v76-tg-enabled') || {}).checked;
+        try {
+            await setDoc(doc(d, 'settings', 'main'), {
+                telegramBotToken: token,
+                telegramChatId: chatId,
+                enableTelegramAlerts: enabled
+            }, { merge: true });
+            toast('✅ تم حفظ إعدادات تنبيهات تيليجرام بنجاح', 'success');
+        } catch (e) {
+            toast('تعذر حفظ إعدادات تيليجرام', 'error');
+        }
+    };
+
+    window.V76_sendTelegramMessage = async function (text, overrideToken, overrideChatId) {
+        const s = getSettings();
+        const token = overrideToken || s.telegramBotToken || '';
+        const chatId = overrideChatId || s.telegramChatId || '';
+        if (!token || !chatId) return false;
+        try {
+            const res = await fetch(`https://api.telegram.org/bot${encodeURIComponent(token)}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' })
+            });
+            return res.ok;
+        } catch (e) { return false; }
+    };
+
+    window.V76_testTelegram = async function () {
+        const token = ((document.getElementById('v76-tg-token') || {}).value || '').trim();
+        const chatId = ((document.getElementById('v76-tg-chatid') || {}).value || '').trim();
+        if (!token || !chatId) return toast('أدخل Bot Token و Chat ID أولاً', 'error');
+        toast('⏳ جاري إرسال رسالة تجريبية إلى تيليجرام...', 'info');
+        const ok = await window.V76_sendTelegramMessage('🌿 <b>تجربة ناجحة!</b>\nتم ربط متجر زيت الشجرة المباركة بتنبيهات تيليجرام الفورية بنجاح ✅', token, chatId);
+        toast(ok ? '✅ وصلت الرسالة التجريبية إلى تيليجرام بنجاح!' : '❌ فشل الإرسال، تأكد من التوكن والـ Chat ID', ok ? 'success' : 'error');
+    };
+
+    window.V76_downloadFullBackupJSON = async function () {
+        if (!getIsAdmin()) return toast('هذه الميزة للمدير فقط', 'error');
+        const d = getDb();
+        toast('⏳ جاري تجهيز النسخة الاحتياطية الكاملة للمتجر...', 'info');
+        const cols = ['products', 'orders', 'users', 'promoCodes', 'settings', 'chats'];
+        const backup = { exportedAt: new Date().toISOString(), version: 'V76_VIP', data: {} };
+        for (const cName of cols) {
+            try {
+                const snap = await getDocs(collection(d, cName));
+                backup.data[cName] = snap.docs.map((x) => ({ id: x.id, ...x.data() }));
+            } catch (e) { backup.data[cName] = []; }
+        }
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Zait_Store_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        toast('✅ تم تنزيل النسخة الاحتياطية الكاملة JSON على جهازك بنجاح!', 'success');
+    };
+
+    // ربط تلقائي مع processOrder لإرسال تنبيه تيليجرام فوري عند كل طلب جديد
+    function hookTelegramToOrders() {
+        if (typeof window.processOrder === 'function' && !window.__V76_origProcessOrder) {
+            window.__V76_origProcessOrder = window.processOrder;
+            window.processOrder = async function (method) {
+                const name = ((document.getElementById('order-name') || {}).value || '').trim();
+                const phone1 = ((document.getElementById('order-phone1') || {}).value || '').trim();
+                const gov = ((document.getElementById('order-gov') || {}).value || '').trim();
+                const addr = ((document.getElementById('order-address') || {}).value || '').trim();
+                const pay = ((document.getElementById('order-payment-method') || {}).value || 'كاش').trim();
+                const itemsSnap = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart.filter((i) => i.selected !== false) : [];
+                const beforeCount = itemsSnap.length;
+
+                const result = await window.__V76_origProcessOrder.apply(this, arguments);
+                const afterCount = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart.filter((i) => i.selected !== false).length : 0;
+
+                const s = getSettings();
+                if (beforeCount > 0 && afterCount < beforeCount && s.enableTelegramAlerts && s.telegramBotToken && s.telegramChatId) {
+                    const total = itemsSnap.reduce((acc, it) => acc + (Number(it.price || 0) * Number(it.quantity || 1)), 0);
+                    const lines = itemsSnap.map((it) => `• ${safeEsc(it.name)} × ${it.quantity}`).join('\n');
+                    const tgText = `🛒 <b>طلب جديد في المتجر!</b>\n👤 العميل: ${safeEsc(name)}\n📞 الهاتف: ${safeEsc(phone1)}\n📍 العنوان: ${safeEsc(gov)} - ${safeEsc(addr)}\n💳 الدفع: ${safeEsc(pay)}\n\n📦 <b>المنتجات:</b>\n${lines}\n\n💰 <b>قيمة المنتجات:</b> ${total} ج`;
+                    window.V76_sendTelegramMessage(tgText);
+                }
+                return result;
+            };
+        }
+    }
+
+    // حقن لوحة "🛡️ الحظر والحسابات + بحث العملاء + تيليجرام + النسخ الاحتياطي" في لوحة المدير
+    window.V76_openSecurityCenterPanel = function () {
+        if (!getIsAdmin()) return;
+        let modal = document.getElementById('v76-security-center-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'v76-security-center-modal';
+            modal.style.cssText = 'position:fixed; inset:0; z-index:999990; background:rgba(0,0,0,0.68); display:flex; align-items:flex-start; justify-content:center; padding:14px; overflow-y:auto;';
+            modal.innerHTML = `
+                <div style="width:100%; max-width:680px; background:var(--panel-bg,#fff); color:var(--text-color,#111); border-radius:20px; padding:18px; margin:16px 0; box-shadow:0 20px 55px rgba(0,0,0,0.45);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border-color,#d5e2d9); padding-bottom:10px; margin-bottom:14px;">
+                        <h3 style="margin:0; font-size:1.12rem; color:var(--primary,#1f4e2e);">🛡️ مركز الحظر وحذف الحسابات والعملاء (V76)</h3>
+                        <button type="button" onclick="document.getElementById('v76-security-center-modal').style.display='none'" style="background:#dc2626; color:#fff; border:none; border-radius:8px; padding:6px 12px; font-weight:800; cursor:pointer;">✕ إغلاق</button>
+                    </div>
+
+                    <div class="v76-admin-box">
+                        <h4 style="margin:0 0 8px; font-size:0.98rem;">⚡ تنفيذ حظر أو حذف فوري</h4>
+                        <input id="v76-ban-target-input" class="v76-search-input" placeholder="أدخل رقم العميل (مثال Z-12345) أو الهاتف أو الإيميل أو معرف الهاتف DEV-...">
+                        <input id="v76-ban-reason-input" class="v76-search-input" style="margin-bottom:6px; border-color:var(--border-color,#ccc);" placeholder="سبب الحظر أو الحذف (اختياري - يظهر للعميل)">
+                        <div class="v76-action-grid">
+                            <button type="button" class="v76-act-btn v76-act-account" onclick="window.V76_executeAdminSecurityAction('account')">👤 حظر الحساب فقط</button>
+                            <button type="button" class="v76-act-btn v76-act-device" onclick="window.V76_executeAdminSecurityAction('device')">📱 حظر الهاتف فقط</button>
+                            <button type="button" class="v76-act-btn v76-act-both" onclick="window.V76_executeAdminSecurityAction('both')">🚫 حظر الحساب والهاتف</button>
+                            <button type="button" class="v76-act-btn v76-act-delete" onclick="window.V76_executeAdminSecurityAction('deleted')">🗑️ حذف الحساب نهائياً</button>
+                        </div>
+                    </div>
+
+                    <div class="v76-admin-box">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <h4 style="margin:0; font-size:0.98rem;">🔍 دليل وبحث العملاء (برقم العميل / الهاتف / الاسم)</h4>
+                            <button type="button" onclick="window.V76_loadAllCustomers()" style="background:var(--primary,#1f4e2e); color:#fff; border:none; border-radius:8px; padding:5px 10px; font-size:0.78rem; font-weight:700; cursor:pointer;">🔄 تحديث</button>
+                        </div>
+                        <input id="v76-cust-search-inp" class="v76-search-input" placeholder="🔍 ابحث بالاسم أو رقم الهاتف أو رقم العميل في المتجر (Z-XXXXX)..." oninput="window.V76_renderCustomersDirectoryUI(this.value)">
+                        <div id="v76-customers-dir-list" style="max-height:300px; overflow-y:auto;"></div>
+                    </div>
+
+                    <div class="v76-admin-box">
+                        <h4 style="margin:0 0 8px; font-size:0.98rem;">📋 قائمة المحظورين والحسابات المحذوفة</h4>
+                        <div id="v76-bans-list-container" style="max-height:240px; overflow-y:auto;"></div>
+                    </div>
+
+                    <div class="v76-admin-box">
+                        <h4 style="margin:0 0 8px; font-size:0.98rem;">✈️ تنبيهات الطلبات على تيليجرام + 💾 النسخ الاحتياطي</h4>
+                        <label style="display:flex; align-items:center; gap:8px; font-size:0.86rem; font-weight:700; margin-bottom:8px;">
+                            <input type="checkbox" id="v76-tg-enabled"> تفعيل إرسال تنبيه فوري على تيليجرام عند كل طلب جديد
+                        </label>
+                        <input id="v76-tg-token" class="v76-search-input" style="margin-bottom:8px;" placeholder="Telegram Bot Token (من @BotFather)">
+                        <input id="v76-tg-chatid" class="v76-search-input" style="margin-bottom:8px;" placeholder="Telegram Chat ID (معرف حسابك أو الجروب)">
+                        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                            <button type="button" onclick="window.V76_saveTelegramSettings()" style="flex:1; background:#0284c7; color:#fff; border:none; border-radius:10px; padding:9px; font-weight:800; cursor:pointer;">💾 حفظ تيليجرام</button>
+                            <button type="button" onclick="window.V76_testTelegram()" style="flex:1; background:#16a34a; color:#fff; border:none; border-radius:10px; padding:9px; font-weight:800; cursor:pointer;">✈️ اختبار الإرسال</button>
+                            <button type="button" onclick="window.V76_downloadFullBackupJSON()" style="width:100%; background:#1f4e2e; color:#fff; border:none; border-radius:10px; padding:10px; font-weight:800; cursor:pointer;">💾 تحميل نسخة احتياطية كاملة للمتجر (JSON)</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        modal.style.display = 'flex';
+        const s = getSettings();
+        const tk = document.getElementById('v76-tg-token');
+        const cid = document.getElementById('v76-tg-chatid');
+        const en = document.getElementById('v76-tg-enabled');
+        if (tk) tk.value = s.telegramBotToken || '';
+        if (cid) cid.value = s.telegramChatId || '';
+        if (en) en.checked = !!s.enableTelegramAlerts;
+
+        window.V76_renderBansListUI();
+        window.V76_loadAllCustomers();
+    };
+
+    window.V76_injectAdminTools = function () {
+        if (!getIsAdmin()) return;
+        // 1. إضافة زر الحظر والحسابات في شريط الإدارة العلوي
+        const adminBar = document.getElementById('admin-bar') || document.querySelector('.admin-nav-bar') || document.querySelector('#admin-controls-bar');
+        if (adminBar && !document.getElementById('v76-admin-sec-btn')) {
+            const btn = document.createElement('button');
+            btn.id = 'v76-admin-sec-btn';
+            btn.type = 'button';
+            btn.className = 'btn';
+            btn.style.cssText = 'background:linear-gradient(135deg,#991b1b,#dc2626); color:#fff; font-weight:800; padding:6px 12px; border-radius:10px; font-size:0.82rem; border:1px solid #fca5a5;';
+            btn.innerHTML = '🛡️ الحظر والحسابات + تيليجرام';
+            btn.onclick = window.V76_openSecurityCenterPanel;
+            adminBar.appendChild(btn);
+        }
+
+        // 2. حقن شريط بحث فوري في قسم العملاء الأصلي بالمتجر أيضاً
+        const custPanel = document.getElementById('admin-customers-panel') || document.getElementById('customers-panel');
+        if (custPanel && !document.getElementById('v76-native-cust-search-wrap')) {
+            const wrap = document.createElement('div');
+            wrap.id = 'v76-native-cust-search-wrap';
+            wrap.style.cssText = 'margin:10px 0; padding:12px; background:var(--panel-bg,#fff); border:1.5px solid var(--primary,#1f4e2e); border-radius:14px;';
+            wrap.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                    <strong style="font-size:0.92rem; color:var(--primary,#1f4e2e);">🔍 بحث سريع في العملاء (بالاسم / الهاتف / رقم العميل)</strong>
+                    <button type="button" onclick="window.V76_openSecurityCenterPanel()" style="background:#dc2626; color:#fff; border:none; border-radius:8px; padding:6px 12px; font-weight:800; font-size:0.8rem; cursor:pointer;">🛡️ فتح لوحة الحظر والحذف</button>
+                </div>
+                <input type="text" class="v76-search-input" style="margin-bottom:0;" placeholder="ابحث بالاسم أو رقم الهاتف أو رقم العميل Z-XXXXX..." oninput="window.V76_filterNativeCustomers(this.value)">
+            `;
+            custPanel.insertBefore(wrap, custPanel.firstChild.nextSibling || custPanel.firstChild);
+        }
+    };
+
+    window.V76_filterNativeCustomers = function (val) {
+        const q = String(val || '').trim().toLowerCase();
+        const qCode = normalizeCode(q);
+        const qPhone = normalizePhone(q);
+        const custPanel = document.getElementById('admin-customers-panel') || document.getElementById('customers-panel');
+        if (!custPanel) return;
+        custPanel.querySelectorAll('.admin-msg-card, .customer-card, tr').forEach((card) => {
+            if (card.closest('#v76-native-cust-search-wrap')) return;
+            const txt = (card.textContent || '').toLowerCase();
+            const digits = normalizePhone(txt);
+            const show = !q || txt.includes(q) || (qPhone && digits.includes(qPhone)) || (qCode && txt.includes(qCode.toLowerCase()));
+            card.style.display = show ? '' : 'none';
+        });
+    };
+
+    // =========================================================================
+    // 7. إظهار رقم العميل داخل حسابه وإخفاء زر A+ فقط وضمان ظهور اللوجو وحسابي
+    // =========================================================================
+    function cleanupHeaderUI() {
+        // إخفاء زر تكبير الخط فقط إذا لم يكن له ID محدد
+        document.querySelectorAll('header button').forEach((b) => {
+            const t = (b.textContent || '').trim();
+            if (t === '+A' || t === 'A+' || t === 'A-' || t === 'تكبير الخط') {
+                b.style.setProperty('display', 'none', 'important');
+            }
+        });
+        // تأكيد ظهور اللوجو
+        document.querySelectorAll('header img').forEach((img) => {
+            if (!img.getAttribute('src') || img.getAttribute('src').includes('placeholder')) {
+                img.src = '1000392409.jpeg';
+            }
+            img.classList.add('store-logo-img');
+        });
+        // إظهار رقم العميل في صفحة حسابي
+        const u = getUser();
+        if (u) {
+            const code = window.V76_getCustomerCode(u);
+            const prof = document.getElementById('profile-panel') || document.getElementById('account-panel');
+            if (prof && !document.getElementById('v76-my-code-badge')) {
+                const badge = document.createElement('div');
+                badge.id = 'v76-my-code-badge';
+                badge.style.cssText = 'margin:8px 0 12px; padding:10px 14px; background:rgba(197,155,39,0.14); border:1.5px solid #c59b27; border-radius:12px; display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; font-weight:800;';
+                badge.innerHTML = `<span>🆔 رقمك الخاص في المتجر: <strong style="color:#b45309;">${safeEsc(code)}</strong></span><button type="button" onclick="navigator.clipboard && navigator.clipboard.writeText('${safeEsc(code)}'); if(window.showToast) window.showToast('تم نسخ رقمك في المتجر','success');" style="background:#c59b27; color:#111; border:none; border-radius:8px; padding:4px 10px; font-weight:800; cursor:pointer; font-size:0.78rem;">نسخ</button>`;
+                prof.insertBefore(badge, prof.firstChild.nextSibling || prof.firstChild);
+            }
+        }
+    }
+
+    // =========================================================================
+    // 8. التشغيل المنظم + مراقبة DOM لضمان استقرار الشات والأزرار 100%
+    // =========================================================================
+    function initV76Engine() {
+        window.V76_getDeviceId();
+        applyInstantProductCache();
+        cleanupHeaderUI();
+        wrapShowPanelGuard();
+        window.V76_setupChatComposers();
+        hookTelegramToOrders();
+        startBanRealtimeListener();
+        optimizeImagesLazy();
+
+        // مراقبة تغيرات الشات لتحويل الوسائط وحفظ الكاش
+        const obs = new MutationObserver(() => {
+            enhanceChatMediaBubbles();
+            optimizeImagesLazy();
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+
+        setInterval(() => {
+            cleanupHeaderUI();
+            window.V76_setupChatComposers();
+            saveLiveCachesPeriodically();
+            hookTelegramToOrders();
+            if (getIsAdmin()) window.V76_injectAdminTools();
+            evaluateCurrentUserBan();
+        }, 2500);
+
+        setTimeout(() => {
+            stampCurrentUserRecord();
+            evaluateCurrentUserBan();
+            if (getIsAdmin()) window.V76_injectAdminTools();
+        }, 1200);
+
+        // متابعة تغير حالة تسجيل الدخول لتسجيل رقم العميل والتحقق من الحظر فوراً
+        const a = getAuth();
+        if (a && typeof a.onAuthStateChanged === 'function') {
+            a.onAuthStateChanged(() => {
+                setTimeout(() => {
+                    stampCurrentUserRecord();
+                    cleanupHeaderUI();
+                    evaluateCurrentUserBan();
+                    if (getIsAdmin()) window.V76_injectAdminTools();
+                }, 400);
+            });
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initV76Engine);
+    } else {
+        initV76Engine();
+    }
+})();
+/* === END_V76_VIP_ENGINE === */
