@@ -38,7 +38,7 @@
     <link rel="apple-touch-icon" href="1000392409.jpeg">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="style.css?v=72">
+    <link rel="stylesheet" href="style.css?v=73">
     <script type="application/ld+json" id="dynamic-json-ld-schema">
     {
       "@context": "https://schema.org",
@@ -159,6 +159,56 @@
 
             var st = document.createElement('style');
             st.id = 'zait-instant-hide-style-v72';
+            st.textContent = rules.join('\n');
+            document.head.appendChild(st);
+        } catch (e) {}
+    })();
+    </script>
+
+
+    <script id="zait-zero-flash-v73">
+    (function() {
+        try {
+            var s = JSON.parse(localStorage.getItem('zait_cached_settings_v73') || localStorage.getItem('zait_cached_settings_v72') || localStorage.getItem('zait_cached_settings_v71') || '{}');
+            var rules = [
+                '#btn-show-auth, #amz-cart-top-sticky-bar, #cart-top-sticky-bar, #home-farm-reels-section, #amazon-sub-header { display: none !important; }'
+            ];
+            var map = [
+                ['enableSpinWheel', '#spin-wheel-fab, #sidebar-spin-wheel-btn'],
+                ['enableBoxBuilder', '#sidebar-box-builder-btn, #pill-box-builder'],
+                ['enableB2BPortal', '#sidebar-b2b-btn'],
+                ['enableBatchTracker', '#sidebar-batch-tracker-btn, #pill-batch-tracker'],
+                ['enableVisualSizeGuide', '#sidebar-size-guide-btn, #btn-modal-size-guide'],
+                ['enableSampleBottle', '#sidebar-sample-bottle-btn'],
+                ['enableGiftByPhone', '#sidebar-gift-by-phone-btn, #btn-modal-gift-phone'],
+                ['enablePreorderHarvest', '#sidebar-preorder-harvest-btn'],
+                ['enableGroupBuy', '#sidebar-group-buy-btn'],
+                ['enableDriverPortal', '#sidebar-driver-portal-btn'],
+                ['enableAffiliateSystem', '#sidebar-affiliate-btn'],
+                ['enableLiveShopping', '#sidebar-live-stream-btn, #home-seasonal-bundles-bar'],
+                ['enableQuickTagFilters', '#v64-quick-tags-bar'],
+                ['enableOfferBanner', '#home-limited-offer-banner'],
+                ['enableTrustMarquee', '#trust-marquee-bar, #home-trust-marquee'],
+                ['enableFloatingCartBar', '#floating-bottom-cart-bar, #header-font-size-btn'],
+                ['enableGuestTracking', '#sidebar-track-order-btn, #guest-order-track-box'],
+                ['enableAnnualCalc', '#sidebar-annual-calc-btn, #btn-open-annual-calc'],
+                ['enableGiftCards', '#sidebar-gift-card-btn, #btn-open-gift-card'],
+                ['enableSeoArticles', '#home-seo-benefits-section'],
+                ['enableAdminFloatBtn', '#admin-floating-launcher-wrap'],
+                ['enablePackagingErp', '#admin-packaging-erp-card'],
+                ['enableOliveAdvisorBot', '#v73-olive-advisor-chips']
+            ];
+            for (var i = 0; i < map.length; i++) {
+                if (s[map[i][0]] === false) {
+                    rules.push(map[i][1] + ' { display: none !important; }');
+                }
+            }
+            if (s.enableTopBar !== true) rules.push('#top-announcement-bar { display: none !important; }');
+            if (s.enableHeroSlider !== true) rules.push('#hero-slider-wrapper { display: none !important; }');
+            else rules.push('#hero-section { display: none !important; }');
+
+            var st = document.createElement('style');
+            st.id = 'zait-instant-hide-style-v73';
             st.textContent = rules.join('\n');
             document.head.appendChild(st);
         } catch (e) {}
@@ -2795,7 +2845,7 @@
                         <div style="background:var(--panel-bg); padding:12px; border-radius:10px; border:2px solid #4f46e5; margin-bottom:8px;">
                             <label style="font-weight:bold; color:#4f46e5; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem; margin-bottom:8px;">
                                 <input type="checkbox" id="setting-enable-impersonate-chat" style="width:18px; height:18px; margin:0; accent-color:#4f46e5;" onchange="window.saveSettings()">
-                                <span>💬 إظهار زر (������ الدخول لحساب العميل والتصفح كأنك العميل) داخل قسم خدمة العملاء (الشات)</span>
+                                <span>💬 إظهار زر (������ الدخول لحساب العميل والتصفح كأنك العميل) داخل قسم خدمة العملاء (الشات)</span>
                             </label>
                             <label style="font-weight:bold; color:#4f46e5; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
                                 <input type="checkbox" id="setting-enable-impersonate-users" style="width:18px; height:18px; margin:0; accent-color:#4f46e5;" onchange="window.saveSettings()">
@@ -3344,6 +3394,6 @@
             <p class="dev-signature">تم الإنشاء بواسطة المهندس أحمد وائل</p>
         </div>
     </footer>
-    <script type="module" src="script.js?v=72"></script>
+    <script type="module" src="script.js?v=73"></script>
 </body>
 </html>

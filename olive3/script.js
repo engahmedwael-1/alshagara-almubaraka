@@ -16103,3 +16103,824 @@ setTimeout(() => {
     window.syncZeroFlashSettingsV72();
     window.initCleanChatBarsV72();
 }, 300);
+
+
+// =========================================================================
+// === النسخة V73 الشاملة النهائية: جميع إصلاحات V72 + الـ 5 ميزات لـ V73 ===
+// =========================================================================
+
+// 1. المزامنة الفورية للإعدادات المخفية (Zero-Flash V73) حتى لا يظهر أي زر متوقف عند فتح التطبيق
+window.syncZeroFlashSettingsV73 = function() {
+    try {
+        localStorage.setItem('zait_cached_settings_v73', JSON.stringify(storeSettings || {}));
+        let s = storeSettings || {};
+        let rules = [
+            '#btn-show-auth, #amz-cart-top-sticky-bar, #cart-top-sticky-bar, #home-farm-reels-section, #amazon-sub-header { display: none !important; }'
+        ];
+        let map = [
+            ['enableSpinWheel', '#spin-wheel-fab, #sidebar-spin-wheel-btn'],
+            ['enableBoxBuilder', '#sidebar-box-builder-btn, #pill-box-builder'],
+            ['enableB2BPortal', '#sidebar-b2b-btn'],
+            ['enableBatchTracker', '#sidebar-batch-tracker-btn, #pill-batch-tracker'],
+            ['enableVisualSizeGuide', '#sidebar-size-guide-btn, #btn-modal-size-guide'],
+            ['enableSampleBottle', '#sidebar-sample-bottle-btn'],
+            ['enableGiftByPhone', '#sidebar-gift-by-phone-btn, #btn-modal-gift-phone'],
+            ['enablePreorderHarvest', '#sidebar-preorder-harvest-btn'],
+            ['enableGroupBuy', '#sidebar-group-buy-btn'],
+            ['enableDriverPortal', '#sidebar-driver-portal-btn'],
+            ['enableAffiliateSystem', '#sidebar-affiliate-btn'],
+            ['enableLiveShopping', '#sidebar-live-stream-btn, #home-seasonal-bundles-bar'],
+            ['enableQuickTagFilters', '#v64-quick-tags-bar'],
+            ['enableOfferBanner', '#home-limited-offer-banner'],
+            ['enableTrustMarquee', '#trust-marquee-bar, #home-trust-marquee'],
+            ['enableFloatingCartBar', '#floating-bottom-cart-bar, #header-font-size-btn'],
+            ['enableGuestTracking', '#sidebar-track-order-btn, #guest-order-track-box'],
+            ['enableAnnualCalc', '#sidebar-annual-calc-btn, #btn-open-annual-calc'],
+            ['enableGiftCards', '#sidebar-gift-card-btn, #btn-open-gift-card'],
+            ['enableSeoArticles', '#home-seo-benefits-section'],
+            ['enableAdminFloatBtn', '#admin-floating-launcher-wrap'],
+            ['enablePackagingErp', '#admin-packaging-erp-card'],
+            ['enableOliveAdvisorBot', '#v73-olive-advisor-chips']
+        ];
+        map.forEach(([key, sel]) => {
+            if (s[key] === false) rules.push(sel + ' { display: none !important; }');
+        });
+        if (s.enableTopBar !== true) rules.push('#top-announcement-bar { display: none !important; }');
+        if (s.enableHeroSlider !== true) rules.push('#hero-slider-wrapper { display: none !important; }');
+        else rules.push('#hero-section { display: none !important; }');
+
+        let st = document.getElementById('zait-instant-hide-style-v73');
+        if (!st) {
+            st = document.createElement('style');
+            st.id = 'zait-instant-hide-style-v73';
+            document.head.appendChild(st);
+        }
+        st.textContent = rules.join('\n');
+    } catch (e) {}
+};
+
+// 2. قاموس التصحيح اللغوي والصوتي الذكي لميكروفون الشات
+window.V73_SPEECH_CORRECTION_MAP = [
+    [/\b(ذيت|زت|زيتت|ازيت|الذيت|زايت)\b/g, 'زيت'],
+    [/\b(ذيتون|زتون|زيتان|زاتون|الزتون|الذيتون|زيتونه)\b/g, 'زيتون'],
+    [/\b(سناوي|سينوي|سيماوي|ثيناوي|سيناوى|السيناوي)\b/g, 'سيناوي'],
+    [/\b(سينا|ثيناء|سينه)\b/g, 'سيناء'],
+    [/\b(الشجره|شجره)\s*(المباركه|مباركه)\b/g, 'الشجرة المباركة'],
+    [/\b(عصره|عصرة)\s*(اولى|اولي)\b/g, 'عصرة أولى'],
+    [/\b(عالبارد|علي البارد|ع البارد)\b/g, 'على البارد'],
+    [/\b(غيركن|كيركن|جركم|جاركن|جيركن|قرص)\b/g, 'جركن'],
+    [/\b(عبوه|عبوت|علبه)\b/g, 'عبوة'],
+    [/\b(ليتر|رتل|لترات)\b/g, 'لتر'],
+    [/\b(اوردر|اردر|الاوردر|أوردر)\b/g, 'طلب'],
+    [/\b(بكام|بيكام|كام سعر)\b/g, 'بكم سعر'],
+    [/\b(عايز|عاوز)\b/g, 'أريد'],
+    [/\b(مشكله)\b/g, 'مشكلة'],
+    [/\b(الشحنه|شحنه)\b/g, 'الشحنة'],
+    [/\b(استرجع|مرتجع)\b/g, 'استرجاع'],
+    [/\b(انستا باي|انستاباي|انستا)\b/g, 'إنستاباي'],
+    [/\b(فودافون كاش|فدفون كاش|ودافون كاش)\b/g, 'فودافون كاش']
+];
+
+window.smartCorrectSpeechV73 = function(rawText, alternatives = []) {
+    let candidates = [rawText, ...(alternatives || [])].filter(Boolean);
+    if (candidates.length === 0) return '';
+    let storeWords = ['زيت', 'زيتون', 'سيناوي', 'لتر', 'جركن', 'عبوة', 'طلب', 'شحن', 'سعر', 'خصم', 'استرجاع'];
+    let best = candidates[0];
+    let maxScore = -1;
+    candidates.forEach(c => {
+        let sc = 0;
+        storeWords.forEach(w => { if (c.includes(w)) sc += 3; });
+        if (sc > maxScore) { maxScore = sc; best = c; }
+    });
+    let fixed = String(best).trim();
+    window.V73_SPEECH_CORRECTION_MAP.forEach(([rgx, rep]) => {
+        fixed = fixed.replace(rgx, rep);
+    });
+    fixed = fixed.replace(/\b(\S+)\s+\1\b/g, '$1');
+    return fixed.trim();
+};
+
+window.startVoiceTyping = function(inputId, btnElement) {
+    const inputEl = document.getElementById(inputId);
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        window.showToast('متصفحك لا يدعم تحويل الصوت لنص، يرجى استخدام متصفح Chrome', 'error');
+        return;
+    }
+    if (window.activeSpeechRecInstance) {
+        try { window.activeSpeechRecInstance.stop(); } catch (e) {}
+        window.activeSpeechRecInstance = null;
+        if (btnElement) btnElement.classList.remove('recording');
+        return;
+    }
+    try {
+        const recognition = new SpeechRecognition();
+        window.activeSpeechRecInstance = recognition;
+        recognition.lang = window.currentLang === 'en' ? 'en-US' : 'ar-EG';
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 5;
+
+        const baseVal = inputEl ? inputEl.value.trim() : '';
+
+        recognition.onstart = function() {
+            if (btnElement) {
+                btnElement.classList.add('recording');
+                btnElement.style.background = '#dc2626';
+                btnElement.style.color = '#ffffff';
+            }
+            window.showToast('🎤 تحدث الآن.. المصحح اللغوي الذكي يستمع إليك', 'info');
+        };
+
+        recognition.onresult = function(event) {
+            let finalParts = [];
+            let interimParts = [];
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                let res = event.results[i];
+                let alts = [];
+                for (let j = 1; j < res.length; j++) alts.push(res[j].transcript);
+                let corrected = window.smartCorrectSpeechV73(res[0].transcript, alts);
+                if (res.isFinal) finalParts.push(corrected);
+                else interimParts.push(corrected);
+            }
+            let spoken = (finalParts.join(' ') || interimParts.join(' ')).trim();
+            if (inputEl && spoken) {
+                inputEl.value = baseVal ? (baseVal + ' ' + spoken) : spoken;
+                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        };
+
+        recognition.onerror = function() {
+            if (btnElement) {
+                btnElement.classList.remove('recording');
+                btnElement.style.background = '';
+                btnElement.style.color = '';
+            }
+            window.activeSpeechRecInstance = null;
+        };
+
+        recognition.onend = function() {
+            if (btnElement) {
+                btnElement.classList.remove('recording');
+                btnElement.style.background = '';
+                btnElement.style.color = '';
+            }
+            window.activeSpeechRecInstance = null;
+            if (inputEl) inputEl.focus();
+        };
+
+        recognition.start();
+    } catch (e) {
+        window.activeSpeechRecInstance = null;
+    }
+};
+
+// 3. بناء شريط كتابة الشات الموحد مع زر الكاميرا (📷) يمين مربع الكتابة + أزرار الخبير الذكي لزيت الزيتون
+window.initCleanChatBarsV73 = function() {
+    let sForm = document.getElementById('support-form');
+    if (sForm && !sForm.dataset.v73Built) {
+        sForm.dataset.v73Built = '1';
+        sForm.style.display = 'block';
+        sForm.innerHTML = `
+            <div id="v73-olive-advisor-chips" class="v73-advisor-chips-row">
+                <button type="button" class="v73-advisor-chip" onclick="window.triggerSmartOliveAdvisorV73('hair')">💆‍♀️ للشعر والبشرة</button>
+                <button type="button" class="v73-advisor-chip" onclick="window.triggerSmartOliveAdvisorV73('health')">🫀 للقولون والمناعة</button>
+                <button type="button" class="v73-advisor-chip" onclick="window.triggerSmartOliveAdvisorV73('storage')">🏺 طريقة الحفظ الصحيحة</button>
+                <button type="button" class="v73-advisor-chip" onclick="window.triggerSmartOliveAdvisorV73('sizes')">⚖️ الفرق بين الأحجام</button>
+            </div>
+            <div class="v72-chat-composer-bar">
+                <button type="button" class="v72-cam-btn" title="إرسال صورة أو فيديو" onclick="window.toggleV72CamPopup('customer')">📷</button>
+                <div id="v72-cam-popup-customer" class="v72-camera-popup-menu">
+                    <button type="button" onclick="window.pickV72Media('customer', 'cam')">📸 تصوير بالكاميرا</button>
+                    <button type="button" onclick="window.pickV72Media('customer', 'gal')">🖼️ اختيار صورة من المعرض</button>
+                    <button type="button" onclick="window.pickV72Media('customer', 'vid')">🎥 إرفاق أو تصوير فيديو</button>
+                </div>
+                <input type="file" id="v72-inp-customer-cam" accept="image/*" capture="environment" style="display:none" onchange="window.sendChatImageAttachment('customer', this)">
+                <input type="file" id="v72-inp-customer-gal" accept="image/*" style="display:none" onchange="window.sendChatImageAttachment('customer', this)">
+                <input type="file" id="v72-inp-customer-vid" accept="video/*" style="display:none" onchange="window.sendChatVideoAttachment('customer', this)">
+
+                <input type="text" id="support-message" placeholder="اكتب رسالتك هنا..." autocomplete="off" style="flex:1; border:none; background:transparent; margin:0; padding:6px 8px; font-size:0.9rem; outline:none;">
+                <button type="button" id="voice-support-btn" class="v72-mic-btn" title="تحويل الكلام لنص" onclick="window.startVoiceTyping('support-message', this)">🎤</button>
+                <button type="button" id="btn-cust-voice-note-inline" class="v72-voice-rec-btn" title="تسجيل مقطع صوتي" onclick="window.toggleChatVoiceNoteRecording('customer', this)">🎙️</button>
+                <button type="submit" class="v72-send-btn">إرسال 🚀</button>
+            </div>
+        `;
+    }
+
+    let admInp = document.getElementById('admin-chat-input');
+    if (admInp && !admInp.dataset.v73Built) {
+        let row = admInp.closest('div[style*="display:flex; gap:10px"]') || admInp.parentElement;
+        if (row) {
+            row.className = 'v72-chat-composer-bar';
+            row.style.cssText = '';
+            row.innerHTML = `
+                <button type="button" class="v72-cam-btn" title="إرسال صورة أو فيديو" onclick="window.toggleV72CamPopup('admin')">📷</button>
+                <div id="v72-cam-popup-admin" class="v72-camera-popup-menu">
+                    <button type="button" onclick="window.pickV72Media('admin', 'cam')">📸 تصوير بالكاميرا</button>
+                    <button type="button" onclick="window.pickV72Media('admin', 'gal')">🖼️ اختيار صورة من المعرض</button>
+                    <button type="button" onclick="window.pickV72Media('admin', 'vid')">🎥 إرفاق أو تصوير فيديو</button>
+                </div>
+                <input type="file" id="v72-inp-admin-cam" accept="image/*" capture="environment" style="display:none" onchange="window.sendChatImageAttachment('admin', this)">
+                <input type="file" id="v72-inp-admin-gal" accept="image/*" style="display:none" onchange="window.sendChatImageAttachment('admin', this)">
+                <input type="file" id="v72-inp-admin-vid" accept="video/*" style="display:none" onchange="window.sendChatVideoAttachment('admin', this)">
+
+                <input type="text" id="admin-chat-input" data-v73-built="1" placeholder="اكتب ردك للعميل..." autocomplete="off" style="flex:1; border:none; background:transparent; margin:0; padding:6px 8px; font-size:0.9rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault(); window.sendAdminMessage();}">
+                <button type="button" id="voice-admin-btn" class="v72-mic-btn" title="تحويل الكلام لنص" onclick="window.startVoiceTyping('admin-chat-input', this)">🎤</button>
+                <button type="button" id="btn-admin-voice-note-inline" class="v72-voice-rec-btn" title="تسجيل مقطع صوتي" onclick="window.toggleChatVoiceNoteRecording('admin', this)">🎙️</button>
+                <button type="button" class="v72-send-btn" onclick="window.sendAdminMessage()">إرسال 🚀</button>
+            `;
+        }
+    }
+};
+
+window.toggleV72CamPopup = function(role) {
+    let el = document.getElementById('v72-cam-popup-' + role);
+    if (!el) return;
+    el.style.display = el.style.display === 'flex' ? 'none' : 'flex';
+};
+
+window.pickV72Media = function(role, type) {
+    let pop = document.getElementById('v72-cam-popup-' + role);
+    if (pop) pop.style.display = 'none';
+    let inp = document.getElementById(`v72-inp-${role}-${type}`);
+    if (inp) {
+        inp.value = '';
+        inp.click();
+    }
+};
+
+// 4. الخبير الذكي لزيت الزيتون داخل الشات (Smart Olive Oil Advisor V73)
+window.triggerSmartOliveAdvisorV73 = function(topic) {
+    if (storeSettings.enableOliveAdvisorBot === false) return;
+    let container = document.getElementById('support-history-container');
+    if (!container) return;
+    let q = '', a = '';
+    if (topic === 'hair') {
+        q = '💆‍♀️ ما هي أفضل طريقة لاستخدام الزيت للشعر والبشرة؟';
+        a = '🌿 للعناية بالشعر والبشرة: يُدلك الشعر وفروة الرأس بكمية دافئة من زيت الزيتون السيناوي البكر لمدة 45 دقيقة أسبوعياً لمنع التساقط وتكثيف الشعر، وللبشرة تُوضع قطرات خفيفة قبل النوم لترطيب عميق بفضل فيتامين E الخام.';
+    } else if (topic === 'health') {
+        q = '🫀 ما فوائد زيت الزيتون للقولون والمناعة والقلب؟';
+        a = '🫀 زيت الزيتون السيناوي عصرة أولى على البارد غني بأوميجا 9 ومضادات الأكسدة الطبيعية؛ تناول ملعقة كبيرة صباحاً على الريق يهدئ القولون، ينشط الكبد، يدعم صحة القلب، ويرفع المناعة.';
+    } else if (topic === 'storage') {
+        q = '🏺 ما هي الطريقة الصحيحة لتخزين الزيت؟';
+        a = '🏺 يُحفظ الزيت في عبوته المحكمة في مكان مظلم وجاف بدرجة حرارة الغرفة بعيداً عن ضوء الشمس المباشر أو حرارة البوتاجاز، ولا يحتاج للثلاجة ليحتفظ بنكهته السيناوية الطازجة لأطول فترة.';
+    } else if (topic === 'sizes') {
+        q = '⚖️ ما الفرق بين العبوات وأي حجم أوفر لي؟';
+        a = '⚖️ جميع العبوات من نفس العصرة الأولى على البارد 100%؛ عبوة 1 لتر مثالية للاستخدام الشهري، بينما جركن 5 لتر العائلي يوفر لك في سعر اللتر الواحد ويمنحك شحناً مجانياً وهدية إضافية!';
+    }
+    container.innerHTML += `<div class="chat-msg-wrapper chat-msg-customer"><div class="chat-bubble bubble-customer">${window.escapeHTML(q)}</div></div>`;
+    container.innerHTML += `<div class="chat-msg-wrapper chat-msg-admin"><div class="chat-bubble bubble-admin"><strong style="color:var(--secondary);font-size:0.8rem;">🤖 الخبير الذكي لزيت الزيتون:</strong><br>${window.escapeHTML(a)}</div></div>`;
+    container.scrollTop = container.scrollHeight;
+};
+
+// 5. إدارة مستلزمات التعبئة والفوارغ (Packaging & Raw Materials ERP V73) والخصم التلقائي مع كل طلب
+window.getPackagingItemsListV73 = function() {
+    return Array.isArray(storeSettings.packagingItemsList) ? storeSettings.packagingItemsList : [
+        { id: 'pk_bottle_1l', name: '🍾 زجاجات فارغة (1 لتر / 500 مل)', stock: 120, alertAt: 25 },
+        { id: 'pk_jerrycan_5l', name: '🛢️ جراكن بلاستيك غذائي (5 لتر)', stock: 40, alertAt: 10 },
+        { id: 'pk_carton_box', name: '📦 كراتين شحن مقواة ومبطنة', stock: 95, alertAt: 20 },
+        { id: 'pk_warranty_seal', name: '🏷️ استيكرات الهوية وختم الضمان الذهبي', stock: 300, alertAt: 50 }
+    ];
+};
+
+window.updatePackagingStockCountV73 = async function(pkgId, delta) {
+    let list = [...window.getPackagingItemsListV73()];
+    let item = list.find(x => x.id === pkgId);
+    if (!item) return;
+    item.stock = Math.max(0, Number(item.stock || 0) + Number(delta));
+    storeSettings.packagingItemsList = list;
+    window.renderPackagingErpCardV73();
+    try {
+        await updateDoc(doc(db, 'settings', 'main'), { packagingItemsList: list });
+        window.showToast('📦 تم تحديث رصيد مستلزمات التعبئة بنجاح', 'success');
+    } catch (e) {}
+};
+
+window.autoDeductPackagingOnOrderV73 = async function(itemsArray) {
+    if (storeSettings.enablePackagingErp === false) return;
+    try {
+        let list = [...window.getPackagingItemsListV73()];
+        let totalUnits = (itemsArray || []).reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
+        let b1 = list.find(x => x.id === 'pk_bottle_1l');
+        let c1 = list.find(x => x.id === 'pk_carton_box');
+        let s1 = list.find(x => x.id === 'pk_warranty_seal');
+        if (b1) b1.stock = Math.max(0, Number(b1.stock || 0) - totalUnits);
+        if (c1) c1.stock = Math.max(0, Number(c1.stock || 0) - 1);
+        if (s1) s1.stock = Math.max(0, Number(s1.stock || 0) - totalUnits);
+        storeSettings.packagingItemsList = list;
+        await updateDoc(doc(db, 'settings', 'main'), { packagingItemsList: list });
+    } catch (e) {}
+};
+
+window.renderPackagingErpCardV73 = function() {
+    let dash = document.getElementById('admin-dashboard-panel');
+    if (!dash || !isCurrentUserAdmin) return;
+    let card = document.getElementById('admin-packaging-erp-card');
+    if (!card) {
+        card = document.createElement('div');
+        card.id = 'admin-packaging-erp-card';
+        card.style.cssText = 'background:var(--panel-bg); padding:15px; border-radius:12px; border:2px solid #028090; margin-bottom:20px;';
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                <h4 style="margin:0; color:#028090;">🍾 إدارة مخزون الفوارغ ومستلزمات التعبئة (يُخصم تلقائياً مع كل طلب)</h4>
+                <button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.78rem; border-color:#028090; color:#028090;" onclick="window.openBarcodeScannerPromptV73()">📷 مسح باركود بوليصة سريع</button>
+            </div>
+            <div id="admin-packaging-erp-list"></div>
+        `;
+        dash.appendChild(card);
+    }
+    card.style.display = storeSettings.enablePackagingErp !== false ? 'block' : 'none';
+    let listEl = document.getElementById('admin-packaging-erp-list');
+    if (!listEl) return;
+
+    let list = window.getPackagingItemsListV73();
+    listEl.innerHTML = list.map(pk => {
+        let isLow = Number(pk.stock) <= Number(pk.alertAt);
+        return `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--input-bg); border:1px solid ${isLow ? '#ef4444' : 'var(--border-color)'}; border-radius:10px; margin-bottom:6px; font-size:0.84rem; flex-wrap:wrap; gap:8px;">
+            <div>
+                <strong>${window.escapeHTML(pk.name)}</strong><br>
+                <span style="color:${isLow ? '#dc2626' : '#166534'}; font-weight:bold;">المتاح حالياً: ${pk.stock} قطعة ${isLow ? '⚠️ (أوشك على النفاد!)' : ''}</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+                <button type="button" class="btn" style="padding:4px 10px; font-size:0.76rem; background:#16a34a;" onclick="window.updatePackagingStockCountV73('${pk.id}', 20)">+20 توريد</button>
+                <button type="button" class="btn btn-danger" style="padding:4px 10px; font-size:0.76rem;" onclick="window.updatePackagingStockCountV73('${pk.id}', -1)">-1 سحب</button>
+            </div>
+        </div>`;
+    }).join('');
+};
+
+// 6. الطباعة الحرارية 80mm لماكينات الكاشير + ماسح الباركود السريع لتحديث حالة الطلبات
+window.printThermal80mmReceiptV73 = function(orderId) {
+    let o = (adminOrdersArray || []).find(x => x.id === orderId) || (window.customerOrdersArray || []).find(x => x.id === orderId);
+    if (!o) return;
+    let itemsRows = (o.items || []).map(i => `<tr><td style="padding:4px 2px; border-bottom:1px dashed #000;">${window.escapeHTML(i.name)}</td><td style="padding:4px 2px; border-bottom:1px dashed #000; text-align:center;">${i.quantity}</td><td style="padding:4px 2px; border-bottom:1px dashed #000; text-align:left;">${i.price * i.quantity}ج</td></tr>`).join('');
+    let w = window.open('', '_blank', 'width=360,height=620');
+    if (!w) return;
+    w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>إيصال كاشير 80mm - #${o.id.slice(0,6).toUpperCase()}</title></head>
+    <body style="font-family:Tahoma,monospace; width:76mm; margin:0 auto; padding:8px; font-size:12px; color:#000;" onload="window.print()">
+        <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:6px; margin-bottom:6px;">
+            <strong style="font-size:15px;">🌿 زيت الشجرة المباركة</strong><br>
+            <span>زيت زيتون سيناوي عصرة أولى عالبارد</span><br>
+            <strong>بوليصة رقم: #${o.id.slice(0,6).toUpperCase()}</strong><br>
+            <small>${new Date(o.orderDate).toLocaleString('ar-EG')}</small>
+        </div>
+        <div style="line-height:1.5; margin-bottom:6px;">
+            <div><strong>العميل:</strong> ${window.escapeHTML(o.customerName)}</div>
+            <div><strong>الهاتف:</strong> ${window.escapeHTML((o.phones && o.phones.primary) || '')}</div>
+            <div><strong>العنوان:</strong> ${window.escapeHTML((o.location && o.location.governorate) || '')} - ${window.escapeHTML((o.location && o.location.details) || '')}</div>
+        </div>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:6px; font-size:11.5px;">
+            <thead><tr style="border-bottom:1px solid #000;"><th style="text-align:right;">الصنف</th><th>كمية</th><th style="text-align:left;">إجمالي</th></tr></thead>
+            <tbody>${itemsRows}</tbody>
+        </table>
+        <div style="border-top:2px dashed #000; padding-top:6px; font-size:14px; font-weight:bold; display:flex; justify-content:space-between;">
+            <span>المطلوب تحصيله:</span>
+            <span>${o.totalAmount} ج</span>
+        </div>
+        <div style="text-align:center; margin-top:8px; font-size:10px;">شكراً لثقتكم في مزارع الشجرة المباركة 🌿</div>
+    </body></html>`);
+    w.document.close();
+};
+
+window.openBarcodeScannerPromptV73 = async function() {
+    let code = prompt('📷 امسح أو اكتب أول 6 حروف/أرقام من رقم البوليصة لتحديث حالتها فوراً إلى (تم التوصيل ✅):');
+    if (!code || !code.trim()) return;
+    let clean = code.trim().replace('#', '').toLowerCase();
+    let target = (adminOrdersArray || []).find(o => o.id.toLowerCase().startsWith(clean));
+    if (!target) {
+        window.showToast('لم يتم العثور على طلب بهذا الكود', 'error');
+        return;
+    }
+    await window.updateOrderStatus(target.id, 'تم التوصيل ✅');
+    window.showToast(`✅ تم تحديث الطلب #${target.id.slice(0,6).toUpperCase()} (${target.customerName}) إلى تم التوصيل!`, 'success');
+};
+
+// 7. تتبع المندوب الحي على الخريطة يوم التوصيل (Live Driver GPS Tracking V73)
+window.shareDriverLiveGpsForOrderV73 = function(orderId) {
+    if (!navigator.geolocation) {
+        window.showToast('جهازك لا يدعم تحديد الموقع الجغرافي', 'error');
+        return;
+    }
+    window.showToast('📡 جاري تفعيل ومشاركة موقع المندوب الحي مع العميل...', 'info');
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+        let lat = pos.coords.latitude;
+        let lng = pos.coords.longitude;
+        let liveLink = `https://www.google.com/maps?q=${lat},${lng}`;
+        try {
+            await updateDoc(doc(db, 'orders', orderId), {
+                driverLiveLocation: { lat, lng, link: liveLink, updatedAt: new Date().toISOString() },
+                status: 'تم الشحن'
+            });
+            window.showToast('🛵 تم تحديث موقع المندوب الحي على خريطة العميل بنجاح!', 'success');
+        } catch (e) {}
+    }, () => {
+        window.showToast('يرجى السماح بصلاحية الـ GPS في الهاتف', 'error');
+    });
+};
+
+const origOpenDriverPortalV71 = window.openDriverPortalModal;
+window.openDriverPortalModal = function() {
+    if (origOpenDriverPortalV71) origOpenDriverPortalV71();
+    if (storeSettings.enableLiveDriverGps === false) return;
+    let listEl = document.getElementById('driver-portal-orders-list');
+    if (!listEl) return;
+    let activeOrds = (adminOrdersArray || []).filter(o => {
+        let st = String(o.status || '');
+        return st.includes('تجهيز') || st.includes('شحن') || st === 'قيد المراجعة';
+    });
+    let cards = listEl.children;
+    for (let i = 0; i < cards.length; i++) {
+        if (activeOrds[i] && !cards[i].innerHTML.includes('shareDriverLiveGpsForOrderV73')) {
+            cards[i].insertAdjacentHTML('beforeend', `
+                <button type="button" class="btn btn-outline" style="width:100%; margin-top:6px; padding:5px 10px; font-size:0.78rem; border-color:#028090; color:#028090;" onclick="window.shareDriverLiveGpsForOrderV73('${activeOrds[i].id}')">
+                    📡 مشاركة موقعي الحي الآن مع العميل على الخريطة (Live GPS)
+                </button>
+            `);
+        }
+    }
+};
+
+// 8. إصلاح جذري لدالة إتمام الطلب (processOrder) + خصم مستلزمات التعبئة تلقائياً
+window.processOrder = async function(method) {
+    try {
+        let selectedItems = (cart || []).filter(item => item.selected !== false);
+        if (selectedItems.length === 0) {
+            window.showToast('قم بتحديد منتج واحد على الأقل في السلة لإتمام الطلب', 'error');
+            return;
+        }
+
+        const nameEl = document.getElementById('order-name');
+        const phone1El = document.getElementById('order-phone1');
+        const phone2El = document.getElementById('order-phone2');
+        const govEl = document.getElementById('order-gov');
+        const cityEl = document.getElementById('order-city');
+        const mapAddrEl = document.getElementById('order-map-address');
+        const addrEl = document.getElementById('order-address');
+        const payEl = document.getElementById('order-payment-method');
+
+        const name = nameEl ? nameEl.value.trim() : '';
+        const phone1 = phone1El ? window.toEngDigits(phone1El.value.trim()) : '';
+        const phone2 = (phone2El && phone2El.value.trim()) ? window.toEngDigits(phone2El.value.trim()) : 'لا يوجد';
+        const gov = govEl ? govEl.value : '';
+        const city = (cityEl && cityEl.value) ? cityEl.value : 'المركز الرئيسي';
+        const addressDetails = addrEl ? addrEl.value.trim() : '';
+        const payMethod = payEl ? payEl.value : 'كاش عند الاستلام';
+
+        if (!name || name.length < 2) {
+            window.showToast('يرجى كتابة الاسم بالكامل أولاً', 'error');
+            if (nameEl) nameEl.focus();
+            return;
+        }
+        if (!phone1 || phone1.replace(/\D/g, '').length < 9) {
+            window.showToast('يرجى إدخال رقم هاتف صحيح للتواصل والتوصيل', 'error');
+            if (phone1El) phone1El.focus();
+            return;
+        }
+        if (!gov) {
+            window.showToast('يرجى اختيار المحافظة من القائمة', 'error');
+            if (govEl) govEl.focus();
+            return;
+        }
+        if (!addressDetails) {
+            window.showToast('يرجى كتابة العنوان التفصيلي (الشارع / القرية / العلامة المميزة)', 'error');
+            if (addrEl) addrEl.focus();
+            return;
+        }
+
+        const latEl = document.getElementById('order-lat');
+        const lngEl = document.getElementById('order-lng');
+        const lat = (latEl && latEl.value && Number(latEl.value) !== 0) ? latEl.value : '30.0444';
+        const lng = (lngEl && lngEl.value && Number(lngEl.value) !== 0) ? lngEl.value : '31.2357';
+        const mapAddress = (mapAddrEl && mapAddrEl.value) ? mapAddrEl.value : `${gov} - ${city}`;
+        const mapLink = (lat !== '30.0444') ? `https://www.google.com/maps?q=${lat},${lng}` : '';
+
+        let bundleDiscVal = window.getBundleDiscountAmount ? window.getBundleDiscountAmount() : 0;
+        let discountVal = Math.round(currentSubtotal * (currentDiscountPercent / 100)) + bundleDiscVal + (window.loyaltyDiscountFixed || 0);
+        let enableFreeShip = storeSettings.enableFreeShipping !== false;
+        let targetAmount = (storeSettings && storeSettings.freeShippingThreshold) ? Number(storeSettings.freeShippingThreshold) : 1000;
+        if (gov && window.getShippingCostForGov) currentShippingCost = window.getShippingCostForGov(gov);
+        let finalShippingCost = (enableFreeShip && currentSubtotal >= targetAmount) ? 0 : currentShippingCost;
+        let finalTotal = Math.max(0, (currentSubtotal - discountVal) + finalShippingCost);
+
+        let receiptUrl = '';
+        if (payMethod === 'محفظة إلكترونية') {
+            const fileInput = document.getElementById('order-receipt-file');
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                window.showToast('يرجى إرفاق صورة إيصال التحويل لتأكيد الطلب', 'error');
+                return;
+            }
+            document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true);
+            window.showToast('⏳ جاري رفع صورة الإيصال وتأكيد الطلب...', 'info');
+            try {
+                const formData = new FormData();
+                formData.append('image', fileInput.files[0]);
+                const res = await fetch('https://api.imgbb.com/1/upload?key=D37b01ec4b27dcce48777a7b229a1fdb', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data && data.success) receiptUrl = data.data.url;
+            } catch (err) {
+                document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false);
+                window.showToast('فشل رفع صورة الإيصال، حاول مرة أخرى', 'error');
+                return;
+            }
+        }
+
+        document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true);
+        let custEmail = currentUser ? (currentUser.email || currentUser.phoneNumber || phone1) : phone1;
+
+        let orderPayload = {
+            usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0,
+            userId: currentUser ? currentUser.uid : '',
+            customerEmail: custEmail,
+            customerName: name,
+            phones: { primary: phone1, secondary: phone2 },
+            location: { governorate: gov, city: city, mapAddress: mapAddress, details: addressDetails, lat: lat, lng: lng, mapLink: mapLink },
+            items: selectedItems,
+            subtotal: currentSubtotal || 0,
+            discount: discountVal || 0,
+            promoCode: appliedPromoCode || '',
+            shippingCost: finalShippingCost || 0,
+            totalAmount: finalTotal || 0,
+            orderMethod: method || 'عبر الموقع',
+            paymentMethod: payMethod,
+            receiptUrl: receiptUrl,
+            status: 'قيد المراجعة',
+            orderDate: new Date().toISOString()
+        };
+
+        let createdDoc = await addDoc(collection(db, 'orders'), orderPayload);
+        window.autoDeductPackagingOnOrderV73(selectedItems);
+
+        let localOrder = { id: createdDoc.id, ...orderPayload };
+        if (!window.customerOrdersArray) window.customerOrdersArray = [];
+        window.customerOrdersArray.unshift(localOrder);
+
+        if (currentUser) {
+            setDoc(doc(db, 'users', currentUser.uid), { name: name, phone1: phone1, phone2: phone2, gov: gov, city: city, address: addressDetails }, { merge: true }).catch(() => {});
+        }
+
+        if (method === 'عبر واتساب') {
+            let waBtnInfo = storeSettings.floatingButtons ? storeSettings.floatingButtons.find(b => b.icon === '📱' || (b.link && b.link.includes('wa.me'))) : null;
+            let pureWa = waBtnInfo ? waBtnInfo.link.split('/').pop() : '201018631768';
+            if (pureWa && !pureWa.startsWith('20') && pureWa.length === 10) pureWa = '20' + pureWa;
+            let msg = `*طلب جديد مؤكد* 🌿\n\n👤 ${name}\n📞 ${phone1}\n📍 ${gov} - ${city}\n🏠 ${addressDetails}\n💳 الدفع: ${payMethod}\n\n🛍️ *المنتجات:*\n`;
+            selectedItems.forEach(item => { msg += `- ${item.name} (${item.quantity}) بـ ${item.price * item.quantity} ج\n`; });
+            msg += `\n💰 *الإجمالي المطلوب:* ${finalTotal} ج (شامل التوصيل)`;
+            window.open(`https://wa.me/${pureWa}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        cart = cart.filter(item => item.selected === false);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        localStorage.removeItem('cart_last_updated');
+        window.loyaltyDiscountFixed = 0;
+        window.loyaltyPointsUsedTemp = 0;
+        currentDiscountPercent = 0;
+        appliedPromoCode = '';
+        window.updateCartUI();
+
+        document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false);
+        window.showToast('🎉 تم تأكيد طلبك بنجاح! جاري عرض تفاصيل طلبك الآن...', 'success');
+        window.showPanel('customer-orders');
+        window.renderCustomerOrdersWithPhotosV73(window.customerOrdersArray);
+    } catch (error) {
+        console.error('Order Submit Error:', error);
+        document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false);
+        window.showToast('حدث خطأ أثناء إرسال الطلب، تأكد من اتصالك بالإنترنت', 'error');
+    }
+};
+
+// 9. عرض صور المنتجات داخل "طلباتي" + تتبع المندوب الحي + استطلاع الرأي بعد 3 أيام (+25 نقطة)
+window.getOrderProductThumbV73 = function(item) {
+    if (item && item.imageUrl && !item.imageUrl.includes('placeholder')) return item.imageUrl;
+    let p = (products || []).find(x => x.id === item.id || x.name === item.name);
+    if (p) {
+        if (p.images && p.images[0]) return p.images[0];
+        if (p.imageUrl) return p.imageUrl;
+    }
+    return '1000392409.jpeg';
+};
+
+window.claim3DayPostDeliverySurveyPointsV73 = async function(orderId) {
+    if (!currentUser) return;
+    let key = 'zait_survey_claimed_' + orderId;
+    if (localStorage.getItem(key)) {
+        window.showToast('حصلت على مكافأة تقييم هذا الطلب مسبقاً', 'info');
+        return;
+    }
+    localStorage.setItem(key, '1');
+    try {
+        await updateDoc(doc(db, 'users', currentUser.uid), {
+            loyaltyPoints: increment(25),
+            unreadNotifs: increment(1),
+            notifications: arrayUnion({
+                title: 'هدية تقييم الطلب (+25 نقطة) 🎁',
+                message: 'شكراً لمشاركتنا رأيك في جودة زيت الشجرة المباركة! تمت إضافة 25 نقطة ولاء لرصيدك.',
+                date: new Date().toISOString()
+            })
+        });
+    } catch (e) {}
+    window.showToast('🎉 شكراً لك! تمت إضافة +25 نقطة ولاء لحسابك، اكتب تقييمك الآن.', 'success');
+    window.loadAllReviews();
+};
+
+window.renderCustomerOrdersWithPhotosV73 = function(userOrders) {
+    const container = document.getElementById('customer-orders-container');
+    if (!container) return;
+    if (!userOrders || userOrders.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;"><span style="font-size:3rem; display:block; margin-bottom:10px;">🛒</span><h3>لا توجد طلبات مسجلة بعد.</h3></div>';
+        return;
+    }
+    let htmlContent = '';
+
+    // التحقق من وجود طلب مستلم منذ 3 أيام لعرض بطاقة استطلاع الرأي بمكافأة +25 نقطة
+    if (storeSettings.enablePostDeliverySurvey !== false) {
+        let eligibleOrder = userOrders.find(o => {
+            let isDeliv = String(o.status || '').includes('توصيل');
+            let days = (Date.now() - new Date(o.orderDate).getTime()) / 86400000;
+            return isDeliv && days >= 3 && !localStorage.getItem('zait_survey_claimed_' + o.id);
+        });
+        if (eligibleOrder) {
+            htmlContent += `
+            <div class="v73-followup-banner">
+                <div>
+                    <strong style="color:#166534; font-size:0.95rem; display:block;">🌿 مر أكثر من 3 أيام على استلام طلبك #${eligibleOrder.id.slice(0,6).toUpperCase()}!</strong>
+                    <span style="font-size:0.82rem; color:#15803d;">ما رأيك في طعم ونقاء زيت الشجرة المباركة؟ شاركنا تقييمك واكسب <b>+25 نقطة ولاء فورية</b>!</span>
+                </div>
+                <button type="button" class="btn" style="background:#16a34a; padding:7px 14px; font-size:0.82rem;" onclick="window.claim3DayPostDeliverySurveyPointsV73('${eligibleOrder.id}')">⭐ قيّم الطلب واكسب +25 نقطة</button>
+            </div>`;
+        }
+    }
+
+    userOrders.forEach(order => {
+        let badgeClass = 'status-pending';
+        let statusIcon = '🕒';
+        let st = String(order.status || 'قيد المراجعة');
+        if (st.includes('تجهيز')) { badgeClass = 'status-prep'; statusIcon = '📦'; }
+        else if (st.includes('شحن')) { badgeClass = 'status-shipped'; statusIcon = '🚚'; }
+        else if (st.includes('توصيل')) { badgeClass = 'status-delivered'; statusIcon = '✅'; }
+        else if (st.includes('رفض') || st.includes('لغى')) { badgeClass = 'status-canceled'; statusIcon = '❌'; }
+
+        let dStr = new Date(order.orderDate).toLocaleDateString('ar-EG', { dateStyle: 'long' });
+        let thumbsHtml = '<div class="order-products-thumbs-row">';
+        (order.items || []).forEach(item => {
+            let imgUrl = window.getOrderProductThumbV73(item);
+            thumbsHtml += `
+                <div class="order-prod-thumb-chip">
+                    <img src="${imgUrl}" onerror="this.src='1000392409.jpeg'" alt="${window.escapeHTML(item.name)}">
+                    <div>
+                        <strong style="display:block; color:var(--primary); font-size:0.84rem;">${window.escapeHTML(item.name)}</strong>
+                        <span style="font-size:0.78rem; color:var(--text-muted);">الكمية: <b>${item.quantity}</b> | <b style="color:var(--secondary);">${item.price * item.quantity} ج</b></span>
+                    </div>
+                </div>`;
+        });
+        thumbsHtml += '</div>';
+
+        let liveGpsBtn = (order.driverLiveLocation && order.driverLiveLocation.link && storeSettings.enableLiveDriverGps !== false)
+            ? `<a href="${order.driverLiveLocation.link}" target="_blank" class="btn" style="background:#028090; padding:5px 10px; font-size:0.78rem; text-decoration:none;" onclick="event.stopPropagation();">🛵 تتبع موقع المندوب الحي على الخريطة</a>`
+            : '';
+
+        htmlContent += `
+        <div class="admin-msg-card" style="cursor:pointer; border-right:4px solid #028090; padding:14px; margin-bottom:12px;" onclick="window.openCustomerOrderModal('${order.id}')">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px dashed var(--border-color); padding-bottom:8px;">
+                <div>
+                    <strong style="color:var(--primary); font-size:1.02rem;">📦 طلب #${order.id.slice(0,6).toUpperCase()}</strong>
+                    <span style="font-size:0.8rem; color:var(--text-muted); margin-right:8px;">📅 ${dStr}</span>
+                </div>
+                <span class="order-status-badge ${badgeClass}" style="font-size:0.75rem;">${statusIcon} ${window.escapeHTML(st)}</span>
+            </div>
+            ${thumbsHtml}
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:10px; padding-top:8px; border-top:1px solid var(--border-color);">
+                <strong style="color:var(--secondary); font-size:1.05rem;">الإجمالي: ${order.totalAmount} ج</strong>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    ${liveGpsBtn}
+                    ${storeSettings.enableBuyAgain !== false ? `<button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.78rem; border-color:var(--primary); color:var(--primary);" onclick="event.stopPropagation(); window.buyAgainOrder('${order.id}')">🔄 اطلبه مجدداً</button>` : ''}
+                </div>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = htmlContent;
+};
+
+window.loadCustomerOrders = function() {
+    if (!currentUser) return;
+    let filterKey = currentUser.email || currentUser.phoneNumber;
+    if (!filterKey) return;
+    onSnapshot(query(collection(db, 'orders'), where('customerEmail', '==', filterKey)), (snapshot) => {
+        window.customerOrdersArray = [];
+        snapshot.forEach(d => window.customerOrdersArray.push({ id: d.id, ...d.data() }));
+        window.customerOrdersArray.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+        window.renderCustomerOrdersWithPhotosV73(window.customerOrdersArray);
+    });
+};
+
+const origOpenCustModalV72 = window.openCustomerOrderModal;
+window.openCustomerOrderModal = function(orderId) {
+    if (origOpenCustModalV72) origOpenCustModalV72(orderId);
+    let order = (window.customerOrdersArray || []).find(o => o.id === orderId);
+    let com = document.getElementById('com-content');
+    if (!order || !com) return;
+    let ul = com.querySelector('ul');
+    if (ul && order.items) {
+        ul.style.padding = '0';
+        ul.innerHTML = order.items.map(item => {
+            let imgUrl = window.getOrderProductThumbV73(item);
+            return `<li style="list-style:none; display:flex; align-items:center; gap:10px; margin-bottom:8px; background:var(--panel-bg); padding:8px; border-radius:10px; border:1px solid var(--border-color);">
+                <img src="${imgUrl}" onerror="this.src='1000392409.jpeg'" style="width:48px; height:48px; border-radius:8px; object-fit:cover; border:1px solid var(--secondary);">
+                <div style="flex:1;">
+                    <strong style="color:var(--primary); display:block;">${window.escapeHTML(item.name)}</strong>
+                    <span style="font-size:0.84rem; color:var(--text-muted);">الكمية: <b>${item.quantity}</b> × ${item.price} ج = <b style="color:var(--secondary);">${item.price * item.quantity} ج</b></span>
+                </div>
+            </li>`;
+        }).join('');
+    }
+    if (order.driverLiveLocation && order.driverLiveLocation.link && !com.innerHTML.includes('driverLiveLocation')) {
+        com.insertAdjacentHTML('beforeend', `
+            <a href="${order.driverLiveLocation.link}" target="_blank" class="btn btn-full" style="margin-top:8px; background:#028090; text-decoration:none; display:block; text-align:center;">
+                🛵 فتح خريطة تتبع موقع المندوب الحي الآن (Live GPS)
+            </a>
+        `);
+    }
+};
+
+// إضافة زر الطباعة الحرارية 80mm داخل تفاصيل طلب الإدارة
+const origOpenAdminOrderModalV72 = window.openAdminOrderModal;
+window.openAdminOrderModal = function(id) {
+    if (origOpenAdminOrderModalV72) origOpenAdminOrderModalV72(id);
+    if (storeSettings.enableThermalReceipt80mm === false) return;
+    let aom = document.getElementById('aom-content');
+    if (aom && !aom.innerHTML.includes('printThermal80mmReceiptV73')) {
+        aom.insertAdjacentHTML('beforeend', `
+            <button type="button" class="btn btn-outline" style="width:100%; margin-top:8px; border-color:#111; color:var(--text-color); font-weight:bold;" onclick="window.printThermal80mmReceiptV73('${id}')">
+                🧾 طباعة إيصال كاشير حراري سريع (80mm Thermal) + مسح باركود
+            </button>
+        `);
+    }
+};
+
+// 10. حقن مفاتيح إيقاف وتشغيل ميزات V73 الخمس داخل لوحة الإعدادات المحمية مع زر (؟) للشرح
+window.injectV73SettingsCheckboxes = function() {
+    let sec = document.getElementById('roles-content-section');
+    if (!sec || document.getElementById('v73-admin-settings-group')) return;
+
+    let box = document.createElement('div');
+    box.id = 'v73-admin-settings-group';
+    box.className = 'admin-setting-card-pro';
+    box.style.cssText = 'background:var(--input-bg); padding:15px; border-radius:12px; border:2px solid #028090; margin-bottom:15px;';
+    box.innerHTML = `
+        <h4 style="margin-top:0; color:#028090;">🚀 إعدادات ومميزات الإصدار V73 المتقدمة (تفعيل / إيقاف):</h4>
+        <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer; font-weight:bold;">
+            <input type="checkbox" id="setting-enable-packaging-erp" checked onchange="window.saveSettings()">
+            <span>🍾 تفعيل نظام إدارة مستلزمات التعبئة والفوارغ والخصم التلقائي مع كل طلب</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer; font-weight:bold;">
+            <input type="checkbox" id="setting-enable-live-driver-gps" checked onchange="window.saveSettings()">
+            <span>🛵 تفعيل تتبع موقع المندوب الحي على الخريطة يوم التوصيل (Live Driver GPS)</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer; font-weight:bold;">
+            <input type="checkbox" id="setting-enable-thermal-80mm" checked onchange="window.saveSettings()">
+            <span>🧾 تفعيل طباعة إيصالات الكاشير الحرارية (80mm) وماسح باركود البوليصة السريع</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; cursor:pointer; font-weight:bold;">
+            <input type="checkbox" id="setting-enable-olive-advisor-bot" checked onchange="window.saveSettings()">
+            <span>🤖 تفعيل أزرار الخبير الذكي لزيت الزيتون في شات خدمة العملاء</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; margin-bottom:4px; cursor:pointer; font-weight:bold;">
+            <input type="checkbox" id="setting-enable-post-delivery-survey" checked onchange="window.saveSettings()">
+            <span>🎁 تفعيل استطلاع الرأي التلقائي للعميل بعد الاستلام بـ 3 أيام بمكافأة (+25 نقطة)</span>
+        </label>
+    `;
+    sec.insertBefore(box, sec.children[2] || sec.firstChild);
+
+    if (Array.isArray(window.MASTER_SETTINGS_CHECKBOX_MAP)) {
+        const v73Map = [
+            ['setting-enable-packaging-erp', 'enablePackagingErp', true],
+            ['setting-enable-live-driver-gps', 'enableLiveDriverGps', true],
+            ['setting-enable-thermal-80mm', 'enableThermalReceipt80mm', true],
+            ['setting-enable-olive-advisor-bot', 'enableOliveAdvisorBot', true],
+            ['setting-enable-post-delivery-survey', 'enablePostDeliverySurvey', true]
+        ];
+        v73Map.forEach(item => {
+            if (!window.MASTER_SETTINGS_CHECKBOX_MAP.some(x => x[0] === item[0])) {
+                window.MASTER_SETTINGS_CHECKBOX_MAP.push(item);
+            }
+        });
+    }
+    if (window.injectHelpQuestionButtonsInSettings) window.injectHelpQuestionButtonsInSettings();
+};
+
+const origApplyV71Master = window.applyV66MasterUI;
+window.applyV66MasterUI = function() {
+    if (origApplyV71Master) origApplyV71Master();
+    window.injectV73SettingsCheckboxes();
+    window.syncZeroFlashSettingsV73();
+    window.initCleanChatBarsV73();
+    if (isCurrentUserAdmin) {
+        window.renderPackagingErpCardV73();
+    }
+};
+
+setTimeout(() => {
+    window.injectV73SettingsCheckboxes();
+    window.syncZeroFlashSettingsV73();
+    window.initCleanChatBarsV73();
+    if (isCurrentUserAdmin) window.renderPackagingErpCardV73();
+}, 350);
