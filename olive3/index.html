@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+<!-- V77_PRECONNECT -->
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://res.cloudinary.com">
 <!-- V76_PRECONNECT -->
 <link rel="preconnect" href="https://firestore.googleapis.com">
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -43,7 +47,7 @@
     <link rel="apple-touch-icon" href="1000392409.jpeg">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="style.css?v=76">
+    <link rel="stylesheet" href="style.css?v=77">
     <script type="application/ld+json" id="dynamic-json-ld-schema">
     {
       "@context": "https://schema.org",
@@ -122,7 +126,7 @@
         } catch (e) {}
     })();
     </script>
-<style id="v75-instant-lock-css">#header-font-size-btn, #floating-bottom-cart-bar, .floating-bottom-cart-bar, #amazon-sub-header, #amz-cart-top-sticky-bar { display: none !important; }</style>
+
 </head>
 <body class="compact-ui">
     <div id="social-proof-toast" class="social-proof-toast">
@@ -1035,38 +1039,51 @@
     </div>
 
     <div class="panel" id="admin-security-panel">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid var(--border-color); padding-bottom:12px; margin-bottom:15px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:2px solid var(--border-color); padding-bottom:12px; margin-bottom:14px;">
         <div>
-            <h2 style="color:#dc2626; margin:0;">🛡️ مركز الحظر وحذف الحسابات (حماية المتجر)</h2>
-            <p style="color:var(--text-muted); font-size:0.84rem; margin:4px 0 0 0;">احذف أي حساب مسجل نهائياً أو احظر أي شخص من دخول الموقع من هاتفه وحسابه مع إمكانية فك الحظر</p>
+            <h2 style="color:#dc2626; margin:0; font-size:1.18rem;">🛡️ مركز الحظر وحذف الحسابات وأجهزة العملاء</h2>
+            <p style="color:var(--text-muted); font-size:0.82rem; margin:4px 0 0;">تحكم كامل في الحسابات والأجهزة المتعددة لكل عميل، وحظر الحساب أو الهاتف أو حذفه نهائياً</p>
         </div>
-        <button type="button" class="btn btn-outline" style="padding:6px 12px; font-size:0.8rem;" onclick="window.loadAdminSecurityPanel()">🔄 تحديث القائمة</button>
+        <button type="button" class="btn btn-outline" style="padding:6px 12px; font-size:0.8rem;" onclick="window.V77_loadSecurityPanel(true)">🔄 تحديث البيانات</button>
     </div>
-    <div style="background:rgba(220,38,38,0.07); border:1.5px solid #dc2626; border-radius:14px; padding:14px; margin-bottom:16px;">
-        <strong style="color:#b91c1c; display:block; margin-bottom:8px; font-size:0.9rem;">🚫 حظر يدوي سريع (برقم الهاتف أو البريد الإلكتروني أو معرف الجهاز):</strong>
-        <div class="form-row" style="margin-bottom:8px;">
-            <input type="text" id="sec-manual-ban-id" placeholder="اكتب رقم الهاتف أو الإيميل المراد حظره..." style="margin:0;">
-            <input type="text" id="sec-manual-ban-reason" placeholder="سبب الحظر" value="مخالفة سياسة المتجر" style="margin:0;">
+
+    <div class="v77-sec-box" style="border-color:#dc2626; background:rgba(220,38,38,0.05);">
+        <strong style="color:#b91c1c; display:block; margin-bottom:8px; font-size:0.9rem;">⚡ تنفيذ حظر أو حذف سريع (برقم العميل في المتجر / الهاتف / الإيميل / معرف الجهاز):</strong>
+        <input type="text" id="v77-ban-target-input" class="v77-sec-input" placeholder="اكتب رقم العميل (مثال: 1 أو #1) أو رقم الهاتف أو الإيميل أو معرف الجهاز...">
+        <input type="text" id="v77-ban-reason-input" class="v77-sec-input" placeholder="سبب الحظر أو الحذف (يظهر للعميل)" value="مخالفة سياسة المتجر">
+        <div class="v77-act-grid">
+            <button type="button" class="v77-act-btn v77-btn-acc" onclick="window.V77_executeManualAction('account')">👤 حظر الحساب فقط</button>
+            <button type="button" class="v77-act-btn v77-btn-dev" onclick="window.V77_executeManualAction('device')">📱 حظر الهاتف فقط</button>
+            <button type="button" class="v77-act-btn v77-btn-both" onclick="window.V77_executeManualAction('both')">🚫 حظر الحساب والهاتف</button>
+            <button type="button" class="v77-act-btn v77-btn-del" onclick="window.V77_executeManualAction('deleted')">🗑️ حذف الحساب نهائياً</button>
         </div>
-        <button type="button" class="btn btn-danger btn-full" style="padding:9px;" onclick="window.executeManualBanFromPanel()">🚫 تنفيذ الحظر الفوري الآن</button>
     </div>
-    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-        <button type="button" id="sec-tab-all-btn" class="btn" style="flex:1; background:var(--primary);" onclick="window.switchSecuritySubTab('all')">👥 جميع الحسابات المسجلة (<span id="sec-all-count">0</span>)</button>
-        <button type="button" id="sec-tab-banned-btn" class="btn btn-outline" style="flex:1; border-color:#dc2626; color:#dc2626;" onclick="window.switchSecuritySubTab('banned')">🚫 قائمة المحظورين (<span id="sec-banned-count">0</span>)</button>
+
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <button type="button" id="v77-tab-all-btn" class="btn" style="flex:1; background:var(--primary); color:#fff; font-size:0.86rem;" onclick="window.V77_switchSecTab('all')">👥 الحسابات والأجهزة (<span id="v77-all-count">0</span>)</button>
+        <button type="button" id="v77-tab-banned-btn" class="btn btn-outline" style="flex:1; border-color:#dc2626; color:#dc2626; font-size:0.86rem;" onclick="window.V77_switchSecTab('banned')">🚫 قائمة المحظورين (<span id="v77-banned-count">0</span>)</button>
     </div>
-    <input type="search" id="sec-search-inp" placeholder="🔍 ابحث بالاسم أو رقم الهاتف أو الإيميل..." oninput="window.renderAdminSecurityLists()" style="margin-bottom:12px;">
-    <div id="sec-all-users-list"></div>
-    <div id="sec-banned-users-list" style="display:none;"></div>
+
+    <input type="search" id="v77-sec-search-inp" class="v77-sec-input" placeholder="🔍 ابحث برقم العميل (1 أو #1) أو رقم الهاتف أو الاسم أو الإيميل..." oninput="window.V77_renderSecurityLists()">
+
+    <div id="v77-all-users-list"></div>
+    <div id="v77-banned-users-list" style="display:none;"></div>
+
+    <div class="v77-sec-box" style="margin-top:16px; border-color:#0284c7;">
+        <h4 style="margin:0 0 8px; color:#0369a1; font-size:0.95rem;">✈️ تنبيهات الطلبات على تيليجرام + 💾 النسخ الاحتياطي الكامل</h4>
+        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:700; margin-bottom:8px; cursor:pointer;">
+            <input type="checkbox" id="v77-tg-enabled"> تفعيل إرسال تنبيه فوري على تيليجرام عند كل طلب جديد
+        </label>
+        <input type="text" id="v77-tg-token" class="v77-sec-input" placeholder="Telegram Bot Token (من @BotFather)">
+        <input type="text" id="v77-tg-chatid" class="v77-sec-input" placeholder="Telegram Chat ID (معرف حسابك أو الجروب)">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn" style="flex:1; background:#0284c7; font-size:0.84rem;" onclick="window.V77_saveTelegramSettings()">💾 حفظ تيليجرام</button>
+            <button type="button" class="btn" style="flex:1; background:#16a34a; font-size:0.84rem;" onclick="window.V77_testTelegram()">✈️ اختبار الإرسال</button>
+            <button type="button" class="btn" style="width:100%; background:var(--primary); font-size:0.86rem;" onclick="window.V77_downloadFullBackupJSON()">💾 تحميل نسخة احتياطية كاملة للمتجر (JSON)</button>
+        </div>
+    </div>
 </div>
-<div id="zait-banned-lockout-screen">
-    <div style="max-width:420px; background:rgba(0,0,0,0.55); border:2px solid #ef4444; border-radius:22px; padding:28px 22px; box-shadow:0 20px 50px rgba(0,0,0,0.6);">
-        <div style="font-size:3.8rem; margin-bottom:10px;">🚫</div>
-        <h2 style="margin:0 0 10px 0; color:#fca5a5; font-size:1.4rem;">تم حظر وصولك إلى المتجر</h2>
-        <p style="font-size:0.92rem; color:#e5e7eb; line-height:1.8; margin-bottom:14px;">عذراً، تم تقييد وحظر هذا الهاتف والحساب من الدخول إلى متجر زيت الشجرة المباركة بواسطة الإدارة.</p>
-        <div id="zait-banned-reason-box" style="background:rgba(239,68,68,0.18); border:1px dashed #f87171; border-radius:12px; padding:10px 14px; font-size:0.86rem; color:#fecaca; margin-bottom:16px;">السبب: مخالفة شروط الاستخدام</div>
-        <small style="color:#9ca3af; display:block;">إذا كنت تعتقد أن هذا تم عن طريق الخطأ، يمكنك التواصل مع إدارة المتجر.</small>
-    </div>
-</div>
+
 
     <div id="policy-info-modal" class="modal-overlay" style="z-index: 5600;">
         <div class="modal-content" style="max-width: 550px; text-align: right; border: 2px solid var(--secondary); padding-bottom: 25px;">
@@ -3338,6 +3355,6 @@
             <p class="dev-signature">تم الإنشاء بواسطة المهندس أحمد وائل</p>
         </div>
     </footer>
-    <script type="module" src="script.js?v=76"></script>
+    <script type="module" src="script.js?v=77"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zait-store-v75';
+const CACHE_NAME = 'zait-store-v77';
 self.addEventListener('install', () => { self.skipWaiting(); });
 self.addEventListener('activate', (event) => {
   event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)))));
