@@ -1,12 +1,9 @@
 {
+  "cleanUrls": true,
   "headers": [
     {
-      "source": "/sitemap.xml",
+      "source": "/(sitemap\\.xml|robots\\.txt)",
       "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/xml; charset=utf-8"
-        },
         {
           "key": "Cache-Control",
           "value": "public, max-age=3600"
@@ -14,33 +11,11 @@
       ]
     },
     {
-      "source": "/robots.txt",
+      "source": "/(icon-.*\\.png|favicon\\.ico|apple-touch-icon\\.png|og-share\\.jpg)",
       "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/plain; charset=utf-8"
-        }
-      ]
-    },
-    {
-      "source": "/manifest.json",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/manifest+json; charset=utf-8"
-        },
         {
           "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
+          "value": "public, max-age=86400"
         }
       ]
     }
