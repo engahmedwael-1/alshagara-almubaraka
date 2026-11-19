@@ -15878,7 +15878,7 @@ window.showUserHistory = function(userId, userName) {
                     </div>
                     <button type="button" class="v77-media-sheet-btn" onclick="window.V77_triggerMediaPick('camera')"><span>📸</span><span>تصوير صورة بالكاميرا الآن</span></button>
                     <button type="button" class="v77-media-sheet-btn" onclick="window.V77_triggerMediaPick('gallery')"><span>🖼️</span><span>اختيار صورة من المعرض</span></button>
-                    <button type="button" class="v77-media-sheet-btn" onclick="window.V77_triggerMediaPick('video')"><span>🎥</span><span>إرفاق أو تصوير فيديو (حتى 100 ميجابايت)</span></button>
+                    <button type="button" class="v77-media-sheet-btn" onclick="window.V77_triggerMediaPick('video')"><span>🎥</span><span>إرفاق أو تصوير فيديو (حتى 500 ميجابايت)</span></button>
                     <input type="file" id="v77-global-file-camera" accept="image/*" capture="environment" style="display:none" onchange="window.V77_onMediaFileSelected(this, 'image')">
                     <input type="file" id="v77-global-file-gallery" accept="image/*" style="display:none" onchange="window.V77_onMediaFileSelected(this, 'image')">
                     <input type="file" id="v77-global-file-video" accept="video/*" style="display:none" onchange="window.V77_onMediaFileSelected(this, 'video')">
@@ -16228,8 +16228,8 @@ window.showUserHistory = function(userId, userName) {
         if (!inputEl.files || inputEl.files.length === 0) return;
         const file = inputEl.files[0];
         const who = v77ActiveMediaWho || 'cust';
-        if (kind === 'video' && file.size > 100 * 1024 * 1024) {
-            toast('الحد الأقصى لحجم الفيديو هو 100 ميجابايت', 'error');
+        if (kind === 'video' && file.size > 500 * 1024 * 1024) {
+            toast('الحد الأقصى لحجم الفيديو هو 500 ميجابايت', 'error');
             inputEl.value = '';
             return;
         }
@@ -16237,9 +16237,7 @@ window.showUserHistory = function(userId, userName) {
             const mb = (file.size / (1024 * 1024)).toFixed(1);
             const lbl = kind === 'video' ? `🎥 جاري رفع الفيديو (${mb} MB)` : '📸 جاري رفع الصورة';
             showChatProgress(who, 5, lbl);
-            const url = await uploadToCloudinaryV77(file, kind === 'video' ? 'video' : 'image', (pct) => {
-                showChatProgress(who, pct, lbl);
-            });
+            const url = (kind === 'video' && typeof window.zaitSmartUploadVideo === 'function') ? await window.zaitSmartUploadVideo(file, (pct) => { showChatProgress(who, pct, lbl); }) : await uploadToCloudinaryV77(file, kind === 'video' ? 'video' : 'image', (pct) => { showChatProgress(who, pct, lbl); });
             showChatProgress(who, -1, '');
             const msgPayload = kind === 'video'
                 ? { text: `🎥 فيديو مرفق (${mb} MB)`, videoDataUrl: url }
@@ -17031,10 +17029,363 @@ window.showUserHistory = function(userId, userName) {
             syncHeaderAndLayoutV77();
             window.V77_mountCleanChatComposers();
             saveProductsCache();
-        }, 1800);
+        }, 8000);
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootV77);
     else bootV77();
 })();
 /* === END_V77_PERFECT_VIP_ENGINE === */
+
+/* === ZAIT_V78_JS_START === */
+(function () {
+  "use strict";
+  if (window.__ZAIT_V78_ACTIVE__) return;
+  window.__ZAIT_V78_ACTIVE__ = true;
+
+  // 0. Ensure Cloudinary defaults are always stored
+  try {
+    if (!localStorage.getItem("cloudinary_cloud_name")) localStorage.setItem("cloudinary_cloud_name", "jj2qrpnb");
+    if (!localStorage.getItem("cloudinary_upload_preset")) localStorage.setItem("cloudinary_upload_preset", "bfu87mf0");
+    window.ZAIT_CLOUDINARY_CLOUD = localStorage.getItem("cloudinary_cloud_name") || "jj2qrpnb";
+    window.ZAIT_CLOUDINARY_PRESET = localStorage.getItem("cloudinary_upload_preset") || "bfu87mf0";
+  } catch (e) {}
+
+  // 1. Safe Semantic HTML & WAI-ARIA Accessibility Enhancer (Zero Selector Breakage)
+  function applySemanticAccessibility() {
+    try {
+      var htmlEl = document.documentElement;
+      if (!htmlEl.getAttribute("lang")) htmlEl.setAttribute("lang", "ar");
+      if (!htmlEl.getAttribute("dir")) htmlEl.setAttribute("dir", "rtl");
+
+      var header = document.querySelector("header, .header, #header, .top-bar, .navbar");
+      if (header) {
+        if (!header.getAttribute("role")) header.setAttribute("role", "banner");
+        if (!header.getAttribute("aria-label")) header.setAttribute("aria-label", "الشريط العلوي لمتجر زيت الشجرة المباركة");
+      }
+
+      var navs = document.querySelectorAll("nav, .bottom-nav, #bottom-nav, #mobile-bottom-nav");
+      navs.forEach(function (n, idx) {
+        if (!n.getAttribute("role")) n.setAttribute("role", "navigation");
+        if (!n.getAttribute("aria-label")) n.setAttribute("aria-label", idx === 0 ? "قائمة التنقل الرئيسية" : "شريط التنقل السفلي");
+      });
+
+      var mainEl = document.querySelector("main, #main-content, #store-main, .main-content");
+      if (!mainEl) {
+        var prodGrid = document.querySelector("#products-grid, .products-grid, #products-container, .products-container");
+        if (prodGrid && prodGrid.parentElement && prodGrid.parentElement !== document.body) mainEl = prodGrid.parentElement;
+      }
+      if (mainEl) {
+        if (!mainEl.id) mainEl.id = "main-content-landmark";
+        if (mainEl.tagName.toLowerCase() !== "main" && !mainEl.getAttribute("role")) mainEl.setAttribute("role", "main");
+        if (!mainEl.getAttribute("aria-label")) mainEl.setAttribute("aria-label", "المحتوى الرئيسي والمنتجات");
+      }
+
+      var footer = document.querySelector("footer, .footer, #footer");
+      if (footer && !footer.getAttribute("role")) {
+        footer.setAttribute("role", "contentinfo");
+        if (!footer.getAttribute("aria-label")) footer.setAttribute("aria-label", "تذييل المتجر ومعلومات التواصل");
+      }
+
+      var cards = document.querySelectorAll(".product-card, .item-card");
+      cards.forEach(function (card) {
+        if (!card.getAttribute("role")) card.setAttribute("role", "article");
+        var titleEl = card.querySelector("h2, h3, h4, .product-title, .product-name");
+        var titleTxt = titleEl ? titleEl.textContent.trim() : "منتج زيت زيتون طبيعي";
+        if (!card.getAttribute("aria-label")) card.setAttribute("aria-label", titleTxt);
+        card.querySelectorAll("img").forEach(function (img) {
+          if (!img.getAttribute("alt") || !img.getAttribute("alt").trim()) img.setAttribute("alt", titleTxt);
+          if (!img.getAttribute("loading")) img.setAttribute("loading", "lazy");
+          if (!img.getAttribute("decoding")) img.setAttribute("decoding", "async");
+        });
+      });
+
+      document.querySelectorAll("button:not([aria-label])").forEach(function (b) {
+        var txt = (b.textContent || "").trim();
+        var ttl = (b.getAttribute("title") || "").trim();
+        if (ttl) { b.setAttribute("aria-label", ttl); }
+        else if (txt.length > 0 && txt.length <= 4) {
+          if (txt.indexOf("🛒") > -1) b.setAttribute("aria-label", "سلة المشتريات");
+          else if (txt.indexOf("❤") > -1 || txt.indexOf("♥") > -1) b.setAttribute("aria-label", "المفضلة");
+          else if (txt.indexOf("📷") > -1) b.setAttribute("aria-label", "إرفاق صورة أو فيديو");
+          else if (txt.indexOf("🎤") > -1 || txt.indexOf("🎙") > -1) b.setAttribute("aria-label", "تسجيل صوتي");
+          else if (txt.indexOf("🛡") > -1) b.setAttribute("aria-label", "قائمة أدوات المدير");
+          else if (txt.indexOf("🔔") > -1) b.setAttribute("aria-label", "الإشعارات");
+          else if (txt.indexOf("✕") > -1 || txt.indexOf("✖") > -1 || txt === "×") b.setAttribute("aria-label", "إغلاق");
+        }
+      });
+    } catch (e) {}
+  }
+
+  // 2. Instant Skeleton Shimmer while Products Load
+  function initSkeletonLoader() {
+    try {
+      var grid = document.querySelector("#products-grid, .products-grid, #products-container, .products-container");
+      if (!grid) return;
+      var hasCards = grid.querySelector(".product-card, .item-card");
+      if (!hasCards && !document.getElementById("v78-skeleton-grid")) {
+        var skel = document.createElement("div");
+        skel.id = "v78-skeleton-grid";
+        skel.setAttribute("aria-busy", "true");
+        skel.setAttribute("aria-label", "جاري تحميل المنتجات");
+        var html = "";
+        for (var i = 0; i < 6; i++) {
+          html += "<div class=\"v78-skel-card\"><div class=\"v78-skel-img\"></div><div class=\"v78-skel-line\"></div><div class=\"v78-skel-line short\"></div></div>";
+        }
+        skel.innerHTML = html;
+        grid.parentNode.insertBefore(skel, grid);
+      }
+      var checkLoaded = setInterval(function () {
+        var g = document.querySelector("#products-grid, .products-grid, #products-container, .products-container");
+        var sk = document.getElementById("v78-skeleton-grid");
+        if (!sk) { clearInterval(checkLoaded); return; }
+        if (g && (g.querySelector(".product-card, .item-card") || g.children.length > 0)) {
+          sk.remove();
+          applySemanticAccessibility();
+          clearInterval(checkLoaded);
+        }
+      }, 200);
+      setTimeout(function () {
+        var sk = document.getElementById("v78-skeleton-grid");
+        if (sk) sk.remove();
+        clearInterval(checkLoaded);
+      }, 8500);
+    } catch (e) {}
+  }
+
+  // 3. Exact Fix for Admin Floating Dropdown Menu (Targets parent of .admin-float-item-btn directly!)
+  function enhanceAdminFloatingMenus() {
+    try {
+      var menus = [];
+      var firstItem = document.querySelector(".admin-float-item-btn");
+      if (firstItem && firstItem.parentElement) menus.push(firstItem.parentElement);
+      document.querySelectorAll("#admin-fab-menu, #admin-floating-menu, #admin-quick-menu, .admin-fab-menu, .admin-dropdown-menu, .admin-floating-dropdown").forEach(function (el) {
+        if (menus.indexOf(el) === -1) menus.push(el);
+      });
+
+      menus.forEach(function (menu) {
+        if (!menu || menu.tagName === "BUTTON" || menu.tagName === "NAV") return;
+        if (menu.id && (menu.id.indexOf("panel") > -1 || menu.id.indexOf("modal") > -1)) return;
+        menu.classList.add("v78-admin-menu-fixed");
+        if (!menu.querySelector(".v78-admin-scroll-hint")) {
+          var hint = document.createElement("div");
+          hint.className = "v78-admin-scroll-hint";
+          hint.textContent = "🛡️ قائمة المدير — اسحب للأسفل لعرض كل الأقسام ↕️";
+          menu.insertBefore(hint, menu.firstChild);
+        }
+      });
+    } catch (e) {}
+  }
+
+  document.addEventListener("click", function (ev) {
+    try {
+      var btn = ev.target && ev.target.closest ? ev.target.closest("button, a, div") : null;
+      if (!btn) return;
+      var idCls = ((btn.id || "") + " " + (btn.className || "")).toLowerCase();
+      var txt = (btn.textContent || "").trim();
+      if (idCls.indexOf("admin") > -1 || idCls.indexOf("fab") > -1 || idCls.indexOf("shield") > -1 || txt.indexOf("🛡") > -1) {
+        setTimeout(enhanceAdminFloatingMenus, 30);
+        setTimeout(enhanceAdminFloatingMenus, 150);
+      }
+    } catch (e) {}
+  }, true);
+
+  // 4. Video Upload Engine up to 500MB (Cloudinary Chunked + Auto-Compression Fallback)
+  function ensureVideoProgressUI() {
+    var box = document.getElementById("v78-video-progress-toast");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "v78-video-progress-toast";
+      box.innerHTML = "<div id=\"v78-vp-title\" style=\"font-weight:700;font-size:13.5px;\">🎬 جاري رفع الفيديو...</div><div id=\"v78-vp-sub\" style=\"font-size:12px;color:#d1fae5;margin-top:3px;\"></div><div id=\"v78-video-progress-bar-wrap\"><div id=\"v78-video-progress-bar\"></div></div>";
+      document.body.appendChild(box);
+    }
+    return box;
+  }
+
+  function updateVideoProgress(show, title, sub, pct) {
+    var box = ensureVideoProgressUI();
+    box.style.display = show ? "block" : "none";
+    if (title) document.getElementById("v78-vp-title").textContent = title;
+    if (sub !== undefined) document.getElementById("v78-vp-sub").textContent = sub;
+    if (typeof pct === "number") {
+      document.getElementById("v78-video-progress-bar").style.width = Math.max(0, Math.min(100, pct)) + "%";
+    }
+  }
+
+  function uploadCloudinaryChunked(file, cloudName, uploadPreset, onProgress) {
+    return new Promise(function (resolve, reject) {
+      var CHUNK_SIZE = 18 * 1024 * 1024;
+      var totalSize = file.size;
+      var uniqueId = "zait_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
+      var url = "https://api.cloudinary.com/v1_1/" + encodeURIComponent(cloudName) + "/video/upload";
+      var start = 0;
+
+      function sendNextChunk() {
+        var end = Math.min(start + CHUNK_SIZE, totalSize);
+        var chunk = file.slice(start, end);
+        var fd = new FormData();
+        fd.append("file", chunk, file.name || "video.mp4");
+        fd.append("upload_preset", uploadPreset);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("X-Unique-Upload-Id", uniqueId);
+        xhr.setRequestHeader("Content-Range", "bytes " + start + "-" + (end - 1) + "/" + totalSize);
+
+        xhr.upload.onprogress = function (ev) {
+          if (ev.lengthComputable && typeof onProgress === "function") {
+            var uploaded = start + ev.loaded;
+            onProgress(Math.round((uploaded / totalSize) * 100), uploaded, totalSize);
+          }
+        };
+
+        xhr.onload = function () {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            if (end < totalSize) { start = end; sendNextChunk(); }
+            else {
+              try {
+                var data = JSON.parse(xhr.responseText);
+                resolve(data.secure_url || data.url);
+              } catch (err) { reject(err); }
+            }
+          } else {
+            var msg = "HTTP " + xhr.status;
+            try {
+              var errJson = JSON.parse(xhr.responseText);
+              if (errJson && errJson.error && errJson.error.message) msg = errJson.error.message;
+            } catch (e) {}
+            reject(new Error(msg));
+          }
+        };
+        xhr.onerror = function () { reject(new Error("تعذر الاتصال بالإنترنت أثناء الرفع")); };
+        xhr.send(fd);
+      }
+      sendNextChunk();
+    });
+  }
+
+  function compressVideoInBrowser(file, onProgress) {
+    return new Promise(function (resolve, reject) {
+      if (typeof MediaRecorder === "undefined") return reject(new Error("متصفحك لا يدعم ضغط الفيديو التلقائي"));
+      var video = document.createElement("video");
+      video.muted = true;
+      video.playsInline = true;
+      var blobUrl = URL.createObjectURL(file);
+      video.src = blobUrl;
+
+      video.onloadedmetadata = function () {
+        try {
+          var maxDim = 720;
+          var w = video.videoWidth || 640;
+          var h = video.videoHeight || 360;
+          var scale = Math.min(1, maxDim / Math.max(w, h));
+          var canvas = document.createElement("canvas");
+          canvas.width = Math.max(2, Math.floor((w * scale) / 2) * 2);
+          canvas.height = Math.max(2, Math.floor((h * scale) / 2) * 2);
+          var ctx = canvas.getContext("2d");
+          var stream = canvas.captureStream(24);
+          try {
+            var vStream = video.captureStream ? video.captureStream() : (video.mozCaptureStream ? video.mozCaptureStream() : null);
+            if (vStream) vStream.getAudioTracks().forEach(function (t) { stream.addTrack(t); });
+          } catch (ae) {}
+
+          var mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus") ? "video/webm;codecs=vp8,opus" : (MediaRecorder.isTypeSupported("video/webm") ? "video/webm" : "video/mp4");
+          var rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 1400000 });
+          var chunks = [];
+          rec.ondataavailable = function (e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
+          rec.onstop = function () {
+            URL.revokeObjectURL(blobUrl);
+            var outBlob = new Blob(chunks, { type: mime });
+            resolve(new File([outBlob], "compressed_" + Date.now() + ".webm", { type: mime }));
+          };
+          rec.onerror = function (e) { URL.revokeObjectURL(blobUrl); reject(e); };
+
+          rec.start(500);
+          video.play().then(function () {
+            function draw() {
+              if (video.paused || video.ended) return;
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              if (video.duration && typeof onProgress === "function") {
+                onProgress(Math.min(99, Math.round((video.currentTime / video.duration) * 100)));
+              }
+              requestAnimationFrame(draw);
+            }
+            draw();
+          }).catch(function (err) { URL.revokeObjectURL(blobUrl); reject(err); });
+          video.onended = function () { try { rec.stop(); } catch (e) {} };
+        } catch (err) { URL.revokeObjectURL(blobUrl); reject(err); }
+      };
+      video.onerror = function () { URL.revokeObjectURL(blobUrl); reject(new Error("تعذر قراءة الفيديو للضغط")); };
+    });
+  }
+
+  window.zaitSmartUploadVideo = async function (file, externalProgressCb) {
+    var MAX_MB = 500;
+    var sizeMB = file.size / (1024 * 1024);
+    if (sizeMB > MAX_MB) throw new Error("حجم الفيديو أكبر من الحد الأقصى المسموح (500 ميجابايت)");
+    var s = (typeof storeSettings !== "undefined" && storeSettings) ? storeSettings : {};
+    var cloud = (s.cloudinaryCloudName || localStorage.getItem("cloudinary_cloud_name") || "jj2qrpnb").trim();
+    var preset = (s.cloudinaryUploadPreset || localStorage.getItem("cloudinary_upload_preset") || "bfu87mf0").trim();
+
+    updateVideoProgress(true, "🎬 جاري رفع الفيديو (" + sizeMB.toFixed(1) + " MB)...", "الرفع المجزّأ السريع مفعل حتى 500MB", 5);
+    try {
+      var uploadedUrl = await uploadCloudinaryChunked(file, cloud, preset, function (pct, done, total) {
+        updateVideoProgress(true, "🎬 جاري رفع الفيديو... " + pct + "%", (done / 1048576).toFixed(1) + " / " + (total / 1048576).toFixed(1) + " MB", pct);
+        if (typeof externalProgressCb === "function") externalProgressCb(pct);
+      });
+      updateVideoProgress(true, "✅ تم رفع الفيديو بنجاح!", "جاري الإرسال في المحادثة...", 100);
+      setTimeout(function () { updateVideoProgress(false); }, 1600);
+      return uploadedUrl;
+    } catch (err) {
+      var msg = (err && err.message) ? err.message.toLowerCase() : "";
+      if (sizeMB > 95 && (msg.indexOf("file size") > -1 || msg.indexOf("too large") > -1 || msg.indexOf("maximum") > -1 || msg.indexOf("400") > -1)) {
+        updateVideoProgress(true, "⚡ الفيديو أكبر من 100MB — جاري الضغط الذكي التلقائي...", "نحافظ على الوضوح لرفعه مجاناً على Cloudinary", 10);
+        var compressed = await compressVideoInBrowser(file, function (p) {
+          updateVideoProgress(true, "⚙️ جاري ضغط الفيديو ذكياً... " + p + "%", "يرجى إبقاء الصفحة مفتوحة لحظات", p);
+        });
+        var newMB = compressed.size / (1024 * 1024);
+        updateVideoProgress(true, "🚀 جاري رفع النسخة المضغوطة (" + newMB.toFixed(1) + " MB)...", "الرفع السريع جارٍ الآن", 5);
+        var finalUrl = await uploadCloudinaryChunked(compressed, cloud, preset, function (pct, done, total) {
+          updateVideoProgress(true, "🚀 جاري الرفع... " + pct + "%", (done / 1048576).toFixed(1) + " / " + (total / 1048576).toFixed(1) + " MB", pct);
+          if (typeof externalProgressCb === "function") externalProgressCb(pct);
+        });
+        updateVideoProgress(true, "✅ تم ضغط ورفع الفيديو بنجاح!", "", 100);
+        setTimeout(function () { updateVideoProgress(false); }, 1600);
+        return finalUrl;
+      }
+      updateVideoProgress(false);
+      throw err;
+    }
+  };
+
+  // Wire legacy uploadVideoToCloudinaryFree to the new 500MB chunked engine automatically
+  window.uploadVideoToCloudinaryFree = function (file, cloudName, uploadPreset, onProgress) {
+    return window.zaitSmartUploadVideo(file, onProgress);
+  };
+  window.ZAIT_MAX_VIDEO_MB = 500;
+  window.ZAIT_MAX_VIDEO_BYTES = 500 * 1024 * 1024;
+
+  // 5. Lightweight Debounced Observer (Replaces heavy polling)
+  var debounceTimer = null;
+  function scheduleRefresh() {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(function () {
+      applySemanticAccessibility();
+      enhanceAdminFloatingMenus();
+    }, 260);
+  }
+
+  function bootV78() {
+    initSkeletonLoader();
+    applySemanticAccessibility();
+    enhanceAdminFloatingMenus();
+    try {
+      var obs = new MutationObserver(scheduleRefresh);
+      obs.observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootV78);
+  else bootV78();
+})();
+/* === ZAIT_V78_JS_END === */
