@@ -1180,7 +1180,7 @@ try {
         window.cancelEditProduct = function() { document.getElementById('add-product-form').reset(); document.getElementById('edit-product-id').value = ''; document.getElementById('edit-product-old-image').value = ''; document.getElementById('admin-product-title').innerHTML = '🛒 إضافة منتج جديد'; document.getElementById('btn-submit-product').textContent = 'حفظ'; document.getElementById('btn-cancel-edit').style.display = 'none'; }
 
         let addPForm = document.getElementById('add-product-form');
-        if(addPForm) { addPForm.addEventListener('submit', async (e) => { e.preventDefault(); const btnSubmit = document.getElementById('btn-submit-product'); const statusLabel = document.getElementById('upload-status'); btnSubmit.disabled = true; const id = document.getElementById('edit-product-id').value; const name = document.getElementById('product-name').value; const price = Number(document.getElementById('product-price').value); const oldPrice = document.getElementById('product-old-price').value; const category = document.getElementById('product-category').value; const description = document.getElementById('product-desc').value; const stockVal = document.getElementById('product-stock').value; const vString = document.getElementById('product-variants').value.trim(); const variantsData = parseVariants(vString); let stock = stockVal === "" ? "" : Number(stockVal); let finalImages = []; let oldImgData = document.getElementById('edit-product-old-image').value; if(oldImgData) { try { finalImages = JSON.parse(oldImgData); } catch(err) { finalImages = [oldImgData]; } } const fileInput = document.getElementById('product-image-file'); const urlInput = document.getElementById('product-image-url').value.trim(); let videoUrl = ""; let pvu = document.getElementById('product-video-url'); if(pvu) videoUrl = pvu.value.trim(); try { if(fileInput.files.length > 0) { if(statusLabel) {statusLabel.style.display = 'block'; statusLabel.textContent = `⏳ جاري الرفع`;} const imgbbKey = "D37b01ec4b27dcce48777a7b229a1fdb"; let newUploads = []; let limit = Math.min(fileInput.files.length, 4); for(let i=0; i<limit; i++) { const formData = new FormData(); formData.append('image', fileInput.files[i]); const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { newUploads.push(data.data.url); } } if(newUploads.length > 0) finalImages = newUploads; } else if (urlInput) { finalImages = [urlInput]; } else if (finalImages.length === 0) { window.showToast('اختر صورة أو ضع رابط', 'error'); btnSubmit.disabled = false; return; } let specialBadge = document.getElementById('product-special-badge') ? document.getElementById('product-special-badge').value : '';
+        if(addPForm) { addPForm.addEventListener('submit', async (e) => { e.preventDefault(); const btnSubmit = document.getElementById('btn-submit-product'); const statusLabel = document.getElementById('upload-status'); btnSubmit.disabled = true; const id = document.getElementById('edit-product-id').value; const name = document.getElementById('product-name').value; const price = Number(document.getElementById('product-price').value); const oldPrice = document.getElementById('product-old-price').value; const category = document.getElementById('product-category').value; const description = document.getElementById('product-desc').value; const stockVal = document.getElementById('product-stock').value; const vString = document.getElementById('product-variants').value.trim(); const variantsData = parseVariants(vString); let stock = stockVal === "" ? "" : Number(stockVal); let finalImages = []; let oldImgData = document.getElementById('edit-product-old-image').value; if(oldImgData) { try { finalImages = JSON.parse(oldImgData); } catch(err) { finalImages = [oldImgData]; } } const fileInput = document.getElementById('product-image-file'); const urlInput = document.getElementById('product-image-url').value.trim(); let videoUrl = ""; let pvu = document.getElementById('product-video-url'); if(pvu) videoUrl = pvu.value.trim(); try { if(fileInput.files.length > 0) { if(statusLabel) {statusLabel.style.display = 'block'; statusLabel.textContent = `⏳ جاري الرفع`;} const imgbbKey = "ROUTED_TO_CLOUDINARY"; let newUploads = []; let limit = Math.min(fileInput.files.length, 4); for(let i=0; i<limit; i++) { const formData = new FormData(); formData.append('image', fileInput.files[i]); const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { newUploads.push(data.data.url); } } if(newUploads.length > 0) finalImages = newUploads; } else if (urlInput) { finalImages = [urlInput]; } else if (finalImages.length === 0) { window.showToast('اختر صورة أو ضع رابط', 'error'); btnSubmit.disabled = false; return; } let specialBadge = document.getElementById('product-special-badge') ? document.getElementById('product-special-badge').value : '';
         let customSpecs = document.getElementById('product-custom-specs') ? document.getElementById('product-custom-specs').value.trim() : '';
         let costPrice = document.getElementById('product-cost-price') ? (Number(document.getElementById('product-cost-price').value) || 0) : 0;
         let sortOrderVal = document.getElementById('product-sort-order') && document.getElementById('product-sort-order').value !== '' ? Number(document.getElementById('product-sort-order').value) : 999;
@@ -6795,7 +6795,7 @@ window.showUserHistory = function(userId, userName) {
                         let phone = (o.phones && o.phones.primary) || '';
                         let pureWa = String(phone).replace(/\D/g, '');
                         if (pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
-                        let waMsg = `مرحباً ${o.customerName} ������ لاحظنا إلغاء طلبك رقم #${o.id.slice(0,6).toUpperCase()} في متجر زيت الشجرة المباركة، هل واجهتك أي مشكلة أو تود تعديل الطلب؟ يسعدنا خدمتك فوراً!`;
+                        let waMsg = `مرحباً ${o.customerName} 🌿 لاحظنا إلغاء طلبك رقم #${o.id.slice(0,6).toUpperCase()} في متجر زيت الشجرة المباركة، هل واجهتك أي مشكلة أو تود تعديل الطلب؟ يسعدنا خدمتك فوراً!`;
                         let itemsTxt = (o.items || []).map(i => `${window.escapeHTML(i.name)} (${i.quantity})`).join(' ، ');
 
                         html += `<div class="work-event-card type-cancel">
@@ -7549,7 +7549,7 @@ window.showUserHistory = function(userId, userName) {
 
             if (email && staffList.includes(email) && !SUPER_ADMINS.includes(email)) {
                 window.isCurrentUserStaffOnly = true;
-                isCurrentUserAdmin = true;
+                isCurrentUserAdmin = false /* V82_CUSTOMER_ONLY */;
                 let sNav = document.getElementById('smart-nav');
                 if (sNav) sNav.style.display = 'flex';
                 let hdrWork = document.getElementById('header-work-hub-btn');
@@ -13082,7 +13082,7 @@ window.showUserHistory = function(userId, userName) {
                 if (Notification.permission !== 'granted') return;
                 const { getMessaging, getToken } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js");
                 const messaging = getMessaging();
-                const swReg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+                const swReg = await navigator.serviceWorker.register('/sw.js');
                 const fcmToken = await getToken(messaging, {
                     vapidKey: window.ZAIT_FCM_VAPID_KEY,
                     serviceWorkerRegistration: swReg
@@ -17947,93 +17947,108 @@ window.showUserHistory = function(userId, userName) {
 })();
 /* === ZAIT_V80_JS_END === */
 
-/* === ZAIT_V81_JS_START === */
+/* === ZAIT_V82_CUSTOMER_ONLY_JS_START === */
 (function () {
   "use strict";
-  if (window.__ZAIT_V81_ACTIVE__) return;
-  window.__ZAIT_V81_ACTIVE__ = true;
+  if (window.__ZAIT_V82_CUSTOMER_CLEAN__) return;
+  window.__ZAIT_V82_CUSTOMER_CLEAN__ = true;
 
-  var V81_CLOUD_NAME = "jj2qrpnb";
-  var V81_CLOUD_PRESET = "bfu87mf0";
-  var V81_PROD_CACHE_KEY = "zait_v81_products_cache";
-  var V81_OFFLINE_ORDERS_KEY = "zait_v81_offline_orders_queue";
-  var V81_VISIT_SESSION_KEY = "zait_v81_visit_counted_sess";
+  var CLOUD_NAME = "jj2qrpnb";
+  var CLOUD_PRESET = "bfu87mf0";
+  var FULL_PROD_CACHE_KEY = "zait_v82_full_products_cache";
+  var OFFLINE_QUEUE_KEY = "zait_v82_offline_orders_queue";
+  var VISIT_SESSION_KEY = "zait_v82_visit_counted";
 
   function getDb() { return typeof db !== "undefined" ? db : window.db; }
   function getAuth() { return typeof auth !== "undefined" ? auth : window.auth; }
   function getUser() { return typeof currentUser !== "undefined" ? currentUser : window.currentUser; }
   function getSettings() { return (typeof storeSettings !== "undefined" && storeSettings) ? storeSettings : (window.storeSettings || {}); }
-  function isAdmin() {
-    try {
-      if (typeof isCurrentUserAdmin !== "undefined" && isCurrentUserAdmin) return true;
-      if (window.isCurrentUserAdmin) return true;
-      var u = getUser();
-      var em = u && u.email ? String(u.email).toLowerCase() : "";
-      return em === "aw734622@gmail.com" || em === "mhmwdaltahrahmdwayl@gmail.com";
-    } catch (e) { return false; }
-  }
-  function toast(msg, type) {
-    if (typeof window.showToast === "function") window.showToast(msg, type || "info");
+  function toast(msg, type) { if (typeof window.showToast === "function") window.showToast(msg, type || "info"); }
+
+  // =========================================================================
+  // 1. وضع العملاء فقط: تعطيل جميع لوحات واستعلامات المدير لمنع التحميل الثقيل
+  // =========================================================================
+  try { window.isCurrentUserAdmin = false; } catch (e) {}
+  var noop = function () {};
+  [
+    "loadAdminOrders", "loadAdminUsers", "loadAdminChats", "loadAdminVisitors",
+    "loadAdminSecurityPanel", "V77_loadSecurityPanel", "V80_repairDuplicateCustomerNumbers",
+    "renderPackagingErpCardV73", "openAdminOrderModal", "selectAdminFloatPanel",
+    "toggleAdminBar", "V81_openResetStatsModal", "injectV73SettingsCheckboxes",
+    "injectV75CloudinarySettingsCard", "loadAdminReturns", "loadAdminStats"
+  ].forEach(function (fn) {
+    window[fn] = noop;
+  });
+
+  if (typeof window.showPanel === "function" && !window.__V82_SHOW_WRAPPED) {
+    window.__V82_SHOW_WRAPPED = true;
+    var origShow = window.showPanel;
+    window.showPanel = function (panelId) {
+      if (typeof panelId === "string" && panelId.indexOf("admin") === 0) {
+        return origShow.call(this, "home");
+      }
+      var res = origShow.apply(this, arguments);
+      if (panelId === "reviews" || panelId === "all-reviews") {
+        setTimeout(function () {
+          mountReviewStarsPicker();
+          if (typeof products !== "undefined" && Array.isArray(products) && products.length > 0 && typeof window.loadAllReviews === "function" && !window.__V82_REV_SYNCING) {
+            window.__V82_REV_SYNCING = true;
+            try { window.loadAllReviews(); } catch (e) {}
+            setTimeout(function () { window.__V82_REV_SYNCING = false; }, 600);
+          }
+        }, 120);
+      }
+      return res;
+    };
   }
 
   // =========================================================================
-  // 1. الأمان: حذف كلمات السر المخزنة في localStorage + منع حفظها مستقبلاً
+  // 2. الأمان: حذف الباسوردات من localStorage + إصلاح تبديل الحسابات بدون undefined
   // =========================================================================
-  function scrubStoredPasswords() {
+  function scrubPasswordsFromLocalStorage() {
     try {
-      var suspectKeys = ["savedAccounts", "zait_saved_accounts", "saved_accounts", "zait_accounts_list", "accountSwitcher", "quickSwitchAccounts"];
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
-        if (!k) continue;
-        if (suspectKeys.indexOf(k) > -1 || /account|switch|cred|pass/i.test(k)) {
-          var raw = localStorage.getItem(k);
-          if (!raw || raw.indexOf("pass") === -1 && raw.indexOf("pwd") === -1) continue;
-          try {
-            var parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) {
-              var cleaned = parsed.map(function (item) {
-                if (!item || typeof item !== "object") return item;
-                var copy = Object.assign({}, item);
-                delete copy.password;
-                delete copy.pass;
-                delete copy.pwd;
-                delete copy.encodedPassword;
-                return copy;
-              });
-              localStorage.setItem(k, JSON.stringify(cleaned));
-            }
-          } catch (e) {}
-        }
+        if (!k || !/account|switch|cred|pass/i.test(k)) continue;
+        var raw = localStorage.getItem(k);
+        if (!raw) continue;
+        try {
+          var parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            var cleaned = parsed.map(function (it) {
+              if (!it || typeof it !== "object") return it;
+              var c = Object.assign({}, it);
+              delete c.password; delete c.pass; delete c.pwd; delete c.encodedPassword;
+              return c;
+            });
+            localStorage.setItem(k, JSON.stringify(cleaned));
+          }
+        } catch (e) {}
       }
     } catch (e) {}
   }
 
   try {
-    var origSetItem = Storage.prototype.setItem;
-    Storage.prototype.setItem = function (key, val) {
-      if (this === window.localStorage && typeof val === "string" && /account|switch/i.test(String(key)) && /"pass|"pwd|"encodedPassword/i.test(val)) {
+    var origSet = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) {
+      if (this === window.localStorage && typeof v === "string" && /account|switch/i.test(String(k)) && /"pass|"pwd|"encodedPassword/i.test(v)) {
         try {
-          var arr = JSON.parse(val);
+          var arr = JSON.parse(v);
           if (Array.isArray(arr)) {
             arr = arr.map(function (it) {
-              if (it && typeof it === "object") {
-                delete it.password; delete it.pass; delete it.pwd; delete it.encodedPassword;
-              }
+              if (it && typeof it === "object") { delete it.password; delete it.pass; delete it.pwd; delete it.encodedPassword; }
               return it;
             });
-            val = JSON.stringify(arr);
+            v = JSON.stringify(arr);
           }
         } catch (e) {}
       }
-      return origSetItem.call(this, key, val);
+      return origSet.call(this, k, v);
     };
   } catch (e) {}
-  scrubStoredPasswords();
+  scrubPasswordsFromLocalStorage();
 
-  // =========================================================================
-  // 2. الأمان: مسح السلة والمحفوظات تلقائياً عند تسجيل الخروج
-  // =========================================================================
-  function clearSensitiveSessionCart() {
+  function clearUserSessionData() {
     try {
       localStorage.removeItem("cart");
       localStorage.removeItem("savedForLater");
@@ -18047,12 +18062,32 @@ window.showUserHistory = function(userId, userName) {
     } catch (e) {}
   }
 
+  // إصلاح زر تبديل الحسابات: بدل إرسال password=undefined، يمسح السلة ويسجل خروج ويفتح شاشة الدخول بالبريد جاهزاً!
+  function safeSwitchAccount(email) {
+    clearUserSessionData();
+    var a = getAuth();
+    var proceed = function () {
+      if (typeof window.showPanel === "function") window.showPanel("auth");
+      setTimeout(function () {
+        var inp = document.getElementById("login-email") || document.getElementById("auth-email") || document.querySelector('#auth-panel input[type="email"]');
+        if (inp && email) { inp.value = String(email); }
+        var pw = document.getElementById("login-password") || document.getElementById("auth-password") || document.querySelector('#auth-panel input[type="password"]');
+        if (pw) { pw.value = ""; pw.focus(); }
+      }, 150);
+      toast("🔐 لحماية حسابك، أدخل كلمة المرور أو سجل بحساب Google للتبديل", "info");
+    };
+    if (a && typeof a.signOut === "function") a.signOut().then(proceed).catch(proceed);
+    else proceed();
+  }
+  window.switchToSavedAccount = safeSwitchAccount;
+  window.quickSwitchAccount = safeSwitchAccount;
+  window.loginSavedAccount = safeSwitchAccount;
+
   // =========================================================================
-  // 3. الأمان: تحويل كل طلبات imgbb إلى Cloudinary تلقائياً بشفافية 100%
+  // 3. الأمان: تحويل أي رفع imgbb إلى Cloudinary تلقائياً (0 مفاتيح مكشوفة)
   // =========================================================================
-  (function interceptImgbbToCloudinary() {
-    if (typeof window.fetch !== "function" || window.__V81_FETCH_WRAPPED__) return;
-    window.__V81_FETCH_WRAPPED__ = true;
+  if (typeof window.fetch === "function" && !window.__V82_FETCH_WRAPPED) {
+    window.__V82_FETCH_WRAPPED = true;
     var nativeFetch = window.fetch.bind(window);
     window.fetch = async function (input, init) {
       var urlStr = typeof input === "string" ? input : (input && input.url ? input.url : "");
@@ -18060,86 +18095,67 @@ window.showUserHistory = function(userId, userName) {
         try {
           var imgField = init.body.get("image");
           var s = getSettings();
-          var cn = (s.cloudinaryCloudName || localStorage.getItem("cloudinary_cloud_name") || V81_CLOUD_NAME).trim();
-          var pr = (s.cloudinaryUploadPreset || localStorage.getItem("cloudinary_upload_preset") || V81_CLOUD_PRESET).trim();
+          var cn = (s.cloudinaryCloudName || localStorage.getItem("cloudinary_cloud_name") || CLOUD_NAME).trim();
+          var pr = (s.cloudinaryUploadPreset || localStorage.getItem("cloudinary_upload_preset") || CLOUD_PRESET).trim();
           var fd = new FormData();
           fd.append("file", imgField);
           fd.append("upload_preset", pr);
-          var cRes = await nativeFetch("https://api.cloudinary.com/v1_1/" + encodeURIComponent(cn) + "/image/upload", {
-            method: "POST",
-            body: fd
-          });
+          var cRes = await nativeFetch("https://api.cloudinary.com/v1_1/" + encodeURIComponent(cn) + "/image/upload", { method: "POST", body: fd });
           var cJson = await cRes.json();
-          var fakeImgbbBody = (cRes.ok && cJson && cJson.secure_url)
+          var body = (cRes.ok && cJson && cJson.secure_url)
             ? { success: true, data: { url: cJson.secure_url, display_url: cJson.secure_url } }
-            : { success: false, error: { message: (cJson && cJson.error && cJson.error.message) || "Cloudinary upload failed" } };
-          return new Response(JSON.stringify(fakeImgbbBody), {
-            status: cRes.ok ? 200 : 400,
-            headers: { "Content-Type": "application/json" }
-          });
+            : { success: false, error: { message: (cJson && cJson.error && cJson.error.message) || "Cloudinary upload error" } };
+          return new Response(JSON.stringify(body), { status: cRes.ok ? 200 : 400, headers: { "Content-Type": "application/json" } });
         } catch (err) {
           return new Response(JSON.stringify({ success: false, error: { message: err.message } }), { status: 500 });
         }
       }
       return nativeFetch(input, init);
     };
-  })();
+  }
 
   // =========================================================================
-  // 4. تحسين الصور: تحويل تلقائي لـ WebP مضغوط + إظهار الصورة كاملة مرة واحدة
+  // 4. تحسين الصور: WebP/AVIF تلقائي + إظهار الصورة كاملة دفعة واحدة (لا تقطيع!)
   // =========================================================================
-  window.V81_optimizeImageUrl = function (url) {
+  function optImg(url) {
     if (!url || typeof url !== "string") return url;
     if (url.indexOf("res.cloudinary.com") > -1 && url.indexOf("/image/upload/") > -1 && url.indexOf("f_auto") === -1) {
-      return url.replace("/image/upload/", "/image/upload/f_auto,q_auto:good,w_520,c_limit/");
+      return url.replace("/image/upload/", "/image/upload/f_auto,q_auto:good,w_540,c_limit/");
     }
     return url;
-  };
+  }
 
-  function enhanceAllProductImagesWholeReveal() {
+  function enhanceProductImagesWholeReveal() {
     try {
       var imgs = document.querySelectorAll(".product-card img, .item-card img, #products-grid img, #products-container img");
       imgs.forEach(function (img) {
-        if (img.dataset.v81ImgDone) return;
-        img.dataset.v81ImgDone = "1";
-
-        // Optimization: use WebP/AVIF auto-resized URL for Cloudinary images (50x smaller!)
-        var origSrc = img.getAttribute("src") || "";
-        var optSrc = window.V81_optimizeImageUrl(origSrc);
-        if (optSrc && optSrc !== origSrc) {
-          img.setAttribute("src", optSrc);
-        }
-
-        // Wrap in shimmer frame if not already wrapped
-        var parent = img.parentElement;
-        if (parent && !parent.classList.contains("v81-img-frame") && (parent.classList.contains("product-card") || parent.classList.contains("item-card") || parent.tagName === "DIV")) {
-          if (parent.children.length === 1 || parent.classList.contains("product-img-wrap") || parent.classList.contains("product-image-container")) {
-            parent.classList.add("v81-img-frame");
-          }
-        }
-
+        if (img.dataset.v82Img) return;
+        img.dataset.v82Img = "1";
+        var src = img.getAttribute("src") || "";
+        var opt = optImg(src);
+        if (opt && opt !== src) img.setAttribute("src", opt);
+        if (!img.getAttribute("alt")) img.setAttribute("alt", "زيت زيتون سيناوي من متجر الشجرة المباركة");
         img.decoding = "async";
-        img.classList.add("v81-smooth-img");
+        img.classList.add("v82-whole-img");
 
-        function revealWhole() {
-          img.classList.add("v81-img-ready");
-          var fr = img.closest(".v81-img-frame");
-          if (fr) fr.classList.add("loaded");
+        var p = img.parentElement;
+        if (p && !p.classList.contains("v82-img-frame") && (p.children.length === 1 || p.classList.contains("product-img-wrap"))) {
+          p.classList.add("v82-img-frame");
         }
-
-        if (img.complete && img.naturalWidth > 0) {
-          revealWhole();
-        } else {
+        var done = function () {
+          img.classList.add("ready");
+          var fr = img.closest(".v82-img-frame");
+          if (fr) fr.classList.add("loaded");
+        };
+        if (img.complete && img.naturalWidth > 0) done();
+        else {
           img.addEventListener("load", function () {
-            if (typeof img.decode === "function") {
-              img.decode().then(revealWhole).catch(revealWhole);
-            } else {
-              revealWhole();
-            }
+            if (typeof img.decode === "function") img.decode().then(done).catch(done);
+            else done();
           }, { once: true });
           img.addEventListener("error", function () {
             if (img.src.indexOf("1000392409.jpeg") === -1) img.src = "1000392409.jpeg";
-            revealWhole();
+            done();
           }, { once: true });
         }
       });
@@ -18147,23 +18163,34 @@ window.showUserHistory = function(userId, userName) {
   }
 
   // =========================================================================
-  // 5. تسريع التحميل + علاج اختفاء المنتجات نهائياً (Cache + Self-Healing Watchdog)
+  // 5. كاش المنتجات الكامل (يحفظ sizes و isHidden!) + حارس منع اختفاء المنتجات
   // =========================================================================
-  function hydrateProductsFromCacheInstant() {
+  function saveFullProductsCache() {
     try {
-      var raw = localStorage.getItem(V81_PROD_CACHE_KEY) || localStorage.getItem("zait_v77_products_cache");
+      if (typeof products !== "undefined" && Array.isArray(products) && products.length > 0) {
+        // نحفظ كامل كائن المنتج بدون حذف sizes أو isHidden أو variants!
+        var fullCopy = products.slice(0, 100).map(function (p) {
+          var copy = Object.assign({}, p);
+          if (copy.imageUrl) copy.imageUrl = optImg(copy.imageUrl);
+          if (Array.isArray(copy.images)) copy.images = copy.images.map(optImg);
+          return copy;
+        });
+        localStorage.setItem(FULL_PROD_CACHE_KEY, JSON.stringify(fullCopy));
+      }
+    } catch (e) {}
+  }
+
+  function hydrateFullProductsCacheInstant() {
+    try {
+      var raw = localStorage.getItem(FULL_PROD_CACHE_KEY);
       if (!raw) return false;
       var parsed = JSON.parse(raw);
       if (!Array.isArray(parsed) || parsed.length === 0) return false;
       if (typeof products !== "undefined" && Array.isArray(products) && products.length === 0) {
-        parsed.forEach(function (p) {
-          if (p.imageUrl) p.imageUrl = window.V81_optimizeImageUrl(p.imageUrl);
-          if (Array.isArray(p.images)) p.images = p.images.map(window.V81_optimizeImageUrl);
-          products.push(p);
-        });
+        parsed.forEach(function (p) { products.push(p); });
         if (typeof window.renderProducts === "function") window.renderProducts();
         if (typeof window.renderCategories === "function") window.renderCategories();
-        enhanceAllProductImagesWholeReveal();
+        enhanceProductImagesWholeReveal();
         var sk = document.getElementById("v80-skeleton-grid") || document.getElementById("v78-skeleton-grid");
         if (sk) sk.remove();
         return true;
@@ -18172,223 +18199,82 @@ window.showUserHistory = function(userId, userName) {
     return false;
   }
 
-  function saveProductsToCacheV81() {
-    try {
-      if (typeof products !== "undefined" && Array.isArray(products) && products.length > 0) {
-        var slim = products.slice(0, 80).map(function (p) {
-          return {
-            id: p.id, name: p.name, price: p.price, oldPrice: p.oldPrice || 0,
-            category: p.category || "", stock: p.stock,
-            imageUrl: window.V81_optimizeImageUrl(p.imageUrl || ""),
-            images: Array.isArray(p.images) ? p.images.slice(0, 3).map(window.V81_optimizeImageUrl) : [],
-            description: String(p.description || "").slice(0, 260),
-            featured: !!p.featured, reviews: Array.isArray(p.reviews) ? p.reviews.slice(0, 8) : []
-          };
-        });
-        localStorage.setItem(V81_PROD_CACHE_KEY, JSON.stringify(slim));
-      }
-    } catch (e) {}
-  }
-
-  window.V81_forceReloadProducts = async function (manualClick) {
+  window.V82_ensureProductsVisible = async function (manual) {
     try {
       var grid = document.querySelector("#products-grid, .products-grid, #products-container, .products-container");
       if (typeof products !== "undefined" && Array.isArray(products) && products.length > 0) {
         if (grid && !grid.querySelector(".product-card, .item-card")) {
           if (typeof window.renderProducts === "function") window.renderProducts();
-          enhanceAllProductImagesWholeReveal();
+          enhanceProductImagesWholeReveal();
         }
-        saveProductsToCacheV81();
+        saveFullProductsCache();
         return;
       }
       var d = getDb();
       if (!d || typeof getDocs !== "function") return;
-      if (manualClick) toast("🔄 جاري إعادة تحميل المنتجات...", "info");
+      if (manual) toast("🔄 جاري تحديث المنتجات...", "info");
       var snap = await getDocs(collection(d, "products"));
       if (snap && !snap.empty && typeof products !== "undefined" && Array.isArray(products)) {
         products.length = 0;
         snap.forEach(function (ds) {
           var item = Object.assign({ id: ds.id }, ds.data());
-          if (item.imageUrl) item.imageUrl = window.V81_optimizeImageUrl(item.imageUrl);
-          if (Array.isArray(item.images)) item.images = item.images.map(window.V81_optimizeImageUrl);
+          if (item.imageUrl) item.imageUrl = optImg(item.imageUrl);
+          if (Array.isArray(item.images)) item.images = item.images.map(optImg);
           products.push(item);
         });
-        saveProductsToCacheV81();
+        saveFullProductsCache();
         if (typeof window.renderProducts === "function") window.renderProducts();
         if (typeof window.renderCategories === "function") window.renderCategories();
-        enhanceAllProductImagesWholeReveal();
+        enhanceProductImagesWholeReveal();
         var sk = document.getElementById("v80-skeleton-grid") || document.getElementById("v78-skeleton-grid");
         if (sk) sk.remove();
-        var rb = document.getElementById("v81-products-retry-box");
+        var rb = document.getElementById("v82-retry-prods-card");
         if (rb) rb.remove();
-        if (manualClick) toast("✅ تم عرض المنتجات بنجاح!", "success");
-      } else if (grid && !grid.querySelector(".product-card, .item-card") && !document.getElementById("v81-products-retry-box")) {
+        if (manual) toast("✅ تم عرض المنتجات بنجاح!", "success");
+      } else if (grid && !grid.querySelector(".product-card, .item-card") && !document.getElementById("v82-retry-prods-card")) {
         var box = document.createElement("div");
-        box.id = "v81-products-retry-box";
+        box.id = "v82-retry-prods-card";
         box.innerHTML =
           '<div style="font-size:2rem;margin-bottom:6px;">🫒</div>' +
           '<strong style="display:block;margin-bottom:6px;">تعذر تحميل المنتجات حالياً</strong>' +
-          '<p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px;">تأكد من اتصالك بالإنترنت ثم اضغط لإعادة المحاولة</p>' +
-          '<button type="button" class="btn" style="background:#153422;color:#fff;padding:9px 20px;border-radius:12px;font-weight:800;" onclick="window.V81_forceReloadProducts(true)">🔄 إعادة تحميل المنتجات</button>';
+          '<p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px;">تحقق من اتصالك بالإنترنت ثم أعد المحاولة</p>' +
+          '<button type="button" class="btn" style="background:#153422;color:#fff;padding:9px 20px;border-radius:12px;font-weight:800;" onclick="window.V82_ensureProductsVisible(true)">🔄 إعادة تحميل المنتجات</button>';
         grid.appendChild(box);
       }
     } catch (e) {}
   };
 
   // =========================================================================
-  // 6. إصلاح الإحصائيات وعداد الزيارات والتصفير الدائم (Atomic + Reset Timestamp)
+  // 6. إصلاح عداد الزيارات الدقيق (يزيد totalVisits + todayVisits مرة واحدة فقط!)
   // =========================================================================
-  var v81Stats = { totalVisits: 0, todayVisits: 0, todayKey: "", statsResetAt: null, loaded: false };
-
-  function todayIsoKey() { return new Date().toISOString().slice(0, 10); }
-
-  async function countUniqueSessionVisitOnce() {
+  async function recordSingleAccurateVisit() {
     try {
-      if (sessionStorage.getItem(V81_VISIT_SESSION_KEY)) return;
-      if (isAdmin()) return;
+      if (sessionStorage.getItem(VISIT_SESSION_KEY)) return;
       var d = getDb();
       if (!d || typeof setDoc !== "function" || typeof increment !== "function") return;
-      sessionStorage.setItem(V81_VISIT_SESSION_KEY, "1");
-      var tKey = todayIsoKey();
-      var statsRef = doc(d, "settings", "stats");
-      await setDoc(statsRef, {
-        totalVisits: increment(1),
-        visits: increment(1),
-        lastVisitAt: new Date().toISOString(),
-        todayKey: tKey
-      }, { merge: true });
-    } catch (e) {}
-  }
-
-  function renderAccurateAdminStatsWidget() {
-    if (!isAdmin()) return;
-    var dash = document.getElementById("admin-dashboard-panel");
-    if (!dash) return;
-    var box = document.getElementById("v81-accurate-stats-box");
-    if (!box) {
-      box = document.createElement("div");
-      box.id = "v81-accurate-stats-box";
-      dash.insertBefore(box, dash.firstChild);
-    }
-
-    var allOrders = (typeof adminOrdersArray !== "undefined" && Array.isArray(adminOrdersArray)) ? adminOrdersArray : [];
-    var resetTs = v81Stats.statsResetAt ? new Date(v81Stats.statsResetAt).getTime() : 0;
-
-    var periodOrders = allOrders.filter(function (o) {
-      if (!resetTs) return true;
-      var t = new Date(o.orderDate || 0).getTime();
-      return t >= resetTs;
-    });
-    var validOrders = periodOrders.filter(function (o) {
-      var st = String(o.status || "");
-      return st.indexOf("ملغي") === -1 && st.indexOf("رفض") === -1 && st.indexOf("مرتجع") === -1;
-    });
-    var netSales = validOrders.reduce(function (acc, o) { return acc + Number(o.totalAmount || 0); }, 0);
-    var visitsCount = Number(v81Stats.totalVisits || 0);
-    var resetLabel = v81Stats.statsResetAt
-      ? ("آخر تصفير: " + new Date(v81Stats.statsResetAt).toLocaleString("ar-EG"))
-      : "إجمالي منذ التأسيس (لم يُصفّر بعد)";
-
-    box.innerHTML =
-      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">' +
-        '<div><strong style="font-size:1rem;color:#f4d378;">📊 الإحصائيات الدقيقة المحمية (V81)</strong>' +
-        '<div style="font-size:0.75rem;color:#bbf7d0;margin-top:2px;">' + resetLabel + '</div></div>' +
-        '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
-          '<button type="button" class="btn" style="background:#dc2626;color:#fff;padding:6px 12px;font-size:0.78rem;border-radius:10px;" onclick="window.V81_openResetStatsModal()">🔄 تصفير الإحصائيات نهائياً</button>' +
-          (resetTs ? '<button type="button" class="btn" style="background:rgba(255,255,255,0.16);color:#fff;padding:6px 12px;font-size:0.78rem;border-radius:10px;" onclick="window.V81_clearStatsResetPoint()">📈 عرض كل التاريخ</button>' : '') +
-        '</div>' +
-      '</div>' +
-      '<div class="v81-stats-grid">' +
-        '<div class="v81-stat-pill"><span style="font-size:0.75rem;color:#cbd5e1;">👁️ الزيارات الحقيقية</span><strong>' + visitsCount.toLocaleString("ar-EG") + '</strong></div>' +
-        '<div class="v81-stat-pill"><span style="font-size:0.75rem;color:#cbd5e1;">📦 الطلبات الفعالة</span><strong>' + validOrders.length.toLocaleString("ar-EG") + '</strong></div>' +
-        '<div class="v81-stat-pill"><span style="font-size:0.75rem;color:#cbd5e1;">💰 صافي المبيعات</span><strong>' + netSales.toLocaleString("ar-EG") + ' ج</strong></div>' +
-        '<div class="v81-stat-pill"><span style="font-size:0.75rem;color:#cbd5e1;">🕒 قيد المراجعة</span><strong>' + periodOrders.filter(function (o) { return String(o.status || "").indexOf("مراجعة") > -1; }).length + '</strong></div>' +
-      '</div>';
-
-    // مزامنة نفس الأرقام الدقيقة مع أي عناصر قديمة للزيارات في الصفحة لمنع التضارب
-    ["stat-visits", "admin-visits-count", "total-visits-count", "dashboard-visits"].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.textContent = visitsCount.toLocaleString("ar-EG");
-    });
-  }
-
-  window.V81_openResetStatsModal = function () {
-    showLegalOrConfirmModal(
-      "🔄 تأكيد التصفير الدائم للإحصائيات والزيارات",
-      '<p style="margin-bottom:14px;">سيتم تصفير <b>عداد الزيارات</b> و<b>عدّاد المبيعات والطلبات الظاهرة في الإحصائيات</b> وحفظ نقطة التصفير في السحابة بشكل دائم (ولن ترجع الأرقام القديمة بعد إغلاق التطبيق، مع بقاء فواتير الطلبات نفسها محفوظة في سجل الطلبات بأمان).</p>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button type="button" class="btn" style="flex:1;background:#dc2626;color:#fff;padding:10px;border-radius:12px;font-weight:800;" onclick="window.V81_executePermanentStatsReset()">✅ نعم، صفّر الإحصائيات الآن</button>' +
-        '<button type="button" class="btn btn-outline" style="flex:1;padding:10px;border-radius:12px;" onclick="window.V81_closeLegalModal()">إلغاء</button>' +
-      '</div>'
-    );
-  };
-
-  window.V81_executePermanentStatsReset = async function () {
-    if (!isAdmin()) return;
-    var d = getDb();
-    var nowIso = new Date().toISOString();
-    try {
+      sessionStorage.setItem(VISIT_SESSION_KEY, "1");
+      var tKey = new Date().toISOString().slice(0, 10);
       await setDoc(doc(d, "settings", "stats"), {
-        totalVisits: 0,
-        visits: 0,
-        todayVisits: 0,
-        todayKey: todayIsoKey(),
-        statsResetAt: nowIso,
-        resetBy: (getUser() && getUser().email) || "admin"
+        totalVisits: increment(1),
+        todayVisits: increment(1),
+        todayKey: tKey,
+        lastVisitAt: new Date().toISOString()
       }, { merge: true });
-      v81Stats.totalVisits = 0;
-      v81Stats.statsResetAt = nowIso;
-      window.V81_closeLegalModal();
-      renderAccurateAdminStatsWidget();
-      toast("✅ تم تصفير الإحصائيات والزيارات بشكل دائم في السحابة!", "success");
-    } catch (e) {
-      toast("❌ تعذر التصفير، تأكد من تحديث Firestore Rules", "error");
-    }
-  };
-
-  window.V81_clearStatsResetPoint = async function () {
-    if (!isAdmin()) return;
-    try {
-      await setDoc(doc(getDb(), "settings", "stats"), { statsResetAt: null }, { merge: true });
-      v81Stats.statsResetAt = null;
-      renderAccurateAdminStatsWidget();
-      toast("📈 تم إظهار إجمالي كل المبيعات منذ تأسيس المتجر", "info");
-    } catch (e) {}
-  };
-
-  // استبدال أي دوال تصفير قديمة غير مستقرة بدالتنا الدائمة
-  window.resetStoreStats = window.V81_openResetStatsModal;
-  window.resetVisitorCounter = window.V81_openResetStatsModal;
-
-  function subscribeAccurateStats() {
-    var d = getDb();
-    if (!d || typeof onSnapshot !== "function") return;
-    try {
-      onSnapshot(doc(d, "settings", "stats"), function (snap) {
-        v81Stats.loaded = true;
-        if (snap.exists()) {
-          var data = snap.data() || {};
-          v81Stats.totalVisits = Number(data.totalVisits !== undefined ? data.totalVisits : (data.visits || 0));
-          v81Stats.statsResetAt = data.statsResetAt || null;
-        }
-        renderAccurateAdminStatsWidget();
-      }, function () {});
     } catch (e) {}
   }
 
   // =========================================================================
-  // 7. تشغيل حقيقي لبكسل فيسبوك وتيك توك وجوجل (بدون innerHTML المعطل!)
+  // 7. تشغيل حقيقي لبكسل فيسبوك وتيك توك وجوجل (بدون innerHTML)
   // =========================================================================
-  var v81PixelsBooted = { fb: "", tt: "", ga: "" };
-
-  function bootRealMarketingPixels() {
+  var pixelsBooted = { fb: "", tt: "", ga: "" };
+  function bootRealPixels() {
     var s = getSettings();
     var fbId = String(s.fbPixelId || s.facebookPixelId || "").trim();
     var ttId = String(s.tiktokPixelId || s.ttPixelId || "").trim();
     var gaId = String(s.gaTrackingId || s.googleAnalyticsId || "").trim();
 
-    if (fbId && v81PixelsBooted.fb !== fbId) {
-      v81PixelsBooted.fb = fbId;
+    if (fbId && pixelsBooted.fb !== fbId) {
+      pixelsBooted.fb = fbId;
       try {
         !function (f, b, e, v, n, t, sEl) {
           if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
@@ -18401,13 +18287,13 @@ window.showUserHistory = function(userId, userName) {
       } catch (e) {}
     }
 
-    if (ttId && v81PixelsBooted.tt !== ttId) {
-      v81PixelsBooted.tt = ttId;
+    if (ttId && pixelsBooted.tt !== ttId) {
+      pixelsBooted.tt = ttId;
       try {
         !function (w, d, t) {
           w.TiktokAnalyticsObject = t; var ttq = w[t] = w[t] || [];
           ttq.methods = ["page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie"];
-          ttq.setAndDefer = function (tObj, e) { tObj[e] = function () { tObj.push([e].concat(Array.prototype.slice.call(arguments, 0))); }; };
+          ttq.setAndDefer = function (o, m) { o[m] = function () { o.push([m].concat(Array.prototype.slice.call(arguments, 0))); }; };
           for (var i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);
           ttq.load = function (e) {
             var n = document.createElement("script"); n.type = "text/javascript"; n.async = !0;
@@ -18419,65 +18305,43 @@ window.showUserHistory = function(userId, userName) {
       } catch (e) {}
     }
 
-    if (gaId && v81PixelsBooted.ga !== gaId) {
-      v81PixelsBooted.ga = gaId;
+    if (gaId && pixelsBooted.ga !== gaId) {
+      pixelsBooted.ga = gaId;
       try {
-        var sc = document.createElement("script");
-        sc.async = true;
+        var sc = document.createElement("script"); sc.async = true;
         sc.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(gaId);
         document.head.appendChild(sc);
         window.dataLayer = window.dataLayer || [];
         window.gtag = function () { window.dataLayer.push(arguments); };
-        window.gtag("js", new Date());
-        window.gtag("config", gaId);
+        window.gtag("js", new Date()); window.gtag("config", gaId);
       } catch (e) {}
     }
   }
 
-  function firePurchasePixels(totalAmount, itemsCount) {
+  function trackPurchasePixels(total, count) {
     try {
-      if (typeof window.fbq === "function") window.fbq("track", "Purchase", { value: Number(totalAmount || 0), currency: "EGP", num_items: itemsCount || 1 });
-      if (window.ttq && typeof window.ttq.track === "function") window.ttq.track("CompletePayment", { value: Number(totalAmount || 0), currency: "EGP" });
-      if (typeof window.gtag === "function") window.gtag("event", "purchase", { value: Number(totalAmount || 0), currency: "EGP" });
+      if (typeof window.fbq === "function") window.fbq("track", "Purchase", { value: Number(total || 0), currency: "EGP", num_items: count || 1 });
+      if (window.ttq && typeof window.ttq.track === "function") window.ttq.track("CompletePayment", { value: Number(total || 0), currency: "EGP" });
+      if (typeof window.gtag === "function") window.gtag("event", "purchase", { value: Number(total || 0), currency: "EGP" });
     } catch (e) {}
   }
 
   // =========================================================================
-  // 8. إصلاح الأخطاء الوظيفية: updateProductPriceAdmin + الميكروفون العربي + التقييمات + الحفظ لوقت لاحق
+  // 8. إصلاح الميكروفون العربي + نجوم التقييم (بدون الاعتماد على <form>) + مزامنة المحفوظات
   // =========================================================================
-  window.updateProductPriceAdmin = async function (productId, newPrice) {
-    if (!isAdmin()) return toast("هذه الصلاحية للمدير فقط", "error");
-    var priceNum = Number(newPrice);
-    if (!productId || isNaN(priceNum) || priceNum <= 0) return toast("أدخل سعراً صحيحاً أكبر من 0", "error");
-    try {
-      await updateDoc(doc(getDb(), "products", productId), { price: priceNum });
-      if (typeof products !== "undefined" && Array.isArray(products)) {
-        var p = products.find(function (x) { return x.id === productId; });
-        if (p) p.price = priceNum;
-        saveProductsToCacheV81();
-        if (typeof window.renderProducts === "function") window.renderProducts();
-      }
-      toast("✅ تم تحديث سعر المنتج إلى " + priceNum + " ج بنجاح!", "success");
-    } catch (e) {
-      toast("❌ تعذر تحديث السعر: " + e.message, "error");
-    }
-  };
-
-  // مصحح الكلام العربي الصحيح بدون خطأ \b (الذي لا يعمل مع العربية!)
-  var V81_AR_DICT = {
+  var V82_SPEECH_MAP = {
     "ذيت": "زيت", "زت": "زيت", "زيتت": "زيت", "ازيت": "زيت", "الذيت": "الزيت",
     "ذيتون": "زيتون", "زتون": "زيتون", "زيتان": "زيتون", "الزتون": "الزيتون",
     "سناوي": "سيناوي", "سينوي": "سيناوي", "سيماوي": "سيناوي", "ثيناوي": "سيناوي",
     "سينا": "سيناء", "جركم": "جركن", "غيركن": "جركن", "جيركن": "جركن",
     "عبوه": "عبوة", "ليتر": "لتر", "رتل": "لتر", "اوردر": "طلب", "الاوردر": "الطلب",
-    "بكام": "بكم سعر", "عايز": "أريد", "عاوز": "أريد", "مشكله": "مشكلة",
-    "الشحنه": "الشحنة", "انستاباي": "إنستاباي"
+    "مشكله": "مشكلة", "الشحنه": "الشحنة", "انستاباي": "إنستاباي"
   };
 
-  function fixArabicSpeechV81(txt) {
-    return String(txt || "").trim().replace(/\s+/g, " ").split(" ").map(function (word) {
-      var clean = word.replace(/[،,.؟?!]/g, "");
-      return V81_AR_DICT[clean] ? word.replace(clean, V81_AR_DICT[clean]) : word;
+  function fixArabicSpeechV82(txt) {
+    return String(txt || "").trim().replace(/\s+/g, " ").split(" ").map(function (w) {
+      var clean = w.replace(/[،,.؟?!]/g, "");
+      return V82_SPEECH_MAP[clean] ? w.replace(clean, V82_SPEECH_MAP[clean]) : w;
     }).join(" ");
   }
 
@@ -18485,18 +18349,17 @@ window.showUserHistory = function(userId, userName) {
     var inp = document.getElementById(inputId);
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-      // إصلاح: عدم تشغيل تسجيل الشات عند الضغط على ميكروفون البحث في متصفحات لا تدعم SpeechRecognition
-      toast("🎤 متصفحك الحالي (مثل متصفح فيسبوك) لا يدعم البحث الصوتي، افتح المتجر في Chrome", "info");
+      toast("🎤 هذا المتصفح (مثل متصفح فيسبوك) لا يدعم الإملاء الصوتي — افتح المتجر في Chrome", "info");
       return;
     }
-    if (window._v81SpeechRec) {
-      try { window._v81SpeechRec.stop(); } catch (e) {}
-      window._v81SpeechRec = null;
+    if (window._v82SpeechRec) {
+      try { window._v82SpeechRec.stop(); } catch (e) {}
+      window._v82SpeechRec = null;
       return;
     }
     try {
       var rec = new SR();
-      window._v81SpeechRec = rec;
+      window._v82SpeechRec = rec;
       rec.lang = window.currentLang === "en" ? "en-US" : "ar-EG";
       rec.continuous = false;
       rec.interimResults = true;
@@ -18509,61 +18372,60 @@ window.showUserHistory = function(userId, userName) {
         var spoken = "";
         for (var i = ev.resultIndex; i < ev.results.length; i++) spoken += ev.results[i][0].transcript;
         if (inp && spoken.trim()) {
-          inp.value = (baseVal ? baseVal + " " : "") + fixArabicSpeechV81(spoken);
+          inp.value = (baseVal ? baseVal + " " : "") + fixArabicSpeechV82(spoken);
           inp.dispatchEvent(new Event("input", { bubbles: true }));
         }
       };
-      rec.onerror = function () { window._v81SpeechRec = null; if (btnEl) { btnEl.style.background = ""; btnEl.style.color = ""; } };
-      rec.onend = function () { window._v81SpeechRec = null; if (btnEl) { btnEl.style.background = ""; btnEl.style.color = ""; } };
+      rec.onerror = function () { window._v82SpeechRec = null; if (btnEl) { btnEl.style.background = ""; btnEl.style.color = ""; } };
+      rec.onend = function () { window._v82SpeechRec = null; if (btnEl) { btnEl.style.background = ""; btnEl.style.color = ""; } };
       rec.start();
-    } catch (e) { window._v81SpeechRec = null; }
+    } catch (e) { window._v82SpeechRec = null; }
   };
 
-  // إصلاح صفحة التقييمات: إضافة أزرار اختيار النجوم (1 إلى 5) + إعادة التحديث بعد تحميل المنتجات
-  window.__V81_SELECTED_STORE_RATING = 5;
-  function enhanceStoreReviewsRatingPicker() {
+  // منتقي النجوم في صفحة التقييمات (يعمل حتى بدون وجود <form>!)
+  window.__V82_STORE_STARS = 5;
+  function mountReviewStarsPicker() {
     var revPanel = document.getElementById("reviews-panel") || document.getElementById("all-reviews-panel");
-    if (!revPanel) return;
-    var form = revPanel.querySelector("form") || revPanel.querySelector("#store-review-form");
-    if (form && !document.getElementById("v81-review-stars-picker")) {
-      var picker = document.createElement("div");
-      picker.id = "v81-review-stars-picker";
-      picker.innerHTML =
-        '<span style="font-size:0.82rem;font-weight:800;">تقييمك للمتجر:</span>' +
-        [1, 2, 3, 4, 5].map(function (n) {
-          return '<button type="button" class="v81-star-btn lit" data-star="' + n + '" onclick="window.V81_pickStoreStars(' + n + ')">★</button>';
-        }).join("") +
-        '<input type="hidden" id="v81-store-rating-val" value="5" />';
-      form.insertBefore(picker, form.firstChild);
-    }
+    if (!revPanel || document.getElementById("v82-stars-picker")) return;
+    var anchor = revPanel.querySelector("textarea, #store-review-text, #general-review-comment, #general-review-text");
+    if (!anchor || !anchor.parentNode) return;
+    var wrap = document.createElement("div");
+    wrap.id = "v82-stars-picker";
+    wrap.innerHTML =
+      '<span style="font-size:0.84rem;font-weight:800;">تقييمك:</span>' +
+      [1, 2, 3, 4, 5].map(function (n) {
+        return '<button type="button" class="v82-star-btn lit" data-star="' + n + '" onclick="window.V82_pickStars(' + n + ')">★</button>';
+      }).join("") +
+      '<strong id="v82-stars-lbl" style="font-size:0.82rem;color:var(--secondary,#c59b27);margin-right:4px;">(5/5)</strong>';
+    anchor.parentNode.insertBefore(wrap, anchor);
   }
-  window.V81_pickStoreStars = function (stars) {
-    window.__V81_SELECTED_STORE_RATING = stars;
-    var h = document.getElementById("v81-store-rating-val");
-    if (h) h.value = String(stars);
-    document.querySelectorAll("#v81-review-stars-picker .v81-star-btn").forEach(function (b) {
-      b.classList.toggle("lit", Number(b.dataset.star) <= stars);
+  window.V82_pickStars = function (n) {
+    window.__V82_STORE_STARS = n;
+    var lbl = document.getElementById("v82-stars-lbl");
+    if (lbl) lbl.textContent = "(" + n + "/5)";
+    document.querySelectorAll("#v82-stars-picker .v82-star-btn").forEach(function (b) {
+      b.classList.toggle("lit", Number(b.dataset.star) <= n);
     });
-    // مزامنة مع أي select تقييم موجود
     var sel = document.querySelector("#reviews-panel select, #store-review-rating, #general-review-rating");
-    if (sel) sel.value = String(stars);
+    if (sel) sel.value = String(n);
   };
 
-  // إصلاح مزامنة "الحفظ لوقت لاحق" حتى لو أصبحت القائمة فارغة [] (يمنع عودة آخر منتج بعد نقله للسلة)
-  function hookSaveForLaterSync() {
-    ["moveToCartFromSaved", "removeFromSavedForLater", "saveForLater"].forEach(function (fnName) {
-      if (typeof window[fnName] === "function" && !window["_v81Wrapped_" + fnName]) {
-        window["_v81Wrapped_" + fnName] = true;
-        var orig = window[fnName];
-        window[fnName] = function () {
+  // إصلاح سباق السلة و"الحفظ لوقت لاحق" حتى عند إفراغ القائمة []
+  function hookSaveForLaterAndCartSync() {
+    ["moveToCartFromSaved", "removeFromSavedForLater", "saveForLater", "removeFromCart", "addToCart"].forEach(function (fn) {
+      if (typeof window[fn] === "function" && !window["_v82Wrapped_" + fn]) {
+        window["_v82Wrapped_" + fn] = true;
+        var orig = window[fn];
+        window[fn] = function () {
+          window.__V82_LAST_LOCAL_CART_EDIT = Date.now();
           var res = orig.apply(this, arguments);
           try {
             var u = getUser();
             var d = getDb();
-            var curSaved = JSON.parse(localStorage.getItem("savedForLater") || "[]");
-            var curCart = JSON.parse(localStorage.getItem("cart") || "[]");
-            if (u && u.uid && d) {
-              setDoc(doc(d, "users", u.uid), { savedForLater: curSaved, cart: curCart, cartUpdatedAt: Date.now() }, { merge: true }).catch(function () {});
+            if (u && u.uid && d && typeof setDoc === "function") {
+              var cArr = JSON.parse(localStorage.getItem("cart") || "[]");
+              var sArr = JSON.parse(localStorage.getItem("savedForLater") || "[]");
+              setDoc(doc(d, "users", u.uid), { cart: cArr, savedForLater: sArr, cartUpdatedAt: window.__V82_LAST_LOCAL_CART_EDIT }, { merge: true }).catch(function () {});
             }
           } catch (e) {}
           return res;
@@ -18573,232 +18435,190 @@ window.showUserHistory = function(userId, userName) {
   }
 
   // =========================================================================
-  // 9. وضع بدون إنترنت (Offline Mode) + طابور حفظ وإرسال الطلبات تلقائياً
+  // 9. وضع بدون نت (Offline Mode) + حساب شحن وكوبون حقيقي للطلب المحفوظ بدون نت
   // =========================================================================
-  function ensureOfflineBanner() {
-    var b = document.getElementById("v81-offline-banner");
+  function updateOfflineBar() {
+    var b = document.getElementById("v82-offline-bar");
     if (!b) {
       b = document.createElement("div");
-      b.id = "v81-offline-banner";
+      b.id = "v82-offline-bar";
       document.body.appendChild(b);
     }
     var queued = [];
-    try { queued = JSON.parse(localStorage.getItem(V81_OFFLINE_ORDERS_KEY) || "[]"); } catch (e) {}
-
+    try { queued = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]"); } catch (e) {}
     if (!navigator.onLine) {
-      b.innerHTML = '<span>📡 أنت تتصفح بدون نت — يمكنك التصفح وحفظ طلبك وسيُرسل تلقائياً فور عودة الإنترنت!</span>';
+      b.textContent = "📡 تتصفح بدون نت — يمكنك التصفح وحفظ طلبك وسيُرسل تلقائياً فور عودة الإنترنت!";
       b.classList.add("show");
     } else if (queued.length > 0) {
-      b.innerHTML = '<span>🔄 عاد الإنترنت! جاري إرسال ' + queued.length + ' طلب محفوظ تلقائياً...</span>';
+      b.textContent = "🔄 عاد الإنترنت! جاري إرسال " + queued.length + " طلب محفوظ تلقائياً...";
       b.classList.add("show");
-      flushOfflineOrdersQueue();
+      flushOfflineQueue();
     } else {
       b.classList.remove("show");
     }
   }
 
-  async function flushOfflineOrdersQueue() {
+  async function flushOfflineQueue() {
     if (!navigator.onLine) return;
     var d = getDb();
-    if (!d) return;
-    var queued = [];
-    try { queued = JSON.parse(localStorage.getItem(V81_OFFLINE_ORDERS_KEY) || "[]"); } catch (e) {}
-    if (!queued.length) return;
-
-    var remaining = [];
-    var sent = 0;
-    for (var i = 0; i < queued.length; i++) {
-      try {
-        await addDoc(collection(d, "orders"), queued[i]);
-        sent++;
-      } catch (e) {
-        remaining.push(queued[i]);
-      }
+    if (!d || typeof addDoc !== "function") return;
+    var q = [];
+    try { q = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]"); } catch (e) {}
+    if (!q.length) return;
+    var left = [], sent = 0;
+    for (var i = 0; i < q.length; i++) {
+      try { await addDoc(collection(d, "orders"), q[i]); sent++; }
+      catch (e) { left.push(q[i]); }
     }
-    localStorage.setItem(V81_OFFLINE_ORDERS_KEY, JSON.stringify(remaining));
-    if (sent > 0) {
-      toast("🎉 عاد الإنترنت وتم إرسال " + sent + " طلب محفوظ بنجاح!", "success");
-    }
-    ensureOfflineBanner();
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(left));
+    if (sent > 0) toast("🎉 عاد الإنترنت وتم إرسال " + sent + " طلب محفوظ بنجاح!", "success");
+    updateOfflineBar();
   }
 
-  function hookOrderForOfflineAndPixels() {
-    if (typeof window.processOrder === "function" && !window.__V81_ORDER_HOOKED__) {
-      window.__V81_ORDER_HOOKED__ = true;
-      var origProcessOrder = window.processOrder;
-      window.processOrder = async function (method) {
+  function hookProcessOrderV82() {
+    if (typeof window.processOrder === "function" && !window.__V82_ORDER_WRAPPED) {
+      window.__V82_ORDER_WRAPPED = true;
+      var origOrder = window.processOrder;
+      window.processOrder = async function () {
         var selItems = (typeof cart !== "undefined" && Array.isArray(cart)) ? cart.filter(function (i) { return i.selected !== false; }) : [];
-        var estTotal = selItems.reduce(function (s, i) { return s + Number(i.price || 0) * Number(i.quantity || 1); }, 0);
+        var sub = selItems.reduce(function (s, i) { return s + Number(i.price || 0) * Number(i.quantity || 1); }, 0);
 
         if (!navigator.onLine) {
           var nm = ((document.getElementById("order-name") || {}).value || "").trim();
           var ph = ((document.getElementById("order-phone1") || {}).value || "").trim();
           var gv = ((document.getElementById("order-gov") || {}).value || "").trim();
           var ad = ((document.getElementById("order-address") || {}).value || "").trim();
-          if (!nm || !ph || !gv || !ad || selItems.length === 0) {
+          if (!nm || !ph || !gv || !ad || !selItems.length) {
             return toast("أكمل الاسم والهاتف والمحافظة والعنوان والمنتجات لحفظ الطلب بدون نت", "error");
           }
+          // حساب الشحن الحقيقي والكوبون حتى بدون إنترنت!
+          var s = getSettings();
+          var freeTarget = Number(s.freeShippingThreshold || 1000);
+          var shipCost = (s.enableFreeShipping !== false && sub >= freeTarget)
+            ? 0
+            : (typeof window.getShippingCostForGov === "function" ? Number(window.getShippingCostForGov(gv) || 65) : 65);
+          var discPct = typeof currentDiscountPercent !== "undefined" ? Number(currentDiscountPercent || 0) : 0;
+          var discVal = Math.round(sub * (discPct / 100));
+          var totalVal = Math.max(1, (sub - discVal) + shipCost);
+
           var u = getUser();
-          var offlinePayload = {
+          var offlineOrder = {
             userId: u ? u.uid : "",
             customerEmail: u ? (u.email || u.phoneNumber || ph) : ph,
             customerName: nm,
             phones: { primary: ph, secondary: ((document.getElementById("order-phone2") || {}).value || "").trim() },
             location: { governorate: gv, city: ((document.getElementById("order-city") || {}).value || ""), details: ad },
             items: selItems,
-            subtotal: estTotal,
-            shippingCost: 0,
-            totalAmount: estTotal,
+            subtotal: sub,
+            discount: discVal,
+            promoCode: typeof appliedPromoCode !== "undefined" ? appliedPromoCode : "",
+            shippingCost: shipCost,
+            totalAmount: totalVal,
             paymentMethod: ((document.getElementById("order-payment-method") || {}).value || "كاش عند الاستلام"),
-            orderMethod: "محفوظ بدون نت (Offline)",
+            orderMethod: "طلب مبدئي محفوظ بدون نت (Offline)",
             status: "قيد المراجعة",
             orderDate: new Date().toISOString()
           };
           var q = [];
-          try { q = JSON.parse(localStorage.getItem(V81_OFFLINE_ORDERS_KEY) || "[]"); } catch (e) {}
-          q.push(offlinePayload);
-          localStorage.setItem(V81_OFFLINE_ORDERS_KEY, JSON.stringify(q));
+          try { q = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]"); } catch (e) {}
+          q.push(offlineOrder);
+          localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q));
           if (typeof cart !== "undefined" && Array.isArray(cart)) {
             cart = cart.filter(function (i) { return i.selected === false; });
             localStorage.setItem("cart", JSON.stringify(cart));
             if (typeof window.updateCartUI === "function") window.updateCartUI();
           }
-          toast("📡 تم حفظ طلبك على جهازك بدون نت! سيُرسل للإدارة تلقائياً فور عودة الإنترنت ✅", "success");
-          ensureOfflineBanner();
+          toast("📡 تم حفظ طلبك المبدئي (" + totalVal + " ج شاملاً الشحن)! سيُرسل تلقائياً فور عودة الإنترنت ✅", "success");
+          updateOfflineBar();
           return;
         }
 
-        var beforeCnt = selItems.length;
-        var res = await origProcessOrder.apply(this, arguments);
-        var afterCnt = (typeof cart !== "undefined" && Array.isArray(cart)) ? cart.filter(function (i) { return i.selected !== false; }).length : 0;
-        if (beforeCnt > 0 && afterCnt < beforeCnt) {
-          firePurchasePixels(estTotal, beforeCnt);
-        }
+        var before = selItems.length;
+        var res = await origOrder.apply(this, arguments);
+        var after = (typeof cart !== "undefined" && Array.isArray(cart)) ? cart.filter(function (i) { return i.selected !== false; }).length : 0;
+        if (before > 0 && after < before) trackPurchasePixels(sub, before);
         return res;
       };
     }
   }
 
   // =========================================================================
-  // 10. صفحات سياسة الخصوصية وشروط الاستخدام وسياسة الاسترجاع الواضحة
+  // 10. روابط الصفحات القانونية الحقيقية (privacy.html / terms.html / returns.html) في الفوتر
   // =========================================================================
-  function showLegalOrConfirmModal(title, bodyHtml) {
-    var m = document.getElementById("v81-legal-modal");
-    if (!m) {
-      m = document.createElement("div");
-      m.id = "v81-legal-modal";
-      m.onclick = function (e) { if (e.target === m) m.classList.remove("open"); };
-      m.innerHTML = '<div class="v81-legal-card" id="v81-legal-modal-inner"></div>';
-      document.body.appendChild(m);
-    }
-    document.getElementById("v81-legal-modal-inner").innerHTML =
-      '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--border-color,#e2e8f0);padding-bottom:10px;margin-bottom:12px;">' +
-        '<h3 style="margin:0;color:var(--primary,#153422);font-size:1.06rem;">' + title + '</h3>' +
-        '<button type="button" onclick="window.V81_closeLegalModal()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:4px 11px;font-weight:800;cursor:pointer;">✕</button>' +
-      '</div>' + bodyHtml;
-    m.classList.add("open");
-  }
-  window.V81_closeLegalModal = function () {
-    var m = document.getElementById("v81-legal-modal");
-    if (m) m.classList.remove("open");
-  };
-
-  window.V81_openLegalDoc = function (kind) {
-    if (kind === "privacy") {
-      showLegalOrConfirmModal("🔒 سياسة الخصوصية — متجر زيت الشجرة المباركة",
-        "<p>نحترم خصوصية عملائنا في <b>متجر زيت الشجرة المباركة</b> ونلتزم بحماية بياناتك الشخصية:</p>" +
-        "<ul style='padding-right:18px;'><li>نستخدم الاسم ورقم الهاتف والعنوان فقط لتأكيد الطلب وتوصيل شحنتك والتواصل معك بخصوصها.</li>" +
-        "<li>لا نقوم ببيع أو مشاركة بياناتك مع أي جهات تسويقية خارجية.</li>" +
-        "<li>جميع عمليات تسجيل الدخول محمية عبر خوادم Google Firebase المشفّرة ولا يتم حفظ كلمات المرور على متصفحك.</li>" +
-        "<li>يمكنك طلب تعديل أو حذف بيانات حسابك في أي وقت عبر صفحة خدمة العملاء.</li></ul>"
-      );
-    } else if (kind === "terms") {
-      showLegalOrConfirmModal("📜 شروط الاستخدام",
-        "<ul style='padding-right:18px;'><li>جميع المنتجات المعروضة هي زيت زيتون سيناوي بكر ممتاز عصرة أولى على البارد 100% ومنتجات طبيعية مضمونة.</li>" +
-        "<li>يتم تأكيد الطلب هاتفياً أو عبر واتساب قبل الشحن، وتصل الشحنات خلال 1 إلى 3 أيام عمل لجميع محافظات مصر.</li>" +
-        "<li>الأسعار شاملة التغليف المحكم، وتُضاف مصاريف الشحن حسب المحافظة (ومجاناً فوق الحد الأدنى للشحن المجاني).</li></ul>"
-      );
-    } else {
-      showLegalOrConfirmModal("🔄 سياسة الاستبدال والاسترجاع وضمان الجودة",
-        "<ul style='padding-right:18px;'><li><b>حق المعاينة:</b> يحق للعميل معاينة الشحنة والتأكد من سلامة العبوة وختم الضمان عند الاستلام.</li>" +
-        "<li><b>ضمان الجودة 100%:</b> في حالة وجود أي تلف أثناء الشحن أو عدم رضاك عن جودة الزيت، نضمن لك الاستبدال أو الاسترجاع الكامل خلال <b>14 يوماً</b> من تاريخ الاستلام.</li>" +
-        "<li>لتقديم طلب استرجاع أو استبدال، تواصل معنا فوراً عبر صفحة خدمة العملاء أو واتساب المتجر الرسمي.</li></ul>"
-      );
-    }
-  };
-
-  function injectLegalFooterLinks() {
-    if (document.getElementById("v81-legal-footer-bar")) return;
+  function injectRealLegalFooterLinks() {
+    if (document.getElementById("v82-legal-footer-links")) return;
+    var oldBar = document.getElementById("v81-legal-footer-bar");
+    if (oldBar) oldBar.remove();
     var footer = document.querySelector("footer, .footer, #footer");
     if (!footer) return;
     var bar = document.createElement("div");
-    bar.id = "v81-legal-footer-bar";
+    bar.id = "v82-legal-footer-links";
     bar.innerHTML =
-      '<button type="button" class="v81-legal-link-btn" onclick="window.V81_openLegalDoc(\'privacy\')">🔒 سياسة الخصوصية</button>' +
-      '<button type="button" class="v81-legal-link-btn" onclick="window.V81_openLegalDoc(\'terms\')">📜 شروط الاستخدام</button>' +
-      '<button type="button" class="v81-legal-link-btn" onclick="window.V81_openLegalDoc(\'return\')">🔄 سياسة الاستبدال والاسترجاع</button>';
+      '<a href="/privacy.html">🔒 سياسة الخصوصية</a>' +
+      '<a href="/terms.html">📜 شروط الاستخدام</a>' +
+      '<a href="/returns.html">🔄 سياسة الاستبدال والاسترجاع</a>';
     footer.appendChild(bar);
   }
 
   // =========================================================================
-  // 11. التشغيل والتزامن الذكي (خفيف بدون إرهاق المعالج)
+  // 11. التشغيل والتزامن الخفيف
   // =========================================================================
-  var prevLoggedUid = null;
-  var obsTimer = null;
+  var prevUid = null;
+  var mutTimer = null;
 
-  function bootV81() {
-    hydrateProductsFromCacheInstant();
-    ensureOfflineBanner();
-    injectLegalFooterLinks();
-    hookSaveForLaterSync();
-    hookOrderForOfflineAndPixels();
-    enhanceAllProductImagesWholeReveal();
-    enhanceStoreReviewsRatingPicker();
-    bootRealMarketingPixels();
-    subscribeAccurateStats();
+  function bootV82CustomerOnly() {
+    hydrateFullProductsCacheInstant();
+    updateOfflineBar();
+    injectRealLegalFooterLinks();
+    hookSaveForLaterAndCartSync();
+    hookProcessOrderV82();
+    enhanceProductImagesWholeReveal();
+    mountReviewStarsPicker();
+    bootRealPixels();
 
-    window.addEventListener("online", ensureOfflineBanner);
-    window.addEventListener("offline", ensureOfflineBanner);
+    // تسجيل Service Worker واحد موحّد (/sw.js) فقط لمنع أي تعارض مع الإشعارات
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) {
+          if (r.active && r.active.scriptURL && r.active.scriptURL.indexOf("firebase-messaging-sw.js") > -1) {
+            r.unregister().catch(function () {});
+          }
+        });
+        navigator.serviceWorker.register("/sw.js").catch(function () {});
+      }).catch(function () {});
+    }
 
-    // تسجيل زيارة حقيقية واحدة للجلسة (بعد التأكد من هوية المستخدم)
-    setTimeout(countUniqueSessionVisitOnce, 1800);
+    window.addEventListener("online", updateOfflineBar);
+    window.addEventListener("offline", updateOfflineBar);
 
-    // حارس عرض المنتجات: يمنع اختفاء المنتجات أو تأخرها نهائياً
-    setTimeout(function () { window.V81_forceReloadProducts(false); }, 1400);
-    setTimeout(function () { window.V81_forceReloadProducts(false); bootRealMarketingPixels(); }, 3800);
+    setTimeout(recordSingleAccurateVisit, 1800);
+    setTimeout(function () { window.V82_ensureProductsVisible(false); bootRealPixels(); }, 1500);
+    setTimeout(function () { window.V82_ensureProductsVisible(false); }, 4000);
 
-    // ربط تسجيل الخروج بمسح السلة والمحفوظات تلقائياً
     var a = getAuth();
     if (a && typeof a.onAuthStateChanged === "function") {
       a.onAuthStateChanged(function (u) {
-        if (prevLoggedUid && !u) {
-          clearSensitiveSessionCart();
-        }
-        prevLoggedUid = u ? u.uid : null;
-        setTimeout(function () {
-          renderAccurateAdminStatsWidget();
-          bootRealMarketingPixels();
-          enhanceStoreReviewsRatingPicker();
-        }, 450);
+        if (prevUid && !u) clearUserSessionData();
+        prevUid = u ? u.uid : null;
+        try { window.isCurrentUserAdmin = false; } catch (e) {}
+        setTimeout(function () { bootRealPixels(); mountReviewStarsPicker(); }, 400);
       });
     }
 
-    // مراقب خفيف للصور الجديدة والتقييمات والإحصائيات
     try {
       var obs = new MutationObserver(function () {
-        if (obsTimer) clearTimeout(obsTimer);
-        obsTimer = setTimeout(function () {
-          enhanceAllProductImagesWholeReveal();
-          enhanceStoreReviewsRatingPicker();
-          saveProductsToCacheV81();
-          if (isAdmin()) renderAccurateAdminStatsWidget();
-        }, 280);
+        if (mutTimer) clearTimeout(mutTimer);
+        mutTimer = setTimeout(function () {
+          enhanceProductImagesWholeReveal();
+          mountReviewStarsPicker();
+          saveFullProductsCache();
+        }, 320);
       });
       obs.observe(document.body, { childList: true, subtree: true });
     } catch (e) {}
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootV81);
-  else bootV81();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootV82CustomerOnly);
+  else bootV82CustomerOnly();
 })();
-/* === ZAIT_V81_JS_END === */
+/* === ZAIT_V82_CUSTOMER_ONLY_JS_END === */
