@@ -360,7 +360,7 @@ export function initProfileSelects() {
 /**
  * Show profile panel
  */
-export function showProfilePanel() {
+export async function showProfilePanel() {
   if (window.showPanel) window.showPanel('profile');
   if (state.currentUser) {
     const pAuthMsg = document.getElementById('profile-auth-msg');
