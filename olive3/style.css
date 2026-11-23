@@ -3797,29 +3797,11 @@ body.v77-appeal-locked #v80-chat-to-hub-btn, body.v77-appeal-locked #v80-chat-to
 .v80-fix-seq-btn { background: linear-gradient(135deg, #0284c7, #0369a1) !important; color: #fff !important; border: none !important; border-radius: 10px !important; padding: 7px 12px !important; font-size: 0.78rem !important; font-weight: 800 !important; cursor: pointer !important; }
 /* === ZAIT_V80_CSS_END === */
 
-/* === ZAIT_V82_CUSTOMER_ONLY_CSS_START === */
+/* === ZAIT_V81_CSS_START === */
 
-/* 1. إخفاء أي بقايا لأزرار أو لوحات المدير 100% في متجر العملاء */
-#admin-bar,
-#admin-bar-toggle-btn,
-.admin-bar-toggle,
-.admin-tab,
-#admin-floating-launcher-wrap,
-.admin-floating-launcher-wrap,
-.admin-float-item-btn,
-#v81-accurate-stats-box,
-[id^="admin-"][class*="panel"],
-button[onclick*="showPanel('admin-"],
-button[onclick*="selectAdminFloatPanel"],
-button[onclick*="toggleAdminBar"] {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-/* 2. إظهار صور المنتجات كاملة دفعة واحدة بتأثير ناعم (بدون تقطيع من فوق لتحت) */
-.product-card .v82-img-frame,
-.item-card .v82-img-frame {
+/* 1. منع تقطيع الصور وتحميلها جزءاً تلو الآخر: إظهار الصورة كاملة مرة واحدة بتأثير ناعم */
+.product-card .v81-img-frame,
+.item-card .v81-img-frame {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -3827,39 +3809,39 @@ button[onclick*="toggleAdminBar"] {
   border-radius: 14px 14px 0 0;
   background: linear-gradient(110deg, #ece8dc 25%, #f7f4ec 50%, #ece8dc 75%);
   background-size: 200% 100%;
-  animation: v82Shimmer 1.2s infinite linear;
+  animation: v81ImgShimmer 1.2s infinite linear;
 }
-body.dark-mode .product-card .v82-img-frame,
-[data-theme="dark"] .product-card .v82-img-frame {
+body.dark-mode .product-card .v81-img-frame,
+[data-theme="dark"] .product-card .v81-img-frame {
   background: linear-gradient(110deg, #1d2922 25%, #27372e 50%, #1d2922 75%);
   background-size: 200% 100%;
 }
-.v82-img-frame.loaded {
+.v81-img-frame.loaded {
   animation: none !important;
   background: transparent !important;
 }
-@keyframes v82Shimmer {
+@keyframes v81ImgShimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-img.v82-whole-img {
+img.v81-smooth-img {
   opacity: 0;
   transition: opacity 0.28s ease-out;
   will-change: opacity;
 }
-img.v82-whole-img.ready {
+img.v81-smooth-img.v81-img-ready {
   opacity: 1 !important;
 }
 
-/* 3. شريط وضع التصفح بدون نت */
-#v82-offline-bar {
+/* 2. شريط وضع بدون إنترنت (Offline Banner) الأنيق */
+#v81-offline-banner {
   position: fixed !important;
   top: 62px !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
   z-index: 2147483000 !important;
   width: min(94vw, 480px) !important;
-  background: linear-gradient(135deg, #132a1d, #0a1810) !important;
+  background: linear-gradient(135deg, #1e293b, #0f172a) !important;
   color: #fde68a !important;
   border: 1.5px solid #d9ae49 !important;
   border-radius: 14px !important;
@@ -3871,46 +3853,22 @@ img.v82-whole-img.ready {
   display: none;
   align-items: center;
   justify-content: center;
+  gap: 8px;
 }
-#v82-offline-bar.show { display: flex !important; }
+#v81-offline-banner.show { display: flex !important; }
 
-/* 4. منتقي نجوم التقييم الحقيقي (1 إلى 5 نجوم) */
-#v82-stars-picker {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: var(--input-bg, #f4f7f5);
-  border: 1.5px solid var(--border-color, #d5e0d8);
-  border-radius: 14px;
-  padding: 8px 14px;
-  margin: 8px 0 12px;
-}
-.v82-star-btn {
-  background: transparent !important;
-  border: none !important;
-  font-size: 1.65rem !important;
-  cursor: pointer !important;
-  padding: 0 3px !important;
-  color: #cbd5e1 !important;
-  min-height: 36px !important;
-  transition: transform 0.14s !important;
-}
-.v82-star-btn.lit { color: #f59e0b !important; }
-.v82-star-btn:active { transform: scale(1.2); }
-
-/* 5. شريط الروابط القانونية الحقيقية لإعلانات Meta وGoogle */
-#v82-legal-footer-links {
+/* 3. شريط السياسات القانونية في التذييل + نافذة السياسات */
+#v81-legal-footer-bar {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
-  padding: 14px 10px 6px;
-  margin: 12px auto 4px;
+  gap: 10px;
+  padding: 14px 12px;
+  margin: 14px auto 6px;
   max-width: 720px;
   border-top: 1px dashed rgba(200, 162, 75, 0.35);
 }
-#v82-legal-footer-links a {
+.v81-legal-link-btn {
   background: rgba(200, 162, 75, 0.14);
   color: inherit;
   border: 1px solid rgba(200, 162, 75, 0.42);
@@ -3918,16 +3876,95 @@ img.v82-whole-img.ready {
   padding: 6px 14px;
   font-size: 0.78rem;
   font-weight: 800;
-  text-decoration: none;
+  cursor: pointer;
+}
+#v81-legal-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483635 !important;
+  background: rgba(5, 14, 9, 0.78) !important;
+  backdrop-filter: blur(6px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+#v81-legal-modal.open { display: flex !important; }
+.v81-legal-card {
+  width: 100%;
+  max-width: 560px;
+  max-height: 86dvh;
+  overflow-y: auto;
+  background: var(--panel-bg, #ffffff);
+  color: var(--text-color, #18221c);
+  border: 2px solid #c8a24b;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.55);
+  line-height: 1.85;
+  font-size: 0.88rem;
 }
 
-/* بطاقة إعادة المحاولة عند بطء الشبكة */
-#v82-retry-prods-card {
+/* 4. لوحة الإحصائيات الدقيقة والتصفير الدائم في لوحة المدير */
+#v81-accurate-stats-box {
+  background: linear-gradient(135deg, #102a1b, #1d4a30);
+  color: #f8fafc;
+  border: 2px solid #d9ae49;
+  border-radius: 18px;
+  padding: 15px;
+  margin-bottom: 16px;
+  box-shadow: 0 12px 30px rgba(16, 42, 27, 0.25);
+}
+.v81-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 9px;
+  margin: 12px 0;
+}
+.v81-stat-pill {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(217, 174, 73, 0.35);
+  border-radius: 13px;
+  padding: 10px;
+  text-align: center;
+}
+.v81-stat-pill strong {
+  display: block;
+  font-size: 1.2rem;
+  color: #f4d378;
+  margin-top: 3px;
+}
+
+/* 5. اختيار نجوم التقييم (1 إلى 5) في صفحة التقييمات */
+#v81-review-stars-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--input-bg, #f4f7f5);
+  border: 1.5px solid var(--border-color, #d5e0d8);
+  border-radius: 12px;
+  padding: 6px 12px;
+  margin-bottom: 10px;
+}
+.v81-star-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.45rem;
+  cursor: pointer;
+  padding: 0 2px;
+  color: #cbd5e1;
+  transition: transform 0.14s;
+}
+.v81-star-btn.lit { color: #f59e0b; }
+.v81-star-btn:active { transform: scale(1.2); }
+
+/* بطاقة إعادة المحاولة عند عدم وجود منتجات في الكاش بدون نت */
+#v81-products-retry-box {
   grid-column: 1 / -1;
   text-align: center;
-  padding: 26px 16px;
+  padding: 28px 16px;
   background: var(--panel-bg, #ffffff);
   border: 1.5px dashed #c8a24b;
   border-radius: 18px;
 }
-/* === ZAIT_V82_CUSTOMER_ONLY_CSS_END === */
+/* === ZAIT_V81_CSS_END === */
