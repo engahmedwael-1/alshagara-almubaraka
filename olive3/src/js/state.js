@@ -135,7 +135,7 @@ export function persistSavedAccounts() {
 }
 
 // Update admin status
-export function updateAdminStatus(user) {
+export async function updateAdminStatus(user) {
   if (!user) {
     state.isCurrentUserAdmin = false;
     return;
