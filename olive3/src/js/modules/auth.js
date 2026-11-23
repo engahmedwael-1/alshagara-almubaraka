@@ -20,7 +20,7 @@ import { showToast, escapeHTML, toEngDigits, hashString } from '../utils.js';
 /**
  * Initialize authentication listeners
  */
-export function initAuth() {
+export async function initAuth() {
   // Auth form handler
   const auForm = document.getElementById('auth-form');
   if (auForm) {
@@ -244,9 +244,7 @@ export function initAuth() {
 /**
  * Save account locally for quick switching
  * @param {string} email - User email
- * @param {string} password - User password
- */
-export function saveAccountLocally(email, password) {
+ * @param {string} password - User passworexport async function saveAccountLocally(email, password) {ord) {
   const existsIndex = state.savedAccounts.findIndex(a => a.email === email);
   if (existsIndex > -1) {
     state.savedAccounts[existsIndex].password = btoa(password);
@@ -258,9 +256,7 @@ export function saveAccountLocally(email, password) {
 }
 
 /**
- * Render saved accounts in dropdowns
- */
-export function renderSavedAccounts() {
+ * Render saved accounts in drexport async function renderSavedAccounts() {Accounts() {
   const list1 = document.getElementById('saved-accounts-list');
   const list2 = document.getElementById('sidebar-saved-accounts-list');
   let html = '';

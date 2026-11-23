@@ -35,7 +35,7 @@ export const PIN_HASH = CONFIG.security.pinHash;
 export const NATIONAL_ID_HASH = CONFIG.security.nationalIdHash;
 
 // Helper to check if user is super admin
-export function isSuperAdmin(user) {
+export async function isSuperAdmin(user) {
   if (!user) return false;
   const email = (user.email || '').toLowerCase();
   const phone = user.phoneNumber || '';

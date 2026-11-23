@@ -22,13 +22,14 @@ export async function hashString(str) {
  */
 export function escapeHTML(str) {
   if (!str) return "";
-  return String(str).replace(/[&<>'"]/g, tag => ({
-    '&': '&',
-    '<': '<',
-    '>': '>',
-    "'": ''',
-    '"': '"'
-  }[tag]));
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  };
+  return String(str).replace(/[&<>'"]/g, tag => map[tag] || tag);
 }
 
 /**
@@ -112,7 +113,7 @@ export function debounce(func, wait) {
  * @param {number} limit - Limit in ms
  * @returns {Function} Throttled function
  */
-export function throttle(func, limit) {
+export async function throttle(func, limit) {
   let inThrottle;
   return function executedFunction(...args) {
     if (!inThrottle) {
@@ -126,18 +127,14 @@ export function throttle(func, limit) {
 /**
  * Deep clone an object
  * @param {Object} obj - Object to clone
- * @returns {Object} Cloned object
- */
-export function deepClone(obj) {
+ * @returns {Object} Cloned objecexport async function deepClone(obj) {obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
 /**
  * Check if object is empty
  * @param {Object} obj - Object to check
- * @returns {boolean} True if empty
- */
-export function isEmpty(obj) {
+ * @returns {boolean} True iexport async function isEmpty(obj) {Empty(obj) {
   return Object.keys(obj).length === 0;
 }
 
@@ -146,9 +143,7 @@ export function isEmpty(obj) {
  * @param {Object} obj - Object
  * @param {string} path - Path like 'a.b.c'
  * @param {*} defaultValue - Default if not found
- * @returns {*} Value or default
- */
-export function getNested(obj, path, defaultValue = null) {
+ * @returns {*} Valexport async function getNested(obj, path, defaultValue = null) {ultValue = null) {
   return path.split('.').reduce((o, k) => (o || {})[k], obj) ?? defaultValue;
 }
 
@@ -156,9 +151,7 @@ export function getNested(obj, path, defaultValue = null) {
  * Set nested property
  * @param {Object} obj - Object
  * @param {string} path - Path like 'a.b.c'
- * @param {*} value - Value to set
- */
-export function setNested(obj, path, value) {
+ * @param {*} vexport async function setNested(obj, path, value) {sted(obj, path, value) {
   const keys = path.split('.');
   const last = keys.pop();
   const target = keys.reduce((o, k) => o[k] = o[k] || {}, obj);
@@ -168,8 +161,7 @@ export function setNested(obj, path, value) {
 /**
  * Sleep/delay function
  * @param {number} ms - Milliseconds to wait
- * @returns {Promise} Promise that resolves after ms
- */
+ * @returns {Promise} Promiexport async function sleep(ms) {*/
 export function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -272,18 +264,13 @@ export function showToast(message, type = 'info') {
 /**
  * Validate email format
  * @param {string} email - Email to validate
- * @returns {boolean} True if valid
- */
-export function isValidEmail(email) {
+ * @export async function isValidEmail(email) {xport function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 /**
  * Validate Egyptian phone number
- * @param {string} phone - Phone number
- * @returns {boolean} True if valid
- */
-export function isValidEgyptPhone(phone) {
+ * @param {string} phone - Phone numbeexport async function isValidEgyptPhone(phone) {export function isValidEgyptPhone(phone) {
   const cleaned = phone.replace(/\D/g, '');
   return /^(01|201|2010|2011|2012|2015)\d{8,9}$/.test(cleaned);
 }
@@ -291,8 +278,7 @@ export function isValidEgyptPhone(phone) {
 /**
  * Normalize Egyptian phone number to international format
  * @param {string} phone - Phone number
- * @returns {string} Normalized phone (20XXXXXXXXXX)
- */
+ * @returexport async function normalizeEgyptPhone(phone) { */
 export function normalizeEgyptPhone(phone) {
   let cleaned = phone.replace(/\D/g, '');
   if (cleaned.startsWith('0')) cleaned = '2' + cleaned;
@@ -303,7 +289,7 @@ export function normalizeEgyptPhone(phone) {
 /**
  * Get query parameter from URL
  * @param {string} name - Parameter name
- * @returns {string|null} Parameter value or null
+export async function getQueryParam(name) {alue or null
  */
 export function getQueryParam(name) {
   const urlParams = new URLSearchParams(window.location.search);
@@ -312,8 +298,7 @@ export function getQueryParam(name) {
 
 /**
  * Set query parameter in URL without reload
- * @param {string} name - Parameter name
- * @param {string} value - Parameter value
+ * @param {string} name - Paexport async function setQueryParam(name, value) {meter value
  */
 export function setQueryParam(name, value) {
   const url = new URL(window.location);

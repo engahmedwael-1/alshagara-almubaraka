@@ -254,7 +254,7 @@ export function filterProducts(category) {
 /**
  * Render wishlist panel
  */
-export function renderWishlist() {
+export async function renderWishlist() {
   const container = document.getElementById('wishlist-container');
   const favProducts = state.products.filter(p => state.wishlist.includes(p.id));
 

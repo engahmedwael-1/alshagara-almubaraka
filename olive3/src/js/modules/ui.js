@@ -10,7 +10,7 @@ import { showToast, escapeHTML, formatNumber } from '../utils.js';
  * Show panel
  * @param {string} panelId - Panel ID to show
  */
-export function showPanel(panelId) {
+export async function showPanel(panelId) {
   Object.values(state.panels || {}).forEach(p => {
     if (p) { p.classList.remove('active'); p.style.display = ''; }
   });
@@ -75,17 +75,13 @@ function initCheckoutMap() {
 
 /**
  * Toggle payment info
- * @param {string} method - Payment method
- */
-export function togglePaymentInfo(method) {
+ * @param {string} method - Payment methoexport async function togglePaymentInfo(method) {hod) {
   const wi = document.getElementById('wallet-info');
   if (wi) wi.style.display = method === "محفظة إلكترونية" ? 'block' : 'none';
 }
 
 /**
- * Initialize location button
- */
-export function initLocationButton() {
+ * Initialize locationexport async function initLocationButton() {onButton() {
   const locBtn = document.getElementById('btn-locate-me');
   if (locBtn) {
     locBtn.addEventListener('click', () => {
@@ -541,9 +537,7 @@ export function toggleWishlist(event, id) {
 /**
  * Toggle compare product
  * @param {Event} event - Click event
- * @param {string} id - Product ID
- */
-export function toggleCompareProduct(event, id) {
+ * @param {string} idexport async function toggleCompareProduct(event, id) {oduct(event, id) {
   event.stopPropagation();
   if (!state.compareProductIds) state.compareProductIds = [];
   const index = state.compareProductIds.indexOf(id);
@@ -562,9 +556,7 @@ export function toggleCompareProduct(event, id) {
 /**
  * Open quick order modal
  * @param {Event} event - Click event
- * @param {string} id - Product ID
- */
-export function openQuickOrderModal(event, id) {
+ * @param {striexport async function openQuickOrderModal(event, id) {kOrderModal(event, id) {
   event.stopPropagation();
   // Quick order implementation
   if (window.executeAddToCart) window.executeAddToCart(event, id, state.products.find(p => p.id === id)?.name || '');
@@ -575,9 +567,7 @@ export function openQuickOrderModal(event, id) {
  * Request back in stock notification
  * @param {Event} event - Click event
  * @param {string} id - Product ID
- * @param {string} name - Product name
- */
-export function requestBackInStock(event, id, name) {
+ * @param {stexport async function requestBackInStock(event, id, name) {BackInStock(event, id, name) {
   event.stopPropagation();
   // Implementation for back in stock notification
   showToast('سنبلغك عند توفر المنتج', 'success');
