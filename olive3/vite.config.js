@@ -1,111 +1,61 @@
 import { defineConfig } from 'vite';
-import legacy from '@vitejs/plugin-legacy';
+import fs from 'node:fs';
+import path from 'node:path';
 
-export default defineConfig({
-  root: '.',
-  publicDir: '.',
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    sourcemap: true,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug']
-      },
-      mangle: {
-        safari10: true
-      },
-      format: {
-        comments: false
+const STATIC_ASSETS = [
+  '1000392409.jpeg',
+  '404.html',
+  'offline.html',
+  'privacy.html',
+  'terms.html',
+  'returns.html',
+  'google2ff3d10d86a53cec.html',
+  'apple-touch-icon.png',
+  'favicon-32x32.png',
+  'favicon.ico',
+  'icon-192.png',
+  'icon-512.png',
+  'icon-maskable-512.png',
+  'og-share.jpg',
+  'manifest.json',
+  'robots.txt',
+  'sitemap.xml',
+  'sw.js',
+  'firebase-messaging-sw.js',
+  'style.css'
+];
+
+function copyStaticAssetsPlugin() {
+  return {
+    name: 'copy-zait-static-assets',
+    closeBundle() {
+      const rootDir = process.cwd();
+      const outDir = path.resolve(rootDir, 'dist');
+      if (!fs.existsSync(outDir)) {
+        fs.mkdirSync(outDir, { recursive: true });
       }
-    },
-    rollupOptions: {
-      input: {
-        main: 'index.html'
-      },
-      output: {
-        manualChunks: {
-          'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/analytics'],
-          'vendor': ['leaflet']
-        },
-        chunkFileNames: 'assets/js/[name]-[hash].js',
-        entryFileNames: 'assets/js/[name]-[hash].js',
-        assetFileNames: (assetInfo) => {
-          const info = assetInfo.name.split('.');
-          const ext = info[info.length - 1];
-          if (/\.(png|jpe?g|gif|svg|webp|avif|ico)$/.test(assetInfo.name)) {
-            return `assets/images/[name]-[hash].${ext}`;
-          }
-          if (/\.(css)$/.test(assetInfo.name)) {
-            return `assets/css/[name]-[hash].${ext}`;
-          }
-          return `assets/[name]-[hash].${ext}`;
+      for (const fileName of STATIC_ASSETS) {
+        const srcPath = path.resolve(rootDir, fileName);
+        const destPath = path.resolve(outDir, fileName);
+        if (fs.existsSync(srcPath) && !fs.existsSync(destPath)) {
+          fs.copyFileSync(srcPath, destPath);
         }
       }
-    },
-    chunkSizeWarningLimit: 1000,
-    cssCodeSplit: true,
-    modulePreload: {
-      polyfill: true
     }
-  },
-  plugins: [
-    legacy({
-      targets: ['defaults', 'not IE 11'],
-      additionalLegacyPolyfills: ['regenerator-runtime'],
-      renderLegacyChunks: true,
-      polyfills: [
-        'es.globalThis',
-        'es.array.find',
-        'es.array.find-index',
-        'es.object.assign',
-        'es.object.entries',
-        'es.object.values',
-        'es.promise',
-        'es.string.includes',
-        'es.string.starts-with',
-        'es.string.ends-with',
-        'web.dom-collections.iterator',
-        'web.dom-collections.for-each'
-      ]
-    })
-  ],
-  server: {
-    port: 3000,
-    host: true,
-    open: true,
-    cors: true,
-    headers: {
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-      'Cross-Origin-Opener-Policy': 'same-origin'
+  };
+}
+
+export default defineConfig({
+  base: '/',
+  publicDir: false,
+  plugins: [copyStaticAssetsPlugin()],
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    target: 'es2020',
+    sourcemap: false,
+    rollupOptions: {
+      external: [/^https?:\/\//]
     }
-  },
-  preview: {
-    port: 4173,
-    host: true
-  },
-  optimizeDeps: {
-    include: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/analytics', 'leaflet'],
-    exclude: []
-  },
-  resolve: {
-    alias: {
-      '@': '/src',
-      '@js': '/src/js',
-      '@components': '/src/js/components',
-      '@modules': '/src/js/modules',
-      '@utils': '/src/js/utils',
-      '@config': '/src/js/config'
-    }
-  },
-  define: {
-    'process.env.NODE_ENV': '"production"'
-  },
-  css: {
-    devSourcemap: true,
-    postcss: {}
   }
 });
