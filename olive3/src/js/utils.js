@@ -264,13 +264,13 @@ export function showToast(message, type = 'info') {
 /**
  * Validate email format
  * @param {string} email - Email to validate
- * @export async function isValidEmail(email) {xport function isValidEmail(email) {
+  // Validate email format
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 /**
  * Validate Egyptian phone number
- * @param {string} phone - Phone numbeexport async function isValidEgyptPhone(phone) {export function isValidEgyptPhone(phone) {
+ * @param {string} phone - Phone number
   const cleaned = phone.replace(/\D/g, '');
   return /^(01|201|2010|2011|2012|2015)\d{8,9}$/.test(cleaned);
 }

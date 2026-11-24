@@ -122,17 +122,20 @@ export async function initState() {
   }
 }
 
-// Persist cart to localStexport async function persistCart() {rt() {
+  // Persist cart to localStorage
+export async function persistCart() {
   localStorage.setItem('cart', JSON.stringify(state.cart));
   localStorage.setItem('savedForLater', JSON.stringify(state.savedForLater));
   localStorage.setItem('wishlist', JSON.stringify(state.wishlist));
 }
 
-// Persist savexport async function persistSavedAccounts() {Accounts() {
+// Persist saved accounts to localStorage
+export async function persistSavedAccounts() {
   localStorage.setItem('zait_saved_accounts', JSON.stringify(state.savedAccounts));
 }
 
-// Upexport async function updateAdminStatus(user) {dminStatus(user) {
+// Update admin status
+export async function updateAdminStatus(user) {
   if (!user) {
     state.isCurrentUserAdmin = false;
     return;
