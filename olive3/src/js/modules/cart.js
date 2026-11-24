@@ -422,3 +422,7 @@ export default {
   processOrder,
   executeBuyNow
 };
+
+export function updateCartUI(...args) {
+  if (typeof window !== 'undefined' && typeof window.renderCart === 'function') window.renderCart(...args);
+}

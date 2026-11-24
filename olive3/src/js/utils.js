@@ -264,13 +264,13 @@ export function showToast(message, type = 'info') {
 /**
  * Validate email format
  * @param {string} email - Email to validate
-  // Validate email format
+ * @export async function isValidEmail(email) {xport function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 /**
  * Validate Egyptian phone number
- * @param {string} phone - Phone number
+ * @param {string} phone - Phone numbeexport async function isValidEgyptPhone(phone) {export function isValidEgyptPhone(phone) {
   const cleaned = phone.replace(/\D/g, '');
   return /^(01|201|2010|2011|2012|2015)\d{8,9}$/.test(cleaned);
 }
@@ -346,4 +346,13 @@ export function isInViewport(el) {
     rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
     rect.right <= (window.innerWidth || document.documentElement.clientWidth)
   );
+}
+
+export function getStepIndex(status) {
+  const s = String(status || '').toLowerCase();
+  if (s.includes('ملغ') || s.includes('مرتجع') || s.includes('رفض') || s.includes('cancel') || s.includes('return')) return -1;
+  if (s.includes('توصيل') || s.includes('تسليم') || s.includes('deliver')) return 3;
+  if (s.includes('شحن') || s.includes('طريق') || s.includes('مندوب') || s.includes('ship')) return 2;
+  if (s.includes('تجهيز') || s.includes('تغليف') || s.includes('مؤكد') || s.includes('process') || s.includes('confirm')) return 1;
+  return 0;
 }

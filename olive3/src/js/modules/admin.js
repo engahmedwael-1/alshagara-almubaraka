@@ -617,3 +617,31 @@ export default {
   bulkUpdateOrderStatus,
   selectAllOrders
 };
+
+import { onSnapshot as __zait_re_onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+export { __zait_re_onSnapshot as onSnapshot };
+
+import { collection as __zait_re_collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+export { __zait_re_collection as collection };
+
+export function injectPixels(settings) {
+  try {
+    const s = settings || {};
+    const fbId = String(s.fbPixelId || s.facebookPixelId || '').trim();
+    if (fbId && typeof document !== 'undefined' && !window.__zaitFbPixelLoaded) {
+      window.__zaitFbPixelLoaded = fbId;
+      const sc = document.createElement('script');
+      sc.async = true;
+      sc.src = 'https://connect.facebook.net/en_US/fbevents.js';
+      document.head.appendChild(sc);
+    }
+    const ttId = String(s.tiktokPixelId || '').trim();
+    if (ttId && typeof document !== 'undefined' && !window.__zaitTtPixelLoaded) {
+      window.__zaitTtPixelLoaded = ttId;
+      const sc2 = document.createElement('script');
+      sc2.async = true;
+      sc2.src = 'https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=' + encodeURIComponent(ttId) + '&lib=ttq';
+      document.head.appendChild(sc2);
+    }
+  } catch (e) {}
+}
