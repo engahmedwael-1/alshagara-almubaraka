@@ -1,9 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, updateDoc, setDoc, getDoc, getDocs, increment, arrayUnion, where, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { initializeFirestore,  getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, updateDoc, setDoc, getDoc, getDocs, increment, arrayUnion, where, runTransaction  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBJFZRij_8cprlkj4qV98WSZVRWdYLQY-I", authDomain: "olive-oile-store.firebaseapp.com", projectId: "olive-oile-store", messagingSenderId: "991769684700", appId: "1:991769684700:web:adfd4958d6aba1c7902219" };
-        const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app); const googleProvider = new GoogleAuthProvider();
+        const app = initializeApp(firebaseConfig); const db = (() => { try { return initializeFirestore(app, { experimentalAutoDetectLongPolling: true, useFetchStreams: false }); } catch (_e) { return getFirestore(app); } })(); const auth = getAuth(app); const googleProvider = new GoogleAuthProvider();
         const SUPER_ADMINS = ["aw734622@gmail.com", "mhmwdaltahrahmdwayl@gmail.com"];
         let dynamicAdmins = [], dynamicAdminsList = [];
         window.loyaltyEarnRateActual = 20; window.loyaltyRedeemValueActual = 10;
@@ -12661,7 +12661,7 @@ window.showUserHistory = function(userId, userName) {
                 if (Notification.permission !== 'granted') return;
                 const { getMessaging, getToken } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js");
                 const messaging = getMessaging();
-                const swReg = await navigator.serviceWorker.register("/sw.js?v=84");
+                const swReg = await navigator.serviceWorker.register("/sw.js?v=89");
                 const fcmToken = await getToken(messaging, {
                     vapidKey: window.ZAIT_FCM_VAPID_KEY,
                     serviceWorkerRegistration: swReg
@@ -18101,7 +18101,7 @@ window.showUserHistory = function(userId, userName) {
             r.unregister().catch(function () {});
           }
         });
-        navigator.serviceWorker.register("/sw.js?v=84", { scope: "/" }).catch(function () {});
+        navigator.serviceWorker.register("/sw.js?v=89", { scope: "/" }).catch(function () {});
       }).catch(function () {});
     }
 
@@ -18143,180 +18143,100 @@ window.showUserHistory = function(userId, userName) {
   else bootV83();
 })();
 
-/* === ZAIT_V84_TURBO_HANDOFF_START === */
+/* === ZAIT_V89_HANDOFF_START === */
 (function () {
   "use strict";
-  if (window.__ZAIT_V84_HANDOFF_DONE__) return;
-  window.__ZAIT_V84_HANDOFF_DONE__ = true;
+  if (window.__ZAIT_V89_HANDOFF__) return;
+  window.__ZAIT_V89_HANDOFF__ = true;
 
-  function getDb() { return typeof db !== "undefined" ? db : window.db; }
-  function getSettings() { return (typeof storeSettings !== "undefined" && storeSettings) ? storeSettings : (window.storeSettings || {}); }
-  function isAdmin() {
+  function saveToIdb(list) {
+    if (!window.indexedDB || !Array.isArray(list) || !list.length) return;
     try {
-      if (typeof isCurrentUserAdmin !== "undefined" && isCurrentUserAdmin) return true;
-      if (window.isCurrentUserAdmin) return true;
-      var u = typeof currentUser !== "undefined" ? currentUser : window.currentUser;
-      var em = u && u.email ? String(u.email).toLowerCase() : "";
-      return em === "aw734622@gmail.com" || em === "mhmwdaltahrahmdwayl@gmail.com";
-    } catch (e) { return false; }
-  }
-  function toast(m, t) { if (typeof window.showToast === "function") window.showToast(m, t || "info"); }
-
-  // 1. حقن المنتجات الجاهزة من المحرك الفوري فوراً في مصفوفة products الأصلية بدون انتظار onSnapshot!
-  function handoffTurboProductsToNative() {
-    try {
-      var ready = window.__V84_REST_FRESH__ || window.__V84_TURBO_PRODUCTS__;
-      if (Array.isArray(ready) && ready.length > 0 && typeof products !== "undefined" && Array.isArray(products) && products.length === 0) {
-        ready.forEach(function (p) { products.push(p); });
-        window.__V84_NATIVE_RENDERED__ = true;
-        if (typeof window.renderProducts === "function") window.renderProducts();
-        if (typeof window.renderCategories === "function") window.renderCategories();
-      }
-      // تنفيذ أي نقرة قام بها العميل في أول ثانية قبل تحميل script.js
-      if (Array.isArray(window.__V84_PENDING_ACTIONS__) && window.__V84_PENDING_ACTIONS__.length > 0) {
-        var acts = window.__V84_PENDING_ACTIONS__.splice(0);
-        acts.forEach(function (a) {
-          if (a.type === "syncCart") {
-            try {
-              var lc = JSON.parse(localStorage.getItem("cart") || "[]");
-              if (typeof cart !== "undefined" && Array.isArray(cart)) {
-                cart.length = 0;
-                lc.forEach(function (x) { cart.push(x); });
-              }
-              if (typeof window.updateCartUI === "function") window.updateCartUI();
-            } catch (e) {}
-          } else if (a.type === "openProduct") {
-            if (typeof window.openProductModal === "function") window.openProductModal(a.id);
-            else if (typeof window.showProductDetails === "function") window.showProductDetails(a.id);
-          }
-        });
-      }
-    } catch (e) {}
-  }
-
-  // 2. تحديث IndexedDB تلقائياً كلما وصل تحديث حي من Firestore
-  function saveNativeProductsToIdb() {
-    try {
-      if (typeof products === "undefined" || !Array.isArray(products) || products.length === 0) return;
-      window.__V84_NATIVE_RENDERED__ = true;
-      if (!window.indexedDB) return;
-      var req = indexedDB.open("zait_v84_turbo_db", 1);
+      var req = indexedDB.open("zait_v89_fast_db", 1);
       req.onupgradeneeded = function (e) {
         if (!e.target.result.objectStoreNames.contains("kv")) e.target.result.createObjectStore("kv");
       };
       req.onsuccess = function (e) {
-        try {
-          var tx = e.target.result.transaction("kv", "readwrite");
-          tx.objectStore("kv").put(products.slice(0, 100), "products");
-        } catch (err) {}
+        try { e.target.result.transaction("kv", "readwrite").objectStore("kv").put(list.slice(0, 100), "products"); } catch (err) {}
       };
     } catch (e) {}
   }
 
-  // 3. أداة المدير لتحويل أي صور Base64 ثقيلة مخزنة داخل Firestore إلى روابط Cloudinary خفيفة (تنهي بطء الـ 2 دقيقة للأبد!)
-  function dataUrlToBlob(dataUrl) {
-    var parts = dataUrl.split(",");
-    var mime = (parts[0].match(/:(.*?);/) || [])[1] || "image/jpeg";
-    var bin = atob(parts[1]);
-    var len = bin.length;
-    var arr = new Uint8Array(len);
-    for (var i = 0; i < len; i++) arr[i] = bin.charCodeAt(i);
-    return new Blob([arr], { type: mime });
+  function applyListToNative(list) {
+    try {
+      if (!Array.isArray(list) || !list.length) return;
+      if (typeof products !== "undefined" && Array.isArray(products)) {
+        products.length = 0;
+        list.forEach(function (p) { products.push(p); });
+        window.__V89_NATIVE_HAS_CARDS__ = true;
+        if (typeof window.renderProducts === "function") window.renderProducts();
+        if (typeof window.renderCategories === "function") window.renderCategories();
+      }
+    } catch (e) {}
   }
+  window.__V89_APPLY_FRESH_TO_NATIVE__ = applyListToNative;
 
-  async function uploadBlobToCloudinary(blob) {
-    var s = getSettings();
-    var cn = (s.cloudinaryCloudName || "jj2qrpnb").trim();
-    var pr = (s.cloudinaryUploadPreset || "bfu87mf0").trim();
-    var fd = new FormData();
-    fd.append("file", blob);
-    fd.append("upload_preset", pr);
-    var res = await fetch("https://api.cloudinary.com/v1_1/" + encodeURIComponent(cn) + "/image/upload", { method: "POST", body: fd });
-    var j = await res.json();
-    if (!res.ok || !j.secure_url) throw new Error("Cloudinary upload failed");
-    return j.secure_url;
-  }
-
-  window.V84_migrateBase64ProductsToCloudinary = async function () {
-    if (!isAdmin()) return;
-    var d = getDb();
-    if (!d || typeof products === "undefined" || !Array.isArray(products)) return;
-    var heavy = products.filter(function (p) {
-      var hasMain = typeof p.imageUrl === "string" && p.imageUrl.indexOf("data:image/") === 0;
-      var hasArr = Array.isArray(p.images) && p.images.some(function (u) { return typeof u === "string" && u.indexOf("data:image/") === 0; });
-      return hasMain || hasArr;
-    });
-    if (heavy.length === 0) {
-      return toast("✅ ممتاز! جميع صور منتجاتك خفيفة ومرفوعة على روابط سريعة بالفعل.", "success");
-    }
-    toast("⚡ جاري ضغط وترحيل صور " + heavy.length + " منتج ثقيل إلى Cloudinary...", "info");
-    var fixed = 0;
-    for (var i = 0; i < heavy.length; i++) {
-      var p = heavy[i];
-      try {
-        var upd = {};
-        if (typeof p.imageUrl === "string" && p.imageUrl.indexOf("data:image/") === 0) {
-          upd.imageUrl = await uploadBlobToCloudinary(dataUrlToBlob(p.imageUrl));
-          p.imageUrl = upd.imageUrl;
+  // درع حماية: منع أي استدعاء مبكر لـ renderProducts من مسح المنتجات عندما تكون products فارغة!
+  if (typeof window.renderProducts === "function" && !window.__V89_RP_SHIELDED__) {
+    window.__V89_RP_SHIELDED__ = true;
+    var origRender = window.renderProducts;
+    window.renderProducts = function () {
+      if (typeof products !== "undefined" && Array.isArray(products) && products.length === 0) {
+        var seed = window.__V89_REST_PRODUCTS__ || window.__V89_INSTANT_PRODUCTS__;
+        if (Array.isArray(seed) && seed.length > 0) {
+          seed.forEach(function (p) { products.push(p); });
+        } else {
+          return; // لا تمسح الكروت الظاهرة بشاشة فارغة!
         }
-        if (Array.isArray(p.images)) {
-          var newImgs = [];
-          for (var j = 0; j < p.images.length; j++) {
-            var u = p.images[j];
-            if (typeof u === "string" && u.indexOf("data:image/") === 0) {
-              newImgs.push(await uploadBlobToCloudinary(dataUrlToBlob(u)));
-            } else newImgs.push(u);
-          }
-          upd.images = newImgs;
-          p.images = newImgs;
-        }
-        if (Object.keys(upd).length > 0) {
-          await updateDoc(doc(d, "products", p.id), upd);
-          fixed++;
-        }
-      } catch (e) {}
-    }
-    saveNativeProductsToIdb();
-    toast("🎉 تم تسريع وترحيل صور " + fixed + " منتج بنجاح! سيفتح المتجر الآن بسرعة البرق!", "success");
-    injectAdminDbSpeedCard();
-  };
-
-  function injectAdminDbSpeedCard() {
-    if (!isAdmin()) return;
-    var dash = document.getElementById("admin-dashboard-panel");
-    if (!dash) return;
-    var heavyCount = (typeof products !== "undefined" && Array.isArray(products)) ? products.filter(function (p) {
-      return (typeof p.imageUrl === "string" && p.imageUrl.indexOf("data:image/") === 0) ||
-        (Array.isArray(p.images) && p.images.some(function (u) { return typeof u === "string" && u.indexOf("data:image/") === 0; }));
-    }).length : 0;
-
-    var card = document.getElementById("v84-admin-db-speed-card");
-    if (heavyCount === 0) {
-      if (card) card.remove();
-      return;
-    }
-    if (!card) {
-      card = document.createElement("div");
-      card.id = "v84-admin-db-speed-card";
-      dash.insertBefore(card, dash.firstChild);
-    }
-    card.innerHTML =
-      '<strong style="display:block;color:#f4d378;font-size:0.96rem;margin-bottom:4px;">🚨 تنبيه سرعة مهم: يوجد ' + heavyCount + ' منتج صورهم محفوظة كـ Base64 ثقيل داخل قاعدة البيانات!</strong>' +
-      '<p style="font-size:0.8rem;color:#d1fae5;margin:0 0 10px;">هذا يسبب بطء تحميل المتجر على الموبايل. اضغط الزر بالأسفل لنقل صورهم تلقائياً إلى Cloudinary السريع في ثوانٍ:</p>' +
-      '<button type="button" class="btn" style="background:#f0c75e;color:#111;font-weight:900;padding:9px 16px;border-radius:11px;border:none;cursor:pointer;" onclick="window.V84_migrateBase64ProductsToCloudinary()">⚡ تسريع ونقل الصور إلى Cloudinary الآن</button>';
+      }
+      window.__V89_NATIVE_HAS_CARDS__ = true;
+      return origRender.apply(this, arguments);
+    };
   }
 
-  function bootHandoff() {
-    handoffTurboProductsToNative();
-    setTimeout(handoffTurboProductsToNative, 600);
-    setTimeout(function () {
-      saveNativeProductsToIdb();
-      injectAdminDbSpeedCard();
-    }, 2500);
-    setInterval(saveNativeProductsToIdb, 12000);
+  function runHandoff() {
+    var seed = window.__V89_REST_PRODUCTS__ || window.__V89_INSTANT_PRODUCTS__;
+    if (Array.isArray(seed) && seed.length > 0 && typeof products !== "undefined" && Array.isArray(products) && products.length === 0) {
+      applyListToNative(seed);
+    } else if (typeof products !== "undefined" && Array.isArray(products) && products.length > 0) {
+      window.__V89_NATIVE_HAS_CARDS__ = true;
+      if (typeof window.renderProducts === "function") window.renderProducts();
+      saveToIdb(products);
+    }
+
+    // تنفيذ أي نقرة تمت في أول جزء من الثانية قبل اكتمال تحميل script.js
+    if (Array.isArray(window.__V89_PENDING_CLICKS__) && window.__V89_PENDING_CLICKS__.length > 0) {
+      var acts = window.__V89_PENDING_CLICKS__.splice(0);
+      acts.forEach(function (a) {
+        if (a.type === "syncCart") {
+          try {
+            var lc = JSON.parse(localStorage.getItem("cart") || "[]");
+            if (typeof cart !== "undefined" && Array.isArray(cart)) {
+              cart.length = 0;
+              lc.forEach(function (x) { cart.push(x); });
+            }
+            if (typeof window.updateCartUI === "function") window.updateCartUI();
+          } catch (e) {}
+        } else if (a.type === "open") {
+          if (typeof window.openProductModal === "function") window.openProductModal(a.id);
+          else if (typeof window.showProductDetails === "function") window.showProductDetails(a.id);
+        }
+      });
+    }
+
+    // تحديث التسجيل للنسخة sw.js?v=89
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js?v=89", { scope: "/" }).catch(function () {});
+    }
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootHandoff);
-  else bootHandoff();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", runHandoff);
+  else runHandoff();
+  setTimeout(runHandoff, 350);
+  setInterval(function () {
+    if (typeof products !== "undefined" && Array.isArray(products) && products.length > 0) {
+      saveToIdb(products);
+    }
+  }, 15000);
 })();
-/* === ZAIT_V84_TURBO_HANDOFF_END === */
+/* === ZAIT_V89_HANDOFF_END === */

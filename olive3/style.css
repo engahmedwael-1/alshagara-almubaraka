@@ -3720,12 +3720,11 @@ border: 1.5px dashed #c8a24b;
 border-radius: 18px;
 }
 
-/* === ZAIT_V84_TURBO_CSS_START === */
-/* 1. إلغاء فخاختفاء الكروت والصور على هواتف أندرويد (content-visibility و opacity:0) */
+/* === ZAIT_V89_SUBSECOND_CSS_START === */
+/* 1. منع أي إخفاء للصور أو الكروت على الموبايل */
 .product-card,
 .item-card {
   content-visibility: visible !important;
-  contain-intrinsic-size: auto !important;
   contain: none !important;
 }
 .product-card img,
@@ -3737,24 +3736,23 @@ img.v83-whole-img {
   visibility: visible !important;
 }
 
-/* 2. تصميم أنيق وموحّد لكروت العرض الفوري (تظهر في أقل من 0.1 ثانية!) */
-.v84-turbo-card {
+/* 2. تصميم كروت العرض الفوري (0.05 ثانية) */
+.v89-instant-card {
   background: var(--panel-bg, #ffffff);
-  border: 1px solid rgba(200, 162, 75, 0.32);
+  border: 1px solid rgba(200, 162, 75, 0.34);
   border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 6px 20px rgba(21, 52, 34, 0.08);
+  box-shadow: 0 6px 18px rgba(21, 52, 34, 0.08);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.16s ease;
 }
-body.dark-mode .v84-turbo-card,
-[data-theme="dark"] .v84-turbo-card {
+body.dark-mode .v89-instant-card,
+[data-theme="dark"] .v89-instant-card {
   background: #14221a;
   border-color: rgba(200, 162, 75, 0.28);
 }
-.v84-turbo-img-wrap {
+.v89-img-box {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -3762,13 +3760,13 @@ body.dark-mode .v84-turbo-card,
   overflow: hidden;
   cursor: pointer;
 }
-.v84-turbo-img-wrap img {
+.v89-img-box img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-.v84-turbo-badge {
+.v89-disc {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -3779,7 +3777,7 @@ body.dark-mode .v84-turbo-card,
   padding: 2px 8px;
   border-radius: 99px;
 }
-.v84-turbo-body {
+.v89-body {
   padding: 10px;
   display: flex;
   flex-direction: column;
@@ -3787,7 +3785,7 @@ body.dark-mode .v84-turbo-card,
   flex: 1;
   justify-content: space-between;
 }
-.v84-turbo-title {
+.v89-title {
   margin: 0;
   font-size: 0.88rem;
   font-weight: 800;
@@ -3795,25 +3793,20 @@ body.dark-mode .v84-turbo-card,
   line-height: 1.4;
   cursor: pointer;
 }
-body.dark-mode .v84-turbo-title { color: #f8fafc; }
-.v84-turbo-price-row {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.v84-turbo-price {
+body.dark-mode .v89-title { color: #f8fafc; }
+.v89-price {
   font-size: 1rem;
   font-weight: 900;
   color: var(--primary, #153422);
 }
-body.dark-mode .v84-turbo-price { color: #f2cc68; }
-.v84-turbo-old {
-  font-size: 0.76rem;
+body.dark-mode .v89-price { color: #f2cc68; }
+.v89-old {
+  font-size: 0.75rem;
   color: #94a3b8;
   text-decoration: line-through;
+  margin-right: 6px;
 }
-.v84-turbo-btn {
+.v89-btn {
   width: 100%;
   min-height: 40px;
   border: none;
@@ -3824,15 +3817,5 @@ body.dark-mode .v84-turbo-price { color: #f2cc68; }
   font-size: 0.82rem;
   cursor: pointer;
 }
-.v84-turbo-btn:active { transform: scale(0.96); }
-
-/* زر ترحيل صور Base64 في لوحة المدير لتسريع قاعدة البيانات 100 ضعف */
-#v84-admin-db-speed-card {
-  background: linear-gradient(135deg, #132a1d, #1f4e2e);
-  color: #fff;
-  border: 2px solid #e5b84b;
-  border-radius: 16px;
-  padding: 14px;
-  margin-bottom: 14px;
-}
-/* === ZAIT_V84_TURBO_CSS_END === */
+.v89-btn:active { transform: scale(0.96); }
+/* === ZAIT_V89_SUBSECOND_CSS_END === */
