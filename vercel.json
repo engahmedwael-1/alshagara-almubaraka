@@ -14,6 +14,24 @@
       ]
     },
     {
+      "source": "/(index\\.html|products-snapshot\\.json|v91-engine\\.js|v91-styles\\.css)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/(.*\\.(?:png|jpg|jpeg|webp|ico|svg))",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
       "source": "/(sitemap\\.xml|robots\\.txt)",
       "headers": [
         {

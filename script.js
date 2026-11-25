@@ -12661,7 +12661,7 @@ window.showUserHistory = function(userId, userName) {
                 if (Notification.permission !== 'granted') return;
                 const { getMessaging, getToken } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js");
                 const messaging = getMessaging();
-                const swReg = await navigator.serviceWorker.register("/sw.js?v=90");
+                const swReg = await navigator.serviceWorker.register("./sw.js?v=91");
                 const fcmToken = await getToken(messaging, {
                     vapidKey: window.ZAIT_FCM_VAPID_KEY,
                     serviceWorkerRegistration: swReg
@@ -18101,7 +18101,7 @@ window.showUserHistory = function(userId, userName) {
             r.unregister().catch(function () {});
           }
         });
-        navigator.serviceWorker.register("/sw.js?v=90", { scope: "/" }).catch(function () {});
+        navigator.serviceWorker.register("./sw.js?v=91", { scope: "/" }).catch(function () {});
       }).catch(function () {});
     }
 
@@ -18143,67 +18143,53 @@ window.showUserHistory = function(userId, userName) {
   else bootV83();
 })();
 
-/* === ZAIT_V90_HANDOFF_START === */
+/* ZAIT_V91_MODULE_HOOK_START */
 (function () {
   "use strict";
-  if (window.__ZAIT_V90_HANDOFF__) return;
-  window.__ZAIT_V90_HANDOFF__ = true;
-
-  function seedNative(list) {
-    if (!Array.isArray(list) || !list.length) return;
+  if (window.__ZAIT_V91_MOD_HOOK__) return;
+  window.__ZAIT_V91_MOD_HOOK__ = true;
+  function syncModuleCartAndProducts() {
     try {
-      if (typeof products !== "undefined" && Array.isArray(products)) {
-        if (products.length === 0 || window.__V90_FRESH_READY__) {
-          products.length = 0;
-          list.forEach(function (p) { products.push(p); });
-          if (typeof window.renderProducts === "function") window.renderProducts();
-          if (typeof window.renderCategories === "function") window.renderCategories();
+      if (!navigator.onLine) return;
+      if (typeof products === "undefined" || !Array.isArray(products) || products.length === 0) return;
+      window.products = products;
+      var active = products.filter(function (p) {
+        return p && p.deleted !== true && p.isDeleted !== true && p.hidden !== true && p.isHidden !== true && p.active !== false && p.archived !== true;
+      });
+      if (!active.length) return;
+      var validIds = new Set(active.map(function (p) { return String(p.id).trim(); }));
+      if (typeof cart !== "undefined" && Array.isArray(cart) && cart.length > 0) {
+        var removedNames = [];
+        var kept = cart.filter(function (it) {
+          if (!it || typeof it !== "object") return false;
+          var iid = it.id != null ? String(it.id).trim() : (it.productId != null ? String(it.productId).trim() : "");
+          if (iid && validIds.has(iid)) return true;
+          if (!iid && it.name) {
+            var nm = String(it.name).trim().toLowerCase();
+            if (active.some(function (a) { return String(a.name || "").trim().toLowerCase() === nm; })) return true;
+          }
+          removedNames.push((it && it.name) ? String(it.name) : "منتج");
+          return false;
+        });
+        if (kept.length !== cart.length) {
+          cart.length = 0;
+          kept.forEach(function (x) { cart.push(x); });
+          try { localStorage.setItem("cart", JSON.stringify(cart)); } catch (e) {}
+          if (typeof updateCartUI === "function") try { updateCartUI(); } catch (e) {}
+          if (typeof renderCart === "function") try { renderCart(); } catch (e) {}
+          if (typeof syncCartToCloud === "function") try { syncCartToCloud(); } catch (e) {}
+          if (typeof showToast === "function") {
+            showToast("تمت إزالة [" + removedNames.slice(0, 3).join("، ") + "] من السلة تلقائياً لعدم توفره حالياً", "info");
+          }
         }
+      }
+      if (typeof window.__V91_CLEAN_CART__ === "function") {
+        window.__V91_CLEAN_CART__(products);
       }
     } catch (e) {}
   }
-  window.__V90_SEED_NATIVE__ = seedNative;
-
-  // تحميل Leaflet تلقائياً عند الضغط على أي زر خريطة/تحديد موقع
-  document.addEventListener("click", function (ev) {
-    var btn = ev.target && ev.target.closest ? ev.target.closest("button,a") : null;
-    if (!btn) return;
-    var h = ((btn.id || "") + " " + (btn.className || "") + " " + (btn.getAttribute("onclick") || "") + " " + (btn.textContent || "")).toLowerCase();
-    if (/map|location|خريطة|خريطه|موقع/.test(h) && typeof window.__V90_LOAD_LEAFLET__ === "function") {
-      window.__V90_LOAD_LEAFLET__();
-    }
-  }, true);
-
-  function syncPendingAndSeed() {
-    var ready = window.__V90_FRESH_READY__ || window.__V90_SSR_PRODUCTS__;
-    if (Array.isArray(ready) && ready.length > 0) seedNative(ready);
-
-    if (Array.isArray(window.__V90_PENDING_ACTIONS__) && window.__V90_PENDING_ACTIONS__.length > 0) {
-      var acts = window.__V90_PENDING_ACTIONS__.splice(0);
-      acts.forEach(function (a) {
-        if (a.type === "syncCart") {
-          try {
-            var lc = JSON.parse(localStorage.getItem("cart") || "[]");
-            if (typeof cart !== "undefined" && Array.isArray(cart)) {
-              cart.length = 0;
-              lc.forEach(function (x) { cart.push(x); });
-            }
-            if (typeof window.updateCartUI === "function") window.updateCartUI();
-          } catch (e) {}
-        } else if (a.type === "open") {
-          if (typeof window.openProductModal === "function") window.openProductModal(a.id);
-          else if (typeof window.showProductDetails === "function") window.showProductDetails(a.id);
-        }
-      });
-    }
-
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js?v=90", { scope: "/" }).catch(function () {});
-    }
-  }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", syncPendingAndSeed);
-  else syncPendingAndSeed();
-  setTimeout(syncPendingAndSeed, 250);
+  setTimeout(syncModuleCartAndProducts, 1800);
+  setTimeout(syncModuleCartAndProducts, 5000);
+  setInterval(syncModuleCartAndProducts, 15000);
 })();
-/* === ZAIT_V90_HANDOFF_END === */
+/* ZAIT_V91_MODULE_HOOK_END */
