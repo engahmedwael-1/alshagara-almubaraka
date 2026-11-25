@@ -1,3 +1,5 @@
+function renderVisualBar(...args) { if (typeof window !== 'undefined' && typeof window['renderVisualBar'] === 'function' && window['renderVisualBar'] !== renderVisualBar) return window['renderVisualBar'](...args); }
+export function event(...args) { if (typeof window !== 'undefined' && typeof window['event'] === 'function' && window['event'] !== event) return window['event'](...args); }
 /**
  * Products Module
  * Handles product loading, filtering, rendering, and management

@@ -49,7 +49,6 @@ export default defineConfig({
   base: '/',
   publicDir: false,
   plugins: [copyStaticAssetsPlugin()],
-  // السماح باستخدام Top-level await الموجود في src/js/firebase.js بدون أخطاء esbuild
   esbuild: {
     target: 'esnext'
   },

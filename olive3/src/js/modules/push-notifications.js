@@ -1,3 +1,5 @@
+import { increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 /**
  * Push Notifications Module
  * Handles Firebase Cloud Messaging for real push notifications

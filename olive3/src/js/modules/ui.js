@@ -1,3 +1,8 @@
+function togglePaymentInfo(...args) { if (typeof window !== 'undefined' && typeof window['togglePaymentInfo'] === 'function' && window['togglePaymentInfo'] !== togglePaymentInfo) return window['togglePaymentInfo'](...args); }
+function initLocationButton(...args) { if (typeof window !== 'undefined' && typeof window['initLocationButton'] === 'function' && window['initLocationButton'] !== initLocationButton) return window['initLocationButton'](...args); }
+function toggleCompareProduct(...args) { if (typeof window !== 'undefined' && typeof window['toggleCompareProduct'] === 'function' && window['toggleCompareProduct'] !== toggleCompareProduct) return window['toggleCompareProduct'](...args); }
+function openQuickOrderModal(...args) { if (typeof window !== 'undefined' && typeof window['openQuickOrderModal'] === 'function' && window['openQuickOrderModal'] !== openQuickOrderModal) return window['openQuickOrderModal'](...args); }
+function requestBackInStock(...args) { if (typeof window !== 'undefined' && typeof window['requestBackInStock'] === 'function' && window['requestBackInStock'] !== requestBackInStock) return window['requestBackInStock'](...args); }
 /**
  * UI Module
  * Handles UI interactions, modals, panels, language, theme, sidebar

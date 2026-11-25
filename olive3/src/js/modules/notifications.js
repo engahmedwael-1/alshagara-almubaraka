@@ -1,3 +1,7 @@
+import { query } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection } from "./admin.js";
+import { orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 /**
  * Notifications Module
  * Handles user notifications, loyalty points, global notifications

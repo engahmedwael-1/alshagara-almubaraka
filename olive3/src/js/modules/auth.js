@@ -1,3 +1,5 @@
+function saveAccountLocally(...args) { if (typeof window !== 'undefined' && typeof window['saveAccountLocally'] === 'function' && window['saveAccountLocally'] !== saveAccountLocally) return window['saveAccountLocally'](...args); }
+function renderSavedAccounts(...args) { if (typeof window !== 'undefined' && typeof window['renderSavedAccounts'] === 'function' && window['renderSavedAccounts'] !== renderSavedAccounts) return window['renderSavedAccounts'](...args); }
 /**
  * Authentication Module
  * Handles user authentication, login, registration, password reset

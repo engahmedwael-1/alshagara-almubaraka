@@ -1,3 +1,4 @@
+import { event } from "./products.js";
 /**
  * Orders Module
  * Handles order loading, tracking, admin management, returns

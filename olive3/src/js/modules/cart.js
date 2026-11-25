@@ -1,3 +1,5 @@
+import { updateInvoiceUI } from "./products.js";
+import { deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 /**
  * Cart Module
  * Handles cart operations, saved for later, wishlist, checkout

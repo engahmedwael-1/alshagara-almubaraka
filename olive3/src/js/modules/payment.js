@@ -1,3 +1,6 @@
+import { getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+function require(...args) { if (typeof window !== 'undefined' && typeof window['require'] === 'function' && window['require'] !== require) return window['require'](...args); }
+function Stripe(...args) { if (typeof window !== 'undefined' && typeof window['Stripe'] === 'function' && window['Stripe'] !== Stripe) return window['Stripe'](...args); }
 /**
  * Payment Module
  * Handles payment integration with Paymob/Fawry/Stripe

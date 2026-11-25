@@ -1,3 +1,4 @@
+import { addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 /**
  * Loyalty Tiers Module
  * Handles tiered loyalty program
