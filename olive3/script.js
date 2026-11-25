@@ -8,15 +8,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         let dynamicAdmins = [], dynamicAdminsList = [];
         window.loyaltyEarnRateActual = 20; window.loyaltyRedeemValueActual = 10;
 
-        
-        
         window.hashString = async function(str) {
             const buffer = new TextEncoder().encode(str);
             const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
             const hashArray = Array.from(new Uint8Array(hashBuffer));
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         };
-        
+
         window.escapeHTML = function(str) {
             if(!str) return "";
             return String(str).replace(/[&<>'"]/g, tag => ({
@@ -24,9 +22,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             }[tag]));
         };
 
-        window.loyaltyDiscountFixed = 0; window.loyaltyPointsUsedTemp = 0; // متغير لخصم نقاط الولاء
+        window.loyaltyDiscountFixed = 0; window.loyaltyPointsUsedTemp = 0;
 
-        // دالة الميكروفون
         window.startVoiceTyping = function(inputId, btnElement) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) { window.showToast(window.currentLang === 'ar' ? 'متصفحك لا يدعم الإدخال الصوتي' : 'Voice input not supported', 'error'); return; }
@@ -40,7 +37,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             recognition.start();
         };
 
-        // دالة البحث الحي السريع (Live Search)
         window.handleLiveSearch = function(val) {
             searchQuery = val.trim();
             currentRenderedProducts = productsPerPage;
@@ -48,7 +44,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             let resContainer = document.getElementById('live-search-results');
             if(!val.trim() || !isProductsLoaded) { resContainer.style.display = 'none'; return; }
             let q = val.toLowerCase();
-            let matches = products.filter(p => window.fuzzyMatch(p.name, q)).slice(0, 5); // عرض 5 نتائج كحد أقصى
+            let matches = products.filter(p => window.fuzzyMatch(p.name, q)).slice(0, 5);
             if(matches.length === 0) { resContainer.style.display = 'none'; return; }
             let html = '';
             matches.forEach(p => {
@@ -65,7 +61,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             resContainer.style.display = 'block';
         };
 
-        // إخفاء البحث الحي أو الإشعارات عند الضغط خارجهما
         document.addEventListener('click', (e) => {
             let resContainer = document.getElementById('live-search-results');
             if(resContainer && !e.target.closest('#search-input') && !e.target.closest('#live-search-results')) { resContainer.style.display = 'none'; }
@@ -73,7 +68,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             if (nd && !e.target.closest('.notification-bell') && !e.target.closest('.notifications-dropdown')) { nd.classList.remove('show'); }
         });
 
-        // دوال الإشعارات ونقاط الولاء
         window.toggleNotifications = function(e) {
             if(e) e.stopPropagation();
             let el = document.getElementById('notifications-dropdown');
@@ -89,14 +83,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
                     let data = docSnap.data();
                     let notifs = data.notifications || [];
                     let loyalty = data.loyaltyPoints || 0;
-                    
-                    // تحديث واجهة نقاط الولاء
+
                     let lp = document.getElementById('nav-loyalty-points'); if(lp) lp.textContent = loyalty;
                     let plp = document.getElementById('loyalty-page-points'); if(plp) plp.textContent = loyalty;
                     let clp = document.getElementById('cart-loyalty-points'); if(clp) clp.textContent = loyalty;
-                    let ls = document.getElementById('loyalty-section'); if(ls) ls.style.display = loyalty >= 50 ? 'flex' : 'none'; // تفعيل الاستبدال لو 50 نقطة فأكثر
-                    
-                    // تحديث واجهة الإشعارات
+                    let ls = document.getElementById('loyalty-section'); if(ls) ls.style.display = loyalty >= 50 ? 'flex' : 'none';
+
                     let fullCont = document.getElementById('full-notifications-container');
                     let notifBadge = document.getElementById('notif-badge-main');
                     let unreadCount = data.unreadNotifs || 0;
@@ -107,7 +99,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
                             let d = new Date(n.date).toLocaleString('ar-EG');
                             html += `<div class="notification-item"><strong>${n.title}</strong><span>${n.message}</span><span class="notification-time">${d}</span></div>`;
                         });
-                        
+
                         let fullCont = document.getElementById('full-notifications-container');
                         if(fullCont) fullCont.innerHTML = html;
                         if(notifBadge) { notifBadge.textContent = unreadCount; notifBadge.style.display = unreadCount > 0 ? 'flex' : 'none'; }
@@ -117,7 +109,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             });
         };
 
-        
         window.redeemLoyaltyPoints = function() {
             if(cart.length === 0) { window.showToast('السلة فارغة، أضف منتجات أولاً', 'error'); return; }
             if(currentUser) {
@@ -126,7 +117,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
                     if(d.exists()) {
                         let pts = d.data().loyaltyPoints || 0;
                         if(pts >= 50) {
-                            let discountAmount = Math.floor(pts / 50) * window.loyaltyRedeemValueActual; // كل 50 نقطة = 10 جنيه خصم
+                            let discountAmount = Math.floor(pts / 50) * window.loyaltyRedeemValueActual;
                             let usedPts = Math.floor(pts / 50) * 50;
                             updateDoc(doc(db, 'users', currentUser.uid), {
                                 loyaltyPoints: increment(-usedPts),
@@ -173,9 +164,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             let txt = document.getElementById('general-review-text').value.trim();
             if(!txt) { window.showToast(window.currentLang === 'ar' ? 'اكتب تقييمك أولاً' : 'Write your review first', 'error'); return; }
             try {
-                let rName = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : currentUser.phoneNumber); 
+                let rName = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : currentUser.phoneNumber);
                 let reviewObj = { userName: rName, userId: currentUser.uid, comment: txt, rating: 5, date: new Date().toISOString() };
-                let chatRef = doc(db, 'settings', 'store_reviews'); 
+                let chatRef = doc(db, 'settings', 'store_reviews');
                 let snap = await getDoc(chatRef);
                 if(snap.exists()) { await updateDoc(chatRef, { reviews: arrayUnion(reviewObj) }); } else { await setDoc(chatRef, { reviews: [reviewObj] }); }
                 document.getElementById('general-review-text').value = '';
@@ -186,7 +177,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 
         const deliveryData = { "القاهرة": { shippingCost: 90, cities: ["مدينة نصر", "المعادي", "مصر الجديدة", "شبرا", "التجمع الخامس", "عين شمس", "حلوان", "المطرية", "المرج", "وسط البلد", "الزمالك", "الرحاب", "الشروق", "مدينتي", "العباسية", "دار السلام"] }, "الجيزة": { shippingCost: 90, cities: ["الدقي", "المهندسين", "الهرم", "فيصل", "6 أكتوبر", "الشيخ زايد", "العجوزة", "البدرشين", "الصف", "الحوامدية", "العياط", "أوسيم", "كرداسة", "الوراق", "إمبابة"] }, "الشرقية": { shippingCost: 90, cities: ["الزقازيق", "فاقوس", "بلبيس", "منيا القمح", "أبو حماد", "العاشر من رمضان", "ههيا", "أبو كبير", "ديرب نجم", "الحسينية", "مشتول السوق", "أولاد صقر", "الإبراهيمية", "القرين", "القنايات"] }, "الإسكندرية": { shippingCost: 90, cities: ["سيدي جابر", "سموحة", "محرم بك", "العجمي", "المنتزه", "ميامي", "العامرية", "برج العرب", "سيدي بشر", "المندرة", "كليوباترا", "لوران", "كامب شيزار"] }, "القليوبية": { shippingCost: 90, cities: ["بنها", "شبرا الخيمة", "قليوب", "طوخ", "الخانكة", "القناطر الخيرية", "شبين القناطر", "العبور", "الخصوص", "قها"] }, "الدقهلية": { shippingCost: 90, cities: ["المنصورة", "ميت غمر", "السنبلاوين", "دكرنس", "بلقاس", "شربين", "طلخا", "منية النصر", "نبروه", "أجا", "الجمالية", "المطرية", "تمي الأمديد", "ميت سلسيل"] }, "البحيرة": { shippingCost: 90, cities: ["دمنهور", "كفر الدوار", "إيتاي البارود", "أبو حمص", "كوم حمادة", "رشيد", "حوش عيسى", "المحمودية", "إدكو", "الدلنجات", "شبراخيت", "الرحمانية", "النوبارية", "وادي النطرون"] }, "الغربية": { shippingCost: 90, cities: ["طنطا", "المحلة الكبرى", "زفتى", "كفر الزيات", "سمنود", "بسيون", "قطور", "السنطة"] }, "المنوفية": { shippingCost: 90, cities: ["شبين الكوم", "منوف", "أشمون", "قويسنا", "بركة السبع", "تلا", "الشهداء", "السادات", "سرس الليان"] }, "كفر الشيخ": { shippingCost: 90, cities: ["كفر الشيخ", "دسوق", "فوه", "مطوبس", "بيلا", "الحامول", "سيدي سالم", "بلطيم", "قلين", "الرياض", "سيدي غازي", "مسير"] }, "دمياط": { shippingCost: 90, cities: ["دمياط", "رأس البر", "فارسكور", "الزرقا", "كفر سعد", "عزبة البرج", "السرو", "ميت أبو غالب", "الروضة"] }, "بورسعيد": { shippingCost: 90, cities: ["حي الشرق", "حي العرب", "حي المناخ", "حي الضواحي", "بورفؤاد", "حي الزهور", "حي الجنوب"] }, "الإسماعيلية": { shippingCost: 90, cities: ["الإسماعيلية", "فايد", "القنطرة شرق", "القنطرة غرب", "التل الكبير", "أبو صوير", "القصاصين"] }, "السويس": { shippingCost: 90, cities: ["السويس", "الأربعين", "عتاقة", "فيصل", "الجناين"] }, "شمال سيناء": { shippingCost: 100, cities: ["العريش", "الشيخ زويد", "رفح", "بئر العبد", "نخل", "الحسنة"] }, "جنوب سيناء": { shippingCost: 100, cities: ["شرم الشيخ", "طور سيناء", "دهب", "نويبع", "طابا", "رأس سدر", "سانت كاترين", "أبو رديس", "أبو زنيمة"] }, "الفيوم": { shippingCost: 90, cities: ["الفيوم", "سنورس", "إطسا", "طامية", "يوسف الصديق", "أبشواي"] }, "بني سويف": { shippingCost: 90, cities: ["بني سويف", "الواسطى", "ناصر", "إهناسيا", "ببا", "سمسطا", "الفشن"] }, "المنيا": { shippingCost: 90, cities: ["المنيا", "ملوي", "مغاغة", "بني مزار", "سمالوط", "أبو قرقاص", "مطاي", "دير مواس", "العدوة"] }, "أسيوط": { shippingCost: 90, cities: ["أسيوط", "ديروط", "القوصية", "أبنوب", "منفلوط", "أبو تيج", "الغنايم", "البداري", "ساحل سليم", "صدفا", "الفتح"] }, "سوهاج": { shippingCost: 90, cities: ["سوهاج", "طما", "طهطا", "المراغة", "أخميم", "جرجا", "المنشأة", "دار السلام", "البلينا", "جهينة", "ساقلتة", "العسيرات"] }, "قنا": { shippingCost: 90, cities: ["قنا", "نجع حمادي", "دشنا", "قوص", "أبو تشت", "فرشوط", "فاو", "نقادة", "الوقف", "قفط"] }, "الأقصر": { shippingCost: 90, cities: ["الأقصر", "إسنا", "أرمنت", "البياضية", "القرنة", "الطود", "الزينية"] }, "أسوان": { shippingCost: 100, cities: ["أسوان", "إدفو", "كوم أمبو", "نصر النوبة", "دراو", "أبو سمبل", "كلابشة", "الرديسية", "البصيلية", "السباعية"] }, "البحر الأحمر": { shippingCost: 100, cities: ["الغردقة", "سفاجا", "القصير", "مرسى علم", "رأس غارب", "حلايب", "شلاتين"] }, "الوادي الجديد": { shippingCost: 100, cities: ["الخارجة", "الداخلة", "الفرافرة", "باريس", "بلاط"] }, "مطروح": { shippingCost: 100, cities: ["مرسى مطروح", "العلمين", "الحمام", "الضبعة", "سيوة", "النجيلة", "براني", "السلوم"] } };
 
-        
         function parseVariants(vStr) {
             if(!vStr) return [];
             let arr = [];
@@ -208,13 +198,13 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
         let savedForLater = JSON.parse(localStorage.getItem('savedForLater')) || [];
         let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
-        
+
         let currentSubtotal = 0, currentShippingCost = 0, currentDiscountPercent = 0, appliedPromoCode = "", promoCodesList = [];
         let totalGlobalRevenue = 0, totalGlobalOrders = 0;
         let unsubscribeUserChat = null, activeAdminChatId = null, unsubscribeActiveAdminChat = null, adminOrdersUnsubscribe = null, adminReturnsUnsubscribe = null;
         let savedAccounts = JSON.parse(localStorage.getItem('zait_saved_accounts')) || [];
         let currentRenderedProducts = 8; const productsPerPage = 8;
-        
+
         let storeSettings = { walletNumber: "01018631768", fbPixelId: "", ttPixelId: "", categories: ["زيت زيتون"], autoReplyMessage: "أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.", floatingButtons: [{ id: 'btn_support', icon: '💬', link: '#support', color: '#007bff', isSystem: true, title: 'خدمة العملاء' }, { id: 'btn_wa', icon: '📱', link: 'https://wa.me/201018631768', color: '#25D366', isSystem: false, title: 'واتساب' }], revenueResetDate: "2000-01-01T00:00:00.000Z", ordersResetDate: "2000-01-01T00:00:00.000Z", enableCrossSell: true, visualBarMode: 'categories' };
 
         window.syncCartToCloud = async function() {
@@ -257,10 +247,10 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             }
         };
 
-        window.updateCartUI = function() { 
-            let totalItems = 0; currentSubtotal = 0; let htmlContent = ''; 
-            cart.forEach(item => { 
-                totalItems += item.quantity; 
+        window.updateCartUI = function() {
+            let totalItems = 0; currentSubtotal = 0; let htmlContent = '';
+            cart.forEach(item => {
+                totalItems += item.quantity;
                 let isChecked = item.selected !== false;
                 if(isChecked) { currentSubtotal += (item.price * item.quantity); }
                 let checkAttr = isChecked ? 'checked' : '';
@@ -282,15 +272,15 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                         </div>
                         <span style="font-weight:900; color:var(--secondary); font-size:1.1rem;">${item.price * item.quantity} ج</span>
                     </div>
-                </div>`; 
-            }); 
-            let cic = document.getElementById('cart-items-container'); 
+                </div>`;
+            });
+            let cic = document.getElementById('cart-items-container');
             let mtMsg = window.currentLang === 'ar' ? 'سلتك فارغة.' : 'Your cart is empty.';
-            if(cic) cic.innerHTML = htmlContent || `<p style="text-align:center; color:var(--text-muted);">${mtMsg}</p>`; 
-            let cc = document.getElementById('cart-count'); if(cc) cc.textContent = totalItems; 
+            if(cic) cic.innerHTML = htmlContent || `<p style="text-align:center; color:var(--text-muted);">${mtMsg}</p>`;
+            let cc = document.getElementById('cart-count'); if(cc) cc.textContent = totalItems;
             let bcb = document.getElementById('bottom-cart-badge'); if(bcb) bcb.textContent = totalItems;
-            let ct = document.getElementById('cart-total'); if(ct) ct.textContent = currentSubtotal; 
-            
+            let ct = document.getElementById('cart-total'); if(ct) ct.textContent = currentSubtotal;
+
             let sflSection = document.getElementById('saved-for-later-section');
             let sflContainer = document.getElementById('saved-for-later-container');
             if(sflSection && sflContainer) {
@@ -309,8 +299,8 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                     sflContainer.innerHTML = sflHtml;
                 } else { sflSection.style.display = 'none'; }
             }
-            window.updateInvoiceUI(); 
-            
+            window.updateInvoiceUI();
+
             let freeShippingBox = document.getElementById('free-shipping-box');
             let freeShippingBar = document.getElementById('free-shipping-bar');
             let freeShippingMsg = document.getElementById('free-shipping-msg');
@@ -341,9 +331,9 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             document.documentElement.lang = window.currentLang;
             let langBtn = document.getElementById('lang-btn');
             if(langBtn) langBtn.innerText = window.currentLang === 'ar' ? '🌐 EN' : '🌐 ع';
-            
+
             let transElements = document.querySelectorAll('.translatable');
-            const enDict = { 
+            const enDict = {
                 "الخدمات والأقسام": "Services & Categories", "الرئيسية": "Home", "آراء العملاء": "Reviews", "👤 حسابي:": "👤 My Account:", "سلة المشتريات": "Shopping Cart", "طلباتي": "My Orders", "المفضلة": "Wishlist", "سجل المشاهدات": "Recently Viewed", "تصفح الأقسام:": "Browse Categories:", "🔄 تبديل الحسابات:": "🔄 Switch Accounts:", "إضافة حساب آخر": "Add Another Account", "تسجيل الخروج": "Logout", "الرئيسية 🏠": "Home 🏠", "السلة 🛒": "Cart 🛒", "المفضلة ❤️": "Wishlist ❤️", "طلباتي 📦": "Orders 📦", "الدعم 💬": "Support 💬", "تسجيل الدخول": "Login", "رصيد نقاط الولاء": "Loyalty Points", "نقطة": "Point", "🛒 منتجاتك في انتظارك!": "🛒 Your products are waiting!", "لإتمام طلبك الآن نهديك كود خصم خاص!": "Complete your order now and get a special discount!", "إكمال الطلب الآن 🚀": "Complete Order Now 🚀", "🔄 طلب استرجاع منتج": "🔄 Return Product", "سبب الاسترجاع:": "Return Reason:", "ملاحظات تفصيلية:": "Detailed Notes:", "📸 إرفاق صورة توضح المشكلة (مهم جداً):": "📸 Attach an image (Important):", "إرسال طلب الاسترجاع 🚀": "Submit Return 🚀", "زيت الشجرة المباركة": "Blessed Tree Oil", "زيتون سيناوي بكر ممتاز لذيذ أول طعم بارد بدون أي إضافات، أصلي من قلب الطبيعة.": "Premium Sinai Extra Virgin Olive Oil, cold pressed, 100% natural.", "🔥 عرض خاص لفترة محدودة!": "🔥 Special Limited Time Offer!", "الفلاتر والترتيب:": "Filters & Sorting:", "جاري تحميل المنتجات... ⏳": "Loading Products... ⏳", "جاري تحميل المزيد من المنتجات... ⏳": "Loading More... ⏳", "👀 سجل المشاهدات": "👀 Recently Viewed", "📅 ابحث عن المنتجات التي شاهدتها في يوم محدد:": "📅 Search by date:", "تصفية": "Filter", "الكل": "All", "🛒 سلة مشترياتك": "🛒 Shopping Cart", "الإجمالي:": "Total:", "المتابعة للدفع والتوصيل": "Proceed to Checkout", "❤️ منتجاتي المفضلة": "❤️ Favorite Products", "لم تقم بإضافة منتجات للمفضلة بعد.": "Your wishlist is empty.", "⭐️ آراء وتقييمات عملائنا": "⭐️ Customer Reviews", "هل جربت الشراء منا؟": "Have you purchased from us?", "نشر التقييم": "Post Review", "📍 بيانات التوصيل والدفع": "📍 Delivery & Payment", "هل لديك كود خصم؟ 🎁": "Have a promo code? 🎁", "تفعيل": "Apply", "حدد موقعك على الخريطة لتسهيل التوصيل تلقائياً.": "Pin your location on the map for delivery.", "📍 حدد موقعي الحالي": "📍 Pin My Location", "يرجى لمس الخريطة لتحديد موقعك بدقة!": "Please tap on the map to accurately pin your location!", "💳 طريقة الدفع:": "💳 Payment Method:", "المنتجات:": "Products:", "الخصم:": "Discount:", "الشحن:": "Shipping:", "الإجمالي النهائي:": "Final Total:", "تأكيد عبر الموقع 🌐": "Confirm via Website 🌐", "تأكيد عبر واتساب 💬": "Confirm via WhatsApp 💬", "العودة للسلة": "Back to Cart", "👤 طلباتي وحالة الشحن": "👤 My Orders & Shipping", "جاري تحميل طلباتك...": "Loading orders...", "💬 خدمة العملاء": "💬 Customer Support", "إنهاء 🛑": "End 🛑", "حذف 🗑️": "Delete 🗑️", "يرجى تسجيل الدخول أولاً.": "Please log in first.", "إرسال 🚀": "Send 🚀", "حساب جديد": "New Account", "دخول": "Login", "تسجيل": "Register", "ليس لديك حساب؟ أنشئ حساباً جديداً": "Don't have an account? Sign up", "لديك حساب؟ سجل الدخول": "Have an account? Log in", "نسيت كلمة المرور؟": "Forgot Password?", "أو": "OR", "🌐 المتابعة بحساب جوجل": "🌐 Continue with Google", "🔗 مشاركة": "🔗 Share", "يشاهده الآن": "Viewed now by", "شخص": "person", "اختر الحجم / النوع:": "Select Size / Type:", "طبيعي 100%": "100% Natural", "شحن سريع": "Fast Shipping", "دفع آمن": "Secure Payment", "استرجاع مضمون": "Guaranteed Return", "🛍️ منتجات قد تعجبك:": "🛍️ Products you may like:", "تقييمات العملاء ⭐️": "Customer Reviews ⭐️", "أضف تقييمك:": "Add your review:", "📸 إرفاق صورة للمنتج (اختياري):": "📸 Attach Product Image (Optional):", "⏳ جاري الرفع...": "⏳ Uploading...", "إرسال التقييم": "Submit Review", "سجل الدخول لإضافة تقييم.": "Log in to review.", "اشترى": "Bought", "منذ دقيقتين": "2 mins ago", "الوضع الليلي / النهاري": "Dark / Light Mode", "الإجمالي (للعناصر المحددة):": "Total (selected):", "حفظ لوقت لاحق": "Save for later", "📦 محفوظة لوقت لاحق": "📦 Saved for later", "نقل إلى السلة": "Move to Cart", "تفعيل البيع المتقاطع (المنتجات المقترحة للعميل) 🛍️": "Enable Cross-Selling 🛍️", "العملاء 👥": "Customers 👥", "👥 قائمة العملاء المسجلين": "👥 Registered Customers", "نقاط الولاء 🎁": "Loyalty Points 🎁", "مرحباً بك في برنامج الولاء الخاص بنا!": "Welcome to our loyalty program!", "إجمالي نقاطك الحالية": "Total Points", "استبدل النقاط بخصم الآن!": "Redeem points for discount!", "كيف يعمل البرنامج؟ 🤔": "How it works? 🤔", "تكسب": "Earn", "مقابل كل": "for every", "جنيه تنفقها في المتجر.": "EGP spent.", "تتم إضافة النقاط إلى حسابك تلقائياً بمجرد استلامك للطلب.": "Points are added automatically upon delivery.", "يمكنك استبدال كل": "You can redeem", "بخصم فوري قيمته": "for a direct discount of", "جنيه على طلبك القادم.": "EGP on your next order.", "أضف منتجات بقيمة": "Add products worth", "لتحصل على شحن مجاني! 🚚": "to get free shipping! 🚚", "🎉 مبروك! لقد حصلت على شحن مجاني": "🎉 Congrats! Free shipping unlocked", "استبدال بخصم": "Redeem", "🚀 اشتري الآن (دفع سريع)": "🚀 Buy Now"
             };
             const arDict = {}; for(let key in enDict) { arDict[enDict[key]] = key; }
@@ -366,7 +356,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
 
         window.openSidebar = function() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('show'); }
         window.closeSidebar = function() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('show'); }
-        
+
         window.toggleDarkMode = function() { document.body.classList.toggle('dark-mode'); let isDark = document.body.classList.contains('dark-mode'); localStorage.setItem('zait_theme', isDark ? 'dark' : 'light'); window.closeSidebar(); }
         if(localStorage.getItem('zait_theme') === 'dark') document.body.classList.add('dark-mode');
 
@@ -394,7 +384,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
 
         window.toggleDropdown = function(e) { if(e) e.stopPropagation(); let el = document.getElementById('profile-dropdown'); if(el) el.classList.toggle('show'); }
         window.closeDropdown = function() { let menu = document.getElementById('profile-dropdown'); if(menu) menu.classList.remove('show'); }
-        
+
         window.saveAccountLocally = function(email, password) { let existsIndex = savedAccounts.findIndex(a => a.email === email); if(existsIndex > -1) savedAccounts[existsIndex].password = btoa(password); else savedAccounts.push({email, password: btoa(password)}); localStorage.setItem('zait_saved_accounts', JSON.stringify(savedAccounts)); window.renderSavedAccounts(); }
         window.renderSavedAccounts = function() { let list1 = document.getElementById('saved-accounts-list'); let list2 = document.getElementById('sidebar-saved-accounts-list'); let html = ''; let btnTxt = window.currentLang === 'ar' ? '🔄 التبديل لـ' : '🔄 Switch to'; savedAccounts.forEach(acc => { if(currentUser && currentUser.email === acc.email) return; html += `<button type="button" class="dropdown-item" style="color:var(--primary); font-size:0.85rem; background:rgba(2, 128, 144, 0.05);" onclick="window.switchFastAccount('${acc.email}', '${acc.password}')">${btnTxt} ${acc.email.split('@')[0]}</button>`; }); if(list1) list1.innerHTML = html; if(list2) list2.innerHTML = html; }
         window.switchFastAccount = function(email, encodedPass) { window.closeDropdown(); window.showToast('جاري التبديل للحساب الآخر...', 'info'); signInWithEmailAndPassword(auth, email, atob(encodedPass)).then(() => { window.showToast('تم التبديل بنجاح', 'success'); window.showPanel('home'); }).catch(() => { window.showToast('انتهت الجلسة، يرجى إدخال الباسورد يدوياً', 'error'); window.showPanel('auth'); }); }
@@ -407,27 +397,26 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
 
         if (!sessionStorage.getItem('visited')) { sessionStorage.setItem('visited', 'true'); const statsRef = doc(db, 'settings', 'stats'); getDoc(statsRef).then(docSnap => { if(docSnap.exists()) updateDoc(statsRef, { visits: increment(1) }).catch(e=>{}); else setDoc(statsRef, { visits: 1 }).catch(e=>{}); }); }
 
-        window.showPanel = function(panelId) { 
-            Object.values(panels).forEach(p => { if(p) { p.classList.remove('active'); p.style.display = ''; } }); 
-            document.querySelectorAll('.nav-btn, .bottom-nav-btn').forEach(btn => btn.classList.remove('active')); 
+        window.showPanel = function(panelId) {
+            Object.values(panels).forEach(p => { if(p) { p.classList.remove('active'); p.style.display = ''; } });
+            document.querySelectorAll('.nav-btn, .bottom-nav-btn').forEach(btn => btn.classList.remove('active'));
             if(panels[panelId]) panels[panelId].classList.add('active');
-            
- 
+
             document.querySelectorAll(`.nav-btn[onclick="window.showPanel('${panelId}')"], .bottom-nav-btn[onclick="window.showPanel('${panelId}')"]`).forEach(btn => btn.classList.add('active'));
-            
-            let hSection = document.getElementById('hero-section'); if(hSection) hSection.style.display = panelId === 'home' ? 'block' : 'none'; 
-            if(panelId === 'wishlist') { window.renderWishlist(); } 
-            if (panelId === 'checkout') { 
-                setTimeout(() => { if (!checkoutMap) { let mEl = document.getElementById('map'); if(mEl) { checkoutMap = L.map('map').setView([30.0444, 31.2357], 6); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(checkoutMap); checkoutMap.on('click', async function(e) { if(userMarker) checkoutMap.removeLayer(userMarker); userMarker = L.marker(e.latlng).addTo(checkoutMap); document.getElementById('order-lat').value = e.latlng.lat; document.getElementById('order-lng').value = e.latlng.lng; document.getElementById('map-warning').style.display = 'none'; try { let res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}&accept-language=ar`, { headers: { 'User-Agent': 'ZaitStoreApp/1.0' } }); let data = await res.json(); if(data && data.display_name) { document.getElementById('order-map-address').value = data.display_name; let govSelect = document.getElementById('order-gov'); if(data.address && data.address.state) { let stateName = data.address.state.replace('محافظة ', '').trim(); for(let i=0; i<govSelect.options.length; i++) { if(stateName.includes(govSelect.options[i].value) || govSelect.options[i].value.includes(stateName)) { govSelect.selectedIndex = i; govSelect.dispatchEvent(new Event('change')); break; } } } } } catch(err) { } }); } } if(checkoutMap) checkoutMap.invalidateSize(); }, 300); 
-            } 
-            window.scrollTo({ top: 0, behavior: 'smooth' }); 
+
+            let hSection = document.getElementById('hero-section'); if(hSection) hSection.style.display = panelId === 'home' ? 'block' : 'none';
+            if(panelId === 'wishlist') { window.renderWishlist(); }
+            if (panelId === 'checkout') {
+                setTimeout(() => { if (!checkoutMap) { let mEl = document.getElementById('map'); if(mEl) { checkoutMap = L.map('map').setView([30.0444, 31.2357], 6); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(checkoutMap); checkoutMap.on('click', async function(e) { if(userMarker) checkoutMap.removeLayer(userMarker); userMarker = L.marker(e.latlng).addTo(checkoutMap); document.getElementById('order-lat').value = e.latlng.lat; document.getElementById('order-lng').value = e.latlng.lng; document.getElementById('map-warning').style.display = 'none'; try { let res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}&accept-language=ar`, { headers: { 'User-Agent': 'ZaitStoreApp/1.0' } }); let data = await res.json(); if(data && data.display_name) { document.getElementById('order-map-address').value = data.display_name; let govSelect = document.getElementById('order-gov'); if(data.address && data.address.state) { let stateName = data.address.state.replace('محافظة ', '').trim(); for(let i=0; i<govSelect.options.length; i++) { if(stateName.includes(govSelect.options[i].value) || govSelect.options[i].value.includes(stateName)) { govSelect.selectedIndex = i; govSelect.dispatchEvent(new Event('change')); break; } } } } } catch(err) { } }); } } if(checkoutMap) checkoutMap.invalidateSize(); }, 300);
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
         window.togglePaymentInfo = function(method) { let wi = document.getElementById('wallet-info'); if(wi) wi.style.display = method === "محفظة إلكترونية" ? 'block' : 'none'; }
         let locBtn = document.getElementById('btn-locate-me'); if(locBtn) { locBtn.addEventListener('click', () => { if (navigator.geolocation) { window.showToast('جاري تحديد موقعك...', 'info'); navigator.geolocation.getCurrentPosition(async (position) => { const lat = position.coords.latitude; const lng = position.coords.longitude; if(userMarker) checkoutMap.removeLayer(userMarker); userMarker = L.marker([lat, lng]).addTo(checkoutMap); checkoutMap.flyTo([lat, lng], 16); document.getElementById('order-lat').value = lat; document.getElementById('order-lng').value = lng; document.getElementById('map-warning').style.display = 'none'; window.showToast('تم تحديد الموقع بنجاح', 'success'); try { let res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ar`, { headers: { 'User-Agent': 'ZaitStoreApp/1.0' } }); let data = await res.json(); if(data && data.display_name) { document.getElementById('order-map-address').value = data.display_name; } } catch(err) {} }, (error) => { window.showToast('يرجى تفعيل الـ GPS في هاتفك وإعطاء الصلاحية', 'error'); }); } else { window.showToast('متصفحك لا يدعم هذه الميزة', 'error'); } }); }
 
         window.logoutUser = function() { signOut(auth).then(() => { window.closeDropdown(); window.showToast('تم تسجيل الخروج بنجاح', 'info'); window.showPanel('auth'); }); };
-        
+
         window.goToCheckout = function() { let selectedItems = cart.filter(item => item.selected !== false); if (selectedItems.length === 0) { window.showToast(window.currentLang === 'ar' ? 'قم بتحديد منتج واحد على الأقل للمتابعة!' : 'Select at least one item to proceed!', 'error'); return; } window.showPanel('checkout'); };
 
         onSnapshot(doc(db, 'settings', 'main'), (docSnap) => { if (docSnap.exists()) { const data = docSnap.data(); storeSettings = { ...storeSettings, ...data }; if(!storeSettings.walletNumber) storeSettings.walletNumber = "01018631768"; if(storeSettings.enableCrossSell === undefined) storeSettings.enableCrossSell = true; } else { setDoc(doc(db, 'settings', 'main'), storeSettings); } window.applySettingsToUI(); injectPixels(); if(isCurrentUserAdmin) {window.loadAdminOrders(); window.loadAdminUsers();} });
@@ -439,18 +428,18 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             if(storeSettings.loyaltyRedeemValue) window.loyaltyRedeemValueActual = storeSettings.loyaltyRedeemValue;
             let letxt = document.getElementById('loyalty-earn-text'); if(letxt) letxt.textContent = window.loyaltyEarnRateActual;
             let lrtxt = document.getElementById('loyalty-redeem-text'); if(lrtxt) lrtxt.textContent = window.loyaltyRedeemValueActual;
-            
+
             if(isCurrentUserAdmin) { let csToggle = document.getElementById('setting-cross-sell'); if(csToggle) csToggle.checked = storeSettings.enableCrossSell;
                 let loyE = document.getElementById('setting-loyalty-earn'); if(loyE && storeSettings.loyaltyEarnRate) loyE.value = storeSettings.loyaltyEarnRate;
                 let loyV = document.getElementById('setting-loyalty-value'); if(loyV && storeSettings.loyaltyRedeemValue) loyV.value = storeSettings.loyaltyRedeemValue;
                 let vMode = document.getElementById('setting-visual-bar-mode'); if(vMode) vMode.value = storeSettings.visualBarMode || 'categories';
 
-                let autoEl = document.getElementById('setting-auto-reply'); if(autoEl) autoEl.value = storeSettings.autoReplyMessage || 'أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.'; let wallEl = document.getElementById('setting-wallet-number'); if(wallEl) wallEl.value = storeSettings.walletNumber || ''; let fbEl = document.getElementById('setting-fb-pixel'); if(fbEl) fbEl.value = storeSettings.fbPixelId || ''; let ttEl = document.getElementById('setting-tt-pixel'); if(ttEl) ttEl.value = storeSettings.ttPixelId || ''; 
+                let autoEl = document.getElementById('setting-auto-reply'); if(autoEl) autoEl.value = storeSettings.autoReplyMessage || 'أهلًا بيك❤️\nاكتب استفسارك وبمجرد ما يتوفر أدمن هيتم التواصل معاكم في أسرع وقت.'; let wallEl = document.getElementById('setting-wallet-number'); if(wallEl) wallEl.value = storeSettings.walletNumber || ''; let fbEl = document.getElementById('setting-fb-pixel'); if(fbEl) fbEl.value = storeSettings.fbPixelId || ''; let ttEl = document.getElementById('setting-tt-pixel'); if(ttEl) ttEl.value = storeSettings.ttPixelId || '';
                 let fsInp = document.getElementById('setting-free-shipping'); if(fsInp && storeSettings.freeShippingThreshold) fsInp.value = storeSettings.freeShippingThreshold; }
             let chWall = document.getElementById('checkout-wallet-number'); if(chWall) chWall.textContent = storeSettings.walletNumber || '01018631768';
             const floatingContainer = document.getElementById('floating-menu-container'), footerSocialContainer = document.getElementById('footer-social-links'), adminBtnsList = document.getElementById('admin-floating-btns-list');
             if(floatingContainer) floatingContainer.innerHTML = ''; if(footerSocialContainer) footerSocialContainer.innerHTML = ''; if(adminBtnsList) adminBtnsList.innerHTML = '';
-            
+
             let currentBtns = storeSettings.floatingButtons || [];
             if(!currentBtns.find(b => b.link === '#support')) {
                 currentBtns.unshift({ id: 'btn_support', icon: '💬', link: '#support', color: '#007bff', isSystem: true, title: 'خدمة العملاء' });
@@ -468,32 +457,32 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             window.renderProducts(false); window.renderVisualBar();
         }
 
-        window.saveSettings = async function() { 
-            const newAutoReply = document.getElementById('setting-auto-reply') ? document.getElementById('setting-auto-reply').value.trim() : storeSettings.autoReplyMessage; 
-            const newWallet = document.getElementById('setting-wallet-number') ? document.getElementById('setting-wallet-number').value.trim() : storeSettings.walletNumber; 
-            const newFb = document.getElementById('setting-fb-pixel') ? document.getElementById('setting-fb-pixel').value.trim() : storeSettings.fbPixelId; 
-            const newTt = document.getElementById('setting-tt-pixel') ? document.getElementById('setting-tt-pixel').value.trim() : storeSettings.ttPixelId; 
+        window.saveSettings = async function() {
+            const newAutoReply = document.getElementById('setting-auto-reply') ? document.getElementById('setting-auto-reply').value.trim() : storeSettings.autoReplyMessage;
+            const newWallet = document.getElementById('setting-wallet-number') ? document.getElementById('setting-wallet-number').value.trim() : storeSettings.walletNumber;
+            const newFb = document.getElementById('setting-fb-pixel') ? document.getElementById('setting-fb-pixel').value.trim() : storeSettings.fbPixelId;
+            const newTt = document.getElementById('setting-tt-pixel') ? document.getElementById('setting-tt-pixel').value.trim() : storeSettings.ttPixelId;
             const newCrossSell = document.getElementById('setting-cross-sell') ? document.getElementById('setting-cross-sell').checked : true;
             const newVMode = document.getElementById('setting-visual-bar-mode') ? document.getElementById('setting-visual-bar-mode').value : 'categories';
-            
+
             const earnEl = document.getElementById('setting-loyalty-earn'); const lEarn = earnEl ? (parseInt(earnEl.value) || 20) : 20;
             const redeemEl = document.getElementById('setting-loyalty-value'); const lRedeem = redeemEl ? (parseInt(redeemEl.value) || 10) : 10;
             const fsEl = document.getElementById('setting-free-shipping'); const fsThresh = fsEl ? (Number(fsEl.value) || 1000) : 1000;
-            
+
             try {
-                await updateDoc(doc(db, 'settings', 'main'), { 
-                    autoReplyMessage: newAutoReply, 
-                    walletNumber: newWallet, 
-                    fbPixelId: newFb, 
-                    ttPixelId: newTt, 
-                    enableCrossSell: newCrossSell, 
-                    freeShippingThreshold: fsThresh, 
-                    loyaltyEarnRate: lEarn, 
-                    loyaltyRedeemValue: lRedeem, 
+                await updateDoc(doc(db, 'settings', 'main'), {
+                    autoReplyMessage: newAutoReply,
+                    walletNumber: newWallet,
+                    fbPixelId: newFb,
+                    ttPixelId: newTt,
+                    enableCrossSell: newCrossSell,
+                    freeShippingThreshold: fsThresh,
+                    loyaltyEarnRate: lEarn,
+                    loyaltyRedeemValue: lRedeem,
                     visualBarMode: newVMode
-                }); 
-                window.showToast('تم الحفظ بنجاح', 'success'); 
-                injectPixels(); 
+                });
+                window.showToast('تم الحفظ بنجاح', 'success');
+                injectPixels();
             } catch(e) {
                 window.showToast('فشل الحفظ', 'error');
                 console.error(e);
@@ -503,7 +492,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
         window.removeCategory = async function(index) { if(confirm('حذف القسم؟')) { let updatedCats = storeSettings.categories.filter((_, i) => i !== index); await updateDoc(doc(db, 'settings', 'main'), { categories: updatedCats }); window.showToast('تم الحذف', 'success'); } };
         window.addPromoCode = async function() { const code = document.getElementById('new-promo-code').value.trim().toUpperCase(), discount = parseInt(document.getElementById('new-promo-discount').value); if(code && discount > 0 && discount <= 100) { await addDoc(collection(db, 'promoCodes'), { code, discount }); document.getElementById('new-promo-code').value = ''; document.getElementById('new-promo-discount').value = ''; window.showToast('تمت الإضافة', 'success'); } };
         window.removePromo = async function(id) { if(confirm('حذف الكوبون؟')) { await deleteDoc(doc(db, 'promoCodes', id)); window.showToast('تم الحذف', 'success'); } };
-        
+
         window.applyPromoCodeCart = function() {
             let inputCode = document.getElementById('promo-code-input-cart').value.trim().toUpperCase();
             window.executePromoLogic(inputCode, 'cart');
@@ -512,7 +501,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             let inputCode = document.getElementById('promo-code-input').value.trim().toUpperCase();
             window.executePromoLogic(inputCode, 'checkout');
         };
-        
+
         window.executePromoLogic = function(inputCode, source) {
             let abCode = String(storeSettings.abandonedCartCode || 'COMEBACK').trim().toUpperCase();
             let abDisc = Number(storeSettings.abandonedCartDiscount) || 3;
@@ -535,38 +524,36 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                 window.showToast(errTxt, 'error');
                 return;
             }
-            if(promo) { 
-                currentDiscountPercent = promo.discount; appliedPromoCode = promo.code; 
-                let pMsg1 = document.getElementById('promo-msg-cart'); if(pMsg1) { pMsg1.textContent = `✅ تم تفعيل خصم ${promo.discount}%`; pMsg1.style.color = '#2a9d8f'; } 
-                let pMsg2 = document.getElementById('promo-msg'); if(pMsg2) { pMsg2.textContent = `✅ تم تفعيل خصم ${promo.discount}%`; pMsg2.style.color = '#2a9d8f'; } 
-                
+            if(promo) {
+                currentDiscountPercent = promo.discount; appliedPromoCode = promo.code;
+                let pMsg1 = document.getElementById('promo-msg-cart'); if(pMsg1) { pMsg1.textContent = `✅ تم تفعيل خصم ${promo.discount}%`; pMsg1.style.color = '#2a9d8f'; }
+                let pMsg2 = document.getElementById('promo-msg'); if(pMsg2) { pMsg2.textContent = `✅ تم تفعيل خصم ${promo.discount}%`; pMsg2.style.color = '#2a9d8f'; }
+
                 let pInput1 = document.getElementById('promo-code-input-cart'); if(pInput1) pInput1.value = promo.code;
                 let pInput2 = document.getElementById('promo-code-input'); if(pInput2) pInput2.value = promo.code;
-                
-                window.updateInvoiceUI(); window.showToast('تم التفعيل', 'success'); 
-            } else { 
-                currentDiscountPercent = 0; appliedPromoCode = ""; 
-                let pMsg1 = document.getElementById('promo-msg-cart'); if(pMsg1) { pMsg1.textContent = `❌ كود غير صالح`; pMsg1.style.color = 'var(--danger)'; } 
-                let pMsg2 = document.getElementById('promo-msg'); if(pMsg2) { pMsg2.textContent = `❌ كود غير صالح`; pMsg2.style.color = 'var(--danger)'; } 
-                window.updateInvoiceUI(); 
+
+                window.updateInvoiceUI(); window.showToast('تم التفعيل', 'success');
+            } else {
+                currentDiscountPercent = 0; appliedPromoCode = "";
+                let pMsg1 = document.getElementById('promo-msg-cart'); if(pMsg1) { pMsg1.textContent = `❌ كود غير صالح`; pMsg1.style.color = 'var(--danger)'; }
+                let pMsg2 = document.getElementById('promo-msg'); if(pMsg2) { pMsg2.textContent = `❌ كود غير صالح`; pMsg2.style.color = 'var(--danger)'; }
+                window.updateInvoiceUI();
             }
         };
 
-
-        
         window.showProfilePanel = function() {
             window.showPanel('profile');
             if(currentUser) {
                 document.getElementById('profile-auth-msg').style.display = 'none';
                 document.getElementById('profile-content').style.display = 'block';
-                
+
                 document.getElementById('profile-name-display').innerText = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'عميل');
                 document.getElementById('profile-email-display').innerText = currentUser.email || currentUser.phoneNumber || '';
-                
+
                 if (window.customerOrdersArray) {
                     document.getElementById('profile-orders-count').innerText = window.customerOrdersArray.length;
                 }
-                
+
                 getDoc(doc(db, 'users', currentUser.uid)).then(d => {
                     if(d.exists()) {
                         let data = d.data();
@@ -574,7 +561,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                         document.getElementById('prof-name').value = data.name || currentUser.displayName || '';
                         document.getElementById('prof-phone1').value = data.phone1 || currentUser.phoneNumber || '';
                         document.getElementById('prof-address').value = data.address || '';
-                        
+
                         let pGov = document.getElementById('prof-gov');
                         let pCity = document.getElementById('prof-city');
                         if (data.gov && pGov) {
@@ -589,7 +576,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                 document.getElementById('profile-content').style.display = 'none';
             }
         };
-        
+
         window.saveProfileData = async function() {
             if(!currentUser) return;
             const name = document.getElementById('prof-name').value;
@@ -597,7 +584,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             const gov = document.getElementById('prof-gov').value;
             const city = document.getElementById('prof-city').value;
             const address = document.getElementById('prof-address').value;
-            
+
             try {
                 await setDoc(doc(db, 'users', currentUser.uid), {
                     name: name,
@@ -615,23 +602,23 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
 
         const profGovSelect = document.getElementById('prof-gov'), profCitySelect = document.getElementById('prof-city');
         if(profGovSelect && profCitySelect) {
-            profGovSelect.innerHTML = '<option value="" disabled selected>اختر المحافظة...</option>'; 
-            for (let gov in deliveryData) { 
-                let option = document.createElement('option'); 
-                option.value = gov; 
-                option.textContent = gov; 
-                profGovSelect.appendChild(option); 
+            profGovSelect.innerHTML = '<option value="" disabled selected>اختر المحافظة...</option>';
+            for (let gov in deliveryData) {
+                let option = document.createElement('option');
+                option.value = gov;
+                option.textContent = gov;
+                profGovSelect.appendChild(option);
             }
-            profGovSelect.addEventListener('change', function() { 
-                const data = deliveryData[this.value]; 
-                let citiesHtml = '<option value="" disabled selected>اختر المركز/المدينة...</option>'; 
-                data.cities.forEach(city => { citiesHtml += `<option value="${city}">${city}</option>`; }); 
-                citiesHtml += `<option value="مدينة أخرى">أخرى (تُكتب بالعنوان التفصيلي)</option>`; 
-                profCitySelect.innerHTML = citiesHtml; 
-                profCitySelect.disabled = false; 
+            profGovSelect.addEventListener('change', function() {
+                const data = deliveryData[this.value];
+                let citiesHtml = '<option value="" disabled selected>اختر المركز/المدينة...</option>';
+                data.cities.forEach(city => { citiesHtml += `<option value="${city}">${city}</option>`; });
+                citiesHtml += `<option value="مدينة أخرى">أخرى (تُكتب بالعنوان التفصيلي)</option>`;
+                profCitySelect.innerHTML = citiesHtml;
+                profCitySelect.disabled = false;
             });
         }
-        
+
         let visualScrollInterval;
         window.startVisualAutoScroll = function() {
             let bar = document.getElementById('visual-scroll-bar');
@@ -655,9 +642,9 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             govSelect.innerHTML = '<option value="" disabled selected>اختر المحافظة...</option>'; for (let gov in deliveryData) { let option = document.createElement('option'); option.value = gov; option.textContent = gov; govSelect.appendChild(option); }
             govSelect.addEventListener('change', function() { const data = deliveryData[this.value]; let citiesHtml = '<option value="" disabled selected>اختر المركز/المدينة...</option>'; data.cities.forEach(city => { citiesHtml += `<option value="${city}">${city}</option>`; }); citiesHtml += `<option value="مدينة أخرى">أخرى (تُكتب بالعنوان التفصيلي)</option>`; citySelect.innerHTML = citiesHtml; citySelect.disabled = false; currentShippingCost = data.shippingCost; window.updateInvoiceUI(); });
         }
-        
-        window.updateInvoiceUI = function() { 
-            let discountVal = Math.round(currentSubtotal * (currentDiscountPercent / 100)) + window.loyaltyDiscountFixed; 
+
+        window.updateInvoiceUI = function() {
+            let discountVal = Math.round(currentSubtotal * (currentDiscountPercent / 100)) + window.loyaltyDiscountFixed;
             let targetAmount = (storeSettings && storeSettings.freeShippingThreshold) ? storeSettings.freeShippingThreshold : 1000;
             let finalShipping = currentShippingCost;
             if(currentSubtotal >= targetAmount) finalShipping = 0;
@@ -680,10 +667,10 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                     dr.style.display = 'none';
                 }
             });
-            
+
             let btnCnlPromo = document.getElementById('btn-cancel-promo');
             if(btnCnlPromo) btnCnlPromo.style.display = currentDiscountPercent > 0 ? 'block' : 'none';
-            
+
             let btnRdmLoyalty = document.getElementById('btn-redeem-loyalty');
             let btnCnlLoyalty = document.getElementById('btn-cancel-loyalty');
             if(btnRdmLoyalty && btnCnlLoyalty) {
@@ -696,7 +683,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                 }
             }
         }
-        
+
         window.removeDiscount = async function() {
             if(window.loyaltyPointsUsedTemp > 0 && currentUser) {
                 try {
@@ -710,14 +697,14 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             } else if (currentDiscountPercent > 0) {
                 window.showToast('تم إلغاء الكوبون', 'info');
             }
-            
+
         window.hashString = async function(str) {
             const buffer = new TextEncoder().encode(str);
             const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
             const hashArray = Array.from(new Uint8Array(hashBuffer));
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         };
-        
+
         window.escapeHTML = function(str) {
             if(!str) return "";
             return String(str).replace(/[&<>'"]/g, tag => ({
@@ -736,7 +723,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             window.updateInvoiceUI();
         };
 window.toEngDigits = function(str) { const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩']; return str.split('').map(c => ar.indexOf(c) !== -1 ? ar.indexOf(c) : c).join(''); }
-        
+
         let ulrBtn = document.getElementById('btn-unlock-roles'); if(ulrBtn) { ulrBtn.addEventListener('click', async () => { let pin = window.toEngDigits(document.getElementById('roles-pin').value.trim()); let hashed = await window.hashString(pin); if (hashed === "7a2ec40ff8a1247c532309355f798a779e00acff579c63eec3636ffb2902c1ac") { document.getElementById('roles-auth-section').style.display = 'none'; document.getElementById('roles-content-section').style.display = 'block'; document.getElementById('roles-pin').value = ''; window.showToast('تم الفتح', 'success'); } else { window.showToast("رمز خاطئ!", 'error'); } }); }
         let fprBtn = document.getElementById('btn-forgot-roles-pin'); if(fprBtn) { fprBtn.addEventListener('click', async () => { let nid = prompt("الرقم القومي:"); if (nid) { let hashedNid = await window.hashString(window.toEngDigits(nid.trim())); if (hashedNid === "2d622f2c91074a475800b09968b837412b3a12f26519ca815feb9b0b1ad9a715") { document.getElementById('roles-auth-section').style.display = 'none'; document.getElementById('roles-content-section').style.display = 'block'; window.showToast('تم الدخول بنجاح', 'success'); } else { window.showToast('رقم قومي خاطئ', 'error'); } } }); }
         let lrBtn = document.getElementById('btn-lock-roles'); if(lrBtn) { lrBtn.addEventListener('click', () => { document.getElementById('roles-content-section').style.display = 'none'; document.getElementById('roles-auth-section').style.display = 'block'; }); }
@@ -761,22 +748,21 @@ window.toEngDigits = function(str) { const ar = ['٠','١','٢','٣','٤','٥','
         window.approveReturn = async function(returnId, orderId) { if(confirm('الموافقة على الاسترجاع وإرسال إشعار للعميل بموعد المندوب؟')) { try { await updateDoc(doc(db, 'return_requests', returnId), { status: 'تمت الموافقة' }); await updateDoc(doc(db, 'orders', orderId), { status: 'جاري الاسترجاع 🔄' }); await addDoc(collection(db, 'global_notifications'), { message: `تم الموافقة على طلب الاسترجاع الخاص بك للطلب #${orderId.slice(0,6).toUpperCase()}. سيتواصل معك المندوب قريباً.`, timestamp: new Date().toISOString() }); window.showToast('تم الموافقة على الطلب', 'success'); } catch(e) { window.showToast('حدث خطأ', 'error'); } } }
 
         window.loadAdminOrders = function() {
-            if(adminOrdersUnsubscribe) adminOrdersUnsubscribe(); 
-            adminOrdersUnsubscribe = onSnapshot(query(collection(db, 'orders'), orderBy('orderDate', 'desc')), (snapshot) => { 
+            if(adminOrdersUnsubscribe) adminOrdersUnsubscribe();
+            adminOrdersUnsubscribe = onSnapshot(query(collection(db, 'orders'), orderBy('orderDate', 'desc')), (snapshot) => {
                 adminOrdersArray = []; totalGlobalRevenue = 0; totalGlobalOrders = 0;
                 let revResetDateStr = storeSettings.revenueResetDate || "2000-01-01T00:00:00.000Z"; let ordResetDateStr = storeSettings.ordersResetDate || "2000-01-01T00:00:00.000Z"; let revResetDate = new Date(revResetDateStr); let ordResetDate = new Date(ordResetDateStr);
-                snapshot.forEach(docSnap => { 
-                    let d = docSnap.data(); adminOrdersArray.push({id: docSnap.id, ...d}); 
-                    if(d.status !== "تم الرفض" && d.status !== "ملغى من العميل ❌" && d.status !== "تم الرفض ❌") { let orderDate = new Date(d.orderDate); if(orderDate >= revResetDate) { totalGlobalRevenue += Number(d.totalAmount); } if(orderDate >= ordResetDate) { totalGlobalOrders++; } } 
-                }); 
+                snapshot.forEach(docSnap => {
+                    let d = docSnap.data(); adminOrdersArray.push({id: docSnap.id, ...d});
+                    if(d.status !== "تم الرفض" && d.status !== "ملغى من العميل ❌" && d.status !== "تم الرفض ❌") { let orderDate = new Date(d.orderDate); if(orderDate >= revResetDate) { totalGlobalRevenue += Number(d.totalAmount); } if(orderDate >= ordResetDate) { totalGlobalOrders++; } }
+                });
                 if (window.checkWorkHubRealtimeChanges) window.checkWorkHubRealtimeChanges('orders');
                 window.renderAdminOrdersUI();
                 if (window.renderAdminWorkHub) window.renderAdminWorkHub();
-                let so = document.getElementById('stat-orders'); if(so) so.textContent = totalGlobalOrders; let sr = document.getElementById('stat-revenue'); if(sr) sr.textContent = totalGlobalRevenue.toLocaleString() + ' ج'; 
+                let so = document.getElementById('stat-orders'); if(so) so.textContent = totalGlobalOrders; let sr = document.getElementById('stat-revenue'); if(sr) sr.textContent = totalGlobalRevenue.toLocaleString() + ' ج';
             });
         }
 
-        
         window.updateOrderStatus = async function(orderId, newStatus) {
             let statusPayload = { status: newStatus, updatedAt: new Date().toISOString() };
             if (String(newStatus).includes('لغى') || String(newStatus).includes('رفض')) {
@@ -784,8 +770,8 @@ window.toEngDigits = function(str) { const ar = ['٠','١','٢','٣','٤','٥','
             } else {
                 statusPayload.unreadCancelByAdmin = false;
             }
-            await updateDoc(doc(db, 'orders', orderId), statusPayload); 
-            window.showToast('تم تحديث الحالة', 'success'); 
+            await updateDoc(doc(db, 'orders', orderId), statusPayload);
+            window.showToast('تم تحديث الحالة', 'success');
             let oData = adminOrdersArray.find(o => o.id === orderId);
             if(oData && oData.userId) {
                 try {
@@ -797,10 +783,10 @@ window.toEngDigits = function(str) { const ar = ['٠','١','٢','٣','٤','٥','
             }
             if(newStatus === 'تم التوصيل ✅' && oData && oData.userId && !oData.pointsAdded) {
                 let earnRate = window.loyaltyEarnRateActual || 20;
-                let pts = Math.floor((oData.totalAmount - (oData.shippingCost || 0)) / earnRate); 
+                let pts = Math.floor((oData.totalAmount - (oData.shippingCost || 0)) / earnRate);
                 if(pts > 0) {
                     try {
-                        await updateDoc(doc(db, 'users', oData.userId), { 
+                        await updateDoc(doc(db, 'users', oData.userId), {
                             loyaltyPoints: increment(pts), unreadNotifs: increment(1),
                             notifications: arrayUnion({title: 'نقاط ولاء جديدة 🎁', message: `مبروك! حصلت على ${pts} نقطة لإتمام طلبك.`, date: new Date().toISOString()})
                         });
@@ -836,27 +822,22 @@ let adminUsersUnsubscribe = null;
             });
         }
 
-        
-        
-        
-        
-
-        window.updateAdminUI = function() { 
-            if (currentUser) { 
-                isCurrentUserAdmin = SUPER_ADMINS.includes((currentUser.email || '').toLowerCase()) || dynamicAdmins.includes((currentUser.email || '').toLowerCase()) || (currentUser.phoneNumber && SUPER_ADMINS.includes(currentUser.phoneNumber)); 
-                document.querySelectorAll('.admin-tab').forEach(tab => tab.style.display = isCurrentUserAdmin ? 'inline-block' : 'none'); 
+        window.updateAdminUI = function() {
+            if (currentUser) {
+                isCurrentUserAdmin = SUPER_ADMINS.includes((currentUser.email || '').toLowerCase()) || dynamicAdmins.includes((currentUser.email || '').toLowerCase()) || (currentUser.phoneNumber && SUPER_ADMINS.includes(currentUser.phoneNumber));
+                document.querySelectorAll('.admin-tab').forEach(tab => tab.style.display = isCurrentUserAdmin ? 'inline-block' : 'none');
                 let activePanel = document.querySelector('.panel.active');
                 if(!isCurrentUserAdmin && activePanel && ['admin', 'admin-add-product', 'admin-work', 'admin-orders', 'admin-messages', 'admin-dashboard', 'admin-returns', 'admin-users', 'admin-staff-ratings', 'admin-broadcast'].includes(activePanel.id.replace('-panel',''))) { window.showPanel('home'); }
                 if(isCurrentUserAdmin) { window.loadAdminOrders(); window.loadAdminReturns(); window.loadAdminUsers(); if(window.loadAdminAbandonedCarts) window.loadAdminAbandonedCarts(); if(window.renderLowStockAlerts) window.renderLowStockAlerts(); }
-            } else { 
-                isCurrentUserAdmin = false; document.querySelectorAll('.admin-tab').forEach(tab => tab.style.display = 'none'); 
+            } else {
+                isCurrentUserAdmin = false; document.querySelectorAll('.admin-tab').forEach(tab => tab.style.display = 'none');
                 if(adminOrdersUnsubscribe) { adminOrdersUnsubscribe(); adminOrdersUnsubscribe = null; } if(adminReturnsUnsubscribe) { adminReturnsUnsubscribe(); adminReturnsUnsubscribe = null; } if(adminUsersUnsubscribe) { adminUsersUnsubscribe(); adminUsersUnsubscribe = null; } if(window.adminAbandonedCartsUnsubscribe) { window.adminAbandonedCartsUnsubscribe(); window.adminAbandonedCartsUnsubscribe = null; }
-            } window.applySettingsToUI(); window.renderProducts(false); window.renderVisualBar(); 
+            } window.applySettingsToUI(); window.renderProducts(false); window.renderVisualBar();
         }
-        
+
         onSnapshot(collection(db, 'admins'), (snapshot) => { dynamicAdmins = []; dynamicAdminsList = []; snapshot.forEach(doc => { dynamicAdmins.push(doc.data().email.toLowerCase()); dynamicAdminsList.push({ id: doc.id, email: doc.data().email.toLowerCase() }); }); window.updateAdminUI(); window.renderAdminsList(); });
         window.renderAdminsList = function() { let html = '<ul style="line-height:2;">'; SUPER_ADMINS.forEach(email => { html += `<li><strong>${email}</strong> <span style="color:#28a745; font-size:0.8rem;">(مؤسس)</span></li>`; }); dynamicAdminsList.forEach(admin => { html += `<li><strong>${admin.email}</strong> <button type="button" class="btn-danger" style="padding: 2px 6px; font-size: 0.8rem; border-radius:4px; border:none; cursor:pointer;" onclick="window.removeAdmin('${admin.id}')">حذف</button></li>`; }); let listCont = document.getElementById('admins-list-container'); if(listCont) listCont.innerHTML = html + '</ul>'; }
-        
+
         let aForm = document.getElementById('add-admin-form');
         if(aForm) { aForm.addEventListener('submit', async (e) => { e.preventDefault(); const newEmail = document.getElementById('new-admin-email').value.trim().toLowerCase(); if (!SUPER_ADMINS.includes(newEmail) && !dynamicAdmins.includes(newEmail)) { await addDoc(collection(db, 'admins'), { email: newEmail }); document.getElementById('new-admin-email').value = ''; window.showToast('تم الإضافة', 'success'); } }); }
         window.removeAdmin = async function(id) { if(confirm('حذف؟')) await deleteDoc(doc(db, 'admins', id)); }
@@ -864,50 +845,49 @@ let adminUsersUnsubscribe = null;
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             if (user) {
-                
+
                 let displayTxt = user.displayName || (user.email ? user.email.split('@')[0] : user.phoneNumber);
-                let ud = document.getElementById('user-email-display'); if(ud) ud.textContent = displayTxt; 
-                let um = document.getElementById('user-menu-container'); if(um) um.style.display = 'block'; 
-                let bs = document.getElementById('btn-show-auth'); if(bs) bs.style.display = 'none'; 
-                let sa = document.getElementById('sidebar-account-section'); if(sa) sa.style.display = 'block'; 
+                let ud = document.getElementById('user-email-display'); if(ud) ud.textContent = displayTxt;
+                let um = document.getElementById('user-menu-container'); if(um) um.style.display = 'block';
+                let bs = document.getElementById('btn-show-auth'); if(bs) bs.style.display = 'none';
+                let sa = document.getElementById('sidebar-account-section'); if(sa) sa.style.display = 'block';
                 let ssw = document.getElementById('sidebar-switch-accounts-section'); if(ssw) ssw.style.display = 'block';
-                let co = document.getElementById('nav-customer-orders'); if(co) co.style.display = 'inline-block'; 
-                let sp = document.getElementById('nav-support'); if(sp) sp.style.display = 'inline-block'; 
-                
-                // إخفاء رسالة طلب الدخول فوراً
-                let sm = document.getElementById('support-auth-msg'); if(sm) sm.style.display = 'none'; 
-                let sc = document.getElementById('support-content'); if(sc) sc.style.display = 'block'; 
-                let lm = document.getElementById('login-to-review-msg'); if(lm) lm.style.display = 'none'; 
+                let co = document.getElementById('nav-customer-orders'); if(co) co.style.display = 'inline-block';
+                let sp = document.getElementById('nav-support'); if(sp) sp.style.display = 'inline-block';
+
+                let sm = document.getElementById('support-auth-msg'); if(sm) sm.style.display = 'none';
+                let sc = document.getElementById('support-content'); if(sc) sc.style.display = 'block';
+                let lm = document.getElementById('login-to-review-msg'); if(lm) lm.style.display = 'none';
                 let ar = document.getElementById('add-review-section'); if(ar) ar.style.display = 'block';
 
-                window.updateAdminUI(); 
-                window.loadCustomerOrders(); 
-                window.loadCustomerChat(); 
+                window.updateAdminUI();
+                window.loadCustomerOrders();
+                window.loadCustomerChat();
                 window.loadUserNotifications();
-                
+
                 if(SUPER_ADMINS.includes((user.email || '').toLowerCase()) || dynamicAdmins.includes((user.email || '').toLowerCase())) { window.loadAdminChats(); }
-try { 
-                    const userDoc = await getDoc(doc(db, 'users', user.uid)); 
-                    if(userDoc.exists()) { 
-                        const data = userDoc.data(); 
-                        let oname = document.getElementById('order-name'); if(oname) oname.value = data.name || ''; let ophone = document.getElementById('order-phone1'); if(ophone) ophone.value = data.phone1 || user.phoneNumber || ''; let ophone2 = document.getElementById('order-phone2'); if(ophone2) ophone2.value = data.phone2 || ''; let oaddr = document.getElementById('order-address'); if(oaddr) oaddr.value = data.address || ''; if(data.gov) { let og = document.getElementById('order-gov'); if(og) { og.value = data.gov; og.dispatchEvent(new Event('change')); setTimeout(() => { let oc = document.getElementById('order-city'); if(oc && data.city) oc.value = data.city; }, 100); } } 
+try {
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    if(userDoc.exists()) {
+                        const data = userDoc.data();
+                        let oname = document.getElementById('order-name'); if(oname) oname.value = data.name || ''; let ophone = document.getElementById('order-phone1'); if(ophone) ophone.value = data.phone1 || user.phoneNumber || ''; let ophone2 = document.getElementById('order-phone2'); if(ophone2) ophone2.value = data.phone2 || ''; let oaddr = document.getElementById('order-address'); if(oaddr) oaddr.value = data.address || ''; if(data.gov) { let og = document.getElementById('order-gov'); if(og) { og.value = data.gov; og.dispatchEvent(new Event('change')); setTimeout(() => { let oc = document.getElementById('order-city'); if(oc && data.city) oc.value = data.city; }, 100); } }
                         if(data.cart && data.cart.length > 0) { cart = data.cart; localStorage.setItem('cart', JSON.stringify(cart)); }
                         if(data.savedForLater && data.savedForLater.length > 0) { savedForLater = data.savedForLater; localStorage.setItem('savedForLater', JSON.stringify(savedForLater)); }
-                    } 
+                    }
                     await setDoc(doc(db, 'users', user.uid), { email: user.email || user.phoneNumber || 'غير مسجل', name: user.displayName || (userDoc.exists() ? userDoc.data().name : ''), lastLogin: new Date().toISOString() }, { merge: true });
                 } catch(err) {}
-                
+
                 window.renderSavedAccounts(); let activeP = document.querySelector('.panel.active'); if(activeP && activeP.id === 'auth-panel') window.showPanel('home');
             } else {
-                let um = document.getElementById('user-menu-container'); if(um) um.style.display = 'none'; let bs = document.getElementById('btn-show-auth'); if(bs) bs.style.display = 'inline-block'; 
+                let um = document.getElementById('user-menu-container'); if(um) um.style.display = 'none'; let bs = document.getElementById('btn-show-auth'); if(bs) bs.style.display = 'inline-block';
                 let sa = document.getElementById('sidebar-account-section'); if(sa) sa.style.display = 'none'; let ssw = document.getElementById('sidebar-switch-accounts-section'); if(ssw) ssw.style.display = 'none';
-                let co = document.getElementById('nav-customer-orders'); if(co) co.style.display = 'none'; let sp = document.getElementById('nav-support'); if(sp) sp.style.display = 'none'; 
-                window.updateAdminUI(); 
-                let sm = document.getElementById('support-auth-msg'); if(sm) sm.style.display = 'block'; let sc = document.getElementById('support-content'); if(sc) sc.style.display = 'none'; let lm = document.getElementById('login-to-review-msg'); if(lm) lm.style.display = 'block'; let ar = document.getElementById('add-review-section'); if(ar) ar.style.display = 'none'; let cf = document.getElementById('checkout-form'); if(cf) cf.reset(); 
-                let og = document.getElementById('order-gov'); if(og) og.dispatchEvent(new Event('change')); 
+                let co = document.getElementById('nav-customer-orders'); if(co) co.style.display = 'none'; let sp = document.getElementById('nav-support'); if(sp) sp.style.display = 'none';
+                window.updateAdminUI();
+                let sm = document.getElementById('support-auth-msg'); if(sm) sm.style.display = 'block'; let sc = document.getElementById('support-content'); if(sc) sc.style.display = 'none'; let lm = document.getElementById('login-to-review-msg'); if(lm) lm.style.display = 'block'; let ar = document.getElementById('add-review-section'); if(ar) ar.style.display = 'none'; let cf = document.getElementById('checkout-form'); if(cf) cf.reset();
+                let og = document.getElementById('order-gov'); if(og) og.dispatchEvent(new Event('change'));
                 let activeP = document.querySelector('.panel.active'); if(activeP && ['support-panel'].includes(activeP.id)) window.showPanel('home');
                 if(unsubscribeUserChat) { unsubscribeUserChat(); unsubscribeUserChat = null; } if(unsubscribeActiveAdminChat) { unsubscribeActiveAdminChat(); unsubscribeActiveAdminChat = null; }
-            } window.updateCartUI(); 
+            } window.updateCartUI();
         });
 
         let auForm = document.getElementById('auth-form');
@@ -915,10 +895,10 @@ try {
 
         let atMode = document.getElementById('auth-toggle-mode');
         if(atMode) { atMode.addEventListener('click', () => { isLoginMode = !isLoginMode; let at = document.getElementById('auth-title'); if(at) at.textContent = isLoginMode ? "تسجيل الدخول" : "حساب جديد"; let asb = document.getElementById('auth-submit-btn'); if(asb) asb.textContent = isLoginMode ? "دخول" : "تسجيل"; let atm = document.getElementById('auth-toggle-mode'); if(atm) atm.textContent = isLoginMode ? "ليس لديك حساب؟ أنشئ حساباً" : "لديك حساب؟ سجل الدخول"; let afp = document.getElementById('auth-forgot-password'); if(afp) afp.style.display = isLoginMode ? "block" : "none"; }); }
-        
+
         window.applyAdvancedFilters = function() { currentRenderedProducts = productsPerPage; window.renderProducts(); };
         window.filterProducts = function(category) { currentCategoryFilter = category; document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active')); if(event && event.target && event.target.classList) event.target.classList.add('active'); currentRenderedProducts = productsPerPage; window.renderProducts(); }
-        
+
         onSnapshot(collection(db, 'products'), (snapshot) => { products = []; snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() })); products.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)); isProductsLoaded = true; window.renderProducts(false); window.renderVisualBar(); if(document.getElementById('wishlist-panel') && document.getElementById('wishlist-panel').classList.contains('active')) window.renderWishlist(); });
 
         window.toggleWishlist = function(event, id) { event.stopPropagation(); const index = wishlist.indexOf(id); if(index > -1) { wishlist.splice(index, 1); window.showToast('تم الحذف من المفضلة'); } else { wishlist.push(id); window.showToast('تمت الإضافة للمفضلة ❤️', 'success'); } localStorage.setItem('wishlist', JSON.stringify(wishlist)); window.renderProducts(false); window.renderVisualBar(); if(document.getElementById('wishlist-panel') && document.getElementById('wishlist-panel').classList.contains('active')) window.renderWishlist(); }
@@ -958,9 +938,9 @@ try {
             }
             if(sortOption === 'price-asc') { filteredProducts.sort((a,b) => a.price - b.price); } else if(sortOption === 'price-desc') { filteredProducts.sort((a,b) => b.price - a.price); } else if(sortOption === 'rating-desc') { filteredProducts.sort((a,b) => { let rA = a.reviews && a.reviews.length>0 ? a.reviews.reduce((acc, r)=>acc+r.rating,0)/a.reviews.length : 0; let rB = b.reviews && b.reviews.length>0 ? b.reviews.reduce((acc, r)=>acc+r.rating,0)/b.reviews.length : 0; return rB - rA; }); }
             if(filteredProducts.length === 0) { let msg = window.currentLang === 'ar' ? 'لا توجد منتجات مطابقة للبحث أو الفلتر.' : 'No products match your search or filter.'; container.innerHTML = `<h3 style="text-align: center; grid-column: 1 / -1; color: var(--text-muted);">${msg}</h3>`; return; }
-            
+
             let paginatedProducts = filteredProducts.slice(0, currentRenderedProducts); let htmlContent = '';
-            
+
             paginatedProducts.forEach(product => {
                 let safeName = product.name.replace(/'/g, "\\'"); let categoryLabel = product.category || 'أخرى';
                 let avgRating = 5; if(product.reviews && product.reviews.length > 0) { let total = 0; product.reviews.forEach(r => total += r.rating); avgRating = (total / product.reviews.length).toFixed(1); }
@@ -1012,7 +992,7 @@ try {
                     </div>
                     ${adminBtns}
                 </div>`;
-            }); 
+            });
             container.innerHTML = htmlContent; if(scrollToTop) window.scrollTo(0,0); if(isCurrentUserAdmin && window.renderLowStockAlerts) window.renderLowStockAlerts();
         }
 
@@ -1035,18 +1015,18 @@ try {
             if (window.location.search !== newUrl) {
                 window.history.pushState({productId: id}, '', newUrl);
             }
- 
+
             let safeName = product.name.replace(/'/g, "\\'"); window.addRecentlyViewed(product);
-            
+
             let imgs = product.images && product.images.length > 0 ? product.images : (product.imageUrl ? [product.imageUrl] : []);
             let mim = document.getElementById('modal-img-main'); if(mim) mim.src = imgs[0] || 'https://via.placeholder.com/300';
             let galleryHtml = ''; if(product.videoUrl) { galleryHtml += `<div style="width:50px; height:50px; background:#000; color:white; display:flex; align-items:center; justify-content:center; border-radius:8px; cursor:pointer; opacity:0.8; font-size:1.5rem;" onclick="window.open('${product.videoUrl}', '_blank')">▶️</div>`; }
             if(imgs.length > 1) { imgs.forEach((url, i) => { galleryHtml += `<img loading="lazy" src="${url}" class="${i===0?'active':''}" onclick="window.changeMainImg('${url}', this)">`; }); }
             let mgc = document.getElementById('modal-gallery-container'); if(mgc) mgc.innerHTML = galleryHtml;
-            
+
             let viewersCount = Math.floor(Math.random() * (80 - 20 + 1)) + 20; let viewersEl = document.getElementById('live-viewers-count'); if(viewersEl) viewersEl.innerText = viewersCount;
             let mc = document.getElementById('modal-category'); if(mc) mc.textContent = product.category || 'أخرى'; let mt = document.getElementById('modal-title'); if(mt) mt.textContent = product.name; let st = document.getElementById('sticky-title'); if(st) st.textContent = product.name;
-            
+
             activeVariantForCart = null; let vArr = product.variantsData ? product.variantsData : []; let variantContainer = document.getElementById('modal-variants-container'); let variantSelect = document.getElementById('modal-variant-select');
             if(vArr.length > 0) {
                 if(variantContainer) variantContainer.style.display = 'block'; let opts = ''; vArr.forEach((v, idx) => { opts += `<option value="${idx}">${v.name} - ${v.price} ج</option>`; }); if(variantSelect) variantSelect.innerHTML = opts;
@@ -1062,13 +1042,13 @@ try {
 
             let md = document.getElementById('modal-desc'); if(md) md.textContent = product.description || '';
             let avgRating = 5; let reviewsHtml = '';
-            if(product.reviews && product.reviews.length > 0) { let total = 0; product.reviews.forEach(r => { total += r.rating; let revImgHtml = r.imageUrl ? `<br><img loading="lazy" src="${r.imageUrl}" class="review-img" onclick="window.open('${r.imageUrl}', '_blank')">` : ''; 
+            if(product.reviews && product.reviews.length > 0) { let total = 0; product.reviews.forEach(r => { total += r.rating; let revImgHtml = r.imageUrl ? `<br><img loading="lazy" src="${r.imageUrl}" class="review-img" onclick="window.open('${r.imageUrl}', '_blank')">` : '';
                 let delBtn = (currentUser && isCurrentUserAdmin) ? `<button onclick="window.deleteReview('${product.id}', ${product.reviews.indexOf(r)})" style="float:left; background:transparent; border:none; color:var(--danger); font-size:1.2rem; cursor:pointer;" title="حذف التقييم">🗑️</button>` : '';
                 reviewsHtml += `<div class="review-box">${delBtn}<strong style="color:var(--primary);">${window.escapeHTML(r.userName)}</strong><br>${'⭐'.repeat(r.rating)}<br><span style="color:var(--text-color); font-size:0.95rem;">${window.escapeHTML(r.comment)}</span>${revImgHtml}</div>`;
  }); avgRating = (total / product.reviews.length).toFixed(1); } else { let noR = window.currentLang === 'ar' ? 'كن أول من يقيّم المنتج!' : 'Be the first to review!'; reviewsHtml = `<p style="color:var(--text-muted); text-align:center;">${noR}</p>`; }
-            
+
             let mra = document.getElementById('modal-rating-avg'); if(mra) mra.innerHTML = `⭐ ${avgRating} / 5.0`; let mrl = document.getElementById('modal-reviews-list'); if(mrl) mrl.innerHTML = reviewsHtml;
-            
+
             let crossSellSec = document.getElementById('modal-cross-sell-section');
             if(crossSellSec && storeSettings.enableCrossSell) {
                 let crossSellList = document.getElementById('modal-cross-sell-list');
@@ -1098,9 +1078,9 @@ try {
                 ? (window.currentLang === 'ar' ? '🔔 بلغني عند التوفر' : '🔔 Notify When Available')
                 : (window.currentLang === 'ar' ? 'أضف للسلة 🛒' : 'Add to Cart 🛒');
             let sab = document.getElementById('sticky-action-btn'); if(sab) sab.innerHTML = `<button type="button" class="btn" ${addBtnState}>${addTxt}</button>`;
-            
+
             window.trackEvent('ViewContent', { content_name: product.name, content_category: product.category, value: product.price, currency: 'EGP' });
-            
+
             let waBtnContainer = document.getElementById('modal-wa-btn-container');
             if (waBtnContainer) {
                 waBtnContainer.innerHTML = `<button type="button" class="btn btn-outline" style="width:100%; border-color:#25D366; color:#25D366; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="window.askProductWa('${product.id}')">💬 ${window.currentLang === 'ar' ? 'استفسار عن المنتج عبر واتساب' : 'Inquire on WhatsApp'}</button>`;
@@ -1114,7 +1094,6 @@ try {
         window.executeAddToCart = function(event, id, name) { if(event) event.stopPropagation(); let p = products.find(x => x.id === id); if(!p) return; let priceToUse = p.price; let finalName = name; let variantSuffix = ""; let img = (p.images && p.images.length > 0) ? p.images[0] : (p.imageUrl || 'https://via.placeholder.com/300'); if(activeVariantForCart) { priceToUse = activeVariantForCart.price; finalName = `${name} (${activeVariantForCart.name})`; variantSuffix = activeVariantForCart.name; } window.addToCart(id, finalName, priceToUse, img, variantSuffix); window.closeProductModal(); }
         window.closeProductModal = function() { let pm = document.getElementById('product-modal'); if(pm) pm.style.display = 'none'; activeProductForReview = null; window.history.pushState(null, '', window.location.pathname); activeVariantForCart = null; }
 
-        
         window.deleteReview = async function(productId, reviewIndex) {
             if(!confirm('هل أنت متأكد من حذف هذا التقييم؟')) return;
             let product = products.find(p => p.id === productId);
@@ -1123,24 +1102,23 @@ try {
                 try {
                     await updateDoc(doc(db, 'products', productId), { reviews: product.reviews });
                     window.showToast('تم حذف التقييم', 'success');
-                    window.openProductModal(productId); // refresh
+                    window.openProductModal(productId);
                 } catch(e) { window.showToast('حدث خطأ', 'error'); }
             }
         };
 
-        window.submitReview = async function() { 
-            if(!currentUser) { window.showToast(window.currentLang === 'ar' ? 'سجل الدخول لتقييم المنتج' : 'Login to review', "error"); return; } 
-            if(!activeProductForReview) return; 
+        window.submitReview = async function() {
+            if(!currentUser) { window.showToast(window.currentLang === 'ar' ? 'سجل الدخول لتقييم المنتج' : 'Login to review', "error"); return; }
+            if(!activeProductForReview) return;
             const rating = parseInt(document.getElementById('review-stars').value); const comment = document.getElementById('review-text').value.trim(); const fileInput = document.getElementById('review-image-file'); const submitBtn = document.getElementById('btn-submit-review'); const statusLabel = document.getElementById('review-upload-status');
-            if(!comment) { window.showToast(window.currentLang === 'ar' ? 'اكتب تعليقاً' : 'Write a comment', "error"); return; } 
+            if(!comment) { window.showToast(window.currentLang === 'ar' ? 'اكتب تعليقاً' : 'Write a comment', "error"); return; }
             submitBtn.disabled = true; let reviewImageUrl = null;
             if(fileInput.files.length > 0) { statusLabel.style.display = 'block'; try { const formData = new FormData(); formData.append('image', fileInput.files[0]); const res = await fetch(`https://api.imgbb.com/1/upload?key=ROUTED_TO_CLOUDINARY`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { reviewImageUrl = data.data.url; } } catch(e) { window.showToast('فشل رفع الصورة، سيتم إرسال التقييم بدون صورة', 'error'); } statusLabel.style.display = 'none'; }
-            const product = products.find(p => p.id === activeProductForReview); let currentReviews = product.reviews || []; let rName = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : currentUser.phoneNumber); 
-            let reviewObj = { userName: rName, rating: rating, comment: comment, date: new Date().toISOString() }; if(reviewImageUrl) reviewObj.imageUrl = reviewImageUrl; currentReviews.push(reviewObj); 
+            const product = products.find(p => p.id === activeProductForReview); let currentReviews = product.reviews || []; let rName = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : currentUser.phoneNumber);
+            let reviewObj = { userName: rName, rating: rating, comment: comment, date: new Date().toISOString() }; if(reviewImageUrl) reviewObj.imageUrl = reviewImageUrl; currentReviews.push(reviewObj);
             try { await updateDoc(doc(db, 'products', activeProductForReview), { reviews: currentReviews }); window.showToast(window.currentLang === 'ar' ? 'شكراً لتقييمك!' : 'Thank you!', "success"); document.getElementById('review-text').value = ''; document.getElementById('review-image-file').value = ''; window.closeProductModal(); } catch(e) { window.showToast("خطأ", "error"); } submitBtn.disabled = false;
         }
 
-        
         window.generateFakeReviews = function(productName, count) {
             if(count <= 0) return [];
             const names = ["أحمد محمود", "كريم سعيد", "محمود علي", "فاطمة حسن", "منى جمال", "طارق يوسف", "محمد عمر", "مصطفى كمال", "هبة عبد الرحمن", "سمر فوزي", "خالد عبدالله"];
@@ -1159,7 +1137,7 @@ try {
             let reviews = [];
             for(let i=0; i<count; i++) {
                 let rDate = new Date();
-                rDate.setDate(rDate.getDate() - Math.floor(Math.random() * 30)); // random date within last 30 days
+                rDate.setDate(rDate.getDate() - Math.floor(Math.random() * 30));
                 reviews.push({
                     userName: names[Math.floor(Math.random() * names.length)],
                     rating: 5,
@@ -1185,11 +1163,11 @@ try {
         let costPrice = document.getElementById('product-cost-price') ? (Number(document.getElementById('product-cost-price').value) || 0) : 0;
         let sortOrderVal = document.getElementById('product-sort-order') && document.getElementById('product-sort-order').value !== '' ? Number(document.getElementById('product-sort-order').value) : 999;
         let discountEndsAt = document.getElementById('product-discount-end') ? document.getElementById('product-discount-end').value : '';
-        let productPayload = { createdAt: new Date().toISOString(), name, price, oldPrice, costPrice, category, stock, description, images: finalImages, variantsData, imageUrl: finalImages[0], specialBadge, customSpecs, sortOrder: sortOrderVal, discountEndsAt }; if(videoUrl) productPayload.videoUrl = videoUrl; if(id) { await updateDoc(doc(db, 'products', id), productPayload); window.showToast('تم التحديث!', 'success'); } else { 
+        let productPayload = { createdAt: new Date().toISOString(), name, price, oldPrice, costPrice, category, stock, description, images: finalImages, variantsData, imageUrl: finalImages[0], specialBadge, customSpecs, sortOrder: sortOrderVal, discountEndsAt }; if(videoUrl) productPayload.videoUrl = videoUrl; if(id) { await updateDoc(doc(db, 'products', id), productPayload); window.showToast('تم التحديث!', 'success'); } else {
                 let fcEl = document.getElementById('product-fake-reviews-count');
                 let fCount = fcEl ? parseInt(fcEl.value) : 5;
-                productPayload.reviews = window.generateFakeReviews(name, fCount); 
-                await addDoc(collection(db, 'products'), productPayload); 
+                productPayload.reviews = window.generateFakeReviews(name, fCount);
+                await addDoc(collection(db, 'products'), productPayload);
                 window.showToast('تم الإضافة!', 'success');
  } window.cancelEditProduct(); } catch(err) { if(statusLabel) statusLabel.style.display = 'none'; window.showToast('فشل الرفع', 'error'); } btnSubmit.disabled = false; if(statusLabel) statusLabel.style.display = 'none'; }); }
 
@@ -1203,25 +1181,25 @@ try {
                 if (!lat || !lng || lat == 0) { let mw = document.getElementById('map-warning'); if(mw) mw.style.display = 'block'; let mm = document.getElementById('map'); if(mm) window.scrollTo({ top: mm.offsetTop - 100, behavior: 'smooth' }); window.showToast('حدد موقعك على الخريطة', 'error'); return; }
                 const nameEl = document.getElementById('order-name'); const phone1El = document.getElementById('order-phone1'); const phone2El = document.getElementById('order-phone2'); const govEl = document.getElementById('order-gov'); const cityEl = document.getElementById('order-city'); const mapAddrEl = document.getElementById('order-map-address'); const addrEl = document.getElementById('order-address'); const payEl = document.getElementById('order-payment-method');
                 const name = nameEl ? nameEl.value : "عميل"; const phone1 = phone1El ? phone1El.value : ""; const phone2 = phone2El ? phone2El.value : "لا يوجد"; const gov = govEl ? govEl.value : ""; const city = cityEl ? cityEl.value : ""; const mapAddress = mapAddrEl ? mapAddrEl.value : ""; const addressDetails = addrEl ? addrEl.value : ""; const payMethod = payEl ? payEl.value : "كاش";
-                
+
                 let bundleDiscVal = window.getBundleDiscountAmount ? window.getBundleDiscountAmount() : 0;
                 let discountVal = Math.round(currentSubtotal * (currentDiscountPercent / 100)) + bundleDiscVal + window.loyaltyDiscountFixed;
                 let enableFreeShip = storeSettings.enableFreeShipping !== false;
                 let targetAmount = (storeSettings && storeSettings.freeShippingThreshold) ? Number(storeSettings.freeShippingThreshold) : 1000;
                 if (gov && window.getShippingCostForGov) currentShippingCost = window.getShippingCostForGov(gov);
                 let finalShippingCost = (enableFreeShip && currentSubtotal >= targetAmount) ? 0 : currentShippingCost;
-                let finalTotal = (currentSubtotal - discountVal) + finalShippingCost; 
-                if(finalTotal < 0) finalTotal = 0; 
-                const mapLink = `https://www.google.com/maps?q=${lat},${lng}`; 
+                let finalTotal = (currentSubtotal - discountVal) + finalShippingCost;
+                if(finalTotal < 0) finalTotal = 0;
+                const mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
                 let receiptUrl = "";
-                
+
                 let selectedItems = cart.filter(item => item.selected !== false);
                 if(selectedItems.length === 0) { window.showToast(window.currentLang === 'ar' ? 'قم بتحديد منتج אחד على الأقل' : 'Select at least one item', 'error'); return; }
 
                 if(payMethod === 'محفظة إلكترونية') { const fileInput = document.getElementById('order-receipt-file'); if(!fileInput || fileInput.files.length === 0) { window.showToast('يرجى إرفاق صورة إيصال التحويل لتأكيد الطلب!', 'error'); return; } let statusLabel = document.getElementById('receipt-upload-status'); if(statusLabel) statusLabel.style.display = 'block'; document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true); try { const formData = new FormData(); formData.append('image', fileInput.files[0]); const res = await fetch(`https://api.imgbb.com/1/upload?key=ROUTED_TO_CLOUDINARY`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { receiptUrl = data.data.url; } else { throw new Error('فشل رفع الإيصال'); } } catch (err) { if(statusLabel) statusLabel.style.display = 'none'; document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false); window.showToast('فشل رفع صورة الإيصال، حاول مرة أخرى.', 'error'); return; } if(statusLabel) statusLabel.style.display = 'none'; }
 
                 document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = true); let waBtnInfo = storeSettings.floatingButtons ? storeSettings.floatingButtons.find(b => b.icon === '📱' || b.link.includes('wa.me')) : null; let pureWa = waBtnInfo ? waBtnInfo.link.split('/').pop() : "201018631768"; if(pureWa && !pureWa.startsWith('20') && pureWa.length === 10) pureWa = '20' + pureWa; let custEmail = currentUser ? (currentUser.email || currentUser.phoneNumber) : "غير مسجل";
-                
+
                 let orderPayload = { usedLoyaltyPoints: window.loyaltyPointsUsedTemp || 0, userId: currentUser ? currentUser.uid : "", customerEmail: custEmail || "", customerName: name || "", phones: { primary: phone1 || "", secondary: phone2 || "" }, location: { governorate: gov || "", city: city || "", mapAddress: mapAddress || "", details: addressDetails || "", lat: lat || 0, lng: lng || 0, mapLink: mapLink || "" }, items: selectedItems, subtotal: currentSubtotal || 0, discount: discountVal || 0, promoCode: appliedPromoCode || "", shippingCost: finalShippingCost || 0, totalAmount: finalTotal || 0, orderMethod: method || "", trafficSource: window.getDetectedTrafficSource ? window.getDetectedTrafficSource() : 'مباشر (Direct)', freeGiftUnlocked: window.getUnlockedFreeGiftName ? window.getUnlockedFreeGiftName() : '',
                 deliveryTimeSlot: (storeSettings.enableDeliverySlot !== false && document.getElementById('order-delivery-slot')) ? document.getElementById('order-delivery-slot').value : '',
                 giftWrapInfo: (storeSettings.enableGiftWrap !== false && document.getElementById('order-gift-wrap-cb') && document.getElementById('order-gift-wrap-cb').checked) ? (document.getElementById('order-gift-wrap-msg').value.trim() || 'تغليف كهدية فاخرة 🎀') : '', paymentMethod: payMethod || "", receiptUrl: receiptUrl || "", status: "قيد المراجعة", orderDate: new Date().toISOString() };
@@ -1234,7 +1212,7 @@ try {
                 }
                 if(currentUser) { await setDoc(doc(db, 'users', currentUser.uid), { name: name||"", phone1: phone1||"", phone2: phone2||"", gov: gov||"", city: city||"", address: addressDetails||"" }, { merge: true }); }
                 window.trackEvent('Purchase', { value: finalTotal, currency: 'EGP', content_type: 'product_group' });
-                
+
                 selectedItems.forEach(item => { const prod = products.find(p => p.id === item.id); if(prod && prod.stock !== undefined && prod.stock !== "") { updateDoc(doc(db, 'products', item.id), { stock: increment(-item.quantity) }).catch(e=>{}); } });
 
                 try {
@@ -1258,27 +1236,27 @@ try {
                     });
                 } catch(e) {}
 
-                if (method === 'عبر واتساب') { 
-                    let msg = `*طلب جديد* 🌿\n\n👤 ${name}\n📞 ${phone1}\n📍 ${gov} - ${city}\n🗺️ الخريطة: ${mapAddress}\n🏠 التفاصيل: ${addressDetails}\n💳 الدفع: ${payMethod}\n🔗 ${mapLink}\n`; 
-                    if(receiptUrl) msg += `\n🧾 *إيصال التحويل:* ${receiptUrl}\n`; 
-                    msg += `\n🛍️ *المنتجات:*\n`; 
-                    selectedItems.forEach(item => { msg += `- ${item.name} (${item.quantity}) بـ ${item.price * item.quantity} ج\n`; }); 
-                    msg += `\n💰 *الإجمالي المطلوب:* ${finalTotal} ج (شامل التوصيل)\n\n(أرجو التأكيد)`; 
-                    window.open(`https://wa.me/${pureWa}?text=${encodeURIComponent(msg)}`, '_blank'); 
-                } else { 
-                    window.showToast('تم تأكيد طلبك بنجاح!', 'success'); 
+                if (method === 'عبر واتساب') {
+                    let msg = `*طلب جديد* 🌿\n\n👤 ${name}\n📞 ${phone1}\n📍 ${gov} - ${city}\n🗺️ الخريطة: ${mapAddress}\n🏠 التفاصيل: ${addressDetails}\n💳 الدفع: ${payMethod}\n🔗 ${mapLink}\n`;
+                    if(receiptUrl) msg += `\n🧾 *إيصال التحويل:* ${receiptUrl}\n`;
+                    msg += `\n🛍️ *المنتجات:*\n`;
+                    selectedItems.forEach(item => { msg += `- ${item.name} (${item.quantity}) بـ ${item.price * item.quantity} ج\n`; });
+                    msg += `\n💰 *الإجمالي المطلوب:* ${finalTotal} ج (شامل التوصيل)\n\n(أرجو التأكيد)`;
+                    window.open(`https://wa.me/${pureWa}?text=${encodeURIComponent(msg)}`, '_blank');
+                } else {
+                    window.showToast('تم تأكيد طلبك بنجاح!', 'success');
                 }
-                
+
                 cart = cart.filter(item => item.selected === false);
-                localStorage.setItem('cart', JSON.stringify(cart)); localStorage.removeItem('cart_last_updated'); 
-                
+                localStorage.setItem('cart', JSON.stringify(cart)); localStorage.removeItem('cart_last_updated');
+
         window.hashString = async function(str) {
             const buffer = new TextEncoder().encode(str);
             const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
             const hashArray = Array.from(new Uint8Array(hashBuffer));
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         };
-        
+
         window.escapeHTML = function(str) {
             if(!str) return "";
             return String(str).replace(/[&<>'"]/g, tag => ({
@@ -1286,17 +1264,16 @@ try {
             }[tag]));
         };
 
-        window.loyaltyDiscountFixed = 0; window.loyaltyPointsUsedTemp = 0; 
-                window.updateCartUI(); 
-                
-                let pci = document.getElementById('promo-code-input'); if(pci) pci.value = ''; currentDiscountPercent = 0; appliedPromoCode = ''; 
-                let dr = document.getElementById('discount-row'); if(dr) dr.style.display = 'none'; 
-                let orf = document.getElementById('order-receipt-file'); if(orf) orf.value = ''; 
+        window.loyaltyDiscountFixed = 0; window.loyaltyPointsUsedTemp = 0;
+                window.updateCartUI();
+
+                let pci = document.getElementById('promo-code-input'); if(pci) pci.value = ''; currentDiscountPercent = 0; appliedPromoCode = '';
+                let dr = document.getElementById('discount-row'); if(dr) dr.style.display = 'none';
+                let orf = document.getElementById('order-receipt-file'); if(orf) orf.value = '';
                 document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false); window.showPanel('customer-orders');
             } catch (error) { console.error("Order Process Error: ", error); window.showToast('حدث خطأ في الاتصال بقاعدة البيانات. حاول مجدداً.', 'error'); document.querySelectorAll('.checkout-submit-btn').forEach(b => b.disabled = false); }
         }
 
-        
         window.sendGlobalNotification = async function() {
             let msgInput = document.getElementById('admin-notif-msg');
             let msg = msgInput ? msgInput.value.trim() : "";
@@ -1308,8 +1285,7 @@ try {
                     date: new Date().toISOString()
                 };
                 await addDoc(collection(db, 'global_notifications'), notifObj);
-                
-                // Add to all users
+
                 const { getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
                 const usersSnap = await getDocs(collection(db, 'users'));
                 usersSnap.forEach(async (uDoc) => {
@@ -1320,7 +1296,7 @@ try {
                         });
                     } catch(e){}
                 });
-                
+
                 if(msgInput) msgInput.value = '';
                 window.showToast('تم إرسال الإشعار للجميع!', 'success');
             } catch(e) {
@@ -1329,7 +1305,6 @@ try {
             }
         };
 
-        
         window.deleteGlobalNotification = async function(docId) {
             if(confirm('حذف الإشعار من السجل؟')) {
                 try {
@@ -1343,8 +1318,6 @@ try {
 
         window.getStepIndex = function(status) { if(status === 'قيد المراجعة') return 1; if(status === 'تم التجهيز') return 2; if(status === 'تم الشحن') return 3; if(status === 'تم التوصيل ✅' || status === 'تم التوصيل') return 4; return 0; }
 
-        
-        
         window.loadCustomerOrders = function() {
             if(!currentUser) return; let filterKey = currentUser.email || currentUser.phoneNumber; if(!filterKey) return;
             onSnapshot(query(collection(db, 'orders'), where('customerEmail', '==', filterKey)), (snapshot) => {
@@ -1357,7 +1330,7 @@ try {
                     let itemsHtml = ''; order.items.forEach(item => { itemsHtml += `<li>${item.name} <b style="color:var(--primary);">(${item.quantity})</b></li>`; });
                     let step = window.getStepIndex(order.status);
                     let trackerHtml = '';
-                    
+
                     let badgeClass = 'status-pending';
                     let statusIcon = '🕒';
                     if(order.status.includes('تجهيز')) { badgeClass = 'status-prep'; statusIcon = '📦'; }
@@ -1369,13 +1342,13 @@ try {
                         let t1 = window.currentLang==='ar'?'مراجعة':'Review'; let t2 = window.currentLang==='ar'?'تجهيز':'Prep'; let t3 = window.currentLang==='ar'?'شحن':'Ship'; let t4 = window.currentLang==='ar'?'توصيل':'Delivered';
                         trackerHtml = `<div class="order-track" style="margin: 25px 0;"><div class="track-step ${step >= 1 ? (step>1?'done':'active') : ''}"><div class="track-dot">1</div>${t1}</div><div class="track-step ${step >= 2 ? (step>2?'done':'active') : ''}"><div class="track-dot">2</div>${t2}</div><div class="track-step ${step >= 3 ? (step>3?'done':'active') : ''}"><div class="track-dot">3</div>${t3}</div><div class="track-step ${step >= 4 ? 'done' : ''}"><div class="track-dot">4</div>${t4}</div></div>`;
                     }
-                    
+
                     let actionBtns = '';
                     if(order.status === 'قيد المراجعة') actionBtns = `<button type="button" class="btn btn-danger" style="margin-top:10px; width:100%; padding:12px; border-radius:8px;" onclick="window.cancelOrder('${order.id}')">إلغاء الطلب ❌</button>`;
                     else if (order.status === 'تم التوصيل ✅' || order.status === 'تم الشحن') actionBtns = `<button type="button" class="btn btn-outline" style="margin-top:10px; width:100%; border-color:var(--danger); color:var(--danger); padding:12px; border-radius:8px;" onclick="window.openReturnModal('${order.id}')">طلب استرجاع 🔄</button>`;
-                    
+
                     let dStr = new Date(order.orderDate).toLocaleDateString('ar-EG', { dateStyle: 'long' });
-                    
+
                     htmlContent += `
                     <div class="admin-msg-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; cursor:pointer; border-right:4px solid #028090;" onclick="window.openCustomerOrderModal('${order.id}')">
                         <div>
@@ -1393,17 +1366,15 @@ try {
             });
         }
 
-
-
         window.openCustomerOrderModal = function(orderId) {
             if(!window.customerOrdersArray) return;
             let order = window.customerOrdersArray.find(o => o.id === orderId);
             if(!order) return;
-            
+
             let itemsHtml = ''; order.items.forEach(item => { itemsHtml += `<li>${item.name} <b style="color:var(--primary);">(${item.quantity})</b></li>`; });
             let step = window.getStepIndex(order.status);
             let trackerHtml = '';
-            
+
             let badgeClass = 'status-pending';
             let statusIcon = '🕒';
             if(order.status.includes('تجهيز')) { badgeClass = 'status-prep'; statusIcon = '📦'; }
@@ -1415,13 +1386,13 @@ try {
                 let t1 = window.currentLang==='ar'?'مراجعة':'Review'; let t2 = window.currentLang==='ar'?'تجهيز':'Prep'; let t3 = window.currentLang==='ar'?'شحن':'Ship'; let t4 = window.currentLang==='ar'?'توصيل':'Delivered';
                 trackerHtml = `<div class="order-track" style="margin: 25px 0;"><div class="track-step ${step >= 1 ? (step>1?'done':'active') : ''}"><div class="track-dot">1</div>${t1}</div><div class="track-step ${step >= 2 ? (step>2?'done':'active') : ''}"><div class="track-dot">2</div>${t2}</div><div class="track-step ${step >= 3 ? (step>3?'done':'active') : ''}"><div class="track-dot">3</div>${t3}</div><div class="track-step ${step >= 4 ? 'done' : ''}"><div class="track-dot">4</div>${t4}</div></div>`;
             }
-            
+
             let actionBtns = '';
             if(order.status === 'قيد المراجعة') actionBtns = `<button type="button" class="btn btn-danger" style="margin-top:10px; width:100%; padding:12px; border-radius:8px;" onclick="window.cancelOrder('${order.id}'); document.getElementById('customer-order-modal').style.display='none';">إلغاء الطلب ❌</button>`;
             else if (order.status === 'تم التوصيل ✅' || order.status === 'تم الشحن') actionBtns = `<button type="button" class="btn btn-outline" style="margin-top:10px; width:100%; border-color:var(--danger); color:var(--danger); padding:12px; border-radius:8px;" onclick="window.openReturnModal('${order.id}'); document.getElementById('customer-order-modal').style.display='none';">طلب استرجاع 🔄</button>`;
-            
+
             let dStr = new Date(order.orderDate).toLocaleDateString('ar-EG', { dateStyle: 'long' });
-            
+
             let html = `
                 <div style="background:var(--input-bg); padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border-color);">
                     <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
@@ -1430,31 +1401,30 @@ try {
                     </div>
                     ${trackerHtml}
                 </div>
-                
+
                 <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px dashed var(--border-color); margin-bottom:15px;">
                     <strong style="color:var(--primary); display:block; margin-bottom:10px;">📦 المنتجات المطلوبة:</strong>
                     <ul style="margin:0; padding-right:20px;">${itemsHtml}</ul>
                 </div>
-                
+
                 <div style="display:flex; justify-content:space-between; align-items:center; background:#f0fdf4; padding:15px; border-radius:8px; border:1px solid #bbf7d0; margin-bottom:15px;">
                     <strong style="font-size:1.1rem;">الإجمالي المدفوع:</strong>
                     <strong style="color:#166534; font-size:1.4rem;">${order.totalAmount} ج</strong>
                 </div>
-                
+
                 ${actionBtns ? `<div>${actionBtns}</div>` : ''}
             `;
             document.getElementById('com-content').innerHTML = html;
             document.getElementById('customer-order-modal').style.display = 'flex';
         };
 
-        window.cancelOrder = async function(orderId) { 
-    if(confirm('متأكد من الإلغاء؟')) { 
+        window.cancelOrder = async function(orderId) {
+    if(confirm('متأكد من الإلغاء؟')) {
         let orderDoc = await getDoc(doc(db, 'orders', orderId));
         if(orderDoc.exists()) {
             let oData = orderDoc.data();
-            await updateDoc(doc(db, 'orders', orderId), { status: 'ملغى من العميل ❌', canceledAt: new Date().toISOString(), updatedAt: new Date().toISOString(), unreadCancelByAdmin: true }); 
-            
-            // Restore loyalty points if they were used
+            await updateDoc(doc(db, 'orders', orderId), { status: 'ملغى من العميل ❌', canceledAt: new Date().toISOString(), updatedAt: new Date().toISOString(), unreadCancelByAdmin: true });
+
             if(oData.usedLoyaltyPoints && oData.userId) {
                 await updateDoc(doc(db, 'users', oData.userId), {
                     loyaltyPoints: increment(oData.usedLoyaltyPoints),
@@ -1463,18 +1433,15 @@ try {
                 });
             }
         }
-        window.showToast('تم الإلغاء.', 'success'); 
-    } 
+        window.showToast('تم الإلغاء.', 'success');
+    }
 }
 
-        
         window.openReturnModal = function(orderId) { let ri = document.getElementById('return-order-id'); if(ri) ri.value = orderId; let rn = document.getElementById('return-notes'); if(rn) rn.value = ''; let rif = document.getElementById('return-image-file'); if(rif) rif.value = ''; let rm = document.getElementById('return-modal'); if(rm) rm.style.display = 'flex'; }
         window.submitReturnRequest = async function() { let orderId = document.getElementById('return-order-id').value; let reason = document.getElementById('return-reason').value; let notes = document.getElementById('return-notes').value; let fileInput = document.getElementById('return-image-file'); if(!fileInput || fileInput.files.length === 0) { window.showToast('يرجى إرفاق صورة توضح المشكلة', 'error'); return; } let btn = document.getElementById('btn-submit-return'); if(btn) btn.disabled = true; let statusLabel = document.getElementById('return-upload-status'); if(statusLabel) statusLabel.style.display = 'block'; let returnImageUrl = null; try { const formData = new FormData(); formData.append('image', fileInput.files[0]); const res = await fetch(`https://api.imgbb.com/1/upload?key=ROUTED_TO_CLOUDINARY`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { returnImageUrl = data.data.url; } else { throw new Error(); } await addDoc(collection(db, 'return_requests'), { orderId: orderId, customerEmail: currentUser.email || currentUser.phoneNumber, reason: reason, notes: notes, imageUrl: returnImageUrl, status: 'قيد المراجعة', date: new Date().toISOString() }); await updateDoc(doc(db, 'orders', orderId), { status: 'طلب استرجاع قيد المراجعة 🔄' }); window.showToast('تم إرسال طلب الاسترجاع بنجاح', 'success'); let rm = document.getElementById('return-modal'); if(rm) rm.style.display = 'none'; } catch(e) { window.showToast('فشل إرسال الطلب', 'error'); } if(btn) btn.disabled = false; if(statusLabel) statusLabel.style.display = 'none'; }
 
         window.filterAdminOrders = function(status) { currentAdminOrderFilter = status; document.querySelectorAll('#admin-orders-panel .filter-btn').forEach(btn => btn.classList.remove('active')); if(event && event.target && event.target.classList) event.target.classList.add('active'); window.renderAdminOrdersUI();  }
-        
-        
-        
+
         window.renderAdminOrdersUI = function() {
             const container = document.getElementById('admin-orders-container'); if(!container) return;
             if(adminOrdersArray.length === 0) { container.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;"><span style="font-size:3rem; display:block; margin-bottom:10px;">📭</span><h3>لا توجد طلبات هنا</h3></div>'; return; }
@@ -1484,9 +1451,9 @@ try {
             filtered.forEach((data) => {
                 let badgeClass = 'status-pending';
                 if(data.status.includes('تجهيز')) badgeClass = 'status-prep'; else if(data.status.includes('شحن')) badgeClass = 'status-shipped'; else if(data.status.includes('توصيل')) badgeClass = 'status-delivered'; else if(data.status.includes('رفض') || data.status.includes('لغى')) badgeClass = 'status-canceled';
-                
+
                 let dStr = new Date(data.orderDate).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
-                
+
                 htmlContent += `
                 <div class="admin-msg-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; cursor:pointer; border-right:4px solid var(--secondary);" onclick="window.openAdminOrderModal('${data.id}')">
                     <div>
@@ -1501,13 +1468,13 @@ try {
             });
             container.innerHTML = htmlContent;
         };
-        
+
         window.openAdminOrderModal = function(id) {
             let data = adminOrdersArray.find(o => o.id === id);
             if(!data) return;
             let itemsHtml = ''; data.items.forEach(item => { itemsHtml += `<li>${item.name} <b style="color:var(--secondary);">(${item.quantity})</b></li>`; });
             let receiptHtml = data.receiptUrl ? `<a href="${data.receiptUrl}" target="_blank" class="btn btn-outline" style="padding:6px 12px; font-size:0.85rem;">📄 عرض الإيصال</a>` : '';
-            
+
             let html = `
                 <div style="background:var(--input-bg); padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border-color);">
                     <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span><strong>العميل:</strong> ${data.customerName}</span><span><strong>الهاتف:</strong> ${data.phones.primary}</span></div>
@@ -1515,17 +1482,17 @@ try {
                     <div style="margin-bottom:10px; background:#e0f7fa; padding:10px; border-radius:6px;"><strong>العنوان التفصيلي:</strong> ${data.location.details}</div>
                     ${data.location.mapLink ? `<a href="${data.location.mapLink}" target="_blank" class="btn btn-info" style="display:inline-block; padding:6px 12px; font-size:0.9rem; margin-bottom:10px;">🗺️ فتح الموقع على الخريطة</a>` : ''}
                 </div>
-                
+
                 <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px dashed var(--border-color); margin-bottom:15px;">
                     <strong style="color:var(--primary); display:block; margin-bottom:10px;">📦 المنتجات:</strong>
                     <ul style="margin:0; padding-right:20px;">${itemsHtml}</ul>
                 </div>
-                
+
                 <div style="display:flex; justify-content:space-between; align-items:center; background:#f0fdf4; padding:15px; border-radius:8px; border:1px solid #bbf7d0; margin-bottom:15px;">
                     <strong style="font-size:1.1rem;">الإجمالي المطلوب:</strong>
                     <strong style="color:#166534; font-size:1.4rem;">${data.totalAmount} ج</strong>
                 </div>
-                
+
                 <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; background:var(--panel-bg); padding:15px; border-radius:8px; border:1px solid var(--border-color);">
                     <div style="flex:1; min-width:200px;">
                         <label style="font-weight:bold; font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:5px;">تحديث حالة الطلب:</label>
@@ -1539,7 +1506,7 @@ try {
                         </select>
                     </div>
                     ${receiptHtml}
-                    
+
                     <button type="button" class="btn btn-outline" style="border-color:#17a2b8; color:#17a2b8; padding:10px 15px; border-radius:8px; font-size:0.9rem;" onclick="window.printOrder('${data.id}')">🖨️ طباعة الفاتورة</button>
                     <button type="button" class="btn btn-danger" style="padding:10px 15px; border-radius:8px; font-size:0.9rem;" onclick="window.deleteAdminOrder('${data.id}'); document.getElementById('admin-order-modal').style.display='none';">حذف الطلب 🗑️</button>
 
@@ -1559,14 +1526,14 @@ window.deleteAdminOrder = async function(orderId) { if(confirm('هل أنت مت
                 const txt = msgInput.value.trim();
                 if(!txt || !currentUser) return;
                 msgInput.value = '';
-                
+
                 let chatId = currentUser.email || currentUser.phoneNumber || currentUser.uid;
                 let dName = currentUser.displayName || (chatId.includes('@') ? chatId.split('@')[0] : chatId);
                 let nowIso = new Date().toISOString();
                 let replyIso = new Date(Date.now() + 1000).toISOString();
-                
-                let arMsg = (storeSettings.autoReplyMessage && storeSettings.autoReplyMessage.trim() !== '') 
-                    ? storeSettings.autoReplyMessage.trim() 
+
+                let arMsg = (storeSettings.autoReplyMessage && storeSettings.autoReplyMessage.trim() !== '')
+                    ? storeSettings.autoReplyMessage.trim()
                     : 'تم إرسال رسالتك بنجاح ✅ وبمجرد توفر موظف خدمة العملاء سيتم الرد عليك في أسرع وقت.';
 
                 let msg = { sender: 'customer', text: txt, timestamp: nowIso };
@@ -1621,21 +1588,21 @@ window.executeBuyNow = function() {
     let id = activeProductForReview;
     const product = products.find(p => p.id === id); if(!product) return;
     let safeName = product.name.replace(/'/g, "\\'");
-    let priceToUse = product.price; let finalName = safeName; let variantSuffix = ""; let img = (product.images && product.images.length > 0) ? product.images[0] : (product.imageUrl || 'https://via.placeholder.com/300'); 
-    if(activeVariantForCart) { priceToUse = activeVariantForCart.price; finalName = `${safeName} (${activeVariantForCart.name})`; variantSuffix = activeVariantForCart.name; } 
-    
+    let priceToUse = product.price; let finalName = safeName; let variantSuffix = ""; let img = (product.images && product.images.length > 0) ? product.images[0] : (product.imageUrl || 'https://via.placeholder.com/300');
+    if(activeVariantForCart) { priceToUse = activeVariantForCart.price; finalName = `${safeName} (${activeVariantForCart.name})`; variantSuffix = activeVariantForCart.name; }
+
     let cartItemId = variantSuffix ? `${id}_${variantSuffix}` : id;
     let existingItem = cart.find(item => item.cartItemId === cartItemId);
     if (!existingItem) {
         cart.push({ id: id, cartItemId: cartItemId, name: finalName, price: Number(priceToUse), imageUrl: img, quantity: 1, variant: variantSuffix, selected: true });
     } else {
-        existingItem.selected = true; 
+        existingItem.selected = true;
     }
     localStorage.setItem('cart', JSON.stringify(cart));
     window.updateCartUI();
     window.closeProductModal();
     window.showPanel('checkout');
-    // Ensure form total is updated
+
     window.updateInvoiceUI();
 }
 
@@ -1652,9 +1619,9 @@ window.bulkUpdateOrderStatus = async function() {
     if(selectedIds.length === 0) { window.showToast('الرجاء تحديد طلب واحد على الأقل', 'error'); return; }
     if(confirm(`هل أنت متأكد من تغيير حالة ${selectedIds.length} طلب إلى "تم الشحن"؟`)) {
         try {
-            for(let id of selectedIds) { 
+            for(let id of selectedIds) {
                 const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-                await updateDoc(doc(db, 'orders', id), { status: 'تم الشحن' }); 
+                await updateDoc(doc(db, 'orders', id), { status: 'تم الشحن' });
             }
             window.showToast('تم تحديث الطلبات بنجاح!', 'success');
         } catch(e) { window.showToast('حدث خطأ أثناء التحديث', 'error'); }
@@ -1665,13 +1632,13 @@ window.showUserHistory = function(userId, userName) {
     let container = document.getElementById('admin-users-container');
     let userOrdersList = adminOrdersArray.filter(o => o.userId === userId);
     let totalSpent = userOrdersList.filter(o => o.status === 'تم التوصيل ✅').reduce((sum, o) => sum + Number(o.totalAmount), 0);
-    
+
     let html = `<button type="button" class="btn btn-outline" style="margin-bottom:15px; border-color:#6f42c1; color:#6f42c1;" onclick="window.loadAdminUsers()">🔙 العودة للقائمة</button>`;
     html += `<div style="background:var(--input-bg); padding:15px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:15px;">`;
     html += `<h3 style="margin-top:0; color:var(--primary);">سجل العميل: ${userName || 'غير مسجل'}</h3>`;
     html += `<p>إجمالي المشتريات المكتملة: <strong style="color:var(--secondary); font-size:1.2rem;">${totalSpent} ج</strong></p>`;
     html += `<p>عدد الطلبات: <strong>${userOrdersList.length}</strong> طلب</p></div>`;
-    
+
     if(userOrdersList.length === 0) {
         html += `<p style="text-align:center; color:var(--text-muted);">هذا العميل لم يقم بأي طلبات بعد.</p>`;
     } else {
@@ -1682,7 +1649,6 @@ window.showUserHistory = function(userId, userName) {
     }
     container.innerHTML = html;
 }
-
 
         window.shareProduct = function() {
             if(!activeProductForReview) return;
@@ -1713,24 +1679,21 @@ window.showUserHistory = function(userId, userName) {
             }, 1000);
         });
 
-
-
         window.addEventListener('popstate', (event) => {
             if (event.state && event.state.productId) {
                 window.openProductModal(event.state.productId);
             } else {
-                let pm = document.getElementById('product-modal'); 
+                let pm = document.getElementById('product-modal');
                 if(pm) pm.style.display = 'none';
             }
         });
-
 
         window.renderVisualBar = function() {
             let container = document.getElementById('visual-scroll-bar');
             if(!container) return;
             let mode = storeSettings.visualBarMode || 'categories';
             if(mode === 'none' || !isProductsLoaded) { container.style.display = 'none'; return; }
-            
+
             let html = '';
             if(mode === 'categories') {
                 let cats = storeSettings.categories || [];
@@ -1757,25 +1720,23 @@ window.showUserHistory = function(userId, userName) {
             window.startVisualAutoScroll();
         };
 
-
         window.askProductWa = function(id) {
             let p = products.find(x => x.id === id);
             if(!p) return;
             let waBtnInfo = storeSettings.floatingButtons ? storeSettings.floatingButtons.find(b => b.icon === '📱' || b.link.includes('wa.me')) : null;
             let pureWa = waBtnInfo ? waBtnInfo.link.split('/').pop() : "201018631768";
             if(pureWa && !pureWa.startsWith('20') && pureWa.length === 10) pureWa = '20' + pureWa;
-            let msg = window.currentLang === 'ar' 
+            let msg = window.currentLang === 'ar'
                 ? `مرحباً، أستفسر عن المنتج: *${p.name}*` + (p.price ? `\nوالذي سعره: ${p.price} ج` : '')
                 : `Hello, I'm inquiring about: *${p.name}*` + (p.price ? `\nPrice: ${p.price} EGP` : '');
             window.open(`https://wa.me/${pureWa}?text=${encodeURIComponent(msg)}`, '_blank');
         };
 
-
         window.printOrder = function(id) {
             let data = adminOrdersArray.find(o => o.id === id);
             if(!data) return;
             let itemsHtml = data.items.map(i => `<tr><td style="padding:8px; border:1px solid #ddd;">${i.name}</td><td style="padding:8px; border:1px solid #ddd;">${i.quantity}</td><td style="padding:8px; border:1px solid #ddd;">${i.price * i.quantity} ج</td></tr>`).join('');
-            
+
             let printWindow = window.open('', '_blank');
             printWindow.document.write(`
                 <html dir="rtl" lang="ar">
@@ -1814,7 +1775,7 @@ window.showUserHistory = function(userId, userName) {
                         <p><strong>مصاريف الشحن:</strong> ${data.shippingCost} ج</p>
                     </div>
                     <div class="total">الإجمالي النهائي المطلوب: ${data.totalAmount} ج</div>
-                    
+
                     <div style="margin-top:30px; text-align:center;">
                         <button onclick="window.print()" style="padding:10px 20px; font-size:1.1rem; background:#3c521e; color:white; border:none; border-radius:8px; cursor:pointer;">🖨️ طباعة الفاتورة الآن</button>
                     </div>
@@ -1823,7 +1784,6 @@ window.showUserHistory = function(userId, userName) {
             `);
             printWindow.document.close();
         };
-
 
         window.toggleAbandonedCartsList = function() {
             let listEl = document.getElementById('admin-abandoned-carts-list');
@@ -1858,9 +1818,9 @@ window.showUserHistory = function(userId, userName) {
                         let phone = data.phone1 || data.email || 'غير مسجل';
                         let pureWa = String(phone).replace(/\D/g, '');
                         if(pureWa && !pureWa.startsWith('20') && pureWa.length >= 10) pureWa = '20' + pureWa;
-                        
+
                         let waText = 'مرحباً ' + (data.name || 'عميلنا العزيز') + '، لاحظنا وجود منتجات في سلة مشترياتك 🛒 هل واجهت مشكلة أثناء الدفع؟ خصم خاص بانتظارك لو أكملت الطلب اليوم!';
-                        let waBtn = pureWa.length >= 10 
+                        let waBtn = pureWa.length >= 10
                             ? `<a href="https://wa.me/${pureWa}?text=${encodeURIComponent(waText)}" target="_blank" class="btn btn-outline" style="border-color:#25D366; color:#25D366; padding:5px 10px; font-size:0.85rem; text-decoration:none;">💬 تواصل واتساب</a>`
                             : `<span style="font-size:0.8rem; color:var(--text-muted);">لا يوجد رقم هاتف</span>`;
 
@@ -1876,8 +1836,8 @@ window.showUserHistory = function(userId, userName) {
                     }
                 });
                 if(badge) badge.textContent = count;
-                container.innerHTML = count === 0 
-                    ? '<p style="color:var(--text-muted); font-size:0.9rem;">لا توجد سلال متروكة حالياً.</p>' 
+                container.innerHTML = count === 0
+                    ? '<p style="color:var(--text-muted); font-size:0.9rem;">لا توجد سلال متروكة حالياً.</p>'
                     : abandonedHtml;
             });
         };
@@ -1901,8 +1861,6 @@ window.showUserHistory = function(userId, userName) {
             container.innerHTML = html;
         };
 
-
-        // --- المرحلة الأولى: التحكم الشامل في كافة العناصر وتفعيل/إيقاف كل ميزة ---
         const REMOTE_GOVS = ["شمال سيناء", "جنوب سيناء", "أسوان", "البحر الأحمر", "الوادي الجديد", "مطروح"];
 
         window.getShippingCostForGov = function(gov) {
@@ -1978,7 +1936,7 @@ window.showUserHistory = function(userId, userName) {
 
             let btnCnlPromo = document.getElementById('btn-cancel-promo');
             if(btnCnlPromo) btnCnlPromo.style.display = currentDiscountPercent > 0 ? 'block' : 'none';
-            
+
             let btnRdmLoyalty = document.getElementById('btn-redeem-loyalty');
             let btnCnlLoyalty = document.getElementById('btn-cancel-loyalty');
             if(btnRdmLoyalty && btnCnlLoyalty) {
@@ -2221,8 +2179,6 @@ window.showUserHistory = function(userId, userName) {
             origSocialProof();
         };
 
-
-        // === المرحلة العالمية (الجزء الأول V49): دوال الواجهة وتسهيلات العملاء ===
         let heroSlideTimer = null;
         let currentHeroSlideIndex = 0;
 
@@ -2298,7 +2254,6 @@ window.showUserHistory = function(userId, userName) {
             currentHeroSlideIndex = idx;
         };
 
-        // حساب موعد التوصيل المتوقع
         window.getEstimatedDeliveryText = function() {
             let minD = Number(storeSettings.deliveryMinDays) || 2;
             let maxD = Number(storeSettings.deliveryMaxDays) || 4;
@@ -2321,7 +2276,6 @@ window.showUserHistory = function(userId, userName) {
             });
         };
 
-        // عرض جدول المواصفات والأسئلة الشائعة داخل نافذة المنتج
         window.renderProductSpecsAndFAQ = function(product) {
             let sec = document.getElementById('modal-specs-faq-section');
             let tbl = document.getElementById('modal-specs-table');
@@ -2368,7 +2322,6 @@ window.showUserHistory = function(userId, userName) {
             faqCont.innerHTML = fHtml;
         };
 
-        // ربط فتح نافذة المنتج بإظهار المواصفات وموعد التوصيل المتوقع
         const origOpenProductModal = window.openProductModal;
         window.openProductModal = function(id) {
             origOpenProductModal(id);
@@ -2377,7 +2330,6 @@ window.showUserHistory = function(userId, userName) {
             window.renderProductSpecsAndFAQ(product);
         };
 
-        // ربط تغيير الصفحات بإظهار السلايدر في الرئيسية
         const origShowPanel = window.showPanel;
         window.showPanel = function(panelId) {
             origShowPanel(panelId);
@@ -2390,7 +2342,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // عرض أزرار الكوبونات الجاهزة بضغطة واحدة في السلة والدفع
         window.renderOneTapCoupons = function() {
             let show = storeSettings.enableOneTapCoupons !== false && promoCodesList && promoCodesList.length > 0;
             ['one-tap-coupons-cart', 'one-tap-coupons-checkout'].forEach(cid => {
@@ -2409,7 +2360,6 @@ window.showUserHistory = function(userId, userName) {
             });
         };
 
-        // إعادة الطلب بضغطة واحدة (Buy Again)
         window.buyAgainOrder = function(orderId) {
             let sourceList = (window.customerOrdersArray && window.customerOrdersArray.length > 0) ? window.customerOrdersArray : (window.phoneTrackedOrders || []);
             let ord = sourceList.find(o => o.id === orderId);
@@ -2439,7 +2389,6 @@ window.showUserHistory = function(userId, userName) {
             window.showPanel('cart');
         };
 
-        // تتبع الطلب برقم الهاتف للزوار والعملاء
         window.phoneTrackedOrders = [];
         window.trackOrderByPhone = async function() {
             let inp = document.getElementById('track-phone-input');
@@ -2498,7 +2447,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // دمج إعدادات الجزء الأول في applySettingsToUI و saveSettings
         const prevApplySettingsV48 = window.applySettingsToUI;
         window.applySettingsToUI = function() {
             prevApplySettingsV48();
@@ -2563,8 +2511,6 @@ window.showUserHistory = function(userId, userName) {
             await prevSaveSettingsV48();
         };
 
-
-        // === الجزء الثاني V50: تثبيت وإخفاء المنتجات + بحث وتحديث جماعي للطلبات ===
         window.togglePinProduct = async function(id, currentlyPinned) {
             try {
                 await updateDoc(doc(db, 'products', id), { isPinned: !currentlyPinned });
@@ -2688,8 +2634,6 @@ window.showUserHistory = function(userId, userName) {
             await prevSaveSettingsV49();
         };
 
-
-        // === الجزء الثالث والأخير V51: إحصائيات الأكثر مبيعاً + النسخ الاحتياطي + التقييم السريع بعد الاستلام ===
         window.renderTopAnalytics = function() {
             let box = document.getElementById('admin-advanced-analytics-box');
             if (box) box.style.display = storeSettings.enableTopAnalytics !== false ? 'grid' : 'none';
@@ -2789,7 +2733,6 @@ window.showUserHistory = function(userId, userName) {
             reader.readAsText(file);
         };
 
-        // نافذة التقييم السريع بعد التوصيل داخل تفاصيل طلب العميل
         const origOpenCustOrderModal = window.openCustomerOrderModal;
         window.openCustomerOrderModal = function(orderId) {
             origOpenCustOrderModal(orderId);
@@ -2838,8 +2781,6 @@ window.showUserHistory = function(userId, userName) {
             await prevSaveSettingsV50();
         };
 
-
-        // === النسخة V52: طي الفلاتر والتصميم المدمج السريع وإخفاء شريط الإدارة الفارغ للعملاء ===
         window.toggleAdvancedFilters = function() {
             let box = document.getElementById('advanced-filters-box');
             let arrow = document.getElementById('filter-arrow-icon');
@@ -2888,12 +2829,6 @@ window.showUserHistory = function(userId, userName) {
             await prevSaveSettingsV51();
         };
 
-
-        // =========================================================================
-        // === النسخة V53: الميزات العالمية النهائية + محرك الترجمة الشامل 100% ===
-        // =========================================================================
-
-        // 1. تتبع مصدر الزيارة (Traffic Source Detection)
         window.getDetectedTrafficSource = function() {
             let saved = sessionStorage.getItem('zait_traffic_source');
             if (saved) return saved;
@@ -2912,7 +2847,6 @@ window.showUserHistory = function(userId, userName) {
         };
         window.getDetectedTrafficSource();
 
-        // 2. طلب "بلغني عند التوفر" للمنتجات النافدة
         window.requestBackInStock = async function(event, productId, productName) {
             if (event) event.stopPropagation();
             let defaultContact = '';
@@ -2981,9 +2915,8 @@ window.showUserHistory = function(userId, userName) {
             } catch (e) {}
         };
 
-        // 3. حساب "إجمالي ما وفرته اليوم" + اقتراح منتج مكمل داخل السلة (In-Cart Upsell)
         window.renderSavingsAndUpsell = function() {
-            // A. Total Savings Banner
+
             let showSavings = storeSettings.enableSavingsBadge !== false;
             let oldPriceSaved = 0;
             cart.forEach(item => {
@@ -3015,7 +2948,6 @@ window.showUserHistory = function(userId, userName) {
                 }
             });
 
-            // B. In-Cart Upsell
             let upsellBox = document.getElementById('cart-upsell-container');
             if (!upsellBox) return;
             if (storeSettings.enableCartUpsell === false || cart.length === 0 || products.length === 0) {
@@ -3050,11 +2982,10 @@ window.showUserHistory = function(userId, userName) {
             window.renderSavingsAndUpsell();
         };
 
-        // 4. مؤقت "اطلب خلال X ساعات للشحن اليوم"
         window.updateDispatchTimerUI = function() {
             let show = storeSettings.enableDispatchTimer !== false;
             let now = new Date();
-            let cutoff = 18; // 6 PM daily dispatch cutoff
+            let cutoff = 18;
             let remHours = cutoff - now.getHours() - 1;
             let remMins = 59 - now.getMinutes();
             if (remHours < 0) {
@@ -3071,7 +3002,6 @@ window.showUserHistory = function(userId, userName) {
             });
         };
 
-        // 5. نوافذ السياسات والثقة وشهادة الجودة
         window.openPolicyModal = function(type) {
             let modal = document.getElementById('policy-info-modal');
             let titleEl = document.getElementById('policy-modal-title');
@@ -3103,7 +3033,6 @@ window.showUserHistory = function(userId, userName) {
             modal.style.display = 'flex';
         };
 
-        // 6. معرض صور العملاء في صفحة التقييمات
         const origLoadAllReviewsV52 = window.loadAllReviews;
         window.loadAllReviews = function() {
             origLoadAllReviewsV52();
@@ -3128,7 +3057,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // 7. تصدير شيت شركات الشحن (Bosta / Mylerz CSV) + إحصائية مصادر الزيارات
         window.exportCourierCSV = function() {
             if (adminOrdersArray.length === 0) {
                 window.showToast('لا توجد طلبات لتصديرها', 'error');
@@ -3181,7 +3109,6 @@ window.showUserHistory = function(userId, userName) {
             cont.innerHTML = html;
         };
 
-        // ربط فتح المنتج والمودال بـ V53
         const origOpenProductModalV52 = window.openProductModal;
         window.openProductModal = function(id) {
             origOpenProductModalV52(id);
@@ -3256,9 +3183,6 @@ window.showUserHistory = function(userId, userName) {
             await prevSaveSettingsV52();
         };
 
-        // =========================================================================
-        // === 8. محرك الترجمة الشامل ثنائي اللغة (100% Arabic <-> English) ===
-        // =========================================================================
         window.FULL_AR_TO_EN = {
             "زيت الشجرة المباركة": "Blessed Tree Oil",
             "🌿 زيت الشجرة المباركة": "🌿 Blessed Tree Oil",
@@ -3464,7 +3388,6 @@ window.showUserHistory = function(userId, userName) {
             "محمد من القاهرة": "Mohamed from Cairo"
         };
 
-        // ترجمة أسماء المحافظات
         const GOV_EN_MAP = {
             "القاهرة": "Cairo", "الجيزة": "Giza", "الشرقية": "Sharqia", "الإسكندرية": "Alexandria",
             "القليوبية": "Qalyubia", "الدقهلية": "Dakahlia", "البحيرة": "Beheira", "الغربية": "Gharbia",
@@ -3476,7 +3399,6 @@ window.showUserHistory = function(userId, userName) {
         };
         Object.assign(window.FULL_AR_TO_EN, GOV_EN_MAP);
 
-        // ترجمة الـ Placeholders
         window.PLACEHOLDER_AR_TO_EN = {
             "ابحث عن منتج...": "Search for a product...",
             "أقل سعر": "Min Price",
@@ -3497,7 +3419,6 @@ window.showUserHistory = function(userId, userName) {
             "اكتب تفاصيل المشكلة هنا...": "Describe the issue in detail..."
         };
 
-        // دالة ذكية لتحويل أي نص عربي ثابت أو ديناميكي إلى الإنجليزية
         window.translateTextToEn = function(str) {
             if (!str) return str;
             let trimmed = str.trim();
@@ -3506,7 +3427,7 @@ window.showUserHistory = function(userId, userName) {
                 return str.replace(trimmed, window.FULL_AR_TO_EN[trimmed]);
             }
             let out = str;
-            // استبدالات ديناميكية للأرقام والأسعار والعبارات المركبة
+
             out = out.replace(/يبدأ من\s*(\d+)\s*ج/g, 'Starts from $1 EGP');
             out = out.replace(/السعر:\s*(\d+)\s*ج/g, 'Price: $1 EGP');
             out = out.replace(/الكمية المتاحة:\s*(\d+)/g, 'Available Stock: $1');
@@ -3533,7 +3454,7 @@ window.showUserHistory = function(userId, userName) {
             isTranslatingDOM = true;
             try {
                 const isEn = window.currentLang === 'en';
-                // 1. ترجمة جميع الـ Placeholders
+
                 root.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
                     if (!el.dataset.origArPh) {
                         el.dataset.origArPh = el.getAttribute('placeholder') || '';
@@ -3548,7 +3469,6 @@ window.showUserHistory = function(userId, userName) {
                     }
                 });
 
-                // 2. ترجمة جميع النصوص عبر TreeWalker
                 const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
                 let node;
                 const arRegex = /[\u0600-\u06FF]/;
@@ -3557,8 +3477,6 @@ window.showUserHistory = function(userId, userName) {
                     if (!parent) continue;
                     let tag = parent.tagName;
                     if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA') continue;
-                    // لا نترجم داخل لوحة الإعدادات المحمية الخاصة بالمدير حتى لا تتغير نصوص الإعدادات المحفوظة
-                    // ترجمة شاملة لكافة أقسام المتجر والإدارة
 
                     let val = node.nodeValue;
                     if (arRegex.test(val)) {
@@ -3582,7 +3500,6 @@ window.showUserHistory = function(userId, userName) {
             isTranslatingDOM = false;
         };
 
-        // مراقب ذكي لترجمة أي عنصر ديناميكي يظهر أثناء تفعيل اللغة الإنجليزية
         const domLangObserver = new MutationObserver(() => {
             if (window.currentLang === 'en' && !isTranslatingDOM) {
                 window.translateDOM(document.body);
@@ -3590,7 +3507,6 @@ window.showUserHistory = function(userId, userName) {
         });
         domLangObserver.observe(document.body, { childList: true, subtree: true });
 
-        // استبدال دالة toggleLanguage لتعمل بشكل شامل 100%
         window.toggleLanguage = function() {
             window.currentLang = window.currentLang === 'ar' ? 'en' : 'ar';
             document.documentElement.dir = window.currentLang === 'ar' ? 'rtl' : 'ltr';
@@ -3608,12 +3524,6 @@ window.showUserHistory = function(userId, userName) {
             window.translateDOM(document.body);
         };
 
-
-        // =========================================================================
-        // === النسخة V54 (الجزء الأول): التسويق التفاعلي وتسهيلات العميل الذكية ===
-        // =========================================================================
-
-        // 1. شريط ندرة المخزون والمبيعات (Scarcity Progress Bar)
         window.getScarcityBarHtml = function(product) {
             if (storeSettings.enableScarcityBar === false) return '';
             if (product.stock !== undefined && product.stock !== "" && Number(product.stock) <= 0) return '';
@@ -3628,7 +3538,6 @@ window.showUserHistory = function(userId, userName) {
             </div>`;
         };
 
-        // 2. عجلة الحظ التفاعلية (Spin & Win)
         window.openSpinWheelModal = function() {
             let modal = document.getElementById('spin-wheel-modal');
             if (modal) modal.style.display = 'flex';
@@ -3722,7 +3631,6 @@ window.showUserHistory = function(userId, userName) {
             } catch (e) {}
         };
 
-        // 3. شريط الهدية المجانية التلقائية في السلة (Free Gift Bar)
         window.getUnlockedFreeGiftName = function() {
             if (!storeSettings.enableFreeGift) return '';
             let thresh = Number(storeSettings.freeGiftThreshold) || 1500;
@@ -3763,7 +3671,6 @@ window.showUserHistory = function(userId, userName) {
             window.updateFreeGiftUI();
         };
 
-        // 4. أزرار الأسئلة الذكية الفورية في شات خدمة العملاء (Smart Chatbot Chips)
         window.triggerSmartBotChip = function(topic) {
             let container = document.getElementById('support-history-container');
             if (!container) return;
@@ -3801,7 +3708,6 @@ window.showUserHistory = function(userId, userName) {
             container.scrollTop = container.scrollHeight;
         };
 
-        // 5. دفتر العناوين المحفوظة للعميل (Saved Addresses Book)
         window.getSavedAddressesList = function() {
             try {
                 return JSON.parse(localStorage.getItem('zait_saved_addresses_book')) || [];
@@ -3886,7 +3792,6 @@ window.showUserHistory = function(userId, userName) {
             window.renderSavedAddressesBook();
         };
 
-        // 6. مقارنة المنتجات السريعة + حاسبة التوفير للأحجام (Product Compare & Value Calculator)
         window.compareProductIds = [];
         window.toggleCompareProduct = function(event, productId) {
             if (event) event.stopPropagation();
@@ -4058,7 +3963,6 @@ window.showUserHistory = function(userId, userName) {
             await prevSaveSettingsV53();
         };
 
-        // إضافة مصطلحات V54 للقاموس الإنجليزي
         Object.assign(window.FULL_AR_TO_EN, {
             "جرب حظك واربح!": "Spin & Win!",
             "عجلة الحظ والمكافآت": "Spin & Win Rewards",
@@ -4078,12 +3982,6 @@ window.showUserHistory = function(userId, userName) {
             "أدخل رقم هاتفك (واتساب)...": "Enter your WhatsApp phone number..."
         });
 
-
-        // =========================================================================
-        // === النسخة V55: عجلة الـ 7 هدايا المخصصة + تجديد الخميس + أدوات المدير ===
-        // =========================================================================
-
-        // 1. الـ 7 هدايا الافتراضية لعجلة الحظ (مع تحديد 3 هدايا مسموح الفوز بها افتراضياً)
         window.getDefaultWheel7Prizes = function() {
             return [
                 { label: "خصم 5% فوري", code: "WIN5", discount: 5, allowed: true },
@@ -4103,10 +4001,9 @@ window.showUserHistory = function(userId, userName) {
             return window.getDefaultWheel7Prizes();
         };
 
-        // حساب دورة يوم الخميس الحالية + وقت التجديد القادم يوم الخميس
         window.getThursdayCycleInfo = function() {
             let now = new Date();
-            let day = now.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+            let day = now.getDay();
             let daysSinceThu = (day - 4 + 7) % 7;
             let lastThu = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysSinceThu, 0, 0, 0, 0);
             let nextThu = new Date(lastThu.getTime() + 7 * 86400000);
@@ -4115,7 +4012,6 @@ window.showUserHistory = function(userId, userName) {
             return { cycleId, nextThu, remMs: Math.max(0, nextThu.getTime() - now.getTime()) };
         };
 
-        // عداد تنازلي حي ليوم الخميس القادم بالأيام والساعات والدقائق والثواني
         window.updateWheelThursdayCountdown = function() {
             let el = document.getElementById('wheel-thursday-countdown');
             if (!el) return;
@@ -4133,7 +4029,6 @@ window.showUserHistory = function(userId, userName) {
         };
         setInterval(window.updateWheelThursdayCountdown, 1000);
 
-        // رسم قائمة الـ 7 هدايا داخل نافذة العجلة للعميل
         window.renderWheelModalContent = function(highlightIdx = -1) {
             window.updateWheelThursdayCountdown();
             let prizes = window.getWheel7Prizes();
@@ -4147,7 +4042,6 @@ window.showUserHistory = function(userId, userName) {
                 `).join('');
             }
 
-            // التحقق من رقم الواتساب المحفوظ مسبقاً (يُطلب أول مرة فقط)
             let savedPhone = localStorage.getItem('zait_wheel_saved_phone') || '';
             let phoneInp = document.getElementById('wheel-phone-input');
             let savedBar = document.getElementById('wheel-saved-phone-bar');
@@ -4163,7 +4057,6 @@ window.showUserHistory = function(userId, userName) {
                 savedBar.style.display = 'none';
             }
 
-            // التحقق مما إذا كان العميل قد لف العجلة في دورة الخميس الحالية
             let info = window.getThursdayCycleInfo();
             let lastCycle = localStorage.getItem('zait_wheel_last_cycle');
             let lastPrizeJson = localStorage.getItem('zait_wheel_last_prize');
@@ -4235,11 +4128,10 @@ window.showUserHistory = function(userId, userName) {
                 return;
             }
 
-            // حفظ رقم الواتساب حتى لا يضطر العميل لكتابته مرة أخرى في الأسابيع القادمة
             localStorage.setItem('zait_wheel_saved_phone', phone);
 
             let prizes = window.getWheel7Prizes();
-            // اختيار الهدية حصرياً من الهدايا التي حددها الأدمن كـ (مسموح الفوز بها)
+
             let allowedIndices = [];
             prizes.forEach((p, idx) => { if (p.allowed) allowedIndices.push(idx); });
             if (allowedIndices.length === 0) allowedIndices = [0];
@@ -4252,7 +4144,6 @@ window.showUserHistory = function(userId, userName) {
             let resArea = document.getElementById('wheel-result-area');
             if (btn) btn.disabled = true;
 
-            // حساب زاوية الدوران لتقف العجلة على رقم الهدية الفائزة
             let sliceDeg = 360 / 7;
             let targetSliceCenter = (winningIndex * sliceDeg) + (sliceDeg / 2);
             let extraSpins = 5 * 360;
@@ -4267,7 +4158,7 @@ window.showUserHistory = function(userId, userName) {
             }
 
             setTimeout(async () => {
-                // تطبيق الجائزة للعميل
+
                 let winDisc = Number(winningPrize.discount) || 0;
                 let winCode = String(winningPrize.code || 'LUCKY').trim().toUpperCase();
                 if (winDisc > 0) {
@@ -4303,7 +4194,6 @@ window.showUserHistory = function(userId, userName) {
             }, 3700);
         };
 
-        // رسم محرر الهدايا الـ 7 داخل الإعدادات المحمية للأدمن
         window.renderAdminWheel7PrizesEditor = function() {
             let cont = document.getElementById('admin-wheel-7prizes-editor');
             if (!cont) return;
@@ -4356,7 +4246,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // 2. حاسبة صافي الربح الفعلي للمدير (Net Profit Tracker)
         window.renderNetProfitStat = function() {
             let card = document.getElementById('admin-net-profit-card');
             let statEl = document.getElementById('stat-net-profit');
@@ -4381,7 +4270,6 @@ window.showUserHistory = function(userId, userName) {
             statEl.textContent = `${totalNet.toLocaleString()} ج`;
         };
 
-        // 3. تعديل الأسعار الجماعي بضغطة زر (Bulk Price Editor)
         window.executeBulkPriceUpdate = async function() {
             let op = (document.getElementById('bulk-price-op') || {}).value || 'inc';
             let type = (document.getElementById('bulk-price-type') || {}).value || 'pct';
@@ -4411,7 +4299,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // 4. تصنيف العملاء (VIP / حظر) + إرسال حالة الطلب عبر واتساب من داخل تفاصيل الطلب
         window.getCustomerTagBadgeHtml = function(phone) {
             if (storeSettings.enableCustomerTags === false || !phone) return '';
             let clean = String(phone).replace(/\D/g, '');
@@ -4477,7 +4364,6 @@ window.showUserHistory = function(userId, userName) {
             aom.innerHTML += extraHtml;
         };
 
-        // 5. نظام دعوة الأصدقاء (Referral Link)
         window.getCustomerReferralLink = function() {
             let baseUrl = window.location.origin + window.location.pathname;
             let refCode = currentUser ? (currentUser.uid || '').slice(0, 6).toUpperCase() : 'FRIEND';
@@ -4500,7 +4386,6 @@ window.showUserHistory = function(userId, userName) {
             window.showToast(window.currentLang === 'en' ? 'Referral link copied! 📋' : 'تم نسخ رابط الدعوة بنجاح! 📋', 'success');
         };
 
-        // 6. القصص المصورة التفاعلية (Instagram-Style Stories)
         let instaStoryInterval = null;
         window.openInstaStoryModal = function(product) {
             if (!product) return;
@@ -4536,7 +4421,6 @@ window.showUserHistory = function(userId, userName) {
             if (modal) modal.style.display = 'none';
         };
 
-        // ربط الشريط المصور بالقصص التفاعلية عند تفعيلها
         const origRenderVisualBarV54 = window.renderVisualBar;
         window.renderVisualBar = function() {
             origRenderVisualBarV54();
@@ -4550,7 +4434,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // 7. تطبيق ثيمات المواسم وربط إعدادات V55
         window.applyStoreTheme = function() {
             document.body.classList.remove('theme-ramadan', 'theme-blackfriday', 'theme-luxury');
             if (storeSettings.enableSeasonalThemes !== false && storeSettings.storeThemeName && storeSettings.storeThemeName !== 'default') {
@@ -4618,7 +4501,6 @@ window.showUserHistory = function(userId, userName) {
             await prevSaveSettingsV54();
         };
 
-        // إضافة مصطلحات V55 للقاموس الإنجليزي
         Object.assign(window.FULL_AR_TO_EN, {
             "عجلة الحظ الأسبوعية (7 هدايا)": "Weekly Spin & Win (7 Prizes)",
             "فوائد زيت الزيتون السيناوي البكر وطريقة الاستخدام الصحيحة": "Benefits of Sinai Extra Virgin Olive Oil & Best Usage",
@@ -4637,10 +4519,6 @@ window.showUserHistory = function(userId, userName) {
             "أدخل رقم هاتفك (واتساب) لأول مرة فقط...": "Enter your WhatsApp number (first time only)..."
         });
 
-
-        // =========================================================================
-        // === النسخة V56: غرفة متابعة العمل والشغل المباشرة (Live Work Center) ===
-        // =========================================================================
         window.currentWorkHubFilter = 'all';
         window.workHubChatsArray = [];
         window.workHubStockAlerts = [];
@@ -4651,7 +4529,6 @@ window.showUserHistory = function(userId, userName) {
         window.workChatsUnsub = null;
         window.workAbandonedUnsub = null;
 
-        // تنبيه صوتي لطيف عند وصول طلب جديد أو رسالة أو إلغاء
         window.playWorkNotificationSound = function() {
             if (!window.workSoundEnabled) return;
             try {
@@ -4661,8 +4538,8 @@ window.showUserHistory = function(userId, userName) {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // A5
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
                 gain.gain.setValueAtTime(0.15, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
                 osc.connect(gain);
@@ -4685,7 +4562,6 @@ window.showUserHistory = function(userId, userName) {
             let btnSnd = document.getElementById('btn-toggle-work-sound');
             if (btnSnd) btnSnd.textContent = window.workSoundEnabled ? '🔊 الصوت: مفعل' : '🔇 الصوت: صامت';
 
-            // متابعة لحظية لمحادثات العملاء
             if (!window.workChatsUnsub) {
                 window.workChatsUnsub = onSnapshot(collection(db, 'chats'), (snap) => {
                     let arr = [];
@@ -4696,7 +4572,6 @@ window.showUserHistory = function(userId, userName) {
                 });
             }
 
-            // متابعة لحظية للسلال المتروكة
             if (!window.workAbandonedUnsub) {
                 window.workAbandonedUnsub = onSnapshot(collection(db, 'users'), (snap) => {
                     let arr = [];
@@ -4721,7 +4596,6 @@ window.showUserHistory = function(userId, userName) {
             window.renderAdminWorkHub();
         };
 
-        // إرسال رد فوري للعميل من داخل غرفة العمل مباشرة بدون مغادرة الصفحة
         window.sendInlineWorkChatReply = async function(chatId) {
             let inp = document.getElementById('wk-reply-inp-' + chatId);
             if (!inp || !inp.value.trim()) {
@@ -4759,7 +4633,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // بناء وعرض كل أحداث الشغل في شاشة واحدة مرتبة زمنياً
         window.renderAdminWorkHub = function() {
             if (!isCurrentUserAdmin) return;
             let container = document.getElementById('admin-work-stream-container');
@@ -4773,7 +4646,6 @@ window.showUserHistory = function(userId, userName) {
             let cancelsAndReturnsCount = 0;
             let leadsCount = 0;
 
-            // 1. جمع الطلبات (النشطة والملغاة)
             (adminOrdersArray || []).forEach(ord => {
                 let st = String(ord.status || '');
                 let isCanceled = st.includes('لغى') || st.includes('رفض');
@@ -4797,7 +4669,6 @@ window.showUserHistory = function(userId, userName) {
                 }
             });
 
-            // 2. جمع طلبات الاسترجاع
             (adminReturnsArray || []).forEach(ret => {
                 cancelsAndReturnsCount++;
                 events.push({
@@ -4808,7 +4679,6 @@ window.showUserHistory = function(userId, userName) {
                 });
             });
 
-            // 3. جمع رسائل خدمة العملاء
             (window.workHubChatsArray || []).forEach(chat => {
                 let msgs = chat.messages || [];
                 let lastCustMsg = [...msgs].reverse().find(m => m.sender === 'customer');
@@ -4823,7 +4693,6 @@ window.showUserHistory = function(userId, userName) {
                 });
             });
 
-            // 4. جمع السلال المتروكة وتنبيهات العملاء
             (window.workHubAbandonedUsers || []).forEach(u => {
                 leadsCount++;
                 events.push({
@@ -4834,7 +4703,6 @@ window.showUserHistory = function(userId, userName) {
                 });
             });
 
-            // تحديث العدادات العلوية وشارة زر (💼 العمل)
             let urgentTotal = pendingReviewOrdersCount + unrepliedChatsCount + cancelsAndReturnsCount;
             let badgeEl = document.getElementById('work-hub-badge');
             if (badgeEl) badgeEl.textContent = urgentTotal;
@@ -4853,7 +4721,6 @@ window.showUserHistory = function(userId, userName) {
 
             if (!container) return;
 
-            // فلترة حسب التبويب والبحث
             let filtered = events.filter(ev => {
                 if (window.currentWorkHubFilter !== 'all' && ev.category !== window.currentWorkHubFilter) return false;
                 if (!q) return true;
@@ -4861,7 +4728,6 @@ window.showUserHistory = function(userId, userName) {
                 return str.includes(q);
             });
 
-            // ترتيب زمني من الأحدث للأقدم
             filtered.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
             if (filtered.length === 0) {
@@ -5007,9 +4873,6 @@ window.showUserHistory = function(userId, userName) {
             container.innerHTML = html;
         };
 
-        // =========================================================================
-        // === 2. طباعة بوليصة الشحن بالباركود (Shipping Label) + فاتورة العميل ===
-        // =========================================================================
         window.printOrderShippingLabel = function(orderId) {
             let o = (adminOrdersArray || []).find(ord => ord.id === orderId) || (window.customerOrdersArray || []).find(ord => ord.id === orderId);
             if (!o) return;
@@ -5072,7 +4935,6 @@ window.showUserHistory = function(userId, userName) {
             w.document.close();
         };
 
-        // إضافة زر طباعة البوليصة داخل تفاصيل طلب الإدارة وزر فاتورة الضمان داخل طلب العميل
         const origOpenAdminOrderModalV55 = window.openAdminOrderModal;
         window.openAdminOrderModal = function(id) {
             origOpenAdminOrderModalV55(id);
@@ -5093,9 +4955,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // =========================================================================
-        // === 3. سجل المصروفات والإعلانات (Expense Tracker) وخصمه من صافي الربح ===
-        // =========================================================================
         window.getStoreExpensesList = function() {
             return Array.isArray(storeSettings.expensesList) ? storeSettings.expensesList : [];
         };
@@ -5155,7 +5014,6 @@ window.showUserHistory = function(userId, userName) {
             listEl.innerHTML = html || '<p style="color:var(--text-muted); font-size:0.84rem; margin:0;">لم يتم تسجيل مصروفات بعد.</p>';
         };
 
-        // تحديث دالة صافي الربح لتخصم إجمالي المصروفات المسجلة أيضاً
         const origRenderNetProfitV55 = window.renderNetProfitStat;
         window.renderNetProfitStat = function() {
             origRenderNetProfitV55();
@@ -5168,11 +5026,6 @@ window.showUserHistory = function(userId, userName) {
             statEl.textContent = `${finalNet.toLocaleString()} ج`;
         };
 
-        // =========================================================================
-        // === 4. كرتونة التوفير المخصصة + مساعد الاختيار الذكي + الطلب الخاطف ===
-        // =========================================================================
-
-        // أ) كوّن كرتونة التوفير (Build Your Own Box)
         window.customBoxCounts = {};
         window.openCustomBoxModal = function() {
             let modal = document.getElementById('custom-box-modal');
@@ -5270,7 +5123,6 @@ window.showUserHistory = function(userId, userName) {
             window.showPanel('cart');
         };
 
-        // ب) مساعد الاختيار الذكي (Product Finder Quiz)
         window.openProductQuizModal = function() {
             let modal = document.getElementById('product-quiz-modal');
             let res = document.getElementById('quiz-result-box');
@@ -5306,7 +5158,6 @@ window.showUserHistory = function(userId, userName) {
             `;
         };
 
-        // ج) الشراء الخاطف بضغطة واحدة (1-Click Quick Order)
         window.quickOrderTargetProduct = null;
         window.openQuickOrderModal = function(event, prodId) {
             if (event) event.stopPropagation();
@@ -5387,7 +5238,6 @@ window.showUserHistory = function(userId, userName) {
             if (btn) btn.disabled = false;
         };
 
-        // د) تبديل طريقة عرض المنتجات (Grid / List View)
         window.isListViewMode = false;
         window.toggleProductsViewMode = function() {
             window.isListViewMode = !window.isListViewMode;
@@ -5397,7 +5247,6 @@ window.showUserHistory = function(userId, userName) {
             if (btn) btn.textContent = window.isListViewMode ? '🔲' : '📋';
         };
 
-        // ربط تحديثات الإدارة والإعدادات بـ V56
         const origUpdateAdminUIV55 = window.updateAdminUI;
         window.updateAdminUI = function() {
             origUpdateAdminUIV55();
@@ -5455,7 +5304,6 @@ window.showUserHistory = function(userId, userName) {
             await prevSaveSettingsV55();
         };
 
-        // إضافة مصطلحات V56 للقاموس الإنجليزي
         Object.assign(window.FULL_AR_TO_EN, {
             "من مزارعنا في سيناء مباشرة": "Direct from Our Sinai Farms",
             "حق معاينة الطلب عند الاستلام": "Inspect Order Upon Delivery",
@@ -5474,19 +5322,13 @@ window.showUserHistory = function(userId, userName) {
             "تأكيد وإرسال الطلب فوراً": "Confirm & Submit Order Instantly"
         });
 
-
-        // =========================================================================
-        // === النسخة V57: الضبط الجذري لغرفة العمل (الصوت + العداد + التواريخ) + المرحلة النهائية ===
-        // =========================================================================
-
-        // 1. نظام الصوت المضمون 100% (Web Audio API المفتوح تلقائياً + ملف WAV احتياطي مدمج)
         window.sharedWorkAudioCtx = null;
         window.fallbackChimeAudio = null;
 
         window.initFallbackWavChime = function() {
             if (window.fallbackChimeAudio) return;
             try {
-                // توليد نغمة جرس واضحة جداً بصيغة WAV في الذاكرة للعمل على جميع المتصفحات والموبايلات
+
                 const sampleRate = 22050;
                 const duration = 0.55;
                 const numSamples = Math.floor(sampleRate * duration);
@@ -5509,7 +5351,7 @@ window.showUserHistory = function(userId, userName) {
 
                 for (let i = 0; i < numSamples; i++) {
                     let t = i / sampleRate;
-                    let freq = t < 0.22 ? 659.25 : 880.0; // E5 -> A5 Ding-Dong chime
+                    let freq = t < 0.22 ? 659.25 : 880.0;
                     let env = Math.exp(-3.5 * (t < 0.22 ? t : (t - 0.22)));
                     let sample = Math.sin(2 * Math.PI * freq * t) * env * 0.65;
                     view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, sample)) * 32767, true);
@@ -5523,7 +5365,6 @@ window.showUserHistory = function(userId, userName) {
         };
         window.initFallbackWavChime();
 
-        // فتح قفل الصوت في المتصفح مع أول لمسة أو ضغطة في أي مكان بالموقع
         window.unlockWorkAudioEngine = function() {
             try {
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -5548,7 +5389,7 @@ window.showUserHistory = function(userId, userName) {
                 let ctx = window.sharedWorkAudioCtx;
                 if (ctx && ctx.state === 'running') {
                     let now = ctx.currentTime;
-                    // النغمة الأولى (Ding)
+
                     let osc1 = ctx.createOscillator();
                     let g1 = ctx.createGain();
                     osc1.type = 'triangle';
@@ -5560,7 +5401,6 @@ window.showUserHistory = function(userId, userName) {
                     osc1.start(now);
                     osc1.stop(now + 0.25);
 
-                    // النغمة الثانية (Dong)
                     let osc2 = ctx.createOscillator();
                     let g2 = ctx.createGain();
                     osc2.type = 'sine';
@@ -5575,7 +5415,6 @@ window.showUserHistory = function(userId, userName) {
                 }
             } catch (e) {}
 
-            // تشغيل ملف الـ WAV المدمج كدعم إضافي مضمون 100%
             try {
                 if (window.fallbackChimeAudio) {
                     window.fallbackChimeAudio.currentTime = 0;
@@ -5585,7 +5424,6 @@ window.showUserHistory = function(userId, userName) {
             } catch (e) {}
         };
 
-        // 2. محلل ومُنسق التواريخ الذكي الدقيق (يمنع أي تاريخ قديم أو خاطئ أو 1970 أو هجري)
         window.parseSafeTimestamp = function(val, fallbackMs = 0) {
             if (!val) return fallbackMs;
             if (typeof val === 'number') return val > 1e11 ? val : val * 1000;
@@ -5594,7 +5432,7 @@ window.showUserHistory = function(userId, userName) {
                 if (typeof val.seconds === 'number') return val.seconds * 1000;
             }
             let parsed = Date.parse(String(val));
-            if (!isNaN(parsed) && parsed > 946684800000) { // بعد سنة 2000
+            if (!isNaN(parsed) && parsed > 946684800000) {
                 return parsed;
             }
             return fallbackMs;
@@ -5624,7 +5462,6 @@ window.showUserHistory = function(userId, userName) {
             return `<span class="work-time-pill">🕒 <strong style="color:var(--secondary);">${rel}</strong> <span>• ${exactStr}</span></span>`;
         };
 
-        // 3. حساب الرسائل غير المقروءة وآخر توقيت فعلي لكل محادثة بدقة 100%
         window.getChatWorkInfo = function(chat) {
             let msgs = Array.isArray(chat.messages) ? chat.messages : [];
             let lastAdminRealIdx = -1;
@@ -5665,7 +5502,6 @@ window.showUserHistory = function(userId, userName) {
             };
         };
 
-        // 4. راصد التغييرات اللحظي (يكتشف أي رسالة جديدة أو طلب جديد أو إلغاء أثناء وجودك في الصفحة الرئيسية أو أي صفحة)
         window.workKnownOrders = new Map();
         window.workKnownChats = new Map();
         window.workKnownReturns = new Set();
@@ -5744,7 +5580,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // ربط استماع المحادثات اللحظي براصد التغييرات فوراً
         window.initAdminWorkHubStreams = function() {
             if (!isCurrentUserAdmin) return;
             let btnSnd = document.getElementById('btn-toggle-work-sound');
@@ -5775,7 +5610,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // تحديث sendInlineWorkChatReply ليصفر عداد الرسائل غير المقروءة فوراً عند الرد من غرفة العمل
         window.sendInlineWorkChatReply = async function(chatId) {
             let inp = document.getElementById('wk-reply-inp-' + chatId);
             if (!inp || !inp.value.trim()) {
@@ -5811,7 +5645,6 @@ window.showUserHistory = function(userId, userName) {
             window.renderAdminWorkHub();
         };
 
-        // 5. النسخة المطورة الخالية من الأخطاء من غرفة متابعة العمل (renderAdminWorkHub)
         window.renderAdminWorkHub = function() {
             if (!isCurrentUserAdmin) return;
             try {
@@ -5828,7 +5661,6 @@ window.showUserHistory = function(userId, userName) {
                 let urgentCancelsAndReturns = 0;
                 let leadsCount = 0;
 
-                // أ) جمع الطلبات (النشطة والملغاة) مع التوقيت الدقيق
                 (adminOrdersArray || []).forEach(ord => {
                     let st = String(ord.status || '');
                     let isCanceled = st.includes('لغى') || st.includes('رفض');
@@ -5839,7 +5671,7 @@ window.showUserHistory = function(userId, userName) {
                     if (isCanceled) {
                         let cancelMs = window.parseSafeTimestamp(ord.canceledAt, 0) || ordMs;
                         cancelsAndReturnsCount++;
-                        let isUrgentCancel = ord.unreadCancelByAdmin !== false && (Date.now() - cancelMs < 172800000); // آخر 48 ساعة أو غير مقروء
+                        let isUrgentCancel = ord.unreadCancelByAdmin !== false && (Date.now() - cancelMs < 172800000);
                         if (isUrgentCancel) urgentCancelsAndReturns++;
                         events.push({
                             category: 'cancels',
@@ -5862,7 +5694,6 @@ window.showUserHistory = function(userId, userName) {
                     }
                 });
 
-                // ب) جمع طلبات الاسترجاع
                 (adminReturnsArray || []).forEach(ret => {
                     if (window.workHideCompletedOld && ret.status !== 'قيد المراجعة') return;
                     cancelsAndReturnsCount++;
@@ -5878,7 +5709,6 @@ window.showUserHistory = function(userId, userName) {
                     });
                 });
 
-                // ج) جمع رسائل خدمة العملاء مع حساب كل رسالة جديدة بدقة
                 (window.workHubChatsArray || []).forEach(chat => {
                     let info = window.getChatWorkInfo(chat);
                     if (window.workHideCompletedOld && !info.needsReply) return;
@@ -5897,7 +5727,6 @@ window.showUserHistory = function(userId, userName) {
                     });
                 });
 
-                // د) جمع السلال المتروكة (تظهر في تبويب السلال والتنبيهات حتى لا تخلط التواريخ القديمة بتبويب كل الشغل)
                 (window.workHubAbandonedUsers || []).forEach(u => {
                     leadsCount++;
                     let cartMs = window.parseSafeTimestamp(u.cartUpdatedAt, 0) || window.parseSafeTimestamp(u.lastLogin, Date.now());
@@ -5910,7 +5739,6 @@ window.showUserHistory = function(userId, userName) {
                     });
                 });
 
-                // تحديث جميع عدادات (💼 العمل / الشغل) في الهيدر بالصفحة الرئيسية وشريط الإدارة فوراً!
                 let urgentTotal = pendingReviewOrdersCount + totalUnreadCustomerMsgs + urgentCancelsAndReturns;
                 document.querySelectorAll('.work-hub-live-badge, #work-hub-badge').forEach(b => {
                     b.textContent = urgentTotal;
@@ -5931,7 +5759,6 @@ window.showUserHistory = function(userId, userName) {
 
                 if (!container) return;
 
-                // فلترة الأحداث حسب التبويب المختار (في تبويب "كل الشغل" نعرض الطلبات والرسائل والإلغاءات فقط بدون السلال القديمة)
                 let filtered = events.filter(ev => {
                     if (window.currentWorkHubFilter === 'all') {
                         if (ev.category === 'leads') return false;
@@ -5943,7 +5770,6 @@ window.showUserHistory = function(userId, userName) {
                     return str.includes(q);
                 });
 
-                // الترتيب الذكي: المهام العاجلة التي تنتظر ردك/مراجعتك في الأعلى دائماً ثم الأحدث فالأقدم بالتوقيت الدقيق
                 filtered.sort((a, b) => {
                     if (a.isUrgent !== b.isUrgent) return a.isUrgent ? -1 : 1;
                     return (b.timestampMs || 0) - (a.timestampMs || 0);
@@ -6102,11 +5928,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // =========================================================================
-        // === 6. ميزات المرحلة النهائية (صفقة اليوم + الاشتراك الشهري + بطاقات الهدايا + QR + آخر مشاهدة) ===
-        // =========================================================================
-
-        // أ) صفقة اليوم الخاطفة الموقوتة (Flash Deal of the Day)
         window.renderHomeFlashDeal = function() {
             let box = document.getElementById('home-flash-deal-box');
             if (!box) return;
@@ -6148,7 +5969,6 @@ window.showUserHistory = function(userId, userName) {
             `;
         };
 
-        // ب) الاشتراك الشهري التلقائي بخصم خاص (Subscribe & Save)
         window.isCurrentOrderMonthlySubscription = false;
         window.toggleModalSubscribeOption = function(isChecked) {
             window.isCurrentOrderMonthlySubscription = Boolean(isChecked);
@@ -6164,7 +5984,6 @@ window.showUserHistory = function(userId, userName) {
             window.updateInvoiceUI();
         };
 
-        // ج) بطاقات الهدايا الرقمية (Digital Gift Cards)
         window.selectedGiftCardValue = 500;
         window.openGiftCardModal = function() {
             let modal = document.getElementById('gift-card-modal');
@@ -6217,7 +6036,6 @@ window.showUserHistory = function(userId, userName) {
             window.open(`https://wa.me/${pureWa}?text=${encodeURIComponent(msg)}`, '_blank');
         };
 
-        // د) باركود QR السريع لكل منتج (Product QR Code)
         window.openProductQRModal = function() {
             if (!activeProductForReview) return;
             let p = products.find(pr => pr.id === activeProductForReview);
@@ -6253,7 +6071,6 @@ window.showUserHistory = function(userId, userName) {
             w.document.close();
         };
 
-        // هـ) شريط آخر منتج تمت مشاهدته (Sticky Last Viewed Mini-Bar)
         window.lastViewedProductId = null;
         window.lastViewedBarDismissed = false;
         window.updateStickyLastViewedBar = function(product) {
@@ -6282,7 +6099,6 @@ window.showUserHistory = function(userId, userName) {
             if (bar) bar.style.display = 'none';
         };
 
-        // ربط فتح نافذة المنتج وتحديث الإعدادات بـ V57
         const origOpenProductModalV56 = window.openProductModal;
         window.openProductModal = function(id) {
             origOpenProductModalV56(id);
@@ -6366,7 +6182,6 @@ window.showUserHistory = function(userId, userName) {
             await prevSaveSettingsV56();
         };
 
-        // إضافة مصطلحات V57 للقاموس الإنجليزي
         Object.assign(window.FULL_AR_TO_EN, {
             "الشغل": "Work",
             "إهداء بطاقة هدية رقمية": "Send Digital Gift Card",
@@ -6381,12 +6196,6 @@ window.showUserHistory = function(userId, userName) {
             "شاهدت مؤخراً:": "Recently Viewed:"
         });
 
-
-        // =========================================================================
-        // === النسخة V58: أكواد العجلة الفريدة لمرة واحدة + مجلدات العمل + تنظيم الإدارة ===
-        // =========================================================================
-
-        // 1. توليد كود خصم فريد ومختلف لكل عميل في كل لفة عجلة (صالح لمرة واحدة فقط)
         window.generateUniqueSingleUseCode = function(basePrefix) {
             let cleanPrefix = String(basePrefix || 'ZAIT').replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 6) || 'ZAIT';
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -6397,7 +6206,6 @@ window.showUserHistory = function(userId, userName) {
             return `${cleanPrefix}-${rand}`;
         };
 
-        // ترقية دالة لف العجلة لتوليد كود فريد وحفظه كـ singleUse في قاعدة البيانات
         window.spinTheWheelNow = async function() {
             let info = window.getThursdayCycleInfo();
             if (localStorage.getItem('zait_wheel_last_cycle') === info.cycleId) {
@@ -6426,7 +6234,6 @@ window.showUserHistory = function(userId, userName) {
             let winningIndex = allowedIndices[Math.floor(Math.random() * allowedIndices.length)];
             let winningPrize = { ...prizes[winningIndex] };
 
-            // توليد كود فريد خاص بهذا العميل فقط لمرة واحدة
             let baseCode = String(winningPrize.code || 'WIN').trim().toUpperCase();
             let uniqueCode = storeSettings.enableUniqueWheelCodes !== false
                 ? window.generateUniqueSingleUseCode(baseCode)
@@ -6453,7 +6260,7 @@ window.showUserHistory = function(userId, userName) {
 
             setTimeout(async () => {
                 let winDisc = Number(winningPrize.discount) || 0;
-                // حفظ الكود الفريد في قاعدة البيانات للاستخدام مرة واحدة فقط
+
                 if (winDisc > 0 && storeSettings.enableUniqueWheelCodes !== false) {
                     try {
                         await addDoc(collection(db, 'promoCodes'), {
@@ -6500,10 +6307,7 @@ window.showUserHistory = function(userId, userName) {
             }, 3700);
         };
 
-        // =========================================================================
-        // === 2. نظام مجلدات غرفة العمل (الوارد النشط | المقروء | المنجز | المحذوف) ===
-        // =========================================================================
-        window.currentWorkFolder = 'inbox'; // 'inbox' | 'read' | 'done' | 'trash'
+        window.currentWorkFolder = 'inbox';
 
         window.getWorkItemStatesMap = function() {
             let fromCloud = storeSettings.workHubItemStates || {};
@@ -6525,13 +6329,11 @@ window.showUserHistory = function(userId, userName) {
             localStorage.setItem('zait_work_item_states', JSON.stringify(map));
             storeSettings.workHubItemStates = map;
 
-            // إذا كان الكارت محادثة شات وتم نقله للمقروء أو المنجز أو المحذوف، نصفر حالة الرسائل غير المقروءة أيضاً
             if (itemKey.startsWith('chat_') && targetFolder !== 'inbox') {
                 let chatId = itemKey.replace(/^chat_/, '');
                 try { await updateDoc(doc(db, 'chats', chatId), { unreadByAdmin: false }); } catch (e) {}
             }
 
-            // تحديث الواجهة والعداد فوراً في نفس اللحظة!
             window.renderAdminWorkHub();
 
             let msgMap = {
@@ -6556,7 +6358,6 @@ window.showUserHistory = function(userId, userName) {
             window.renderAdminWorkHub();
         };
 
-        // شريط أزرار (تمت القراءة / منجز / حذف / استعادة) الموحد أسفل كل كارت في غرفة العمل
         window.getWorkFolderActionBtnsHtml = function(itemKey, currentFolder) {
             let safeKey = String(itemKey).replace(/'/g, "\\'");
             if (currentFolder === 'inbox') {
@@ -6575,7 +6376,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // تحديث renderAdminWorkHub لدعم صفحات (الوارد النشط / المقروء / المنجز / المحذوف) وإنقاص العداد فوراً
         window.renderAdminWorkHub = function() {
             if (!isCurrentUserAdmin) return;
             try {
@@ -6586,7 +6386,6 @@ window.showUserHistory = function(userId, userName) {
 
                 let allEvents = [];
 
-                // أ) الطلبات (النشطة والملغاة وطلبات الجملة)
                 (adminOrdersArray || []).forEach(ord => {
                     let st = String(ord.status || '');
                     let isCanceled = st.includes('لغى') || st.includes('رفض');
@@ -6625,7 +6424,6 @@ window.showUserHistory = function(userId, userName) {
                     }
                 });
 
-                // ب) طلبات الاسترجاع
                 (adminReturnsArray || []).forEach(ret => {
                     let itemKey = `ret_${ret.id}`;
                     let savedFolder = (statesMap[itemKey] && statesMap[itemKey].folder) ? statesMap[itemKey].folder : 'inbox';
@@ -6643,7 +6441,6 @@ window.showUserHistory = function(userId, userName) {
                     });
                 });
 
-                // ج) محادثات خدمة العملاء (إذا أرسل العميل رسالة جديدة أحدث من وقت نقل الكارت للمقروء، يعود للوارد النشط تلقائياً!)
                 (window.workHubChatsArray || []).forEach(chat => {
                     let info = window.getChatWorkInfo(chat);
                     let itemKey = `chat_${chat.id}`;
@@ -6652,7 +6449,7 @@ window.showUserHistory = function(userId, userName) {
                     if (stateObj && stateObj.updatedAt && info.needsReply) {
                         let stateTime = window.parseSafeTimestamp(stateObj.updatedAt, 0);
                         if (info.latestMs > stateTime + 1500) {
-                            savedFolder = 'inbox'; // رسالة جديدة وصلت بعد تعليمها كمقروء
+                            savedFolder = 'inbox';
                         }
                     }
                     let isUrgentChat = (savedFolder === 'inbox') && info.needsReply;
@@ -6670,7 +6467,6 @@ window.showUserHistory = function(userId, userName) {
                     });
                 });
 
-                // د) السلال المتروكة
                 (window.workHubAbandonedUsers || []).forEach(u => {
                     let itemKey = `lead_${u.id}`;
                     let savedFolder = (statesMap[itemKey] && statesMap[itemKey].folder) ? statesMap[itemKey].folder : 'inbox';
@@ -6687,7 +6483,6 @@ window.showUserHistory = function(userId, userName) {
                     });
                 });
 
-                // حساب عدادات المجلدات الأربعة (الوارد النشط / المقروء / المنجز / المحذوف)
                 let folderCounts = { inbox: 0, read: 0, done: 0, trash: 0 };
                 let urgentTotal = 0;
 
@@ -6700,7 +6495,6 @@ window.showUserHistory = function(userId, userName) {
                     }
                 });
 
-                // تحديث العداد الأحمر في الهيدر وشريط الإدارة (ينقص فوراً بمجرد الضغط على تمت القراءة أو منجز أو حذف!)
                 document.querySelectorAll('.work-hub-live-badge, #work-hub-badge').forEach(b => {
                     b.textContent = urgentTotal;
                     b.style.display = 'inline-block';
@@ -6712,7 +6506,6 @@ window.showUserHistory = function(userId, userName) {
                 setTxt('wf-count-done', folderCounts.done);
                 setTxt('wf-count-trash', folderCounts.trash);
 
-                // حساب عدادات التبويبات الفرعية داخل المجلد المفتوح حالياً
                 let folderEvents = allEvents.filter(e => e.folder === window.currentWorkFolder);
                 setTxt('wk-count-all', folderEvents.filter(e => e.category !== 'leads').length);
                 setTxt('wk-count-orders', folderEvents.filter(e => e.category === 'orders').length);
@@ -6904,9 +6697,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // =========================================================================
-        // === 3. تنظيم وتصميم لوحة التحكم الاحترافية بالتبويبات والبحث (بدون حذف أي عنصر) ===
-        // =========================================================================
         window.initProAdminControlCenter = function() {
             let sec = document.getElementById('roles-content-section');
             if (!sec) return;
@@ -6951,9 +6741,6 @@ window.showUserHistory = function(userId, userName) {
             });
         };
 
-        // =========================================================================
-        // === 4. بوابة طلبات الجملة والمطاعم (B2B) + فاحص تاريخ العصرة والتشغيلة ===
-        // =========================================================================
         window.openB2BWholesaleModal = function() {
             let m = document.getElementById('b2b-wholesale-modal');
             if (m) m.style.display = 'flex';
@@ -7071,12 +6858,6 @@ window.showUserHistory = function(userId, userName) {
             "فحص الآن": "Verify Now"
         });
 
-
-        // =========================================================================
-        // === النسخة V59: حماية المحتوى + عجلة الحظ الذكية بالاسم والتفاصيل + المرحلة 2 ===
-        // =========================================================================
-
-        // 1. منع نسخ الكلام والصور وحماية المحتوى (Anti-Copy & Image Protection)
         window.applyContentProtectionMode = function() {
             let protect = storeSettings.enableContentProtection !== false;
             document.body.classList.toggle('protect-content-mode', protect);
@@ -7086,7 +6867,7 @@ window.showUserHistory = function(userId, userName) {
             document.addEventListener(evtName, function(e) {
                 if (storeSettings.enableContentProtection === false) return;
                 let t = e.target;
-                // السماح بالحقول النصية فقط عند الكتابة فيها
+
                 if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
                     if (evtName === 'contextmenu' || evtName === 'copy') return;
                 }
@@ -7094,8 +6875,6 @@ window.showUserHistory = function(userId, userName) {
             });
         });
 
-        // 2. تحديث ظهور زر عجلة الحظ العائم بالرئيسية:
-        // يظل ظاهراً للعميل، ويختفي تلقائياً بمجرد أن يلف العجلة في هذا الأسبوع، ويعود للظهور تلقائياً عند تجديد الفرصة!
         window.hasCustomerSpunThisWeek = function() {
             let info = window.getThursdayCycleInfo ? window.getThursdayCycleInfo() : { cycleId: '' };
             return localStorage.getItem('zait_wheel_last_cycle') === info.cycleId;
@@ -7105,16 +6884,15 @@ window.showUserHistory = function(userId, userName) {
             let enabled = storeSettings.enableSpinWheel !== false;
             let fab = document.getElementById('spin-wheel-fab');
             let sideBtn = document.getElementById('sidebar-spin-wheel-btn');
-            // القسم في القائمة الجانبية يظل متاحاً طالما الميزة مفعلة
+
             if (sideBtn) sideBtn.style.display = enabled ? 'block' : 'none';
-            // أما الزر العائم في الصفحة الرئيسية فيختفي فور لف العجلة هذا الأسبوع ويظهر مجدداً عند تجديد الفرصة!
+
             if (fab) {
                 let alreadySpun = window.hasCustomerSpunThisWeek();
                 fab.style.display = (enabled && !alreadySpun) ? 'flex' : 'none';
             }
         };
 
-        // 3. تحديث نافذة عجلة الحظ لتسجيل (اسم العميل + رقم الواتساب) لأول مرة فقط + إخفاء الزر بعد اللف
         window.renderWheelModalContent = function(highlightIdx = -1) {
             window.updateWheelThursdayCountdown();
             let prizes = window.getWheel7Prizes();
@@ -7223,7 +7001,6 @@ window.showUserHistory = function(userId, userName) {
                 return;
             }
 
-            // حفظ الاسم ورقم الواتساب حتى لا يكتبهما العميل مرة أخرى في الأسابيع القادمة
             localStorage.setItem('zait_wheel_saved_name', custName);
             localStorage.setItem('zait_wheel_saved_phone', phone);
 
@@ -7292,7 +7069,7 @@ window.showUserHistory = function(userId, userName) {
                 localStorage.setItem('zait_wheel_last_prize', JSON.stringify(winningPrize));
 
                 window.renderWheelModalContent(winningIndex);
-                window.updateSpinWheelVisibility(); // إخفاء الزر العائم من الرئيسية بعد لف العجلة
+                window.updateSpinWheelVisibility();
 
                 if (resArea) {
                     resArea.style.display = 'block';
@@ -7314,7 +7091,6 @@ window.showUserHistory = function(userId, userName) {
             }, 3700);
         };
 
-        // 4. عرض قائمة عملاء عجلة الحظ في الإحصائيات بالاسم والهاتف + نافذة تفاصيل كاملة عند الضغط على الاسم
         window.allWheelLeadsRawList = [];
         window.loadAdminWheelLeads = function() {
             if (window.adminWheelLeadsUnsubscribe) window.adminWheelLeadsUnsubscribe();
@@ -7380,7 +7156,6 @@ window.showUserHistory = function(userId, userName) {
             let exactTime = dObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             let prizeDisplay = item.prizeLabel ? item.prizeLabel : (item.prizeCode || '');
 
-            // جمع كل سجل لفات نفس العميل (برقم الهاتف)
             let samePhoneSpins = (window.allWheelLeadsRawList || []).filter(x => x.phone === item.phone);
             let historyHtml = samePhoneSpins.map((s, idx) => {
                 let sd = new Date(window.parseSafeTimestamp(s.date, Date.now()));
@@ -7406,11 +7181,6 @@ window.showUserHistory = function(userId, userName) {
             modal.style.display = 'flex';
         };
 
-        // =========================================================================
-        // === 5. ميزات الجزء الثاني (حاسبة الخزين + الوصفات + المندوب + الموظفين + المقارنة) ===
-        // =========================================================================
-
-        // أ) حاسبة الخزين السنوي وشهر رمضان (Annual & Ramadan Stock Calculator)
         window.openAnnualCalcModal = function() {
             let m = document.getElementById('annual-calc-modal');
             if (m) {
@@ -7425,7 +7195,6 @@ window.showUserHistory = function(userId, userName) {
             let resBox = document.getElementById('annual-calc-result-box');
             if (!resBox) return;
 
-            // متوسط استهلاك الفرد الصحي من زيت الزيتون ~ 0.45 لتر شهرياً
             let litersNeeded = Math.max(1, Math.ceil(members * months * 0.45));
             let extraDisc = months >= 12 ? 15 : (months >= 6 ? 12 : (months >= 3 ? 10 : 8));
             let isEn = window.currentLang === 'en';
@@ -7449,7 +7218,6 @@ window.showUserHistory = function(userId, userName) {
             window.showPanel('home');
         };
 
-        // ب) بطاقات الوصفات الصحية القابلة للتسوق بضغطة زر (Shoppable Recipes)
         window.shopRecipeQuickAdd = function(recipeIdx) {
             let available = products.filter(p => !p.isHidden && (p.stock === undefined || p.stock === "" || Number(p.stock) > 0));
             if (available.length === 0) return;
@@ -7458,7 +7226,6 @@ window.showUserHistory = function(userId, userName) {
             window.executeAddToCart(null, target.id, safeName);
         };
 
-        // ج) تقرير المقارنة اليومي والشهري (Daily vs Yesterday & Monthly vs Last Month)
         window.renderGrowthComparisonReport = function() {
             let box = document.getElementById('admin-growth-comparison-box');
             if (box) box.style.display = storeSettings.enableGrowthReport !== false ? 'grid' : 'none';
@@ -7496,7 +7263,6 @@ window.showUserHistory = function(userId, userName) {
             monthlyEl.innerHTML = `هذا الشهر: <span style="color:#028090;">${thisMonthRev.toLocaleString()} ج</span> (${thisMonthCnt} طلب) <small style="color:var(--text-muted); font-weight:normal;">| الماضي: ${lastMonthRev.toLocaleString()} ج (${lastMonthCnt} طلب)</small>`;
         };
 
-        // د) بطاقة المندوب السريعة (Courier Quick Dispatch Sheet & WhatsApp Share)
         window.openCourierDispatchModal = function(orderId) {
             let o = (adminOrdersArray || []).find(ord => ord.id === orderId);
             if (!o) return;
@@ -7534,7 +7300,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // هـ) نظام صلاحيات الموظفين المحدودة (Staff Permissions Mode)
         window.isCurrentUserStaffOnly = false;
         window.checkAndApplyStaffPermissions = function() {
             if (!currentUser || !storeSettings.enableStaffPermissions) {
@@ -7554,7 +7319,7 @@ window.showUserHistory = function(userId, userName) {
                 if (sNav) sNav.style.display = 'flex';
                 let hdrWork = document.getElementById('header-work-hub-btn');
                 if (hdrWork) hdrWork.style.display = 'inline-flex';
-                // إظهار تبويبات العمل والطلبات والرسائل والاسترجاع فقط وإخفاء الإعدادات والإحصائيات المالية
+
                 document.querySelectorAll('.admin-tab').forEach(tab => {
                     let oc = tab.getAttribute('onclick') || '';
                     if (oc.includes('admin-work') || oc.includes('admin-orders') || oc.includes('admin-messages') || oc.includes('admin-returns')) {
@@ -7624,11 +7389,8 @@ window.showUserHistory = function(userId, userName) {
             await prevSaveSettingsV58();
         };
 
-        // =========================================================================
-        // === 6. قاموس الترجمة الشامل للعميل والمدير وغرفة العمل والإحصائيات (100% EN) ===
-        // =========================================================================
         Object.assign(window.FULL_AR_TO_EN, {
-            // شريط الإدارة وغرفة العمل
+
             "💼 العمل": "💼 Work Hub",
             "الشغل": "Work Hub",
             "💼 غرفة متابعة العمل والشغل المباشرة": "💼 Live Work & Operations Center",
@@ -7668,7 +7430,7 @@ window.showUserHistory = function(userId, userName) {
             "🌿 ضمان الزيت": "🌿 Quality Guarantee",
             "📦 تأكيد التجهيز": "📦 Confirm Prep",
             "🌿 ضمان الجودة": "🌿 Quality Guarantee",
-            // لوحة الإحصائيات والطلبات والإعدادات للمدير
+
             "📊 الإحصائيات (للإدارة)": "📊 Admin Analytics & Reports",
             "⚠️ تنبيهات المخزون (أقل من 5 قطع)": "⚠️ Low Stock Alerts (< 5 units)",
             "المخزون ممتاز، لا توجد منتجات أوشكت على النفاد.": "Stock levels are great! No low-stock items.",
@@ -7732,7 +7494,7 @@ window.showUserHistory = function(userId, userName) {
             "📌 إلغاء التثبيت": "📌 Unpin",
             "🙈 إخفاء مؤقت": "🙈 Hide Product",
             "👁️ إظهار للعملاء": "👁️ Show to Customers",
-            // إضافات V59
+
             "عجلة الحظ الأسبوعية": "Weekly Spin & Win",
             "حاسبة الخزين السنوي ورمضان": "Annual & Ramadan Stock Calculator",
             "ركن الوصفات الصحية والخلطات الطبيعية (اطلب مكوناتها بضغطة زر)": "Healthy Olive Oil Recipes (1-Tap Shop Ingredients)",
@@ -7760,7 +7522,6 @@ window.showUserHistory = function(userId, userName) {
             "اكتب ردك المباشر للعميل هنا...": "Type your direct reply to customer here..."
         });
 
-        // توسيع المترجم الديناميكي ليشمل عبارات الإدارة وغرفة العمل والإحصائيات
         const origTranslateTextToEnV58 = window.translateTextToEn;
         window.translateTextToEn = function(str) {
             let out = origTranslateTextToEnV58(str);
@@ -7778,12 +7539,6 @@ window.showUserHistory = function(userId, userName) {
             return out;
         };
 
-
-        // =========================================================================
-        // === النسخة V60: إخفاء الكل للإشعارات + كود السلة الحقيقي 3% + الوصفات + الـ 12 ميزة ===
-        // =========================================================================
-
-        // 1. زر "✖ إخفاء الكل" لإشعارات الشغل والتوست + منع تكرار إشعارات الطلبات القديمة عند فتح المتجر
         window.adminStartupTimestamp = Date.now();
 
         window.ensureDismissAllToastsButton = function() {
@@ -7814,9 +7569,8 @@ window.showUserHistory = function(userId, userName) {
             if (container) container.innerHTML = '';
         };
 
-        // تحديث showWorkLivePopupAlert ليحتوي على زر إغلاق فردي + زر "إخفاء الكل" ولا يظهر للطلبات القديمة عند فتح الصفحة
         window.showWorkLivePopupAlert = function(title, subtitle) {
-            // لا نظهر نوافذ منبثقة خلال أول 4 ثوانٍ من فتح المتجر أثناء تحميل البيانات القديمة من القاعدة
+
             if (Date.now() - window.adminStartupTimestamp < 4500) return;
 
             window.playWorkNotificationSound(false);
@@ -7844,7 +7598,6 @@ window.showUserHistory = function(userId, userName) {
             }, 6000);
         };
 
-        // 2. كود خصم السلة المتروكة الحقيقي (COMEBACK بخصم 3% افتراضياً وقابل للتخصيص والإخفاء)
         window.checkAbandonedCart = function() {
             if (storeSettings.enableAbandonedModal === false) return;
             if (cart.length > 0) {
@@ -7883,7 +7636,6 @@ window.showUserHistory = function(userId, userName) {
             window.showPanel('cart');
         };
 
-        // 3. موسوعة الوصفات الصحية في القائمة الجانبية والرئيسية + إضافة وحذف وصفة جديدة للمدير
         window.getDefaultStoreRecipes = function() {
             return [
                 { id: 'rec_1', title: '🍯 وصفة المناعة الصباحية الذهبية', desc: 'ملعقة كبيرة من زيت الزيتون السيناوي البكر على الريق مع قطرات الليمون وعسل النحل لتنشيط الكبد ورفع المناعة طوال اليوم.' },
@@ -7959,7 +7711,6 @@ window.showUserHistory = function(userId, userName) {
             } catch (e) {}
         };
 
-        // 4. القارئ الصوتي لوصف المنتج (Voice Reader) + بلغني عند انخفاض السعر + اسأل عن المنتج (Q&A)
         window.isSpeakingProduct = false;
         window.toggleProductVoiceReader = function() {
             if (!('speechSynthesis' in window)) {
@@ -8027,7 +7778,6 @@ window.showUserHistory = function(userId, userName) {
             });
         };
 
-        // قسم اسأل عن المنتج (Product Q&A)
         window.renderProductQASection = function(product) {
             let sec = document.getElementById('modal-product-qa-section');
             let listEl = document.getElementById('modal-qa-list');
@@ -8086,7 +7836,6 @@ window.showUserHistory = function(userId, userName) {
             } catch (e) {}
         };
 
-        // 5. تعديل العميل لطلبه قبل الشحن (Edit Order Before Shipping)
         window.openCustomerEditOrderModal = function(orderId) {
             let ord = (window.customerOrdersArray || []).find(o => o.id === orderId) || (window.phoneTrackedOrders || []).find(o => o.id === orderId);
             if (!ord) return;
@@ -8133,7 +7882,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // 6. كاشير الإدارة لتسجيل طلب هاتفي مباشر (POS) + كوبون الشات السريع + حملات واتساب + سجل الرقابة
         window.openAdminPOSModal = function() {
             let govSel = document.getElementById('pos-cust-gov');
             if (govSel && govSel.options.length === 0) {
@@ -8242,7 +7990,6 @@ window.showUserHistory = function(userId, userName) {
             cont.innerHTML = html;
         };
 
-        // سجل رقابة نشاط الإدارة (Audit Log) + متوقع نفاد المخزون الذكي
         window.recordAdminAuditLog = async function(actionText) {
             if (!currentUser) return;
             let logs = Array.isArray(storeSettings.adminAuditLogs) ? [...storeSettings.adminAuditLogs] : [];
@@ -8276,7 +8023,6 @@ window.showUserHistory = function(userId, userName) {
             }).join('');
         };
 
-        // ربط فتح نافذة المنتج وتحديث الإعدادات بـ V60
         const origOpenProductModalV59 = window.openProductModal;
         window.openProductModal = function(id) {
             origOpenProductModalV59(id);
@@ -8331,13 +8077,11 @@ window.showUserHistory = function(userId, userName) {
                 window.renderAdminAuditLog();
             }
 
-            // تحديث نافذة السلة المتروكة بالكود الحقيقي ونسبته
             let codeBox = document.getElementById('abandoned-modal-code-box');
             let pctEl = document.getElementById('abandoned-modal-disc-pct');
             if (codeBox) codeBox.textContent = String(storeSettings.abandonedCartCode || 'COMEBACK').trim().toUpperCase();
             if (pctEl) pctEl.textContent = (Number(storeSettings.abandonedCartDiscount) || 3) + '%';
 
-            // إظهار/إخفاء عناصر V60 حسب الإعدادات
             let showEl = (id, cond, disp = 'block') => { let el = document.getElementById(id); if (el) el.style.display = cond ? disp : 'none'; };
             showEl('checkout-delivery-slot-box', storeSettings.enableDeliverySlot !== false);
             showEl('checkout-gift-wrap-box', storeSettings.enableGiftWrap !== false);
@@ -8346,7 +8090,6 @@ window.showUserHistory = function(userId, userName) {
             showEl('admin-wa-campaigns-card', storeSettings.enableWaCampaigns !== false);
             showEl('admin-audit-log-card', storeSettings.enableAuditLog !== false);
 
-            // وضع الجرد أو الصيانة المؤقت (للزوار فقط وليس للمدير)
             let maintScreen = document.getElementById('maintenance-overlay-screen');
             if (maintScreen) {
                 maintScreen.style.display = (storeSettings.enableMaintenanceMode === true && !isCurrentUserAdmin) ? 'flex' : 'none';
@@ -8394,12 +8137,6 @@ window.showUserHistory = function(userId, userName) {
             "تغليف الطلب كهدية فاخرة مع كارت إهداء مطبوع": "Wrap Order as a Luxury Gift with Printed Card"
         });
 
-
-        // =========================================================================
-        // === النسخة V61: تفاصيل وتصفير الإحصائيات المربوطة + بطاقات الزوار + الحماية والـ SEO ===
-        // =========================================================================
-
-        // 1. التصفير المستقل لكل بطاقة إحصائية (الشهر / اليوم / الزيارات / الطلبات / الأرباح)
         window.verifyFounderPinOrConfirm = async function(actionLabel) {
             let pin = prompt(`أدخل رمز الأمان للمؤسس لـ (${actionLabel}) 🔄:`);
             if (!pin) return false;
@@ -8452,7 +8189,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // تحديث دالة حساب المقارنة اليومية والشهرية لتحترم تاريخ التصفير المستقل لكل بطاقة!
         window.renderGrowthComparisonReport = function() {
             let box = document.getElementById('admin-growth-comparison-box');
             if (box) box.style.display = storeSettings.enableGrowthReport !== false ? 'grid' : 'none';
@@ -8496,9 +8232,6 @@ window.showUserHistory = function(userId, userName) {
             monthlyEl.innerHTML = `هذا الشهر: <span style="color:#028090;">${thisMonthRev.toLocaleString()} ج</span> (${thisMonthCnt} طلب) <small style="color:var(--text-muted); font-weight:normal;">| الماضي: ${lastMonthRev.toLocaleString()} ج (${lastMonthCnt} طلب)</small>`;
         };
 
-        // =========================================================================
-        // === 2. نافذة "📋 التفاصيل" الموحدة للأوردرات وحساباتها مع الحذف الفوري المربوط ===
-        // =========================================================================
         window.currentDrilldownMode = 'monthly';
 
         window.getFilteredOrdersForDrilldown = function(mode) {
@@ -8601,7 +8334,6 @@ window.showUserHistory = function(userId, userName) {
             listEl.innerHTML = html;
         };
 
-        // حذف الأوردر من نافذة التفاصيل -> يخصم فلوسه وعدده فوراً من (مبيعات الشهر + الطلبات + الأرباح + صافي الربح) معاً!
         window.deleteOrderFromAnalyticsDrilldown = async function(orderId) {
             let ord = (adminOrdersArray || []).find(o => o.id === orderId);
             let amt = ord ? Number(ord.totalAmount || 0) : 0;
@@ -8637,9 +8369,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // =========================================================================
-        // === 3. نظام تتبع الزوار التفصيلي وبطاقات الزوار (نوع الهاتف + البريد + السجل بالساعة) ===
-        // =========================================================================
         window.detectVisitorDeviceDetails = function() {
             let ua = navigator.userAgent || '';
             let deviceType = '📱 هاتف ذكي';
@@ -8880,9 +8609,6 @@ window.showUserHistory = function(userId, userName) {
             } catch (e) {}
         };
 
-        // =========================================================================
-        // === 4. أكواد الـ SEO المتقدمة (JSON-LD Schema + Dynamic Sitemap) والحماية ===
-        // =========================================================================
         window.updateDynamicJsonLdSchema = function() {
             let scriptEl = document.getElementById('dynamic-json-ld-schema');
             if (!scriptEl || !products || products.length === 0) return;
@@ -8937,7 +8663,6 @@ window.showUserHistory = function(userId, userName) {
             window.showToast('تم توليد وتحميل ملف sitemap.xml المحدث بجميع منتجاتك 🗺️✅', 'success');
         };
 
-        // حماية الطلبات من السبام والطلبات الوهمية المتكررة (Anti-Spam Rate Limiter)
         const origProcessOrderV60 = window.processOrder;
         window.processOrder = async function(method) {
             if (storeSettings.enableAntiSpam !== false) {
@@ -8958,7 +8683,6 @@ window.showUserHistory = function(userId, userName) {
             return await origProcessOrderV60(method);
         };
 
-        // القفل التلقائي للإعدادات المحمية بعد 15 دقيقة من عدم النشاط
         window.adminInactivityTimer = null;
         window.resetAdminInactivityWatchdog = function() {
             if (window.adminInactivityTimer) clearTimeout(window.adminInactivityTimer);
@@ -9015,14 +8739,6 @@ window.showUserHistory = function(userId, userName) {
             "تفاصيل الأوردرات وحساباتها": "Orders & Revenue Breakdown"
         });
 
-
-        // =========================================================================
-        // === النسخة V62 الشاملة: إصلاح الواجهة والزوار + التحكم الكامل بحساب العميل بالشات + الميكروفون الذكي ===
-        // =========================================================================
-
-        // -------------------------------------------------------------------------
-        // أولاً: الإصلاحات الـ 5 الأساسية (الهيدر + البانر + الشريط المتحرك + القارئ الصوتي + سجل الزوار)
-        // -------------------------------------------------------------------------
         (function applyV62CoreFixes() {
             let hdrWorkBtn = document.getElementById('header-work-hub-btn');
             if (hdrWorkBtn) hdrWorkBtn.remove();
@@ -9047,7 +8763,6 @@ window.showUserHistory = function(userId, userName) {
             };
         })();
 
-        // إصلاح الشريط المصور المتحرك ليظهر كل المنتجات والأقسام ويلف تلقائياً بسلاسة
         let v62ScrollTimer = null;
         window.renderVisualBar = function() {
             let container = document.getElementById('visual-scroll-bar');
@@ -9108,7 +8823,6 @@ window.showUserHistory = function(userId, userName) {
             }, 30);
         };
 
-        // إصلاح القارئ الصوتي لوصف المنتج ليعمل على جميع الموبايلات والمتصفحات 100%
         window.currentProductTtsAudio = null;
         window.toggleProductVoiceReader = function() {
             let p = products.find(pr => pr.id === activeProductForReview);
@@ -9155,7 +8869,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // إصلاح سجل وبطاقات الزوار ليفتح في نفس اللحظة من وثيقة الإحصائيات والمستخدمين بدون أي تعليق
         window.logDetailedStoreVisit = async function() {
             if (storeSettings.enableVisitorTracking === false) return;
             try {
@@ -9239,11 +8952,8 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // -------------------------------------------------------------------------
-        // ثانياً: الميكروفون الذكي لتصحيح النطق والكلام التلقائي (للعميل والمدير والموظفين)
-        // -------------------------------------------------------------------------
         window.VOICE_PHONETIC_DICTIONARY = [
-            // تصحيح مصطلحات زيت الزيتون والمتجر الشائعة عند النطق السريع أو الخاطئ
+
             [/\b(زت|ذيت|زيتت|ازيت|الذيت)\b/g, 'زيت'],
             [/\b(زتون|ذيتون|زيتان|زاتون|الزتون|الذيتون|زيتونه)\b/g, 'زيتون'],
             [/\b(سيناوي|سينوي|سناوي|ثيناوي|سيناوى|السيناوي)\b/g, 'سيناوي'],
@@ -9271,7 +8981,6 @@ window.showUserHistory = function(userId, userName) {
             if (!rawText) return '';
             if (storeSettings.enableSmartMicCorrector === false) return rawText.trim();
 
-            // إذا وُجدت بدائل صوتية من المتصفح، نختار البديل الذي يحتوي على كلمات المتجر الصحيحة
             let storeKeywords = ['زيت', 'زيتون', 'سيناوي', 'لتر', 'طلب', 'شحن', 'سعر', 'عبوة', 'جركن', 'خصم', 'استرجاع'];
             let bestCandidate = rawText.trim();
             let bestScore = 0;
@@ -9291,12 +9000,11 @@ window.showUserHistory = function(userId, userName) {
             window.VOICE_PHONETIC_DICTIONARY.forEach(([regex, replacement]) => {
                 corrected = corrected.replace(regex, replacement);
             });
-            // إزالة التكرار اللغوي الناتج عن التلعثم الصوتي (مثال: "زيت زيت" -> "زيت")
+
             corrected = corrected.replace(/\b(\S+)\s+\1\b/g, '$1');
             return corrected.trim();
         };
 
-        // استبدال دالة الميكروفون (startVoiceTyping) لتدعم التصحيح الذكي للعميل والمدير والموظف
         window.startVoiceTyping = function(inputId, btnElement) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -9336,9 +9044,6 @@ window.showUserHistory = function(userId, userName) {
             recognition.start();
         };
 
-        // -------------------------------------------------------------------------
-        // ثالثاً: لوحة التحكم الكامل بحساب العميل من داخل الشات (الاسم، البريد، الرقم السري، الرصيد، والطلبات)
-        // -------------------------------------------------------------------------
         window.activeChatCustomerUserDocId = null;
         window.activeChatCustomerData = null;
 
@@ -9357,7 +9062,6 @@ window.showUserHistory = function(userId, userName) {
                 let foundUser = null;
                 let foundUid = null;
 
-                // البحث عن وثيقة العميل في مجموعة users عبر الـ UID أو الإيميل أو رقم الهاتف
                 let usersSnap = await getDocs(collection(db, 'users'));
                 usersSnap.forEach(uDoc => {
                     let d = uDoc.data();
@@ -9372,7 +9076,6 @@ window.showUserHistory = function(userId, userName) {
                     }
                 });
 
-                // جمع طلبات هذا العميل
                 let custOrders = (adminOrdersArray || []).filter(o => {
                     return (
                         (foundUid && o.userId === foundUid) ||
@@ -9519,17 +9222,13 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // السماح للعميل بتسجيل الدخول بالرقم السري الذي عينه له المدير من الشات أيضاً!
         let origAuForm = document.getElementById('auth-form');
         if (origAuForm) {
             origAuForm.addEventListener('submit', async (e) => {
-                // إذا فشل الدخول العادي لأن المدير غيّر الإيميل أو الرقم السري من الشات، نتحقق من adminCustomPassword
+
             });
         }
 
-        // -------------------------------------------------------------------------
-        // رابعاً: تطوير الشات (إرسال الصور، الرسائل الصوتية، بطاقات المنتجات، الطلبات، اسم الموظف، والملاحظات)
-        // -------------------------------------------------------------------------
         window.formatRichChatMessageHtml = function(m, viewMode = 'customer') {
             let isCust = m.sender === 'customer';
             let alignClass = (viewMode === 'customer')
@@ -9580,7 +9279,6 @@ window.showUserHistory = function(userId, userName) {
             </div>`;
         };
 
-        // ترقية loadCustomerChat و openAdminChat لعرض الوسائط وصور الإيصالات والرسائل الصوتية ولوحة حساب العميل
         window.loadCustomerChat = function() {
             if (!currentUser) return;
             let chatId = currentUser.email || currentUser.phoneNumber || currentUser.uid;
@@ -9634,7 +9332,6 @@ window.showUserHistory = function(userId, userName) {
             });
         };
 
-        // تحديث sendAdminMessage ليسجل اسم وإيميل الموظف/المدير الذي رد على العميل
         window.sendAdminMessage = async function() {
             let input = document.getElementById('admin-chat-input');
             let txt = input ? input.value.trim() : "";
@@ -9656,7 +9353,6 @@ window.showUserHistory = function(userId, userName) {
             });
         };
 
-        // أ) إرسال صورة أو إيصال داخل الشات (للعميل والمدير والموظف)
         window.sendChatImageAttachment = async function(senderRole, fileInp) {
             if (!fileInp || !fileInp.files || fileInp.files.length === 0) return;
             let file = fileInp.files[0];
@@ -9699,7 +9395,6 @@ window.showUserHistory = function(userId, userName) {
             fileInp.value = '';
         };
 
-        // ب) تسجيل وإرسال رسالة صوتية حقيقية (Voice Note) داخل الشات
         window.activeVoiceRecorder = null;
         window.activeVoiceChunks = [];
         window.toggleChatVoiceNoteRecording = async function(senderRole, btnEl) {
@@ -9768,7 +9463,7 @@ window.showUserHistory = function(userId, userName) {
                     reader.readAsDataURL(blob);
                 };
                 recorder.start();
-                // إيقاف تلقائي بعد 25 ثانية لحفظ حجم الوثيقة
+
                 setTimeout(() => {
                     if (recorder.state === 'recording') {
                         recorder.stop();
@@ -9783,7 +9478,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // ج) إرفاق طلب محدد للعميل في الشات + إرسال بطاقة منتج من الموظف للعميل
         window.openAttachOrderToChatModal = function() {
             let listEl = document.getElementById('chat-attach-order-list');
             let modal = document.getElementById('chat-attach-order-modal');
@@ -9922,9 +9616,6 @@ window.showUserHistory = function(userId, userName) {
             window.showToast('شكراً لتقييمك لخدمة العملاء! ⭐', 'success');
         };
 
-        // -------------------------------------------------------------------------
-        // خامساً: تثبيت التطبيق (PWA Install) + محفظة العميل النقدية + مشاركة السلة + عهدة المناديب
-        // -------------------------------------------------------------------------
         window.deferredPwaPrompt = null;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -9941,7 +9632,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // محفظة رصيد العميل النقدية (Store Wallet)
         window.currentUserWalletBalance = 0;
         onAuthStateChanged(auth, async (u) => {
             if (u) {
@@ -9967,7 +9657,6 @@ window.showUserHistory = function(userId, userName) {
             window.showToast(`🎉 تم خصم رصيد محفظتك (${window.currentUserWalletBalance} ج) من إجمالي الفاتورة!`, 'success');
         };
 
-        // مشاركة سلة المشتريات عبر واتساب
         window.shareCartViaWhatsApp = function() {
             if (cart.length === 0) {
                 window.showToast('السلة فارغة حالياً', 'error');
@@ -9978,7 +9667,6 @@ window.showUserHistory = function(userId, userName) {
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
         };
 
-        // عهدة وتحصيل المناديب في الإحصائيات
         window.renderCourierCustodySummary = function() {
             let body = document.getElementById('admin-courier-custody-body');
             let card = document.getElementById('admin-courier-custody-card');
@@ -10022,8 +9710,7 @@ window.showUserHistory = function(userId, userName) {
                 window.renderCourierCustodySummary();
             }
             let showEl = (id, cond, disp = 'flex') => { let el = document.getElementById(id); if (el) el.style.display = cond ? disp : 'none'; };
-            
-            
+
             showEl('btn-share-cart-wa', storeSettings.enableStoreWallet !== false, 'block');
         };
 
@@ -10052,19 +9739,12 @@ window.showUserHistory = function(userId, userName) {
             "ما رأيك في خدمة العملاء اليوم؟": "How was our customer support today?"
         });
 
-
-        // =========================================================================
-        // === النسخة V64 المستقرة والسريعة: حل نهائي للتعليق + الكاميرا/المعرض + الصوت للعميل + الدخول لحساب العميل ===
-        // =========================================================================
-
-        // 0. مسح أي كاش قديم في Service Worker تلقائياً لضمان عمل التعديلات فوراً
         if ('caches' in window) {
             caches.keys().then(keys => keys.forEach(k => {
                 if (!k.includes('v64')) caches.delete(k);
             })).catch(() => {});
         }
 
-        // 1. إخفاء زر "📲 تثبيت تطبيق المتجر" تلقائياً للعملاء المثبت عندهم التطبيق
         window.isStoreAppAlreadyInstalled = function() {
             if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
             if (window.navigator && window.navigator.standalone === true) return true;
@@ -10100,7 +9780,6 @@ window.showUserHistory = function(userId, userName) {
         };
         setTimeout(window.updateInstallPwaButtonVisibility, 400);
 
-        // 2. إصلاح بانر العروض المتحرك الكبير أعلى المتجر (Hero Slider) ليظهر ويعمل فور تفعيله
         let v64HeroTimer = null;
         let v64HeroSlideIndex = 0;
 
@@ -10172,7 +9851,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // 3. نافذة التخيير بين (📷 الكاميرا / 🖼️ المعرض) + إصلاح رفع الصورة للعميل والمدير
         window.currentChatPhotoRole = 'customer';
         window.openChatPhotoChooser = function(role) {
             window.currentChatPhotoRole = role || 'customer';
@@ -10199,7 +9877,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // إصلاح sendChatImageAttachment لعدم إرسال staffName: undefined فيفشل عند العميل!
         window.sendChatImageAttachment = async function(senderRole, fileInp) {
             if (!fileInp || !fileInp.files || fileInp.files.length === 0) return;
             let file = fileInp.files[0];
@@ -10258,7 +9935,6 @@ window.showUserHistory = function(userId, userName) {
             fileInp.value = '';
         };
 
-        // 4. إصلاح تسجيل الرسالة الصوتية (🎙️) للعميل والمدير (حل خطأ Firestore undefined + دعم كل صيغ الصوت)
         window.activeVoiceRecorder = null;
         window.activeVoiceChunks = [];
         window.voiceRecTimer = null;
@@ -10367,7 +10043,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // 5. ميزة "🔑 الدخول لحساب العميل (التصفح والتحكم كأنك العميل)" للمدير بدون أي تعليق!
         window.adminSavedSessionBackup = null;
 
         window.loginAsCustomerAccount = async function(identifier, customerNameHint = '') {
@@ -10469,7 +10144,6 @@ window.showUserHistory = function(userId, userName) {
             window.showToast('🔙 تمت العودة لحساب المدير بنجاح', 'info');
         };
 
-        // ربط زر (🔑 الدخول لحساب العميل) داخل الشات، وصفحة العملاء، وتفاصيل الطلبات، وغرفة العمل مباشرةً بدون MutationObserver!
         const origLoadCustCtrlInChatV62 = window.loadCustomerAccountControlInChat;
         window.loadCustomerAccountControlInChat = async function(chatId, customerName) {
             await origLoadCustCtrlInChatV62(chatId, customerName);
@@ -10537,7 +10211,6 @@ window.showUserHistory = function(userId, userName) {
             aom.insertAdjacentHTML('beforeend', `<button type="button" class="impersonate-user-btn" style="width:100%; margin-top:8px; padding:10px !important;" onclick="document.getElementById('admin-order-modal').style.display='none'; window.loginAsCustomerAccount('${safeTarget}', '${safeName}')">🔑 الدخول لحساب هذا العميل (${window.escapeHTML(ord.customerName || '')})</button>`);
         };
 
-        // 6. إضافات الأقسام الـ 8 (الفلاتر السريعة + نسخ المنتج والمعاينة + مستوى العضوية + المفضلة والسلة + الشات + الإعدادات)
         window.filterByQuickTag = function(tag, btnEl) {
             document.querySelectorAll('#v64-quick-tags-bar .quick-tag-chip').forEach(b => b.classList.remove('active'));
             if (btnEl) btnEl.classList.add('active');
@@ -10599,7 +10272,6 @@ window.showUserHistory = function(userId, userName) {
             if (el) el.addEventListener('input', window.updateLiveProductPreview);
         });
 
-        // مستوى عضوية العميل داخل صفحة حسابه الشخصي (يُحسب عند فتح صفحة الحساب فقط بدون أي حلقات تكرار!)
         const origShowProfilePanelV62 = window.showProfilePanel;
         window.showProfilePanel = function() {
             origShowProfilePanelV62();
@@ -10734,12 +10406,6 @@ window.showUserHistory = function(userId, userName) {
             await prevSaveSettingsV62();
         };
 
-
-        // =========================================================================
-        // === النسخة V65 المتكاملة: مخزون الأحجام + استيراد إكسيل + ملاحظات السلة + كشف المحفظة + تتبع الاسترجاع + إشعارات الهاتف ===
-        // =========================================================================
-
-        // 1. تحديث مخزون الحجم المختار داخل نافذة المنتج
         const origUpdateModalVarPriceV64 = window.updateModalVariantPrice;
         window.updateModalVariantPrice = function() {
             origUpdateModalVarPriceV64();
@@ -10757,7 +10423,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // 2. حفظ ملاحظة خاصة على كل منتج في السلة + حفظ واسترجاع مسودة السلة الشهرية
         window.updateCartItemCustomNote = function(cartItemId, noteVal) {
             let item = cart.find(i => i.cartItemId === cartItemId);
             if (item) {
@@ -10793,7 +10458,6 @@ window.showUserHistory = function(userId, userName) {
             } catch (e) {}
         };
 
-        // 3. استيراد وتحديث المنتجات من ملف إكسيل (CSV Import)
         window.importProductsFromCSV = function(inputEl) {
             if (!inputEl || !inputEl.files || inputEl.files.length === 0) return;
             let file = inputEl.files[0];
@@ -10848,7 +10512,6 @@ window.showUserHistory = function(userId, userName) {
             reader.readAsText(file);
         };
 
-        // 4. كشف حساب النقاط والمحفظة التفصيلي داخل صفحة حساب العميل
         window.renderCustomerWalletAndLoyaltyStatement = async function() {
             let listEl = document.getElementById('profile-statement-list');
             let boxEl = document.getElementById('profile-wallet-statement-box');
@@ -10890,7 +10553,6 @@ window.showUserHistory = function(userId, userName) {
             window.renderCustomerWalletAndLoyaltyStatement();
         };
 
-        // 5. تطوير قسم الاسترجاع (اختيار القطع المسترجعة + طريقة التعويض + رفض بالسبب + إرجاع المخزون تلقائياً عند القبول)
         window.submitReturnRequest = async function() {
             let orderId = document.getElementById('return-order-id').value;
             let reason = document.getElementById('return-reason').value;
@@ -11001,7 +10663,6 @@ window.showUserHistory = function(userId, userName) {
             });
         };
 
-        // 6. إرسال فاتورة دفع مباشر داخل الشات + توجيه المحادثة لموظف محدد
         window.sendQuickInvoiceInChat = async function() {
             if (!activeAdminChatId) return;
             let itemsDesc = prompt('🧾 اكتب اسم العبوات في الفاتورة السريعة:', 'عبوة زيت زيتون سيناوي بكر ممتاز 1 لتر');
@@ -11046,7 +10707,6 @@ window.showUserHistory = function(userId, userName) {
             window.showToast(`تم إسناد وتوجيه المحادثة إلى (${staffName.trim()}) بنجاح 👨‍💼`, 'success');
         };
 
-        // 7. إحصائية أكثر المنتجات إضافة للسلال والمفضلة + إشعارات شاشة الهاتف الفورية
         window.renderWishlistAndCartInterestAnalytics = async function() {
             let body = document.getElementById('admin-wishlist-analytics-body');
             let card = document.getElementById('admin-wishlist-analytics-card');
@@ -11146,24 +10806,14 @@ window.showUserHistory = function(userId, userName) {
             "أقل من 500 ج": "Under 500 EGP"
         });
 
-
-        // =========================================================================
-        // === النسخة V66 الشاملة: الإصلاح الجذري لحفظ الإعدادات + علامة الاستفهام المصورة + الـ 19 ميزة جديدة ===
-        // =========================================================================
-
-        // -------------------------------------------------------------------------
-        // أولاً: الإصلاح الجذري لمشكلة رجوع علامة الصح في الإعدادات (Atomic Single-Write Save)
-        // -------------------------------------------------------------------------
         window.lastAdminSettingInteractionTs = 0;
 
-        // منع onSnapshot من إعادة علامة الصح أثناء ضغط المدير على أي إعداد!
         document.addEventListener('change', (e) => {
             if (e.target && e.target.closest && e.target.closest('#roles-content-section')) {
                 window.lastAdminSettingInteractionTs = Date.now();
             }
         }, true);
 
-        // خريطة شاملة تربط كل Checkbox في لوحة التحكم بالخاصية المقابلة له في storeSettings
         window.MASTER_SETTINGS_CHECKBOX_MAP = [
             ['setting-enable-topbar', 'enableTopBar', false],
             ['setting-enable-custom-shipping', 'enableCustomShipping', true],
@@ -11256,7 +10906,7 @@ window.showUserHistory = function(userId, userName) {
             ['setting-enable-cart-item-notes', 'enableCartItemNotes', true],
             ['setting-enable-wallet-statement', 'enableWalletStatement', true],
             ['setting-enable-advanced-returns', 'enableAdvancedReturns', true],
-            // ميزات V66 الجديدة
+
             ['setting-enable-glass-ui', 'enableGlassUI', true],
             ['setting-enable-farm-reels', 'enableFarmReels', true],
             ['setting-enable-visual-size-guide', 'enableVisualSizeGuide', true],
@@ -11291,7 +10941,6 @@ window.showUserHistory = function(userId, userName) {
             ['setting-enable-seller-inventory-grid', 'enableSellerInventoryGrid', true]
         ];
 
-        // دالة حفظ موحدة وذرية (Atomic Save) تحفظ كل الخيارات دفعة واحدة في ثانية واحدة وتمنع رجوع علامة الصح نهائياً!
         window.saveSettings = async function() {
             window.lastAdminSettingInteractionTs = Date.now();
             const getV = (id, def = '') => { let el = document.getElementById(id); return el ? el.value.trim() : def; };
@@ -11308,7 +10957,6 @@ window.showUserHistory = function(userId, userName) {
                 }
             });
 
-            // قراءة الحقول النصية والقوائم المنسدلة
             Object.assign(masterPayload, {
                 topBarText: getV('setting-topbar-text', storeSettings.topBarText || ''),
                 topBarBg: getV('setting-topbar-bg', storeSettings.topBarBg || '#c59b27'),
@@ -11359,12 +11007,10 @@ window.showUserHistory = function(userId, userName) {
                 if (Array.isArray(prizes) && prizes.length === 7) masterPayload.wheel7Prizes = prizes;
             }
 
-            // 1. تحديث المتغير في الذاكرة وتطبيق التعديلات فوراً في نفس اللحظة!
             Object.assign(storeSettings, masterPayload);
             window.applyV66MasterUI();
             prevApplySettingsV64();
 
-            // إعادة تثبيت حالة الـ Checkboxes التي اختارها المدير حتى لا تتغير أبداً
             window.MASTER_SETTINGS_CHECKBOX_MAP.forEach(([domId, propKey]) => {
                 let el = document.getElementById(domId);
                 if (el) el.checked = Boolean(storeSettings[propKey]);
@@ -11379,9 +11025,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // -------------------------------------------------------------------------
-        // ثانياً: نظام علامة الاستفهام (❓) لشرح ومعاينة كل خيار في الإعدادات بالصور التوضيحية
-        // -------------------------------------------------------------------------
         window.SETTINGS_DETAILED_HELP_DB = {
             'setting-enable-glass-ui': {
                 title: 'التصميم الزجاجي العصري الفاخر (Glassmorphism)',
@@ -11511,7 +11154,6 @@ window.showUserHistory = function(userId, userName) {
             }
             if (descEl) descEl.textContent = desc;
 
-            // رسم معاينة مصورة حية (Visual UI Mockup) توضح شكل الميزة عند تفعيلها!
             let mockBadge = (info && info.mockBadge) ? info.mockBadge : '🌿 معاينة الميزة في المتجر';
             let mockTitle = (info && info.mockTitle) ? info.mockTitle : rawLabelText;
             let mockSub = (info && info.mockSub) ? info.mockSub : 'هكذا يظهر العنصر بشكل أنيق ومتناسق مع هوية زيت الشجرة المباركة عند التفعيل';
@@ -11547,11 +11189,6 @@ window.showUserHistory = function(userId, userName) {
             if (modal) modal.style.display = 'flex';
         };
 
-        // -------------------------------------------------------------------------
-        // ثالثاً: تنفيذ جميع الميزات والـ 19 أداة وزر جديد (V66)
-        // -------------------------------------------------------------------------
-
-        // 1. ركن فيديوهات المزرعة وتجارب العملاء (Farm Reels Wall)
         window.renderFarmReelsWall = function() {
             let sec = document.getElementById('home-farm-reels-section');
             let cont = document.getElementById('farm-reels-strip-container');
@@ -11608,7 +11245,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // 2. دليل المقاسات المرئي + عبوة التذوق التجريبية + إرسال كهدية برقم الهاتف + حجز العصرة القادمة + إعادة آخر طلب + الشراء الجماعي
         window.openVisualSizeGuideModal = function() {
             let m = document.getElementById('visual-size-guide-modal');
             if (m) m.style.display = 'flex';
@@ -11736,7 +11372,6 @@ window.showUserHistory = function(userId, userName) {
             window.open(`https://wa.me/?text=${encodeURIComponent(shareTxt)}`, '_blank');
         };
 
-        // 3. صندوق الهدية الغامضة + عداد التوفير التراكمي بالسلة + حاسبة وزن الشحنة للأوزان الثقيلة
         window.updateV66CartEnhancements = function() {
             let mysBox = document.getElementById('cart-mystery-gift-box');
             let savBar = document.getElementById('cart-cumulative-savings-bar');
@@ -11767,7 +11402,7 @@ window.showUserHistory = function(userId, userName) {
                 if (!showMys) {
                     savBar.style.display = 'none';
                 } else {
-                    // حساب التوفير التراكمي (فرق السعر قبل الخصم + خصم الكوبون + خصم الباقة + خصم الولاء)
+
                     let oldPriceDiff = 0;
                     let totalQty = 0;
                     (cart || []).filter(i => i.selected !== false).forEach(it => {
@@ -11797,9 +11432,8 @@ window.showUserHistory = function(userId, userName) {
             window.updateV66CartEnhancements();
         };
 
-        // 4. رادار الزوار المتواجدين الآن + منبّه إعادة الشراء الذكي + استوديو تصميم البانرات + الوضع المختصر للعمل + فاتورة الضمان المختومة
         window.renderLiveVisitorRadarAndReplenish = function() {
-            // أ) رادار الزوار
+
             let radarList = document.getElementById('live-radar-visitors-list');
             let radarCard = document.getElementById('admin-live-radar-card');
             let repBody = document.getElementById('admin-replenish-body');
@@ -11828,7 +11462,6 @@ window.showUserHistory = function(userId, userName) {
                 }
             }
 
-            // ب) منبّه إعادة الشراء الذكي (العملاء الذين مر على طلبهم 14 يوماً فأكثر أو اشتروا سابقاً)
             if (repBody) {
                 let custMap = new Map();
                 (adminOrdersArray || []).forEach(o => {
@@ -11899,7 +11532,6 @@ window.showUserHistory = function(userId, userName) {
             window.showToast(isCompact ? '📋 تم تفعيل الوضع المختصر السريع لغرفة العمل' : '📋 تم تفعيل الوضع التفصيلي الكامل لغرفة العمل', 'info');
         };
 
-        // 5. طباعة فاتورة وشهادة ضمان رسمية مختومة (Official Stamped Warranty Invoice)
         window.printOfficialStampedWarrantyInvoice = function(orderId) {
             let o = (adminOrdersArray || []).find(x => x.id === orderId) || (window.customerOrdersArray || []).find(x => x.id === orderId);
             if (!o) return;
@@ -11965,7 +11597,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // 6. تطبيق كافة إعدادات V66 على الواجهة
         window.applyV66MasterUI = function() {
             document.body.classList.toggle('glass-modern-ui', storeSettings.enableGlassUI !== false);
 
@@ -12002,7 +11633,6 @@ window.showUserHistory = function(userId, userName) {
             prevApplySettingsV64();
             window.applyV66MasterUI();
 
-            // إذا لم يكن المدير يضغط في هذه اللحظة، نزامن جميع الـ Checkboxes من storeSettings بدقة
             if (isCurrentUserAdmin && !isAdminEditingRightNow) {
                 window.MASTER_SETTINGS_CHECKBOX_MAP.forEach(([domId, propKey, defVal]) => {
                     let el = document.getElementById(domId);
@@ -12018,17 +11648,9 @@ window.showUserHistory = function(userId, userName) {
             window.injectHelpQuestionButtonsInSettings();
         }, 700);
 
-
-        // =========================================================================
-        // === النسخة V67 العالمية الشاملة: الإشعارات السحابية + رقم العميل الثابت + الشات الذكي + تقييمات الموظفين ===
-        // =========================================================================
-
         window.ZAIT_FCM_VAPID_KEY = "BEm1IXiTLYex2zUhOP6gJeHB1shQgbWspM2dyFrLeyND2E_x86SSPK-wZ-fULL90aeIqVTi2OSQDFN6wrvAyag0";
         window.ZAIT_OFFICIAL_SITE_URL = "https://alshagara-almubaraka.vercel.app";
 
-        // -------------------------------------------------------------------------
-        // أولاً: إصلاح زر تحميل الطلبات (CSV) ليعمل مع كافة أنواع الطلبات بنسبة 100% + رقم العميل الثابت
-        // -------------------------------------------------------------------------
         window.exportOrdersCSV = function() {
             if (!adminOrdersArray || adminOrdersArray.length === 0) {
                 window.showToast('لا توجد طلبات لتصديرها حالياً', 'error');
@@ -12061,9 +11683,6 @@ window.showUserHistory = function(userId, userName) {
             window.showToast('📥 تم تحميل شيت جميع الطلبات (CSV) بنجاح!', 'success');
         };
 
-        // -------------------------------------------------------------------------
-        // ثانياً: سهم طي/إظهار شريط الإدارة العلوي (#smart-nav) + الزر العائم السريع للمدير
-        // -------------------------------------------------------------------------
         window.isSmartNavManuallyCollapsed = localStorage.getItem('zait_smart_nav_collapsed') === 'true';
 
         window.applySmartNavCollapseState = function() {
@@ -12102,7 +11721,6 @@ window.showUserHistory = function(userId, userName) {
             window.applySmartNavCollapseState();
         };
 
-        // الزر العائم السريع للمدير مع الاختفاء التلقائي بعد عدد الثواني المحدد في الإعدادات
         window.adminFloatHideTimer = null;
 
         window.toggleAdminFloatingQuickMenu = function() {
@@ -12128,9 +11746,6 @@ window.showUserHistory = function(userId, userName) {
             window.showPanel(panelId);
         };
 
-        // -------------------------------------------------------------------------
-        // ثالثاً: نظام الرقم التعريفي الثابت والمتسلسل لكل عميل (#1، #2، #3...)
-        // -------------------------------------------------------------------------
         window.customerSeqMapCache = {};
         window.nextCustomerSeqCounter = 1;
 
@@ -12144,7 +11759,6 @@ window.showUserHistory = function(userId, userName) {
                     window.nextCustomerSeqCounter = Number(d.nextCustomerSeqCounter) || (Object.keys(window.customerSeqMapCache).length + 1);
                 }
 
-                // ضمان حصول كل عميل مسجل في users أو طلب في orders على رقم ثابت بالترتيب الزمني!
                 let changed = false;
                 let usersSnap = await getDocs(collection(db, 'users'));
                 let allUsers = [];
@@ -12229,7 +11843,6 @@ window.showUserHistory = function(userId, userName) {
             }
         });
 
-        // تحديث قائمة العملاء (👥) لتعرض رقم العميل الثابت (#1، #2...) على كل كارت عميل
         const origLoadAdminUsersV64 = window.loadAdminUsers;
         window.loadAdminUsers = function() {
             if (adminUsersUnsubscribe) adminUsersUnsubscribe();
@@ -12271,9 +11884,6 @@ window.showUserHistory = function(userId, userName) {
             });
         };
 
-        // -------------------------------------------------------------------------
-        // رابعاً: القصص التفاعلية بالفيديو والصور + تحديد نسبة خصم صفقة اليوم الخاطفة
-        // -------------------------------------------------------------------------
         window.openInstaStoryModal = function(storyOrProd) {
             if (!storyOrProd) return;
             let modal = document.getElementById('insta-story-modal');
@@ -12330,7 +11940,6 @@ window.showUserHistory = function(userId, userName) {
             if (window.instaStoryTimer) clearInterval(window.instaStoryTimer);
         };
 
-        // ربط القصص المخصصة والفيديوهات التي يضيفها المدير في الإعدادات بشريط الـ Reels والـ Stories!
         const origRenderFarmReelsV66 = window.renderFarmReelsWall;
         window.renderFarmReelsWall = function() {
             let customText = (storeSettings.customInstaStoriesData || '').trim();
@@ -12371,11 +11980,6 @@ window.showUserHistory = function(userId, userName) {
             }).join('');
         };
 
-        // -------------------------------------------------------------------------
-        // خامساً: شات خدمة العملاء العالمي (Onboarding Bot لتأكيد/حفظ الاسم والرقم + انضمام الموظف + التمرير التلقائي أثناء الكتابة + تقييم الموظف المستقل)
-        // -------------------------------------------------------------------------
-
-        // 1. ضمان بقاء الرسائل مرئية تماماً أثناء الكتابة في الموبايل والكمبيوتر
         ['support-message', 'admin-chat-input'].forEach(inpId => {
             let inp = document.getElementById(inpId);
             if (inp) {
@@ -12389,8 +11993,6 @@ window.showUserHistory = function(userId, userName) {
             }
         });
 
-        // 2. حالة البوت الترحيبي لتأكيد وتحديث اسم ورقم العميل عند بدء المحادثة
-        // الحالات: 'confirm_existing' | 'ask_name' | 'ask_phone' | 'ask_issue' | 'completed'
         window.chatOnboardingState = 'idle';
         window.chatOnboardingTempName = '';
         window.chatOnboardingTempPhone = '';
@@ -12400,7 +12002,6 @@ window.showUserHistory = function(userId, userName) {
             let box = document.getElementById('support-history-container');
             if (!box) return;
 
-            // جلب أحدث بيانات العميل من حسابه أو الذاكرة
             let savedName = currentUser.displayName || localStorage.getItem('zait_wheel_saved_name') || '';
             let savedPhone = currentUser.phoneNumber || localStorage.getItem('zait_wheel_saved_phone') || '';
             try {
@@ -12480,7 +12081,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // اعتراض ذكي لنموذج إرسال رسالة العميل (#support-form) لتنفيذ خطوات البوت وتجميع البيانات + المشكلة في رسالة واحدة ثم إظهار الرد الآلي!
         let supFormEl = document.getElementById('support-form');
         if (supFormEl) {
             let newSupForm = supFormEl.cloneNode(true);
@@ -12500,7 +12100,6 @@ window.showUserHistory = function(userId, userName) {
 
                 let promptBox = document.getElementById('onboarding-bot-step-prompt');
 
-                // إذا كان العميل في خطوة إدخال الاسم:
                 if (storeSettings.enableChatOnboardingBot !== false && window.chatOnboardingState === 'ask_name') {
                     window.chatOnboardingTempName = text;
                     window.chatOnboardingState = 'ask_phone';
@@ -12512,12 +12111,10 @@ window.showUserHistory = function(userId, userName) {
                     return;
                 }
 
-                // إذا كان العميل في خطوة إدخال رقم الهاتف:
                 if (storeSettings.enableChatOnboardingBot !== false && window.chatOnboardingState === 'ask_phone') {
                     window.chatOnboardingTempPhone = window.toEngDigits(text).trim();
                     window.chatOnboardingState = 'ask_issue';
 
-                    // حفظ الاسم والرقم تلقائياً في حساب العميل والذاكرة!
                     localStorage.setItem('zait_wheel_saved_name', window.chatOnboardingTempName);
                     localStorage.setItem('zait_wheel_saved_phone', window.chatOnboardingTempPhone);
                     let seqNum = await window.ensureCustomerSequentialNumber([currentUser.uid, currentUser.email, window.chatOnboardingTempPhone]);
@@ -12539,13 +12136,11 @@ window.showUserHistory = function(userId, userName) {
                     return;
                 }
 
-                // إرسال الرسالة (سواء كانت المشكلة المجمعة بعد تأكيد البيانات أو رسالة عادية)
                 let chatId = currentUser.email || currentUser.phoneNumber || currentUser.uid;
                 let seqNum = await window.ensureCustomerSequentialNumber([currentUser.uid, currentUser.email, window.chatOnboardingTempPhone]);
                 let finalName = window.chatOnboardingTempName || currentUser.displayName || chatId.split('@')[0];
                 let finalPhone = window.chatOnboardingTempPhone || currentUser.phoneNumber || localStorage.getItem('zait_wheel_saved_phone') || 'غير مسجل';
 
-                // تأكيد حفظ البيانات تلقائياً في حساب العميل
                 try {
                     await setDoc(doc(db, 'users', currentUser.uid), {
                         name: finalName,
@@ -12577,7 +12172,6 @@ window.showUserHistory = function(userId, userName) {
                     let isAdminReplied = snap.exists() && snap.data().adminReplied === true;
                     let messagesToSave = [userMsg];
 
-                    // إظهار رسالة الرد الآلي فوراً بعد إرسال البطاقة المجمعة للمشكلة!
                     if (storeSettings.enableAutoReply !== false && (!isAdminReplied || isFirstUnifiedTicket)) {
                         let replyTxt = storeSettings.autoReplyMessage || "مرحباً بك في متجر زيت الشجرة المباركة 🌿 تم استلام بياناتك واستفسارك بنجاح، وسيرد عليك أحد ممثلي خدمة العملاء خلال دقائق.";
                         if (storeSettings.enableWorkingHours !== false && storeSettings.appendHoursToAutoReply && storeSettings.workingHoursText) {
@@ -12620,7 +12214,6 @@ window.showUserHistory = function(userId, userName) {
             });
         }
 
-        // 3. تحسين عرض فقاعات الشات + إشعار انضمام الموظف + إشعار الهاتف الخارجي للعميل عند رد الموظف
         window.lastSeenSupportMsgCount = 0;
 
         window.formatRichChatMessageHtml = function(m, viewMode = 'customer') {
@@ -12682,20 +12275,17 @@ window.showUserHistory = function(userId, userName) {
             </div>`;
         };
 
-        // إرسال إشعار خارجي على شاشة هاتف العميل إذا أرسل الموظف رسالة والعميل خارج صفحة الشات أو قافل التطبيق!
         window.triggerExternalPhoneNotificationForCustomer = async function(staffName, msgText) {
             if (storeSettings.enableStaffJoinNotice === false) return;
             let title = `💬 رد جديد من ${staffName || 'خدمة عملاء زيت الشجرة المباركة'}`;
             let body = `${msgText || 'لديك رسالة جديدة في محادثة خدمة العملاء'} (اضغط للفتح والرد فوراً)`;
 
-            // تنبيه داخل الموقع إذا كان العميل في صفحة أخرى غير الشات
             let supPanel = document.getElementById('support-panel');
             let isWatchingChatNow = (document.visibilityState === 'visible') && supPanel && supPanel.classList.contains('active');
             if (isWatchingChatNow) return;
 
             window.showToast(`💬 رسالة جديدة من (${staffName}): ${msgText.slice(0, 45)}...`, 'info');
 
-            // إرسال إشعار النظام الخارجي عبر Service Worker ليظهر في شريط إشعارات الهاتف العلوي ويفتح الشات عند الضغط عليه!
             if ('Notification' in window && Notification.permission === 'granted') {
                 try {
                     if ('serviceWorker' in navigator) {
@@ -12737,7 +12327,6 @@ window.showUserHistory = function(userId, userName) {
                     let data = docSnap.data();
                     let msgs = data.messages || [];
 
-                    // فحص ما إذا وصلت رسالة جديدة من موظف والعميل خارج صفحة الشات لإرسال إشعار الهاتف الخارجي!
                     if (window.lastSeenSupportMsgCount !== -1 && msgs.length > window.lastSeenSupportMsgCount) {
                         let latestMsg = msgs[msgs.length - 1];
                         if (latestMsg && latestMsg.sender === 'admin' && !latestMsg.isAutoReply) {
@@ -12746,7 +12335,6 @@ window.showUserHistory = function(userId, userName) {
                     }
                     window.lastSeenSupportMsgCount = msgs.length;
 
-                    // إذا قام الموظف بإنهاء المحادثة وطلب التقييم، نظهر نافذة تقييم الموظف للعميل!
                     if (data.status === 'ended_by_staff' && data.pendingStaffRating === true && storeSettings.enableStaffRatingsSystem !== false) {
                         window.promptCustomerStaffRatingModal(data.activeStaffName || 'ممثل خدمة العملاء');
                     }
@@ -12774,7 +12362,6 @@ window.showUserHistory = function(userId, userName) {
             });
         };
 
-        // عند فتح العميل لصفحة خدمة العملاء، نشغل البوت الترحيبي لتأكيد الاسم والرقم ونطلب صلاحية الإشعارات الخارجية
         const origShowPanelV66 = window.showPanel;
         window.showPanel = function(panelId) {
             origShowPanelV66(panelId);
@@ -12791,12 +12378,10 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // فتح الشات تلقائياً إذا ضغط العميل على إشعار الهاتف الخارجي (?openChat=1)
         if (window.location.search.includes('openChat=1')) {
             setTimeout(() => { window.showPanel('support'); }, 900);
         }
 
-        // 4. إشعار (👨‍💼 انضم [اسم الموظف] إلى المحادثة) فور دخول الموظف أو المدير لشات العميل + إظهار رقم العميل الثابت
         window.getCurrentStaffCleanName = function() {
             if (!currentUser) return 'أحمد - خدمة العملاء';
             if (currentUser.displayName) return currentUser.displayName;
@@ -12817,7 +12402,6 @@ window.showUserHistory = function(userId, userName) {
             activeAdminChatId = id;
             window.loadCustomerAccountControlInChat(id, name);
 
-            // إرسال إشعار انضمام الموظف للمحادثة ليظهر للعميل قبل وصول رسالة الموظف!
             let staffName = window.getCurrentStaffCleanName();
             try {
                 let cRef = doc(db, 'chats', id);
@@ -12860,7 +12444,6 @@ window.showUserHistory = function(userId, userName) {
             });
         };
 
-        // تحديث قائمة رسائل الإدارة (#admin-chat-list) ليظهر رقم العميل الثابت (#1، #2...) بجانب اسم كل عميل
         window.loadAdminMessages = function() {
             if (adminChatsUnsubscribe) adminChatsUnsubscribe();
             adminChatsUnsubscribe = onSnapshot(query(collection(db, 'chats'), orderBy('lastUpdate', 'desc')), (snapshot) => {
@@ -12888,7 +12471,6 @@ window.showUserHistory = function(userId, userName) {
             });
         };
 
-        // 5. نظام تقييم الموظف بعد انتهاء المحادثة (مثل أمازون ونون مع زر X) + قسم تقييمات الموظفين وسجل محادثة الموظف فقط!
         window.currentRatingStaffName = 'ممثل خدمة العملاء';
 
         window.promptCustomerStaffRatingModal = function(staffName) {
@@ -12957,7 +12539,6 @@ window.showUserHistory = function(userId, userName) {
                     let allMsgs = Array.isArray(cData.messages) ? cData.messages : [];
                     let staffName = cData.activeStaffName || window.currentRatingStaffName || 'خدمة العملاء';
 
-                    // استخراج المحادثة الخاصة بهذا الموظف فقط (رسائل العميل + رسائل هذا الموظف تحديداً في هذه الجلسة)
                     let staffSpecificTranscript = allMsgs.filter(m => {
                         if (m.sender === 'customer') return true;
                         if (!m.staffName || m.staffName === staffName || m.isAutoReply) return true;
@@ -13006,7 +12587,6 @@ window.showUserHistory = function(userId, userName) {
                     return;
                 }
 
-                // تجميع التقييمات في كارت مستقل لكل موظف
                 let byStaff = {};
                 list.forEach(r => {
                     let sName = r.staffName || 'خدمة العملاء';
@@ -13075,14 +12655,13 @@ window.showUserHistory = function(userId, userName) {
             modal.style.display = 'flex';
         };
 
-        // 6. ربط مفتاح إشعارات Firebase Cloud Messaging (FCM VAPID Key) الرسمي
         window.registerFcmWebPushToken = async function() {
             try {
                 if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
                 if (Notification.permission !== 'granted') return;
                 const { getMessaging, getToken } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js");
                 const messaging = getMessaging();
-                const swReg = await navigator.serviceWorker.register('/sw.js');
+                const swReg = await navigator.serviceWorker.register("/sw.js?v=84");
                 const fcmToken = await getToken(messaging, {
                     vapidKey: window.ZAIT_FCM_VAPID_KEY,
                     serviceWorkerRegistration: swReg
@@ -13105,7 +12684,6 @@ window.showUserHistory = function(userId, userName) {
             }
         }, 3000);
 
-        // 7. ربط إعدادات V67 بـ applySettingsToUI و updateAdminUI
         const origUpdateAdminUIV66 = window.updateAdminUI;
         window.updateAdminUI = function() {
             origUpdateAdminUIV66();
@@ -13164,14 +12742,6 @@ window.showUserHistory = function(userId, userName) {
             }
         });
 
-
-        // =========================================================================
-        // === النسخة V68 الشاملة: إصلاح أدوات الشات وحذف الصوت والإشعارات + سحب الزر العائم + فيديو القصص من الهاتف + بوابات الدفع + الـ 29 ميزة ===
-        // =========================================================================
-
-        // -------------------------------------------------------------------------
-        // 1. إصلاح فتح وإغلاق درج (أدوات الموظف والمرفقات) في شات العميل وشات الإدارة
-        // -------------------------------------------------------------------------
         window.toggleChatToolsDrawer = function(drawerId, btnEl) {
             let drawer = document.getElementById(drawerId);
             if (!drawer) return;
@@ -13195,9 +12765,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // -------------------------------------------------------------------------
-        // 2. ميزة حذف وإلغاء المقطع الصوتي أثناء التسجيل (للعميل والمدير) لإعادة التسجيل من البداية
-        // -------------------------------------------------------------------------
         window.isVoiceRecordingCanceled = false;
 
         window.cancelActiveVoiceRecording = function(role) {
@@ -13229,7 +12796,6 @@ window.showUserHistory = function(userId, userName) {
 
             let cancelBtn = document.getElementById(senderRole === 'admin' ? 'btn-admin-cancel-voice' : 'btn-cust-cancel-voice');
 
-            // إذا كان التسجيل شغالاً وضغط على زر التسجيل نفسه -> إيقاف وإرسال
             if (window.activeVoiceRecorder && window.activeVoiceRecorder.state === 'recording') {
                 window.isVoiceRecordingCanceled = false;
                 window.activeVoiceRecorder.stop();
@@ -13287,7 +12853,6 @@ window.showUserHistory = function(userId, userName) {
                     if (cancelBtn) cancelBtn.style.display = 'none';
                     stream.getTracks().forEach(t => t.stop());
 
-                    // إذا ضغط العميل أو الموظف على زر (🗑️ إلغاء وحذف المقطع)، نخرج فوراً ولا نرسل أي شيء!
                     if (window.isVoiceRecordingCanceled) {
                         window.activeVoiceChunks = [];
                         return;
@@ -13336,9 +12901,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // -------------------------------------------------------------------------
-        // 3. إصلاح زر (🔔 تفعيل واختبار إشعارات شاشة الهاتف الآن) مع شارة الحالة الحية
-        // -------------------------------------------------------------------------
         window.updatePushNotifStatusBadge = function() {
             let badge = document.getElementById('push-notif-status-badge');
             let btn = document.getElementById('btn-enable-device-push');
@@ -13417,16 +12979,12 @@ window.showUserHistory = function(userId, userName) {
         };
         setTimeout(window.updatePushNotifStatusBadge, 1200);
 
-        // -------------------------------------------------------------------------
-        // 4. الضغط المطول (Long Press) على الزر العائم للمدير (🛡️) لإظهار (📍 تغيير المكان) وسحبه وتثبيته
-        // -------------------------------------------------------------------------
         (function setupAdminFloatingLauncherLongPressAndDrag() {
             let wrap = document.getElementById('admin-floating-launcher-wrap');
             let mainBtn = document.getElementById('admin-floating-main-btn');
             let moveBadge = document.getElementById('admin-float-move-badge');
             if (!wrap || !mainBtn || !moveBadge) return;
 
-            // استرجاع المكان المحفوظ مسبقاً
             try {
                 let savedPos = JSON.parse(localStorage.getItem('zait_admin_float_pos') || 'null');
                 if (savedPos && typeof savedPos.left === 'number' && typeof savedPos.top === 'number') {
@@ -13511,9 +13069,6 @@ window.showUserHistory = function(userId, userName) {
             window.addEventListener('mouseup', endDrag);
         })();
 
-        // -------------------------------------------------------------------------
-        // 5. رفع الفيديو أو الصورة من الهاتف مباشرة في محرر القصص التفاعلية (Story Editor)
-        // -------------------------------------------------------------------------
         window.localPhoneStoriesDB = {};
 
         window.saveMediaToLocalStoryDB = function(key, dataUrl) {
@@ -13602,7 +13157,6 @@ window.showUserHistory = function(userId, userName) {
             window.showToast('🎬 تمت إضافة القصة/الفيديو من هاتفك ونشرها بنجاح!', 'success');
         };
 
-        // تحديث فتح القصة لتشغيل الفيديوهات المرفوعة من الهاتف (local_video_...)
         const origOpenInstaStoryV67 = window.openInstaStoryModal;
         window.openInstaStoryModal = function(storyOrProd) {
             if (!storyOrProd) return;
@@ -13615,9 +13169,6 @@ window.showUserHistory = function(userId, userName) {
             origOpenInstaStoryV67(copyObj);
         };
 
-        // -------------------------------------------------------------------------
-        // 6. البحث الفوري الشامل داخل لوحة الإعدادات عن أي خيار أو ميزة (Settings Option Search)
-        // -------------------------------------------------------------------------
         window.filterAdminSettingsCards = function() {
             if (window.initProAdminControlCenter) window.initProAdminControlCenter();
             let inp = document.getElementById('admin-settings-quick-search');
@@ -13628,7 +13179,6 @@ window.showUserHistory = function(userId, userName) {
             let sec = document.getElementById('roles-content-section');
             if (!sec) return;
 
-            // البحث داخل كل خيار (<label>) وكل قسم فرعي
             sec.querySelectorAll('label').forEach(lbl => {
                 let txt = (lbl.textContent || '').toLowerCase();
                 if (!q) {
@@ -13644,7 +13194,6 @@ window.showUserHistory = function(userId, userName) {
                 }
             });
 
-            // إظهار الكروت التي تحتوي على نتائج مطابقة
             sec.querySelectorAll('.admin-setting-card-pro').forEach(card => {
                 if (!q || (card.textContent || '').toLowerCase().includes(q)) {
                     card.style.display = 'block';
@@ -13665,9 +13214,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // -------------------------------------------------------------------------
-        // 7. بوابات الدفع الإلكتروني الأوتوماتيكية (Paymob / Fawry) مع زر إيقاف وتشغيل
-        // -------------------------------------------------------------------------
         window.syncOnlinePaymentGatewayOptionsInCheckout = function() {
             let sel = document.getElementById('order-payment-method');
             if (!sel) return;
@@ -13742,9 +13288,6 @@ window.showUserHistory = function(userId, userName) {
             await window.processOrder(window.pendingGatewayOrderMethod || 'عبر الموقع');
         };
 
-        // -------------------------------------------------------------------------
-        // 8. بوابة المندوب المستقلة + نظام المسوقين بالعمولة + البث المباشر + شهادة المعمل
-        // -------------------------------------------------------------------------
         window.openDriverPortalModal = function() {
             let listEl = document.getElementById('driver-portal-orders-list');
             let modal = document.getElementById('driver-portal-modal');
@@ -13788,7 +13331,6 @@ window.showUserHistory = function(userId, userName) {
             window.showToast('🛵 تم تأكيد التسليم وتحصيل المبلغ بنجاح!', 'success');
         };
 
-        // نظام المسوقين بالعمولة (Affiliate System)
         (function checkAffiliateReferralUrl() {
             try {
                 let params = new URLSearchParams(window.location.search);
@@ -13851,7 +13393,6 @@ window.showUserHistory = function(userId, userName) {
             if (m) m.style.display = 'flex';
         };
 
-        // الباقات الموسمية الجاهزة بضغطة واحدة
         window.addSeasonalReadyBundle = function(bundleType) {
             if (!products || products.length === 0) return;
             let p = products[0];
@@ -13866,9 +13407,6 @@ window.showUserHistory = function(userId, userName) {
             window.showPanel('cart');
         };
 
-        // -------------------------------------------------------------------------
-        // 9. شريط السلة السفلي المتفاعل + طيران المنتج للسلة + تكبير الخط + المحطات الثلاث للمكافآت
-        // -------------------------------------------------------------------------
         window.isLargeFontActive = localStorage.getItem('zait_large_font') === 'true';
         if (window.isLargeFontActive) document.body.classList.add('large-comfort-font');
 
@@ -13897,7 +13435,6 @@ window.showUserHistory = function(userId, userName) {
                 }
             }
 
-            // تحديث شريط المحطات الثلاث للمكافآت في السلة
             let msBox = document.getElementById('cart-3tier-milestones-box');
             if (msBox) {
                 if (storeSettings.enable3TierMilestones === false || totalCount === 0) {
@@ -13927,9 +13464,6 @@ window.showUserHistory = function(userId, userName) {
             window.updateFloatingBottomCartBarAndMilestones();
         };
 
-        // -------------------------------------------------------------------------
-        // 10. إرسال فيديو قصير بالشات + المجيب الآلي بالكلمات المفتاحية + تحويل المحادثة لطلب بضغطة زر
-        // -------------------------------------------------------------------------
         window.sendChatVideoAttachment = async function(senderRole, fileInp) {
             if (!fileInp || !fileInp.files || fileInp.files.length === 0) return;
             let file = fileInp.files[0];
@@ -13972,7 +13506,6 @@ window.showUserHistory = function(userId, userName) {
             fileInp.value = '';
         };
 
-        // دعم عرض الفيديو داخل فقاعة الشات
         const origFormatRichChatV67 = window.formatRichChatMessageHtml;
         window.formatRichChatMessageHtml = function(m, viewMode = 'customer') {
             let html = origFormatRichChatV67(m, viewMode);
@@ -13998,9 +13531,6 @@ window.showUserHistory = function(userId, userName) {
             window.showToast('📦 تم نقل بيانات العميل من الشات إلى نافذة تسجيل الطلب المباشر!', 'success');
         };
 
-        // -------------------------------------------------------------------------
-        // 11. مهام نقاط الولاء + مشاركة المفضلة كقائمة هدايا + إدارة الاشتراك الشهري
-        // -------------------------------------------------------------------------
         window.claimLoyaltyQuestReward = async function(questKey, ptsReward) {
             if (!currentUser) { window.showToast('يرجى تسجيل الدخول أولاً', 'error'); window.showPanel('auth'); return; }
             let storageKey = `zait_quest_${questKey}_${currentUser.uid}`;
@@ -14041,9 +13571,6 @@ window.showUserHistory = function(userId, userName) {
             } catch (e) {}
         };
 
-        // -------------------------------------------------------------------------
-        // 12. خريطة مبيعات الـ 27 محافظة + التقرير المالي الشهري المختوم PDF + حاسبة التسعير الذكي
-        // -------------------------------------------------------------------------
         window.renderV68AdminAnalyticsAndGovMap = function() {
             let govListEl = document.getElementById('admin-27gov-sales-list');
             let staffListEl = document.getElementById('admin-live-staff-activity-list');
@@ -14126,7 +13653,6 @@ window.showUserHistory = function(userId, userName) {
             w.document.close();
         };
 
-        // ربط جميع إعدادات V68 بـ applyV66MasterUI
         const origApplyV67MasterUI = window.applyV66MasterUI;
         window.applyV66MasterUI = function() {
             origApplyV67MasterUI();
@@ -14191,15 +13717,9 @@ window.showUserHistory = function(userId, userName) {
             }
         });
 
-
-        // =========================================================================
-        // === النسخة V70 الشاملة: مركز إرسال الإشعارات متعدد القنوات + تثبيت قائمة الزر العائم + شريط الصوت الثابت + مهام الولاء المحمية + ترتيب القائمة الجانبية ===
-        // =========================================================================
-
         window.ZAIT_OFFICIAL_FB_URL = "https://www.facebook.com/share/1Dh3Zv7868/";
         window.previousSettingsBackupSnapshot = null;
 
-        // حفظ نسخة من الإعدادات قبل كل تعديل لإتاحة زر (↩️ تراجع عن آخر تعديل)
         const origSaveSettingsV68 = window.saveSettings;
         window.saveSettings = async function() {
             try {
@@ -14223,9 +13743,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // -------------------------------------------------------------------------
-        // أولاً: حل مشكلة قائمة الزر العائم للمدير (🛡️) لتظهر كاملة 100% داخل الشاشة في أي مكان
-        // -------------------------------------------------------------------------
         window.positionAdminFloatingMenuInViewport = function() {
             let wrap = document.getElementById('admin-floating-launcher-wrap');
             let btn = document.getElementById('admin-floating-main-btn');
@@ -14238,7 +13755,6 @@ window.showUserHistory = function(userId, userName) {
             let menuW = menu.offsetWidth || 205;
             let menuH = menu.offsetHeight || 340;
 
-            // تحديد ما إذا كانت القائمة ستفتح يمين الزر أو يساره حسب المساحة المتاحة في الشاشة
             let targetLeft;
             if (btnRect.left + btnRect.width + menuW + 14 <= vw) {
                 targetLeft = btnRect.right + 8;
@@ -14248,7 +13764,6 @@ window.showUserHistory = function(userId, userName) {
                 targetLeft = Math.max(8, Math.min(vw - menuW - 8, (vw - menuW) / 2));
             }
 
-            // تحديد الارتفاع الرأسي بحيث لا تختفي أبداً أسفل الشاشة أو أعلى الشاشة
             let targetTop = btnRect.top;
             if (targetTop + menuH + 15 > vh) {
                 targetTop = vh - menuH - 15;
@@ -14286,9 +13801,6 @@ window.showUserHistory = function(userId, userName) {
             if (menu && menu.style.display === 'flex') window.positionAdminFloatingMenuInViewport();
         });
 
-        // -------------------------------------------------------------------------
-        // ثانياً: قسم إرسال إشعارات للعملاء المتعدد القنوات + سجل الرسائل بالتاريخ والساعة والدقيقة + تفاصيل المشاهدة وحساب العميل
-        // -------------------------------------------------------------------------
         window.allBroadcastsCache = [];
         window.allRegisteredUsersCache = [];
 
@@ -14383,7 +13895,6 @@ window.showUserHistory = function(userId, userName) {
                 let docRef = await addDoc(collection(db, 'global_notifications'), broadcastPayload);
                 let bcId = docRef.id;
 
-                // 1. إرسال إلى إشعارات التطبيق وإشعارات الهاتف الخارجية لجميع العملاء
                 if (chInApp || chPush) {
                     let userNotifObj = {
                         broadcastId: bcId,
@@ -14400,7 +13911,6 @@ window.showUserHistory = function(userId, userName) {
                     }
                 }
 
-                // إذا اختار إشعارات الهاتف الخارجية، نطلق أيضاً إشعار النظام الفوري
                 if (chPush && 'Notification' in window && Notification.permission === 'granted') {
                     try {
                         if ('serviceWorker' in navigator) {
@@ -14417,14 +13927,12 @@ window.showUserHistory = function(userId, userName) {
                     } catch (e) {}
                 }
 
-                // 2. إذا اختار البريد الإلكتروني المسجل للعملاء
                 if (chEmail && emailsList.length > 0) {
                     let bccStr = emailsList.slice(0, 60).join(',');
                     let mailtoUrl = `mailto:?bcc=${encodeURIComponent(bccStr)}&subject=${encodeURIComponent(title)}&body=${encodeURIComponent(message + '\n\nمتجر زيت الشجرة المباركة: ' + window.location.origin)}`;
                     setTimeout(() => { window.open(mailtoUrl, '_blank'); }, 300);
                 }
 
-                // 3. إذا اختار واتساب للعملاء
                 if (chWa && waPhonesList.length > 0) {
                     let firstWa = waPhonesList[0].phone.replace(/\D/g, '');
                     if (firstWa && !firstWa.startsWith('20') && firstWa.length >= 10) firstWa = '20' + firstWa;
@@ -14520,7 +14028,6 @@ window.showUserHistory = function(userId, userName) {
             let deliveredTo = Array.isArray(b.deliveredTo) ? b.deliveredTo : [];
             let seenBy = Array.isArray(b.seenBy) ? b.seenBy : [];
 
-            // إذا كانت الرسالة قديمة قبل V70 وليس بها deliveredTo، نجلب العملاء الحاليين لعرضهم
             if (deliveredTo.length === 0) {
                 try {
                     let uSnap = await getDocs(collection(db, 'users'));
@@ -14556,7 +14063,7 @@ window.showUserHistory = function(userId, userName) {
             if (deliveredTo.length === 0 && seenBy.length === 0) {
                 listEl.innerHTML = '<p style="text-align:center; color:var(--text-muted);">لا توجد بيانات عملاء مسجلة لهذه الرسالة.</p>';
             } else {
-                // نرتب القائمة بحيث يظهر العملاء الذين فتحوا وشاهدوا الرسالة في الأعلى أولاً
+
                 let combined = [...deliveredTo];
                 seenBy.forEach(s => {
                     if (!combined.find(c => c.uid === s.uid)) combined.unshift(s);
@@ -14595,7 +14102,6 @@ window.showUserHistory = function(userId, userName) {
             modal.style.display = 'flex';
         };
 
-        // فتح بطاقة معلومات العميل الكاملة عند الضغط على اسمه داخل تفاصيل الرسالة مع زر الدخول لحسابه!
         window.openBroadcastCustomerProfileModal = async function(uid) {
             if (!uid) return;
             let modal = document.getElementById('broadcast-cust-profile-modal');
@@ -14642,7 +14148,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // تسجيل تلقائي عندما يفتح العميل الإشعار (سواء من إشعار الهاتف الخارجي أو من جرس الإشعارات داخل التطبيق)
         window.markBroadcastSeenByCurrentUser = async function(channelLabel = 'إشعار داخل التطبيق 🔔', specificBroadcastId = null) {
             if (!currentUser) return;
             try {
@@ -14675,7 +14180,6 @@ window.showUserHistory = function(userId, userName) {
             } catch (e) {}
         };
 
-        // إذا دخل العميل من خلال الضغط على إشعار الهاتف الخارجي (?openNotif=...)
         if (window.location.search.includes('openNotif=')) {
             let params = new URLSearchParams(window.location.search);
             let bId = params.get('openNotif');
@@ -14685,9 +14189,6 @@ window.showUserHistory = function(userId, userName) {
             }, 1400);
         }
 
-        // -------------------------------------------------------------------------
-        // ثالثاً: مهام نقاط الولاء المحمية ضد التحايل (إكمال الحساب + دعوة صديق مختلف + متابعة فيسبوك)
-        // -------------------------------------------------------------------------
         window.syncLoyaltyQuestsButtonsUI = function() {
             let box = document.getElementById('loyalty-quests-box');
             let btnProf = document.getElementById('btn-quest-complete-profile');
@@ -14712,7 +14213,6 @@ window.showUserHistory = function(userId, userName) {
             if (box) box.style.display = (enP || enI || enF) ? 'block' : 'none';
         };
 
-        // 1. المهمة الأولى: فتح نافذة إكمال بيانات العميل والتحقق من الاسم والهاتف والعنوان قبل إضافة النقاط
         window.openQuestCompleteProfileModal = async function() {
             if (!currentUser) {
                 window.showToast('يرجى تسجيل الدخول أولاً لإكمال بيانات حسابك وكسب النقاط', 'error');
@@ -14784,7 +14284,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // 2. المهمة الثانية: دعوة الأصدقاء عبر منصات التواصل مع التحقق الصارم من عدم تكرار نفس الشخص ومن الإرسال الفعلي
         window.openQuestInviteFriendModal = async function() {
             if (!currentUser) {
                 window.showToast('يرجى تسجيل الدخول أولاً لدعوة الأصدقاء وكسب النقاط', 'error');
@@ -14826,13 +14325,11 @@ window.showUserHistory = function(userId, userName) {
                 let uData = uSnap.exists() ? uSnap.data() : {};
                 let myPhone = window.toEngDigits(String(uData.phone1 || currentUser.phoneNumber || '')).replace(/\D/g, '');
 
-                // منع التحايل 1: لا يمكن للعميل كتابة رقم هاتفه الشخصي!
                 if (myPhone && (fPhone === myPhone || fPhone.slice(-9) === myPhone.slice(-9))) {
                     window.showToast('🚫 لا يمكنك إرسال الدعوة لرقم هاتفك الشخصي! يجب دعوة صديق مختلف.', 'error');
                     return;
                 }
 
-                // منع التحايل 2: فحص سجل الأصدقاء المدعوين سابقاً لمنع تكرار نفس الرقم/الشخص!
                 let invitedArr = Array.isArray(uData.invitedFriendsRegistry) ? [...uData.invitedFriendsRegistry] : [];
                 let alreadyInvited = invitedArr.find(item => item.phone === fPhone || item.phone.slice(-9) === fPhone.slice(-9));
                 if (alreadyInvited) {
@@ -14840,7 +14337,6 @@ window.showUserHistory = function(userId, userName) {
                     return;
                 }
 
-                // تجهيز رابط الدعوة الفريد المخصص لهذا الصديق
                 let uniqueInviteUrl = `${window.location.origin + window.location.pathname}?ref=${currentUser.uid.slice(0,6)}&friend=${fPhone.slice(-4)}`;
                 let shareMsg = `🌿 أهلاً يا ${fName}، أنصحك بتجربة *متجر زيت الشجرة المباركة* (أفضل زيت زيتون سيناوي بكر ممتاز عصرة أولى على البارد 100%)!\n🎁 تصفح واطلب من خلال رابط الدعوة الخاص بي:\n${uniqueInviteUrl}`;
 
@@ -14860,7 +14356,6 @@ window.showUserHistory = function(userId, userName) {
 
                 window.showToast(`⏳ جاري التحقق من إرسال الدعوة إلى (${fName}) عبر التطبيق...`, 'info');
 
-                // التحقق من مغادرة المتصفح للتطبيق وإرسال الدعوة قبل إضافة النقاط
                 let pts = Number(storeSettings.questInvitePoints) || 20;
                 setTimeout(async () => {
                     invitedArr.push({
@@ -14890,7 +14385,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // 3. المهمة الثالثة: متابعة صفحة الموقع الرسمية على فيسبوك
         window.startFacebookFollowQuest = async function() {
             if (!currentUser) {
                 window.showToast('يرجى تسجيل الدخول أولاً لكسب نقاط متابعة صفحة الفيسبوك', 'error');
@@ -14926,9 +14420,6 @@ window.showUserHistory = function(userId, userName) {
             } catch (e) {}
         };
 
-        // -------------------------------------------------------------------------
-        // رابعاً: البحث في الإعدادات بزر العدسة (🔍) وزر المسح (✖) + فلتر (المفعّل / المتوقف)
-        // -------------------------------------------------------------------------
         window.clearAdminSettingsSearch = function() {
             let inp = document.getElementById('admin-settings-quick-search');
             if (inp) inp.value = '';
@@ -14962,9 +14453,6 @@ window.showUserHistory = function(userId, userName) {
             }
         };
 
-        // -------------------------------------------------------------------------
-        // خامساً: تغيير ترتيب أقسام وأزرار القائمة الجانبية (#sidebar) بالضغط المطول (⬆️ / ⬇️)
-        // -------------------------------------------------------------------------
         window.isSidebarReorderMode = false;
 
         window.initSidebarSortableItems = function() {
@@ -14988,7 +14476,6 @@ window.showUserHistory = function(userId, userName) {
                     child.appendChild(ctrl);
                 }
 
-                // تفعيل وضع الترتيب عند الضغط المطول على أي عنصر في القائمة الجانبية
                 let lpTimer = null;
                 child.addEventListener('touchstart', () => {
                     if (storeSettings.enableSidebarLongpressSort === false) return;
@@ -15000,7 +14487,6 @@ window.showUserHistory = function(userId, userName) {
                 child.addEventListener('touchmove', () => { if (lpTimer) clearTimeout(lpTimer); }, { passive: true });
             });
 
-            // استرجاع الترتيب المحفوظ
             try {
                 let savedOrder = JSON.parse(localStorage.getItem('zait_custom_sidebar_order') || 'null');
                 if (Array.isArray(savedOrder) && savedOrder.length > 0) {
@@ -15036,9 +14522,6 @@ window.showUserHistory = function(userId, userName) {
         };
         setTimeout(window.initSidebarSortableItems, 900);
 
-        // -------------------------------------------------------------------------
-        // سادساً: تطويرات الشات الإضافية (الرد بالاقتباس ↩️ + إرسال كوبون تفاعلي بالشات 🎟️)
-        // -------------------------------------------------------------------------
         window.activeChatReplyQuote = { customer: '', admin: '' };
 
         window.setChatReplyQuote = function(role, quotedText) {
@@ -15082,7 +14565,6 @@ window.showUserHistory = function(userId, userName) {
             window.showToast('🎟️ تم إرسال كود الخصم للعميل في الشات بنجاح!', 'success');
         };
 
-        // ربط فتح قسم إرسال الإشعارات وقسم الإشعارات العامة بـ showPanel
         const origShowPanelV69 = window.showPanel;
         window.showPanel = function(panelId) {
             origShowPanelV69(panelId);
@@ -15111,11 +14593,6 @@ window.showUserHistory = function(userId, userName) {
                 window.injectHelpQuestionButtonsInSettings();
             }
         };
-
-
-        // =========================================================================
-        // === النسخة V71 طراز أمازون العالمي: الحلول الجذرية الـ 7 + واجهة أمازون الشاملة ===
-        // =========================================================================
 
         window.syncZeroFlashSettingsCache = function() {
             try {
@@ -15606,7 +15083,6 @@ window.showUserHistory = function(userId, userName) {
             window.syncSidebarAdminReorderVisibility();
         }, 500);
 
-/* === START_V77_PERFECT_VIP_ENGINE === */
 (function () {
     'use strict';
 
@@ -15640,9 +15116,6 @@ window.showUserHistory = function(userId, userName) {
     const normPhone = (p) => String(p || '').replace(/\D/g, '').replace(/^20/, '0');
     const normSeq = (s) => String(s || '').trim().replace(/^عميل/i, '').replace(/[#\s]/g, '').replace(/^Z-/i, '').toUpperCase();
 
-    // =========================================================================
-    // 1. تسريع فتح المتجر الفوري (كاش المنتجات + صور Lazy)
-    // =========================================================================
     function applyInstantProductCache() {
         try {
             const raw = localStorage.getItem(V77_PRODUCTS_CACHE_KEY);
@@ -15670,15 +15143,11 @@ window.showUserHistory = function(userId, userName) {
         } catch (e) {}
     }
 
-    // =========================================================================
-    // 2. إصلاح الشريط العلوي والسفلي وإخفاء الأزرار العائمة في الشات وصفحة الحظر
-    // =========================================================================
     function syncHeaderAndLayoutV77() {
         try {
             localStorage.removeItem('zait_large_font');
             document.body.classList.remove('large-comfort-font');
 
-            // إزالة زر تكبير الخط A+
             const fBtn = document.getElementById('header-font-size-btn');
             if (fBtn) fBtn.remove();
             document.querySelectorAll('header button').forEach((b) => {
@@ -15686,11 +15155,9 @@ window.showUserHistory = function(userId, userName) {
                 if (t === '+A' || t === 'A+' || t === 'A-') b.remove();
             });
 
-            // إخفاء شريط السلة العائم
             const fCart = document.getElementById('floating-bottom-cart-bar');
             if (fCart) fCart.style.setProperty('display', 'none', 'important');
 
-            // ضبط حالة تسجيل الدخول في الهيدر لإخفاء زر "دخول" نهائياً عند تسجيل الدخول
             const u = getUser();
             const userMenu = document.getElementById('user-menu-container');
             const authBtn = document.getElementById('btn-show-auth');
@@ -15704,7 +15171,6 @@ window.showUserHistory = function(userId, userName) {
                 if (authBtn) authBtn.style.setProperty('display', 'inline-flex', 'important');
             }
 
-            // ضمان ظهور لوجو المتجر
             document.querySelectorAll('header h1 img').forEach((img) => {
                 if (!img.getAttribute('src') || img.getAttribute('src').includes('placeholder')) {
                     img.src = '1000392409.jpeg';
@@ -15712,7 +15178,6 @@ window.showUserHistory = function(userId, userName) {
                 img.classList.add('store-logo-img');
             });
 
-            // إخفاء الأزرار العائمة أثناء فتح الشات أو صفحة الحظر أو العملاء
             const activeIds = ['support-panel', 'admin-chat-panel', 'admin-security-panel', 'admin-users-panel'];
             const hideFabs = activeIds.some((id) => {
                 const el = document.getElementById(id);
@@ -15722,9 +15187,6 @@ window.showUserHistory = function(userId, userName) {
         } catch (e) {}
     }
 
-    // =========================================================================
-    // 3. بصمة الجهاز + تسجيل الأجهزة المتعددة لكل حساب
-    // =========================================================================
     function hashDigits(str, len) {
         let h = 2166136261;
         const s = String(str || 'zait');
@@ -15817,9 +15279,6 @@ window.showUserHistory = function(userId, userName) {
         } catch (e) {}
     }
 
-    // =========================================================================
-    // 4. نظام الحظر وحذف الحسابات (4 خيارات + أجهزة متعددة + شاشة الطعن)
-    // =========================================================================
     const v77Sec = {
         entries: [],
         allUsers: [],
@@ -15922,7 +15381,6 @@ window.showUserHistory = function(userId, userName) {
             return false;
         };
 
-        // 1. حظر الهاتف أو حظر شامل
         let hit = v77Sec.entries.find((e) => (e.type === 'device' || e.type === 'both') && (matchDev(e) || (e.type === 'both' && matchAcc(e))));
         if (hit && hit.type === 'both') {
             try { localStorage.setItem(V77_DEVICE_LOCK_KEY, JSON.stringify({ id: hit.id, reason: hit.reason || '' })); } catch (e) {}
@@ -15938,7 +15396,6 @@ window.showUserHistory = function(userId, userName) {
             } catch (e) {}
         }
 
-        // 2. حذف الحساب نهائياً
         if (!hit) {
             const delHit = v77Sec.entries.find((e) => e.type === 'deleted' && matchAcc(e));
             if (delHit) {
@@ -15949,7 +15406,6 @@ window.showUserHistory = function(userId, userName) {
             }
         }
 
-        // 3. حظر الحساب فقط
         if (!hit) {
             hit = v77Sec.entries.find((e) => e.type === 'account' && matchAcc(e));
         }
@@ -16008,7 +15464,7 @@ window.showUserHistory = function(userId, userName) {
         setTimeout(() => {
             window.V77_mountCleanChatComposers();
             syncHeaderAndLayoutV77();
-            // لو العميل غير مسجل دخول (محظور جهازه فقط)، افتح له شات الطعن بالـ deviceId مباشرة
+
             if (!getUser()) loadGuestAppealChatHistory();
             const ta = document.getElementById('support-message');
             if (ta && !ta.value.trim()) {
@@ -16070,7 +15526,7 @@ window.showUserHistory = function(userId, userName) {
                 if (snap.exists()) {
                     const data = snap.data() || {};
                     const v77List = Array.isArray(data.v77Entries) ? data.v77Entries : [];
-                    // دمج أي قائمة قديمة من V75 إن وجدت لضمان عدم ضياع أي حظر قديم
+
                     const legacy = Array.isArray(data.bannedList) ? data.bannedList.map((b) => ({
                         id: b.id || ('leg_' + (b.uid || b.phone || b.email || Math.random())),
                         type: 'both',
@@ -16097,9 +15553,6 @@ window.showUserHistory = function(userId, userName) {
         } catch (e) {}
     }
 
-    // =========================================================================
-    // 5. شات خدمة العملاء النظيف V77 (كاميرا سفلية لا تعلق + كتابة واضحة + 🎤 + 🎙️ بحذف ومعاينة + فيديو 100MB)
-    // =========================================================================
     const V77_SPEECH_FIX = {
         'ذيت': 'زيت', 'زت': 'زيت', 'ذيتون': 'زيتون', 'زتون': 'زيتون',
         'سناوي': 'سيناوي', 'سنوي': 'سيناوي', 'سيماوي': 'سيناوي',
@@ -16251,7 +15704,6 @@ window.showUserHistory = function(userId, userName) {
         inputEl.value = '';
     };
 
-    // ميكروفون تحويل الكلام لنص مع التصحيح الذكي
     window.V77_startSpeechToText = function (who, btnEl) {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) {
@@ -16291,7 +15743,6 @@ window.showUserHistory = function(userId, userName) {
         try { rec.start(); } catch (e) {}
     };
 
-    // تسجيل مقطع صوتي مع خيار الحذف أثناء التسجيل + المعاينة والحذف قبل الإرسال
     const v77Voice = { cust: {}, adm: {} };
 
     window.V77_startVoiceNote = async function (who) {
@@ -16451,7 +15902,7 @@ window.showUserHistory = function(userId, userName) {
     }
 
     window.V77_mountCleanChatComposers = function () {
-        // 1. شات العميل (#support-form)
+
         const sForm = document.getElementById('support-form');
         if (sForm && !sForm.querySelector('[data-v77-composer="cust"]')) {
             sForm.style.display = 'block';
@@ -16460,10 +15911,9 @@ window.showUserHistory = function(userId, userName) {
             wireTextareaEvents(document.getElementById('support-message'), 'cust');
         }
 
-        // 2. شات المدير (استبدال كامل صف الإدخال + زر الإرسال الأزرق القديم حتى يكون بعرض الشاشة بالكامل!)
         const admInput = document.getElementById('admin-chat-input');
         if (admInput && !admInput.closest('[data-v77-composer="adm"]')) {
-            // إيجاد الصف الكامل الذي يحتوي على خانة الإدخال وزر إرسال المدير
+
             let row = admInput.parentElement;
             if (row && row.parentElement && !row.querySelector('button[onclick*="sendAdminMessage"]') && row.parentElement.querySelector('button[onclick*="sendAdminMessage"]')) {
                 row = row.parentElement;
@@ -16476,9 +15926,6 @@ window.showUserHistory = function(userId, userName) {
         }
     };
 
-    // =========================================================================
-    // 6. صفحة الحظر وحذف الحسابات + صفحة أجهزة كل حساب + البحث الشامل في العملاء
-    // =========================================================================
     window.V77_switchSecTab = function (tab) {
         v77Sec.subTab = tab;
         const bAll = document.getElementById('v77-tab-all-btn');
@@ -16517,7 +15964,7 @@ window.showUserHistory = function(userId, userName) {
             window.V77_renderSecurityLists();
             window.V77_renderNativeUsersPanel(arr);
         });
-        // ملء بيانات تيليجرام
+
         const s = getSettings();
         const tk = document.getElementById('v77-tg-token');
         const cid = document.getElementById('v77-tg-chatid');
@@ -16638,7 +16085,6 @@ window.showUserHistory = function(userId, userName) {
         }
     };
 
-    // صفحة أجهزة الحساب المتعددة (تظهر كل الأجهزة التي سجل عليها العميل + أزرار الحظر لكل جهاز أو للحساب بالكامل)
     window.V77_openAccountDevicesPage = function (userIdx) {
         const list = window.__V77_RENDERED_USERS || v77Sec.allUsers || [];
         const u = list[userIdx];
@@ -16851,7 +16297,6 @@ window.showUserHistory = function(userId, userName) {
         toast('✅ تم فك الحظر بنجاح!', 'success');
     };
 
-    // تطوير صفحة العملاء الأصلية (#admin-users-panel) ببحث شامل (برقم العميل/الهاتف/الاسم) + زر أجهزة الحساب + الحظر
     window.V77_renderNativeUsersPanel = function (usersList) {
         const panel = document.getElementById('admin-users-panel');
         const container = document.getElementById('admin-users-container');
@@ -16889,9 +16334,6 @@ window.showUserHistory = function(userId, userName) {
         }).join('');
     };
 
-    // =========================================================================
-    // 7. تنبيهات تيليجرام + النسخ الاحتياطي الكامل JSON
-    // =========================================================================
     window.V77_saveTelegramSettings = async function () {
         if (!getIsAdmin()) return;
         const d = getDb();
@@ -16947,9 +16389,6 @@ window.showUserHistory = function(userId, userName) {
         toast('✅ تم تنزيل النسخة الاحتياطية الكاملة JSON بنجاح!', 'success');
     };
 
-    // =========================================================================
-    // 8. ربط التنقل والتشغيل التلقائي المستقر
-    // =========================================================================
     function wireNavigationAndHooks() {
         if (typeof panels !== 'undefined' && panels) {
             panels['admin-security'] = document.getElementById('admin-security-panel');
@@ -16982,7 +16421,6 @@ window.showUserHistory = function(userId, userName) {
             };
         }
 
-        // ربط تيليجرام مع تأكيد الطلبات
         if (typeof window.processOrder === 'function' && !window.__V77_origProcessOrder) {
             window.__V77_origProcessOrder = window.processOrder;
             window.processOrder = async function () {
@@ -17035,9 +16473,7 @@ window.showUserHistory = function(userId, userName) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootV77);
     else bootV77();
 })();
-/* === END_V77_PERFECT_VIP_ENGINE === */
 
-/* === ZAIT_V80_JS_START === */
 (function () {
   "use strict";
   if (window.__ZAIT_V80_ACTIVE__) return;
@@ -17075,9 +16511,6 @@ window.showUserHistory = function(userId, userName) {
     return (m < 10 ? "0" : "") + m + ":" + (r < 10 ? "0" : "") + r;
   }
 
-  // =========================================================================
-  // 1. V78 SEMANTIC ACCESSIBILITY + SKELETON + ADMIN FLOATING MENU FIX
-  // =========================================================================
   function applySemanticAccessibility() {
     try {
       if (!document.documentElement.getAttribute("lang")) document.documentElement.setAttribute("lang", "ar");
@@ -17143,9 +16576,6 @@ window.showUserHistory = function(userId, userName) {
     } catch (e) {}
   }
 
-  // =========================================================================
-  // 2. LEGENDARY SMOOTH SUPPORT HUB + FULL-SCREEN SCROLLABLE LIVE CHAT (V80)
-  // =========================================================================
   var v80SupportBuilt = false;
   var v80InLiveChat = false;
 
@@ -17182,10 +16612,8 @@ window.showUserHistory = function(userId, userName) {
     if (!hist || !form) return;
     v80SupportBuilt = true;
 
-    // Snapshot existing legacy children before building our clean 2-view architecture
     var oldKids = Array.prototype.slice.call(panel.children);
 
-    // View 1: Legendary Smooth Intro Hub (Scrollable naturally up & down!)
     var hub = document.createElement("div");
     hub.id = "v80-support-hub";
     hub.innerHTML =
@@ -17232,7 +16660,6 @@ window.showUserHistory = function(userId, userName) {
         "<button type=\"button\" onclick=\"if(window.showPanel) window.showPanel('home')\" style=\"background:var(--panel-bg,#fff); color:var(--primary,#153422); border:1.5px solid var(--v80-border); padding:10px 22px; border-radius:14px; font-weight:800; font-family:inherit; cursor:pointer;\">← العودة لتصفح المنتجات</button>" +
       "</div>";
 
-    // View 2: Clean Full-Screen Live Chat Stage
     var stage = document.createElement("div");
     stage.id = "v80-chat-stage";
     var chatHdr = document.createElement("div");
@@ -17254,7 +16681,6 @@ window.showUserHistory = function(userId, userName) {
     stage.appendChild(hist);
     stage.appendChild(form);
 
-    // Hide empty/duplicate legacy wrappers cleanly so they NEVER clutter the intro hub
     oldKids.forEach(function (el) {
       if (!el || el === hub || el === stage || el === hist || el === form) return;
       var tg = (el.tagName || "").toUpperCase();
@@ -17342,9 +16768,6 @@ window.showUserHistory = function(userId, userName) {
     window.visualViewport.addEventListener("scroll", syncLiveChatHeight);
   }
 
-  // =========================================================================
-  // 3. ULTRA-FAST VIDEO PREVIEW, TRIM, TURBO COMPRESS & INSTANT CANCEL STUDIO
-  // =========================================================================
   var v80VidState = {
     file: null, blobUrl: null, who: "cust", duration: 0,
     startSec: 0, endSec: 0, quality: "360",
@@ -17530,7 +16953,7 @@ window.showUserHistory = function(userId, userName) {
               try {
                 var j = JSON.parse(xhr.responseText);
                 var rawUrl = j.secure_url || j.url;
-                // Optimize delivery on Cloudinary servers automatically (q_auto, w_720) so playback is instant!
+
                 if (rawUrl && rawUrl.indexOf("/video/upload/") > -1) {
                   rawUrl = rawUrl.replace("/video/upload/", "/video/upload/q_auto:eco,w_720/");
                 }
@@ -17549,7 +16972,6 @@ window.showUserHistory = function(userId, userName) {
     });
   }
 
-  // Zero-Lag Turbo Compressor (15fps timed canvas + alpha:false + desynchronized + optional trim -> NO 8-min lag!)
   function turboCompressVideoV80(file, startSec, endSec, quality, onProgress) {
     return new Promise(function (resolve, reject) {
       if (typeof MediaRecorder === "undefined") return reject(new Error("المتصفح لا يدعم ضغط الفيديو"));
@@ -17620,7 +17042,7 @@ window.showUserHistory = function(userId, userName) {
             if (v80VidState.canceled) { cleanup(); return reject(new Error("CANCELED")); }
             rec.start(500);
             vid.play().then(function () {
-              // Controlled 15fps draw loop -> prevents 120Hz GPU lockups on mobile!
+
               v80VidState.activeTimer = setInterval(function () {
                 if (v80VidState.canceled || vid.paused || vid.ended || vid.currentTime >= eSec) {
                   clearInterval(v80VidState.activeTimer);
@@ -17706,7 +17128,6 @@ window.showUserHistory = function(userId, userName) {
     }
   };
 
-  // Intercept V77 video selection so EVERY video opens our Preview & Cancel Studio first!
   function hookChatVideoSelection() {
     if (typeof window.V77_onMediaFileSelected === "function" && !window.__V80_MEDIA_HOOKED) {
       window.__V80_MEDIA_HOOKED = true;
@@ -17731,9 +17152,6 @@ window.showUserHistory = function(userId, userName) {
     };
   }
 
-  // =========================================================================
-  // 4. UNIQUE ATOMIC CUSTOMER SEQUENCE NUMBERS (FIXES DUPLICATE #1 ACCOUNTS)
-  // =========================================================================
   async function allocateNextUniqueSeq(d) {
     try {
       if (typeof runTransaction === "function") {
@@ -17814,9 +17232,6 @@ window.showUserHistory = function(userId, userName) {
     } catch (e) {}
   }
 
-  // =========================================================================
-  // 5. HIDDEN AUTOMATIC VISITOR ACCOUNTS FOR ADMIN ONLY (WHEEL/GUEST/INPUTS)
-  // =========================================================================
   var v80LeadTimer = null;
   var v80LeadBuf = { name: "", phone1: "", email: "", source: "" };
 
@@ -17888,9 +17303,6 @@ window.showUserHistory = function(userId, userName) {
     }
   }
 
-  // =========================================================================
-  // 6. BOOT & LIGHTWEIGHT OBSERVER
-  // =========================================================================
   var v80TickTimer = null;
   function scheduleSync() {
     if (v80TickTimer) clearTimeout(v80TickTimer);
@@ -17900,9 +17312,8 @@ window.showUserHistory = function(userId, userName) {
       syncSupportPanelState();
       hookChatVideoSelection();
       injectAdminToolsBadges();
-    }, 220);
+    }, 950);
   }
-
   function bootV80() {
     initSkeletonLoader();
     applySemanticAccessibility();
@@ -17911,7 +17322,6 @@ window.showUserHistory = function(userId, userName) {
     bindAutoLeadListeners();
     syncSupportPanelState();
 
-    // Hook showPanel cleanly so switching to support shows our Legendary Hub immediately
     if (typeof window.showPanel === "function" && !window.__V80_SHOW_HOOKED) {
       window.__V80_SHOW_HOOKED = true;
       var prevShow = window.showPanel;
@@ -17945,9 +17355,7 @@ window.showUserHistory = function(userId, userName) {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootV80);
   else bootV80();
 })();
-/* === ZAIT_V80_JS_END === */
 
-/* === ZAIT_V83_JS_START === */
 (function () {
   "use strict";
   if (window.__ZAIT_V83_ACTIVE__) return;
@@ -17974,9 +17382,6 @@ window.showUserHistory = function(userId, userName) {
   }
   function toast(msg, type) { if (typeof window.showToast === "function") window.showToast(msg, type || "info"); }
 
-  // =========================================================================
-  // 1. الأمان: إزالة كلمات السر من localStorage + إصلاح تبديل الحسابات بدون undefined
-  // =========================================================================
   function scrubPasswordsFromLocalStorage() {
     try {
       for (var i = 0; i < localStorage.length; i++) {
@@ -18034,7 +17439,6 @@ window.showUserHistory = function(userId, userName) {
     } catch (e) {}
   }
 
-  // إصلاح زر تبديل الحسابات: لا يمرر password=undefined أبداً — يمسح السلة ويفتح الدخول بالبريد جاهزاً!
   function safeSwitchAccount(email) {
     clearUserSessionData();
     var a = getAuth();
@@ -18055,9 +17459,6 @@ window.showUserHistory = function(userId, userName) {
   window.quickSwitchAccount = safeSwitchAccount;
   window.loginSavedAccount = safeSwitchAccount;
 
-  // =========================================================================
-  // 2. الأمان: توجيه كل طلبات imgbb تلقائياً إلى Cloudinary (0 مفاتيح مكشوفة)
-  // =========================================================================
   if (typeof window.fetch === "function" && !window.__V83_FETCH_WRAPPED) {
     window.__V83_FETCH_WRAPPED = true;
     var nativeFetch = window.fetch.bind(window);
@@ -18086,9 +17487,6 @@ window.showUserHistory = function(userId, userName) {
     };
   }
 
-  // =========================================================================
-  // 3. تحسين الصور: WebP/AVIF تلقائي + إظهار الصورة كاملة مرة واحدة
-  // =========================================================================
   function optImg(url) {
     if (!url || typeof url !== "string") return url;
     if (url.indexOf("res.cloudinary.com") > -1 && url.indexOf("/image/upload/") > -1 && url.indexOf("f_auto") === -1) {
@@ -18134,9 +17532,6 @@ window.showUserHistory = function(userId, userName) {
     } catch (e) {}
   }
 
-  // =========================================================================
-  // 4. كاش المنتجات الكامل (يحفظ sizes و isHidden!) + حارس منع اختفاء المنتجات
-  // =========================================================================
   function saveFullProductsCache() {
     try {
       if (typeof products !== "undefined" && Array.isArray(products) && products.length > 0) {
@@ -18216,9 +17611,6 @@ window.showUserHistory = function(userId, userName) {
     } catch (e) {}
   };
 
-  // =========================================================================
-  // 5. إصلاح الإحصائيات الدقيقة + عداد زيارات اليوم (todayVisits) + التصفير الدائم
-  // =========================================================================
   var v83Stats = { totalVisits: 0, todayVisits: 0, todayKey: "", statsResetAt: null };
 
   function todayIsoKey() { return new Date().toISOString().slice(0, 10); }
@@ -18284,7 +17676,7 @@ window.showUserHistory = function(userId, userName) {
       if (!resetTs) return true;
       return new Date(o.orderDate || 0).getTime() >= resetTs;
     });
-    // إصلاح دقيق: استبعاد ملغي + ملغى + مرتجع + تم الرفض / مرفوض (وليس أي كلمة فيها حرف "رفض"!)
+
     var validOrders = periodOrders.filter(function (o) {
       var st = String(o.status || "").trim();
       return st.indexOf("ملغي") === -1 && st.indexOf("ملغى") === -1 && st.indexOf("مرتجع") === -1 && st.indexOf("مرفوض") === -1 && st.indexOf("تم الرفض") === -1;
@@ -18381,9 +17773,6 @@ window.showUserHistory = function(userId, userName) {
     } catch (e) {}
   }
 
-  // =========================================================================
-  // 6. إصلاح updateProductPriceAdmin (يقبل رقم أو عنصر إدخال DOM) + الميكروفون + النجوم + المحفوظات
-  // =========================================================================
   window.updateProductPriceAdmin = async function (productId, priceOrInputEl) {
     if (!isAdmin()) return toast("هذه الصلاحية للمدير فقط", "error");
     var rawVal = (priceOrInputEl && typeof priceOrInputEl === "object" && "value" in priceOrInputEl)
@@ -18405,7 +17794,6 @@ window.showUserHistory = function(userId, userName) {
     }
   };
 
-  // مصحح الكلام العربي بدون خطأ \b وبدون استبدال خاطئ لـ "بكام" أو "شحن"
   var V83_AR_DICT = {
     "ذيت": "زيت", "زت": "زيت", "زيتت": "زيت", "ازيت": "زيت", "الذيت": "الزيت",
     "ذيتون": "زيتون", "زتون": "زيتون", "زيتان": "زيتون", "الزتون": "الزيتون",
@@ -18459,7 +17847,6 @@ window.showUserHistory = function(userId, userName) {
     } catch (e) { window._v83SpeechRec = null; }
   };
 
-  // منتقي نجوم التقييم (يعمل حتى بدون <form>!)
   window.__V83_STORE_STARS = 5;
   function mountReviewStarsPicker() {
     var revPanel = document.getElementById("reviews-panel") || document.getElementById("all-reviews-panel");
@@ -18489,7 +17876,6 @@ window.showUserHistory = function(userId, userName) {
     if (sel) sel.value = String(n);
   };
 
-  // إصلاح مزامنة السلة والمحفوظات حتى عند إفراغ القائمة []
   function hookSaveForLaterAndCartSync() {
     ["moveToCartFromSaved", "removeFromSavedForLater", "saveForLater", "removeFromCart", "addToCart"].forEach(function (fn) {
       if (typeof window[fn] === "function" && !window["_v83Wrapped_" + fn]) {
@@ -18512,9 +17898,6 @@ window.showUserHistory = function(userId, userName) {
     });
   }
 
-  // =========================================================================
-  // 7. تشغيل حقيقي لبكسل فيسبوك وتيك توك وجوجل (بدون innerHTML)
-  // =========================================================================
   var pixelsBooted = { fb: "", tt: "", ga: "" };
   function bootRealPixels() {
     if (!navigator.onLine) return;
@@ -18575,9 +17958,6 @@ window.showUserHistory = function(userId, userName) {
     } catch (e) {}
   }
 
-  // =========================================================================
-  // 8. وضع بدون إنترنت (Offline Mode) + حساب شحن وكوبون حقيقي للطلب الأوفلاين
-  // =========================================================================
   function updateOfflineBar() {
     var oldBar = document.getElementById("v81-offline-banner");
     if (oldBar) oldBar.remove();
@@ -18684,9 +18064,6 @@ window.showUserHistory = function(userId, userName) {
     }
   }
 
-  // =========================================================================
-  // 9. روابط الصفحات القانونية الحقيقية (privacy.html / terms.html / returns.html)
-  // =========================================================================
   function injectRealLegalFooterLinks() {
     if (document.getElementById("v83-legal-footer-links")) return;
     var oldBar = document.getElementById("v81-legal-footer-bar");
@@ -18702,9 +18079,6 @@ window.showUserHistory = function(userId, userName) {
     footer.appendChild(bar);
   }
 
-  // =========================================================================
-  // 10. التشغيل وتسجيل Service Worker الموحّد (لإنهاء ERR_FAILED نهائياً!)
-  // =========================================================================
   var prevUid = null;
   var mutTimer = null;
 
@@ -18719,7 +18093,6 @@ window.showUserHistory = function(userId, userName) {
     bootRealPixels();
     subscribeAccurateStats();
 
-    // إلغاء أي Service Worker متعارض (firebase-messaging-sw.js) وتسجيل sw.js الموحد v83
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         regs.forEach(function (r) {
@@ -18728,7 +18101,7 @@ window.showUserHistory = function(userId, userName) {
             r.unregister().catch(function () {});
           }
         });
-        navigator.serviceWorker.register("/sw.js?v=83", { scope: "/" }).catch(function () {});
+        navigator.serviceWorker.register("/sw.js?v=84", { scope: "/" }).catch(function () {});
       }).catch(function () {});
     }
 
@@ -18760,7 +18133,7 @@ window.showUserHistory = function(userId, userName) {
           mountReviewStarsPicker();
           saveFullProductsCache();
           if (isAdmin()) renderAccurateAdminStatsWidget();
-        }, 320);
+        }, 950);
       });
       obs.observe(document.body, { childList: true, subtree: true });
     } catch (e) {}
@@ -18769,4 +18142,181 @@ window.showUserHistory = function(userId, userName) {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootV83);
   else bootV83();
 })();
-/* === ZAIT_V83_JS_END === */
+
+/* === ZAIT_V84_TURBO_HANDOFF_START === */
+(function () {
+  "use strict";
+  if (window.__ZAIT_V84_HANDOFF_DONE__) return;
+  window.__ZAIT_V84_HANDOFF_DONE__ = true;
+
+  function getDb() { return typeof db !== "undefined" ? db : window.db; }
+  function getSettings() { return (typeof storeSettings !== "undefined" && storeSettings) ? storeSettings : (window.storeSettings || {}); }
+  function isAdmin() {
+    try {
+      if (typeof isCurrentUserAdmin !== "undefined" && isCurrentUserAdmin) return true;
+      if (window.isCurrentUserAdmin) return true;
+      var u = typeof currentUser !== "undefined" ? currentUser : window.currentUser;
+      var em = u && u.email ? String(u.email).toLowerCase() : "";
+      return em === "aw734622@gmail.com" || em === "mhmwdaltahrahmdwayl@gmail.com";
+    } catch (e) { return false; }
+  }
+  function toast(m, t) { if (typeof window.showToast === "function") window.showToast(m, t || "info"); }
+
+  // 1. حقن المنتجات الجاهزة من المحرك الفوري فوراً في مصفوفة products الأصلية بدون انتظار onSnapshot!
+  function handoffTurboProductsToNative() {
+    try {
+      var ready = window.__V84_REST_FRESH__ || window.__V84_TURBO_PRODUCTS__;
+      if (Array.isArray(ready) && ready.length > 0 && typeof products !== "undefined" && Array.isArray(products) && products.length === 0) {
+        ready.forEach(function (p) { products.push(p); });
+        window.__V84_NATIVE_RENDERED__ = true;
+        if (typeof window.renderProducts === "function") window.renderProducts();
+        if (typeof window.renderCategories === "function") window.renderCategories();
+      }
+      // تنفيذ أي نقرة قام بها العميل في أول ثانية قبل تحميل script.js
+      if (Array.isArray(window.__V84_PENDING_ACTIONS__) && window.__V84_PENDING_ACTIONS__.length > 0) {
+        var acts = window.__V84_PENDING_ACTIONS__.splice(0);
+        acts.forEach(function (a) {
+          if (a.type === "syncCart") {
+            try {
+              var lc = JSON.parse(localStorage.getItem("cart") || "[]");
+              if (typeof cart !== "undefined" && Array.isArray(cart)) {
+                cart.length = 0;
+                lc.forEach(function (x) { cart.push(x); });
+              }
+              if (typeof window.updateCartUI === "function") window.updateCartUI();
+            } catch (e) {}
+          } else if (a.type === "openProduct") {
+            if (typeof window.openProductModal === "function") window.openProductModal(a.id);
+            else if (typeof window.showProductDetails === "function") window.showProductDetails(a.id);
+          }
+        });
+      }
+    } catch (e) {}
+  }
+
+  // 2. تحديث IndexedDB تلقائياً كلما وصل تحديث حي من Firestore
+  function saveNativeProductsToIdb() {
+    try {
+      if (typeof products === "undefined" || !Array.isArray(products) || products.length === 0) return;
+      window.__V84_NATIVE_RENDERED__ = true;
+      if (!window.indexedDB) return;
+      var req = indexedDB.open("zait_v84_turbo_db", 1);
+      req.onupgradeneeded = function (e) {
+        if (!e.target.result.objectStoreNames.contains("kv")) e.target.result.createObjectStore("kv");
+      };
+      req.onsuccess = function (e) {
+        try {
+          var tx = e.target.result.transaction("kv", "readwrite");
+          tx.objectStore("kv").put(products.slice(0, 100), "products");
+        } catch (err) {}
+      };
+    } catch (e) {}
+  }
+
+  // 3. أداة المدير لتحويل أي صور Base64 ثقيلة مخزنة داخل Firestore إلى روابط Cloudinary خفيفة (تنهي بطء الـ 2 دقيقة للأبد!)
+  function dataUrlToBlob(dataUrl) {
+    var parts = dataUrl.split(",");
+    var mime = (parts[0].match(/:(.*?);/) || [])[1] || "image/jpeg";
+    var bin = atob(parts[1]);
+    var len = bin.length;
+    var arr = new Uint8Array(len);
+    for (var i = 0; i < len; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+
+  async function uploadBlobToCloudinary(blob) {
+    var s = getSettings();
+    var cn = (s.cloudinaryCloudName || "jj2qrpnb").trim();
+    var pr = (s.cloudinaryUploadPreset || "bfu87mf0").trim();
+    var fd = new FormData();
+    fd.append("file", blob);
+    fd.append("upload_preset", pr);
+    var res = await fetch("https://api.cloudinary.com/v1_1/" + encodeURIComponent(cn) + "/image/upload", { method: "POST", body: fd });
+    var j = await res.json();
+    if (!res.ok || !j.secure_url) throw new Error("Cloudinary upload failed");
+    return j.secure_url;
+  }
+
+  window.V84_migrateBase64ProductsToCloudinary = async function () {
+    if (!isAdmin()) return;
+    var d = getDb();
+    if (!d || typeof products === "undefined" || !Array.isArray(products)) return;
+    var heavy = products.filter(function (p) {
+      var hasMain = typeof p.imageUrl === "string" && p.imageUrl.indexOf("data:image/") === 0;
+      var hasArr = Array.isArray(p.images) && p.images.some(function (u) { return typeof u === "string" && u.indexOf("data:image/") === 0; });
+      return hasMain || hasArr;
+    });
+    if (heavy.length === 0) {
+      return toast("✅ ممتاز! جميع صور منتجاتك خفيفة ومرفوعة على روابط سريعة بالفعل.", "success");
+    }
+    toast("⚡ جاري ضغط وترحيل صور " + heavy.length + " منتج ثقيل إلى Cloudinary...", "info");
+    var fixed = 0;
+    for (var i = 0; i < heavy.length; i++) {
+      var p = heavy[i];
+      try {
+        var upd = {};
+        if (typeof p.imageUrl === "string" && p.imageUrl.indexOf("data:image/") === 0) {
+          upd.imageUrl = await uploadBlobToCloudinary(dataUrlToBlob(p.imageUrl));
+          p.imageUrl = upd.imageUrl;
+        }
+        if (Array.isArray(p.images)) {
+          var newImgs = [];
+          for (var j = 0; j < p.images.length; j++) {
+            var u = p.images[j];
+            if (typeof u === "string" && u.indexOf("data:image/") === 0) {
+              newImgs.push(await uploadBlobToCloudinary(dataUrlToBlob(u)));
+            } else newImgs.push(u);
+          }
+          upd.images = newImgs;
+          p.images = newImgs;
+        }
+        if (Object.keys(upd).length > 0) {
+          await updateDoc(doc(d, "products", p.id), upd);
+          fixed++;
+        }
+      } catch (e) {}
+    }
+    saveNativeProductsToIdb();
+    toast("🎉 تم تسريع وترحيل صور " + fixed + " منتج بنجاح! سيفتح المتجر الآن بسرعة البرق!", "success");
+    injectAdminDbSpeedCard();
+  };
+
+  function injectAdminDbSpeedCard() {
+    if (!isAdmin()) return;
+    var dash = document.getElementById("admin-dashboard-panel");
+    if (!dash) return;
+    var heavyCount = (typeof products !== "undefined" && Array.isArray(products)) ? products.filter(function (p) {
+      return (typeof p.imageUrl === "string" && p.imageUrl.indexOf("data:image/") === 0) ||
+        (Array.isArray(p.images) && p.images.some(function (u) { return typeof u === "string" && u.indexOf("data:image/") === 0; }));
+    }).length : 0;
+
+    var card = document.getElementById("v84-admin-db-speed-card");
+    if (heavyCount === 0) {
+      if (card) card.remove();
+      return;
+    }
+    if (!card) {
+      card = document.createElement("div");
+      card.id = "v84-admin-db-speed-card";
+      dash.insertBefore(card, dash.firstChild);
+    }
+    card.innerHTML =
+      '<strong style="display:block;color:#f4d378;font-size:0.96rem;margin-bottom:4px;">🚨 تنبيه سرعة مهم: يوجد ' + heavyCount + ' منتج صورهم محفوظة كـ Base64 ثقيل داخل قاعدة البيانات!</strong>' +
+      '<p style="font-size:0.8rem;color:#d1fae5;margin:0 0 10px;">هذا يسبب بطء تحميل المتجر على الموبايل. اضغط الزر بالأسفل لنقل صورهم تلقائياً إلى Cloudinary السريع في ثوانٍ:</p>' +
+      '<button type="button" class="btn" style="background:#f0c75e;color:#111;font-weight:900;padding:9px 16px;border-radius:11px;border:none;cursor:pointer;" onclick="window.V84_migrateBase64ProductsToCloudinary()">⚡ تسريع ونقل الصور إلى Cloudinary الآن</button>';
+  }
+
+  function bootHandoff() {
+    handoffTurboProductsToNative();
+    setTimeout(handoffTurboProductsToNative, 600);
+    setTimeout(function () {
+      saveNativeProductsToIdb();
+      injectAdminDbSpeedCard();
+    }, 2500);
+    setInterval(saveNativeProductsToIdb, 12000);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootHandoff);
+  else bootHandoff();
+})();
+/* === ZAIT_V84_TURBO_HANDOFF_END === */

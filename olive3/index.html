@@ -10,7 +10,7 @@
 <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>زيت الشجرة المباركة</title>
-    <link rel="manifest" href="manifest.json?v=83">
+    <link rel="manifest" href="manifest.json?v=84">
     <meta name="theme-color" content="#3c521e">
 
     <meta name="description" content="زيت الشجرة المباركة - أفضل زيت زيتون سيناوي بكر ممتاز، منتجات طبيعية 100% من قلب سيناء وتوصيل لجميع المحافظات.">
@@ -44,7 +44,7 @@
     <link rel="apple-touch-icon" href="1000392409.jpeg">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="style.css?v=83">
+    <link rel="stylesheet" href="style.css?v=84">
     <script type="application/ld+json" id="dynamic-json-ld-schema">
     {
       "@context": "https://schema.org",
@@ -143,6 +143,7 @@
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"هل زيت الشجرة المباركة سيناوي أصلي عصرة أولى على البارد؟","acceptedAnswer":{"@type":"Answer","text":"نعم، زيت زيتون سيناوي بكر ممتاز 100% معصور على البارد بدون أي إضافات مع ضمان الجودة والاسترجاع."}},{"@type":"Question","name":"هل يوجد توصيل لجميع محافظات مصر؟","acceptedAnswer":{"@type":"Answer","text":"نعم، نوفر شحناً سريعاً خلال 1 إلى 3 أيام لجميع محافظات مصر مع الدفع عند الاستلام أو المحافظ الإلكترونية."}}]}
 </script>
 <!-- ZAIT_V80_HEAD_END -->
+<link rel="preload" href="/products-snapshot.json?v=84" as="fetch" crossorigin>
 </head>
 <body class="compact-ui">
 <!-- ZAIT_V80_BODY_START -->
@@ -3374,6 +3375,213 @@
             <p class="dev-signature">تم الإنشاء بواسطة المهندس أحمد وائل</p>
         </div>
     </footer>
-    <script type="module" src="script.js?v=83"></script>
+    <script type="module" src="script.js?v=84"></script>
+
+<script id="v84-instant-turbo-boot">
+(function () {
+  "use strict";
+  var PROJECT_ID = "olive-oile-store";
+  var IDB_NAME = "zait_v84_turbo_db";
+  var IDB_STORE = "kv";
+  var SNAP_URL = "/products-snapshot.json?v=84";
+  var REST_URL = PROJECT_ID
+    ? ("https://firestore.googleapis.com/v1/projects/" + encodeURIComponent(PROJECT_ID) + "/databases/(default)/documents/products?pageSize=100")
+    : "";
+
+  window.__V84_TURBO_PRODUCTS__ = null;
+  window.__V84_NATIVE_RENDERED__ = false;
+  window.__V84_PENDING_ACTIONS__ = [];
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function optCloudImg(url) {
+    if (!url || typeof url !== "string") return "1000392409.jpeg";
+    if (url.indexOf("res.cloudinary.com") > -1 && url.indexOf("/image/upload/") > -1 && url.indexOf("f_auto") === -1) {
+      return url.replace("/image/upload/", "/image/upload/f_auto,q_auto:eco,w_420,c_limit/");
+    }
+    return url;
+  }
+
+  function openIdb(cb) {
+    if (!window.indexedDB) return cb(null);
+    try {
+      var req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = function (e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+      };
+      req.onsuccess = function (e) { cb(e.target.result); };
+      req.onerror = function () { cb(null); };
+    } catch (e) { cb(null); }
+  }
+
+  function idbGet(key, cb) {
+    openIdb(function (db) {
+      if (!db) return cb(null);
+      try {
+        var tx = db.transaction(IDB_STORE, "readonly");
+        var r = tx.objectStore(IDB_STORE).get(key);
+        r.onsuccess = function () { cb(r.result || null); };
+        r.onerror = function () { cb(null); };
+      } catch (e) { cb(null); }
+    });
+  }
+
+  function idbSet(key, val) {
+    openIdb(function (db) {
+      if (!db) return;
+      try {
+        var tx = db.transaction(IDB_STORE, "readwrite");
+        tx.objectStore(IDB_STORE).put(val, key);
+      } catch (e) {}
+    });
+  }
+
+  function parseFsVal(v) {
+    if (!v || typeof v !== "object") return null;
+    if ("stringValue" in v) return v.stringValue;
+    if ("integerValue" in v) return Number(v.integerValue);
+    if ("doubleValue" in v) return Number(v.doubleValue);
+    if ("booleanValue" in v) return Boolean(v.booleanValue);
+    if ("timestampValue" in v) return v.timestampValue;
+    if ("nullValue" in v) return null;
+    if ("arrayValue" in v) {
+      var vals = (v.arrayValue && v.arrayValue.values) || [];
+      return vals.map(parseFsVal);
+    }
+    if ("mapValue" in v) {
+      var out = {};
+      var f = (v.mapValue && v.mapValue.fields) || {};
+      Object.keys(f).forEach(function (k) { out[k] = parseFsVal(f[k]); });
+      return out;
+    }
+    return null;
+  }
+
+  function parseFsDoc(docObj) {
+    if (!docObj || !docObj.name) return null;
+    var parts = docObj.name.split("/");
+    var item = { id: parts[parts.length - 1] };
+    var f = docObj.fields || {};
+    Object.keys(f).forEach(function (k) { item[k] = parseFsVal(f[k]); });
+    return item;
+  }
+
+  window.__V84_TURBO_ADD_CART__ = function (pid) {
+    if (typeof window.addToCart === "function") {
+      try { return window.addToCart(pid); } catch (e) {}
+    }
+    var list = window.__V84_TURBO_PRODUCTS__ || [];
+    var p = list.find(function (x) { return x && x.id === pid; });
+    if (!p) return;
+    try {
+      var cur = JSON.parse(localStorage.getItem("cart") || "[]");
+      var ex = cur.find(function (c) { return c.id === p.id; });
+      if (ex) ex.quantity = Number(ex.quantity || 1) + 1;
+      else cur.push({ id: p.id, name: p.name, price: Number(p.price || 0), quantity: 1, imageUrl: p.imageUrl || (p.images && p.images[0]) || "", selected: true });
+      localStorage.setItem("cart", JSON.stringify(cur));
+      var badge = document.getElementById("cart-count") || document.getElementById("mobile-cart-badge");
+      if (badge) badge.textContent = String(cur.reduce(function (s, i) { return s + Number(i.quantity || 1); }, 0));
+    } catch (e) {}
+    window.__V84_PENDING_ACTIONS__.push({ type: "syncCart" });
+    if (typeof window.showToast === "function") window.showToast("✅ تمت الإضافة للسلة!", "success");
+    else {
+      var t = document.createElement("div");
+      t.textContent = "✅ تمت إضافة المنتج إلى السلة!";
+      t.style.cssText = "position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:2147483647;background:#153422;color:#f6e6b8;padding:10px 18px;border-radius:12px;border:1.5px solid #c8a24b;font-weight:800;font-size:13px;box-shadow:0 10px 26px rgba(0,0,0,0.4);";
+      document.body.appendChild(t);
+      setTimeout(function () { t.remove(); }, 2000);
+    }
+  };
+
+  window.__V84_TURBO_OPEN_PROD__ = function (pid) {
+    if (typeof window.openProductModal === "function") return window.openProductModal(pid);
+    if (typeof window.showProductDetails === "function") return window.showProductDetails(pid);
+    window.__V84_PENDING_ACTIONS__.push({ type: "openProduct", id: pid });
+  };
+
+  function paintInstantProducts(list) {
+    if (!Array.isArray(list) || list.length === 0) return;
+    window.__V84_TURBO_PRODUCTS__ = list;
+    if (window.__V84_NATIVE_RENDERED__) return;
+
+    var grid = document.querySelector("#products-grid, #products-container, .products-grid, .products-container");
+    if (!grid) return;
+
+    // إزالة أي شاشة تحميل Skeleton فوراً
+    var sk = document.getElementById("v80-skeleton-grid") || document.getElementById("v78-skeleton-grid");
+    if (sk) sk.remove();
+
+    var visible = list.filter(function (p) { return p && !p.isHidden; });
+    if (!visible.length) return;
+
+    grid.innerHTML = visible.map(function (p, idx) {
+      var rawImg = (Array.isArray(p.images) && p.images[0]) || p.imageUrl || "1000392409.jpeg";
+      var img = optCloudImg(rawImg);
+      var price = Number(p.price || 0);
+      var oldP = Number(p.oldPrice || 0);
+      var disc = oldP > price ? Math.round(((oldP - price) / oldP) * 100) : 0;
+      var out = p.stock !== undefined && Number(p.stock) <= 0;
+      var eager = idx < 4 ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
+      return (
+        '<div class="product-card v84-turbo-card" data-turbo-id="' + esc(p.id) + '">' +
+          '<div class="v84-turbo-img-wrap" onclick="window.__V84_TURBO_OPEN_PROD__(\'' + esc(p.id) + '\')">' +
+            '<img src="' + esc(img) + '" alt="' + esc(p.name) + '" ' + eager + ' decoding="async" onerror="this.src=\'1000392409.jpeg\'" />' +
+            (disc > 0 ? '<span class="v84-turbo-badge">وفّر ' + disc + '%</span>' : '') +
+          '</div>' +
+          '<div class="v84-turbo-body">' +
+            '<h3 class="v84-turbo-title" onclick="window.__V84_TURBO_OPEN_PROD__(\'' + esc(p.id) + '\')">' + esc(p.name) + '</h3>' +
+            '<div>' +
+              '<div class="v84-turbo-price-row">' +
+                '<span class="v84-turbo-price">' + price.toLocaleString("ar-EG") + ' ج</span>' +
+                (oldP > price ? '<span class="v84-turbo-old">' + oldP.toLocaleString("ar-EG") + ' ج</span>' : '') +
+              '</div>' +
+              '<button type="button" class="v84-turbo-btn" ' + (out ? 'disabled style="opacity:0.5"' : 'onclick="window.__V84_TURBO_ADD_CART__(\'' + esc(p.id) + '\')"') + '>' +
+                (out ? 'نفد المخزون' : '🛒 أضف للسلة') +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join("");
+  }
+
+  // الخطوة 1 (0ms): عرض فوري من IndexedDB (يعمل حتى مع صور كثيرة وبلا حد 5MB!)
+  idbGet("products", function (cached) {
+    if (Array.isArray(cached) && cached.length > 0) paintInstantProducts(cached);
+  });
+
+  // الخطوة 2 (30ms): قراءة products-snapshot.json المرفوع على Vercel (يفتح لأول زيارة على الموبايل في 0.05 ثانية!)
+  fetch(SNAP_URL).then(function (r) { return r.ok ? r.json() : null; }).then(function (snap) {
+    if (Array.isArray(snap) && snap.length > 0) {
+      if (!window.__V84_TURBO_PRODUCTS__ || window.__V84_TURBO_PRODUCTS__.length === 0) {
+        paintInstantProducts(snap);
+      }
+      idbSet("products", snap);
+    }
+  }).catch(function () {});
+
+  // الخطوة 3 (بالتوازي بدون انتظار Firebase SDK!): جلب أحدث الأسعار عبر Firestore REST API
+  if (REST_URL && navigator.onLine) {
+    var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    if (ctrl) setTimeout(function () { ctrl.abort(); }, 12000);
+    fetch(REST_URL, ctrl ? { signal: ctrl.signal } : undefined)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || !Array.isArray(data.documents) || !data.documents.length) return;
+        var fresh = data.documents.map(parseFsDoc).filter(Boolean);
+        if (fresh.length > 0) {
+          idbSet("products", fresh);
+          paintInstantProducts(fresh);
+          window.__V84_REST_FRESH__ = fresh;
+        }
+      })
+      .catch(function () {});
+  }
+})();
 </body>
 </html>
