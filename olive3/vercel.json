@@ -1,7 +1,7 @@
 {
   "headers": [
     {
-      "source": "/(index\\.html|sw\\.js|manifest\\.json|v92-pro\\.js|v92-pro\\.css)",
+      "source": "/(index\\.html|sw\\.js|manifest\\.json|v93-pro\\.js|v93-pro\\.css)",
       "headers": [
         {
           "key": "Cache-Control",

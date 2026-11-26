@@ -258,6 +258,8 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                     featured: !!p.featured,
                     isPinned: !!p.isPinned,
                     isHidden: !!p.isHidden,
+                    specialBadge: p.specialBadge || '',
+                    specialBadges: Array.isArray(p.specialBadges) ? p.specialBadges : (p.specialBadge ? [p.specialBadge] : []),
                     sortOrder: p.sortOrder !== undefined ? p.sortOrder : 999,
                     discountEndsAt: p.discountEndsAt || '',
                     reviews: Array.isArray(p.reviews) ? p.reviews.slice(0, 10) : [],
@@ -1205,23 +1207,44 @@ try {
                         : `disabled style="background:var(--border-color); cursor:not-allowed; padding: 7px 10px; font-size:0.92rem; border-radius:8px;"`)
                     : `style="padding: 7px 10px; font-size:0.92rem; border-radius:8px;" onclick="window.executeAddToCart(event, '${product.id}', '${safeName}');"`;
                 let primaryImage = (product.images && product.images.length > 0) ? product.images[0] : (product.imageUrl || 'https://via.placeholder.com/300');
-                let videoIcon = product.videoUrl ? `<div style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.7); padding:4px 6px; border-radius:50%; color:white; font-size:0.75rem; z-index:2;">▶️</div>` : '';
-                let specialBadgeHtml = (storeSettings.enableProductBadges !== false && product.specialBadge) ? `<span class="special-product-badge">${window.escapeHTML(product.specialBadge)}</span>` : '';
-                let pinnedBadgeHtml = (storeSettings.enablePinHideProducts !== false && product.isPinned) ? `<span class="pinned-product-badge">📌 مثبت</span>` : '';
+                let videoIcon = product.videoUrl ? `<div class="v93-video-pill">▶️</div>` : '';
+                let allSpecialBadges = [];
+                if (storeSettings.enableProductBadges !== false) {
+                    if (Array.isArray(product.specialBadges) && product.specialBadges.length > 0) {
+                        allSpecialBadges = product.specialBadges.map(x => String(x || '').trim()).filter(Boolean);
+                    } else if (product.specialBadge) {
+                        allSpecialBadges = String(product.specialBadge).split(/[،,|]/).map(x => x.trim()).filter(Boolean);
+                    }
+                }
+                let badgesStripHtml = allSpecialBadges.length > 0
+                    ? `<div class="v93-badges-strip">${allSpecialBadges.map(b => {
+                        let cls = 'v93-b-default';
+                        if (b.includes('مبيع') || b.includes('🔥')) cls = 'v93-b-hot';
+                        else if (b.includes('عصرة') || b.includes('بارد') || b.includes('🌿') || b.includes('❄️')) cls = 'v93-b-olive';
+                        else if (b.includes('حديث') || b.includes('جديد') || b.includes('✨')) cls = 'v93-b-new';
+                        else if (b.includes('اختيار') || b.includes('بكر') || b.includes('⭐') || b.includes('🏆')) cls = 'v93-b-gold';
+                        else if (b.includes('محدودة') || b.includes('⚡') || b.includes('عرض') || b.includes('🎁')) cls = 'v93-b-urgent';
+                        else if (b.includes('شحن') || b.includes('🚚')) cls = 'v93-b-teal';
+                        return `<span class="v93-badge-pill ${cls}">${window.escapeHTML(b)}</span>`;
+                    }).join('')}</div>`
+                    : '';
+                let pinnedBadgeHtml = (storeSettings.enablePinHideProducts !== false && product.isPinned) ? `<span class="pinned-product-badge v93-pinned-inline">📌 مثبت</span>` : '';
                 let hiddenClass = product.isHidden ? 'hidden-product-card' : '';
                 htmlContent += `<div class="product-card ${hiddenClass}" onclick="window.openProductModal('${product.id}')">
                     <div class="product-card-media">
                         ${wishBtnHtml}
                         ${storeSettings.enableProductCompare !== false ? `<button type="button" class="compare-btn-mini ${(window.compareProductIds||[]).includes(product.id)?'active':''}" title="مقارنة" onclick="window.toggleCompareProduct(event, '${product.id}')">⚖️</button>` : ''}
-                        <span class="category-badge">${categoryLabel}</span>
-                        ${pinnedBadgeHtml}
-                        <img loading="lazy" src="${primaryImage}" onerror="this.src='https://via.placeholder.com/300x250?text=صورة'">
+                        <div class="v93-top-right-badges">
+                            <span class="category-badge v93-cat-inline">${categoryLabel}</span>
+                            ${pinnedBadgeHtml}
+                        </div>
+                        <img loading="lazy" src="${primaryImage}" onerror="this.src='1000392409.jpeg'">
                         ${discountBadge}
-                        ${specialBadgeHtml}
                         ${videoIcon}
                     </div>
                     <div class="product-card-body">
                         <div>
+                            ${badgesStripHtml}
                             <h3>${product.name}</h3>
                             <div class="rating-stars">⭐ ${avgRating}</div>
                         </div>
@@ -1322,7 +1345,20 @@ try {
             let addTxt = isModalOut && storeSettings.enableBackInStock !== false
                 ? (window.currentLang === 'ar' ? '🔔 بلغني عند التوفر' : '🔔 Notify When Available')
                 : (window.currentLang === 'ar' ? 'أضف للسلة 🛒' : 'Add to Cart 🛒');
-            let sab = document.getElementById('sticky-action-btn'); if(sab) sab.innerHTML = `<button type="button" class="btn" ${addBtnState}>${addTxt}</button>`;
+            let sab = document.getElementById('sticky-action-btn'); if(sab) sab.innerHTML = `<button type="button" class="btn v93-sticky-add-btn" ${addBtnState}>${addTxt}</button>`;
+            let mAct = document.getElementById('modal-actions');
+            if (mAct) {
+                mAct.style.display = 'block';
+                mAct.innerHTML = `<button type="button" class="btn btn-full v93-modal-add-btn" ${addBtnState}>${addTxt}</button>`;
+            }
+            let mBadges = document.getElementById('modal-badges-strip');
+            if (mBadges) {
+                let mList = Array.isArray(product.specialBadges) && product.specialBadges.length > 0
+                    ? product.specialBadges
+                    : (product.specialBadge ? String(product.specialBadge).split(/[،,|]/).map(x => x.trim()).filter(Boolean) : []);
+                mBadges.innerHTML = mList.map(b => `<span class="v93-badge-pill v93-b-olive">${window.escapeHTML(b)}</span>`).join('');
+                mBadges.style.display = mList.length > 0 ? 'flex' : 'none';
+            }
             
             window.trackEvent('ViewContent', { content_name: product.name, content_category: product.category, value: product.price, currency: 'EGP' });
             
@@ -1331,13 +1367,13 @@ try {
                 waBtnContainer.innerHTML = `<button type="button" class="btn btn-outline" style="width:100%; border-color:#25D366; color:#25D366; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="window.askProductWa('${product.id}')">💬 ${window.currentLang === 'ar' ? 'استفسار عن المنتج عبر واتساب' : 'Inquire on WhatsApp'}</button>`;
             }
 
-            let btnBuyNow = document.getElementById('btn-buy-now'); if(btnBuyNow) btnBuyNow.style.display = 'block'; let pm = document.getElementById('product-modal'); if(pm) pm.style.display = 'flex';
+            let btnBuyNow = document.getElementById('btn-buy-now'); if(btnBuyNow) btnBuyNow.style.display = isModalOut ? 'none' : 'block'; let pm = document.getElementById('product-modal'); if(pm) { pm.style.display = 'flex'; document.body.classList.add('v93-product-modal-open'); }
         }
 
         window.changeMainImg = function(url, el) { let mim = document.getElementById('modal-img-main'); if(mim) mim.src = url; document.querySelectorAll('.modal-gallery img').forEach(img => img.classList.remove('active')); if(el && el.classList) el.classList.add('active'); }
         window.updateModalVariantPrice = function() { if(!activeProductForReview) return; const product = products.find(p => p.id === activeProductForReview); let ms = document.getElementById('modal-variant-select'); let idx = ms ? ms.value : 0; if(!product || !product.variantsData || !product.variantsData[idx]) return; let selectedVar = product.variantsData[idx]; activeVariantForCart = selectedVar; let mp = document.getElementById('modal-price'); if(mp) mp.innerHTML = `<span>${selectedVar.price} ج</span>`; let spr = document.getElementById('sticky-price'); if(spr) spr.innerHTML = `${selectedVar.price} ج`; }
         window.executeAddToCart = function(event, id, name) { if(event) event.stopPropagation(); let p = products.find(x => x.id === id); if(!p) return; let priceToUse = p.price; let finalName = name; let variantSuffix = ""; let img = (p.images && p.images.length > 0) ? p.images[0] : (p.imageUrl || 'https://via.placeholder.com/300'); if(activeVariantForCart) { priceToUse = activeVariantForCart.price; finalName = `${name} (${activeVariantForCart.name})`; variantSuffix = activeVariantForCart.name; } window.addToCart(id, finalName, priceToUse, img, variantSuffix); window.closeProductModal(); }
-        window.closeProductModal = function() { let pm = document.getElementById('product-modal'); if(pm) pm.style.display = 'none'; activeProductForReview = null; window.history.pushState(null, '', window.location.pathname); activeVariantForCart = null; }
+        window.closeProductModal = function() { let pm = document.getElementById('product-modal'); if(pm) pm.style.display = 'none'; document.body.classList.remove('v93-product-modal-open'); activeProductForReview = null; window.history.pushState(null, '', window.location.pathname); activeVariantForCart = null; }
 
         
         window.deleteReview = async function(productId, reviewIndex) {
@@ -1397,20 +1433,37 @@ try {
 
         window.deleteProduct = async function(id) { if(confirm('حذف المنتج نهائياً؟')) { await deleteDoc(doc(db, 'products', id)); window.showToast('تم الحذف', 'success'); } }
         window.editProduct = function(id) { const product = products.find(p => p.id === id); if(!product) return; document.getElementById('edit-product-id').value = product.id; document.getElementById('product-name').value = product.name; document.getElementById('product-price').value = product.price; document.getElementById('product-old-price').value = product.oldPrice || ''; document.getElementById('product-category').value = product.category || 'أخرى'; document.getElementById('product-stock').value = product.stock !== undefined ? product.stock : ''; document.getElementById('product-desc').value = product.description || '';
-        let spBadgeEl = document.getElementById('product-special-badge'); if(spBadgeEl) spBadgeEl.value = product.specialBadge || '';
+        let savedBadgesArr = Array.isArray(product.specialBadges) && product.specialBadges.length > 0
+            ? product.specialBadges.map(x => String(x || '').trim()).filter(Boolean)
+            : (product.specialBadge ? String(product.specialBadge).split(/[،,|]/).map(x => x.trim()).filter(Boolean) : []);
+        let presetValues = [];
+        document.querySelectorAll('input[name="product-badge-opt"]').forEach(cb => {
+            presetValues.push(cb.value);
+            cb.checked = savedBadgesArr.includes(cb.value);
+        });
+        let customExtras = savedBadgesArr.filter(b => !presetValues.includes(b));
+        let customBInp = document.getElementById('product-custom-badges');
+        if (customBInp) customBInp.value = customExtras.join('، ');
+        let spBadgeEl = document.getElementById('product-special-badge'); if(spBadgeEl) spBadgeEl.value = savedBadgesArr[0] || '';
         let cSpecsEl = document.getElementById('product-custom-specs'); if(cSpecsEl) cSpecsEl.value = product.customSpecs || '';
         let cCostEl = document.getElementById('product-cost-price'); if(cCostEl) cCostEl.value = product.costPrice || ''; let vStr = ""; if(product.variantsData) { vStr = product.variantsData.map(v => v.stock !== undefined ? `${v.name}-${v.price}-${v.stock}` : `${v.name}-${v.price}`).join(', '); }
         let sOrdEl = document.getElementById('product-sort-order'); if(sOrdEl) sOrdEl.value = product.sortOrder !== undefined ? product.sortOrder : '';
         let dEndEl = document.getElementById('product-discount-end'); if(dEndEl) dEndEl.value = product.discountEndsAt || ''; document.getElementById('product-variants').value = vStr; document.getElementById('edit-product-old-image').value = (product.images && product.images.length > 0) ? JSON.stringify(product.images) : (product.imageUrl || ''); document.getElementById('product-image-url').value = ''; let pvu = document.getElementById('product-video-url'); if(pvu) pvu.value = product.videoUrl || ''; document.getElementById('admin-product-title').innerHTML = '✏️ تعديل المنتج'; document.getElementById('btn-submit-product').textContent = 'تحديث'; document.getElementById('btn-cancel-edit').style.display = 'block'; window.showPanel('admin-add-product'); window.scrollTo(0,0); }
-        window.cancelEditProduct = function() { document.getElementById('add-product-form').reset(); document.getElementById('edit-product-id').value = ''; document.getElementById('edit-product-old-image').value = ''; document.getElementById('admin-product-title').innerHTML = '🛒 إضافة منتج جديد'; document.getElementById('btn-submit-product').textContent = 'حفظ'; document.getElementById('btn-cancel-edit').style.display = 'none'; }
+        window.cancelEditProduct = function() { document.getElementById('add-product-form').reset(); document.querySelectorAll('input[name="product-badge-opt"]').forEach(cb => cb.checked = false); let cbExtra = document.getElementById('product-custom-badges'); if(cbExtra) cbExtra.value = ''; document.getElementById('edit-product-id').value = ''; document.getElementById('edit-product-old-image').value = ''; document.getElementById('admin-product-title').innerHTML = '🛒 إضافة منتج جديد'; document.getElementById('btn-submit-product').textContent = 'حفظ'; document.getElementById('btn-cancel-edit').style.display = 'none'; }
 
         let addPForm = document.getElementById('add-product-form');
-        if(addPForm) { addPForm.addEventListener('submit', async (e) => { e.preventDefault(); const btnSubmit = document.getElementById('btn-submit-product'); const statusLabel = document.getElementById('upload-status'); btnSubmit.disabled = true; const id = document.getElementById('edit-product-id').value; const name = document.getElementById('product-name').value; const price = Number(document.getElementById('product-price').value); const oldPrice = document.getElementById('product-old-price').value; const category = document.getElementById('product-category').value; const description = document.getElementById('product-desc').value; const stockVal = document.getElementById('product-stock').value; const vString = document.getElementById('product-variants').value.trim(); const variantsData = parseVariants(vString); let stock = stockVal === "" ? "" : Number(stockVal); let finalImages = []; let oldImgData = document.getElementById('edit-product-old-image').value; if(oldImgData) { try { finalImages = JSON.parse(oldImgData); } catch(err) { finalImages = [oldImgData]; } } const fileInput = document.getElementById('product-image-file'); const urlInput = document.getElementById('product-image-url').value.trim(); let videoUrl = ""; let pvu = document.getElementById('product-video-url'); if(pvu) videoUrl = pvu.value.trim(); try { if(fileInput.files.length > 0) { if(statusLabel) {statusLabel.style.display = 'block'; statusLabel.textContent = `⏳ جاري الرفع`;} const imgbbKey = "D37b01ec4b27dcce48777a7b229a1fdb"; let newUploads = []; let limit = Math.min(fileInput.files.length, 4); for(let i=0; i<limit; i++) { const formData = new FormData(); formData.append('image', fileInput.files[i]); const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { newUploads.push(data.data.url); } } if(newUploads.length > 0) finalImages = newUploads; } else if (urlInput) { finalImages = [urlInput]; } else if (finalImages.length === 0) { window.showToast('اختر صورة أو ضع رابط', 'error'); btnSubmit.disabled = false; return; } let specialBadge = document.getElementById('product-special-badge') ? document.getElementById('product-special-badge').value : '';
+        if(addPForm) { addPForm.addEventListener('submit', async (e) => { e.preventDefault(); const btnSubmit = document.getElementById('btn-submit-product'); const statusLabel = document.getElementById('upload-status'); btnSubmit.disabled = true; const id = document.getElementById('edit-product-id').value; const name = document.getElementById('product-name').value; const price = Number(document.getElementById('product-price').value); const oldPrice = document.getElementById('product-old-price').value; const category = document.getElementById('product-category').value; const description = document.getElementById('product-desc').value; const stockVal = document.getElementById('product-stock').value; const vString = document.getElementById('product-variants').value.trim(); const variantsData = parseVariants(vString); let stock = stockVal === "" ? "" : Number(stockVal); let finalImages = []; let oldImgData = document.getElementById('edit-product-old-image').value; if(oldImgData) { try { finalImages = JSON.parse(oldImgData); } catch(err) { finalImages = [oldImgData]; } } const fileInput = document.getElementById('product-image-file'); const urlInput = document.getElementById('product-image-url').value.trim(); let videoUrl = ""; let pvu = document.getElementById('product-video-url'); if(pvu) videoUrl = pvu.value.trim(); try { if(fileInput.files.length > 0) { if(statusLabel) {statusLabel.style.display = 'block'; statusLabel.textContent = `⏳ جاري الرفع`;} const imgbbKey = "D37b01ec4b27dcce48777a7b229a1fdb"; let newUploads = []; let limit = Math.min(fileInput.files.length, 4); for(let i=0; i<limit; i++) { const formData = new FormData(); formData.append('image', fileInput.files[i]); const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbKey}`, { method: 'POST', body: formData }); const data = await res.json(); if(data.success) { newUploads.push(data.data.url); } } if(newUploads.length > 0) finalImages = newUploads; } else if (urlInput) { finalImages = [urlInput]; } else if (finalImages.length === 0) { window.showToast('اختر صورة أو ضع رابط', 'error'); btnSubmit.disabled = false; return; } let selectedBadges = [];
+        document.querySelectorAll('input[name="product-badge-opt"]:checked').forEach(cb => { if (cb.value) selectedBadges.push(cb.value.trim()); });
+        let customBadgesRaw = (document.getElementById('product-custom-badges') || {}).value || '';
+        if (customBadgesRaw.trim()) {
+            customBadgesRaw.split(/[،,|]/).map(x => x.trim()).filter(Boolean).forEach(x => { if (!selectedBadges.includes(x)) selectedBadges.push(x); });
+        }
+        let specialBadge = selectedBadges[0] || '';
         let customSpecs = document.getElementById('product-custom-specs') ? document.getElementById('product-custom-specs').value.trim() : '';
         let costPrice = document.getElementById('product-cost-price') ? (Number(document.getElementById('product-cost-price').value) || 0) : 0;
         let sortOrderVal = document.getElementById('product-sort-order') && document.getElementById('product-sort-order').value !== '' ? Number(document.getElementById('product-sort-order').value) : 999;
         let discountEndsAt = document.getElementById('product-discount-end') ? document.getElementById('product-discount-end').value : '';
-        let productPayload = { createdAt: new Date().toISOString(), name, price, oldPrice, costPrice, category, stock, description, images: finalImages, variantsData, imageUrl: finalImages[0], specialBadge, customSpecs, sortOrder: sortOrderVal, discountEndsAt }; if(videoUrl) productPayload.videoUrl = videoUrl; if(id) { await updateDoc(doc(db, 'products', id), productPayload); window.showToast('تم التحديث!', 'success'); } else { 
+        let productPayload = { createdAt: new Date().toISOString(), name, price, oldPrice, costPrice, category, stock, description, images: finalImages, variantsData, imageUrl: finalImages[0], specialBadge, specialBadges: selectedBadges, customSpecs, sortOrder: sortOrderVal, discountEndsAt }; if(videoUrl) productPayload.videoUrl = videoUrl; if(id) { await updateDoc(doc(db, 'products', id), productPayload); window.showToast('تم التحديث!', 'success'); } else { 
                 let fcEl = document.getElementById('product-fake-reviews-count');
                 let fCount = fcEl ? parseInt(fcEl.value) : 5;
                 productPayload.reviews = window.generateFakeReviews(name, fCount); 
@@ -10803,13 +10856,18 @@ window.showUserHistory = function(userId, userName) {
             let price = (document.getElementById('product-price') || {}).value || '250';
             let oldPrice = (document.getElementById('product-old-price') || {}).value || '';
             let cat = (document.getElementById('product-category') || {}).value || 'زيت زيتون';
-            let badge = (document.getElementById('product-special-badge') || {}).value || '';
+            let badgesArr = [];
+            document.querySelectorAll('input[name="product-badge-opt"]:checked').forEach(cb => badgesArr.push(cb.value));
+            let cRaw = (document.getElementById('product-custom-badges') || {}).value || '';
+            if (cRaw.trim()) cRaw.split(/[،,|]/).map(x => x.trim()).filter(Boolean).forEach(x => { if (!badgesArr.includes(x)) badgesArr.push(x); });
             cont.innerHTML = `
                 <div style="display:flex; align-items:center; gap:12px; background:var(--panel-bg); padding:10px; border-radius:10px; border:1px solid var(--border-color);">
                     <img src="1000392409.jpeg" style="width:55px; height:55px; border-radius:8px; object-fit:cover;">
                     <div style="flex:1;">
-                        <span style="font-size:0.72rem; background:var(--primary); color:#fff; padding:2px 8px; border-radius:10px;">${window.escapeHTML(cat)}</span>
-                        ${badge ? `<span style="font-size:0.72rem; background:var(--secondary); color:#fff; padding:2px 8px; border-radius:10px; margin-right:4px;">${window.escapeHTML(badge)}</span>` : ''}
+                        <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:4px;">
+                            <span style="font-size:0.72rem; background:var(--primary); color:#fff; padding:2px 8px; border-radius:10px;">${window.escapeHTML(cat)}</span>
+                            ${badgesArr.map(b => `<span style="font-size:0.72rem; background:var(--secondary); color:#fff; padding:2px 8px; border-radius:10px;">${window.escapeHTML(b)}</span>`).join('')}
+                        </div>
                         <h4 style="margin:4px 0 2px 0; color:var(--primary);">${window.escapeHTML(name)}</h4>
                         <div style="font-weight:bold; color:var(--secondary);">
                             ${oldPrice && Number(oldPrice) > Number(price) ? `<del style="color:#888; font-size:0.8rem; margin-left:5px;">${oldPrice} ج</del>` : ''}
@@ -10819,7 +10877,8 @@ window.showUserHistory = function(userId, userName) {
                 </div>
             `;
         };
-        ['product-name', 'product-price', 'product-old-price', 'product-category', 'product-special-badge'].forEach(id => {
+        document.querySelectorAll('input[name="product-badge-opt"]').forEach(cb => cb.addEventListener('change', window.updateLiveProductPreview));
+        ['product-name', 'product-price', 'product-old-price', 'product-category', 'product-custom-badges'].forEach(id => {
             let el = document.getElementById(id);
             if (el) el.addEventListener('input', window.updateLiveProductPreview);
         });

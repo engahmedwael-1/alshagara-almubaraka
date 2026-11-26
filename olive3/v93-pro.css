@@ -1,0 +1,848 @@
+/* Zait Store V92 Pro - Mobile Layout, Interactive Help (?) & Offline UX */
+html, body {
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+}
+
+/* شريط تنبيه وضع الأوفلاين */
+#v92-offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 99990;
+  background: linear-gradient(90deg, #153422, #1f5135);
+  color: #fff;
+  text-align: center;
+  padding: 9px 14px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-bottom: 2px solid #c59b27;
+}
+#v92-offline-banner.show {
+  display: flex !important;
+}
+
+/* منع أي قص أو خروج خارج الشاشة في الإحصائيات وكل صفحات الإدارة */
+#admin-dashboard-panel,
+#admin-orders-panel,
+#admin-users-panel,
+#admin-panel,
+#admin-messages-panel,
+#admin-returns-panel,
+#admin-work-panel,
+#admin-security-panel,
+#admin-broadcast-panel,
+#admin-staff-ratings-panel {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
+#admin-dashboard-panel .dashboard-grid,
+#admin-dashboard-panel .dashboard-grid > *,
+#admin-dashboard-panel .dash-card,
+#admin-dashboard-panel .dash-card > *,
+#admin-dashboard-panel .growth-comparison-grid,
+#admin-dashboard-panel .growth-card {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+#admin-dashboard-panel .dash-card > div[onclick] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+}
+
+#admin-dashboard-panel .dash-card h3 {
+  line-height: 1.55 !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* شريط دليل الإحصائيات العلوي */
+.v92-help-directory-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, rgba(21, 52, 34, 0.08), rgba(197, 155, 39, 0.14));
+  border: 1.5px solid #c59b27;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin: 12px 0 16px;
+}
+.v92-help-directory-bar .v92-dir-text {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--primary, #153422);
+  flex: 1 1 200px;
+  text-align: right;
+}
+.v92-help-directory-btn {
+  background: linear-gradient(135deg, #153422, #1f5135);
+  color: #fff;
+  border: 1.5px solid #c59b27;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-weight: 800;
+  font-size: 0.84rem;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(21, 52, 34, 0.18);
+}
+
+/* زر علامة الاستفهام التفاعلي (?) */
+.v92-help-q-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #c59b27, #a37b16) !important;
+  color: #fff !important;
+  border: 1.5px solid #fff !important;
+  font-weight: 900 !important;
+  font-size: 0.82rem !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  margin: 0 4px !important;
+  padding: 0 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+  transition: transform 0.16s ease, box-shadow 0.16s ease !important;
+}
+.v92-help-q-btn:hover,
+.v92-help-q-btn:active {
+  transform: scale(1.12);
+  box-shadow: 0 3px 10px rgba(197, 155, 39, 0.45) !important;
+}
+
+.v92-btn-with-help-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100%;
+  margin-top: 8px;
+}
+.v92-btn-with-help-wrap > button:first-child,
+.v92-btn-with-help-wrap > label:first-child {
+  flex: 1 1 auto !important;
+  margin-top: 0 !important;
+}
+
+/* نافذة / صفحة الشرح التفصيلي الشاملة */
+#v92-help-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 99995;
+  background: rgba(10, 22, 15, 0.72);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  box-sizing: border-box;
+}
+#v92-help-modal.open {
+  display: flex !important;
+}
+.v92-help-sheet {
+  background: var(--panel-bg, #ffffff);
+  color: var(--text-color, #1e293b);
+  width: 100%;
+  max-width: 680px;
+  max-height: 92vh;
+  border-radius: 18px;
+  border: 2px solid #c59b27;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  direction: rtl;
+  text-align: right;
+}
+.v92-help-header {
+  background: linear-gradient(135deg, #153422, #1f5135);
+  color: #fff;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 2px solid #c59b27;
+}
+.v92-help-header-title {
+  font-size: 1.02rem;
+  font-weight: 900;
+  margin: 0;
+  line-height: 1.4;
+}
+.v92-help-close {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 1.15rem;
+  font-weight: 900;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.v92-help-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--input-bg, #f8fafc);
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+.v92-help-tab {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, #cbd5e1);
+  background: transparent;
+  color: var(--text-color, #1e293b);
+  font-weight: 800;
+  font-size: 0.84rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.v92-help-tab.active {
+  background: #153422;
+  color: #fff;
+  border-color: #c59b27;
+}
+.v92-help-body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  line-height: 1.75;
+  font-size: 0.92rem;
+}
+.v92-help-cat-badge {
+  display: inline-block;
+  background: rgba(197, 155, 39, 0.16);
+  color: #926d0b;
+  border: 1px solid #c59b27;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+.v92-help-sec {
+  background: var(--input-bg, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-right: 4px solid #153422;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.v92-help-sec.gold { border-right-color: #c59b27; }
+.v92-help-sec.teal { border-right-color: #028090; }
+.v92-help-sec.warn {
+  border-right-color: #dc2626;
+  background: rgba(220, 38, 38, 0.06);
+}
+.v92-help-sec h4 {
+  margin: 0 0 6px 0;
+  font-size: 0.94rem;
+  color: var(--primary, #153422);
+}
+.v92-help-sec.warn h4 { color: #b91c1c; }
+.v92-help-sec ul {
+  margin: 4px 0 0 0;
+  padding-right: 18px;
+}
+.v92-help-sec li { margin-bottom: 4px; }
+.v92-help-search-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-color, #cbd5e1);
+  margin-bottom: 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+.v92-help-index-item {
+  width: 100%;
+  text-align: right;
+  background: var(--input-bg, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: inherit;
+  color: var(--text-color, #1e293b);
+}
+.v92-help-index-item:hover {
+  border-color: #c59b27;
+}
+
+/* تغليف آمن لأي جدول عريض بالتمرير الأفقي */
+.v92-table-scroll-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+  position: relative;
+}
+.v92-scroll-hint {
+  display: none;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #028090;
+  background: rgba(2, 128, 144, 0.08);
+  padding: 5px 10px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+/* ============================================================================
+   إصلاحات الموبايل الشاملة لقسم الإحصائيات وجدول إدارة المخزون وإخفاء العائم
+   ============================================================================ */
+@media (max-width: 768px) {
+  #admin-dashboard-panel,
+  #admin-orders-panel,
+  #admin-users-panel,
+  #admin-panel,
+  #admin-messages-panel,
+  #admin-returns-panel,
+  #admin-work-panel,
+  #admin-security-panel,
+  #admin-broadcast-panel,
+  #admin-staff-ratings-panel {
+    padding: 12px 10px 115px !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  #admin-dashboard-panel .dashboard-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  #admin-dashboard-panel .growth-comparison-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  #admin-dashboard-panel .dash-card {
+    padding: 14px 12px !important;
+    border-radius: 14px !important;
+    text-align: right !important;
+  }
+
+  #admin-dashboard-panel .dash-card h3 {
+    font-size: 0.94rem !important;
+    margin: 0 !important;
+  }
+
+  #admin-dashboard-panel .form-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  #admin-dashboard-panel .form-row > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* إصلاح شريط صحة المتجر ليظهر كاملاً بدون قص */
+  #admin-store-health-bar > div {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    text-align: right !important;
+    padding: 12px !important;
+    font-size: 0.88rem !important;
+  }
+
+  /* تحويل جدول إدارة المخزون والأسعار السريع إلى بطاقات موبايل احترافية كاملة العرض */
+  #admin-quick-inventory-table-wrap {
+    overflow-x: visible !important;
+  }
+  #admin-quick-inventory-table-wrap table,
+  #admin-quick-inventory-table-wrap thead,
+  #admin-quick-inventory-table-wrap tbody {
+    display: block !important;
+    width: 100% !important;
+  }
+  #admin-quick-inventory-table-wrap thead {
+    display: none !important;
+  }
+  #admin-quick-inventory-table-wrap tbody tr {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    background: var(--input-bg, #f8fafc) !important;
+    border: 1.5px solid var(--border-color, #dbe4ee) !important;
+    border-radius: 14px !important;
+    padding: 12px !important;
+    margin-bottom: 12px !important;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04) !important;
+  }
+  #admin-quick-inventory-table-wrap tbody td {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 0 !important;
+    border: none !important;
+    text-align: right !important;
+    min-width: 0 !important;
+  }
+  #admin-quick-inventory-table-wrap tbody td:first-child,
+  #admin-quick-inventory-table-wrap tbody td.v92-inv-name {
+    grid-column: 1 / -1 !important;
+    font-size: 0.96rem !important;
+    color: var(--primary, #153422) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 2px !important;
+    border-bottom: 1px dashed var(--border-color, #cbd5e1) !important;
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+  }
+  #admin-quick-inventory-table-wrap tbody td[data-label]:not(:first-child):not(:last-child)::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: var(--text-muted, #64748b);
+    margin-bottom: 4px;
+    text-align: center;
+  }
+  #admin-quick-inventory-table-wrap tbody td input {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 8px 6px !important;
+    font-size: 0.9rem !important;
+    border-radius: 10px !important;
+  }
+  #admin-quick-inventory-table-wrap tbody td:last-child,
+  #admin-quick-inventory-table-wrap tbody td.v92-inv-action {
+    grid-column: 1 / -1 !important;
+    margin-top: 4px !important;
+  }
+  #admin-quick-inventory-table-wrap tbody td:last-child button {
+    width: 100% !important;
+    padding: 10px 14px !important;
+    font-size: 0.9rem !important;
+    font-weight: 800 !important;
+    border-radius: 10px !important;
+  }
+
+  .v92-scroll-hint {
+    display: block !important;
+  }
+
+  .v92-help-sheet {
+    max-height: 94vh;
+    border-radius: 16px;
+  }
+
+  /* إخفاء الأزرار العائمة الخاصة بالعملاء عند فتح أي صفحة إدارية حتى لا تغطي الجداول والأزرار */
+  body.v92-admin-panel-open #floating-menu-container,
+  body.v92-admin-panel-open #spin-wheel-fab,
+  body.v92-admin-panel-open #floating-bottom-cart-bar,
+  body.v92-admin-panel-open #compare-floating-bar,
+  body:has(#admin-dashboard-panel.active, #admin-orders-panel.active, #admin-users-panel.active, #admin-panel.active, #admin-returns-panel.active, #admin-work-panel.active, #admin-security-panel.active, #admin-broadcast-panel.active, #admin-staff-ratings-panel.active) #floating-menu-container,
+  body:has(#admin-dashboard-panel.active, #admin-orders-panel.active, #admin-users-panel.active, #admin-panel.active, #admin-returns-panel.active, #admin-work-panel.active, #admin-security-panel.active, #admin-broadcast-panel.active, #admin-staff-ratings-panel.active) #spin-wheel-fab,
+  body:has(#admin-dashboard-panel.active, #admin-orders-panel.active, #admin-users-panel.active, #admin-panel.active, #admin-returns-panel.active, #admin-work-panel.active, #admin-security-panel.active, #admin-broadcast-panel.active, #admin-staff-ratings-panel.active) #floating-bottom-cart-bar,
+  body:has(#admin-dashboard-panel.active, #admin-orders-panel.active, #admin-users-panel.active, #admin-panel.active, #admin-returns-panel.active, #admin-work-panel.active, #admin-security-panel.active, #admin-broadcast-panel.active, #admin-staff-ratings-panel.active) #compare-floating-bar {
+    display: none !important;
+  }
+}
+
+
+/* ============================================================================
+   V93: تنظيم شارات المنتجات (صفر تداخل) + اختيار شارات متعددة + إصلاح صفحة المنتج
+   ============================================================================ */
+
+/* 1. تنظيم شارات صورة المنتج (أعلى يمين فقط للفئة والمثبت، أسفل يسار للخصم فقط) */
+.product-card-media {
+  position: relative !important;
+  overflow: hidden !important;
+}
+.v93-top-right-badges {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: calc(100% - 46px);
+  pointer-events: none;
+}
+html[dir="ltr"] .v93-top-right-badges {
+  right: auto;
+  left: 7px;
+  align-items: flex-start;
+}
+.v93-top-right-badges .category-badge.v93-cat-inline,
+.v93-top-right-badges .pinned-product-badge.v93-pinned-inline {
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  left: auto !important;
+  bottom: auto !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px !important;
+  border-radius: 999px !important;
+  font-size: 0.68rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+}
+.product-card-media .discount-badge {
+  position: absolute !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: 7px !important;
+  left: 7px !important;
+  z-index: 4 !important;
+  padding: 3px 9px !important;
+  border-radius: 999px !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  background: linear-gradient(135deg, #e11d48, #be123c) !important;
+  color: #fff !important;
+  box-shadow: 0 3px 8px rgba(190, 18, 60, 0.35) !important;
+}
+html[dir="ltr"] .product-card-media .discount-badge {
+  left: auto !important;
+  right: 7px !important;
+}
+.v93-video-pill {
+  position: absolute;
+  bottom: 7px;
+  right: 7px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  z-index: 4;
+}
+
+/* 2. شريط الشارات المتعددة المنظم تحت الصورة مباشرة (يقبل أي عدد بدون تداخل نهائياً!) */
+.v93-badges-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0 6px;
+  padding: 0 2px;
+}
+.v93-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.67rem;
+  font-weight: 800;
+  line-height: 1.4;
+  white-space: nowrap;
+  letter-spacing: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+.v93-badge-pill.v93-b-hot {
+  background: linear-gradient(135deg, #ea580c, #dc2626);
+  color: #fff;
+}
+.v93-badge-pill.v93-b-olive {
+  background: linear-gradient(135deg, #15803d, #166534);
+  color: #fff;
+}
+.v93-badge-pill.v93-b-new {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #fff;
+}
+.v93-badge-pill.v93-b-gold {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  color: #fff;
+}
+.v93-badge-pill.v93-b-urgent {
+  background: linear-gradient(135deg, #9333ea, #7e22ce);
+  color: #fff;
+}
+.v93-badge-pill.v93-b-teal {
+  background: linear-gradient(135deg, #0d9488, #0f766e);
+  color: #fff;
+}
+.v93-badge-pill.v93-b-default {
+  background: linear-gradient(135deg, #3c521e, #153422);
+  color: #fff;
+}
+
+/* 3. منتقي الشارات المتعددة في نموذج إضافة / تعديل المنتج */
+.v93-badge-picker-box {
+  background: var(--input-bg, #f8fafc);
+  border: 1.5px dashed #c59b27;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  text-align: right;
+}
+.v93-badge-picker-title {
+  display: block;
+  font-weight: 800;
+  color: var(--primary, #153422);
+  font-size: 0.88rem;
+  margin-bottom: 10px;
+}
+.v93-badge-picker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.v93-badge-opt {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel-bg, #fff);
+  border: 1.5px solid var(--border-color, #cbd5e1);
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin: 0 !important;
+  user-select: none;
+  transition: all 0.16s ease;
+}
+.v93-badge-opt input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  accent-color: #153422;
+  cursor: pointer;
+}
+.v93-badge-opt:has(input:checked) {
+  background: linear-gradient(135deg, #153422, #1f5135);
+  color: #fff;
+  border-color: #c59b27;
+  box-shadow: 0 3px 10px rgba(21, 52, 34, 0.22);
+}
+
+/* 4. إصلاح صفحة تفاصيل المنتج (#product-modal) — إظهار زر أضف للسلة فوق الشريط السفلي ومنع تداخل QR */
+.modal-overlay {
+  z-index: 6000 !important;
+}
+#product-modal {
+  z-index: 6000 !important;
+  padding: 0 !important;
+}
+#product-modal .modal-content {
+  position: relative !important;
+  max-height: 96vh !important;
+  padding: 14px 16px 100px !important;
+  border-radius: 18px !important;
+  overflow-y: auto !important;
+}
+@media (max-width: 768px) {
+  #product-modal .modal-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    padding: 12px 14px 110px !important;
+  }
+}
+
+.v93-modal-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  width: 100%;
+}
+.v93-modal-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.v93-top-pill {
+  position: static !important;
+  border-radius: 999px !important;
+  padding: 5px 12px !important;
+  font-size: 0.8rem !important;
+  font-weight: 800 !important;
+  margin: 0 !important;
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+.v93-top-pill.v93-qr-pill {
+  color: #028090 !important;
+  border-color: #028090 !important;
+}
+.v93-modal-close-inline {
+  position: static !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  border-radius: 50% !important;
+  background: var(--danger, #dc2626) !important;
+  color: #fff !important;
+  border: none !important;
+  font-weight: 900 !important;
+  font-size: 1rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  flex-shrink: 0;
+}
+.v93-live-viewers-pill {
+  background: #fff3cd;
+  color: #856404;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin: 0 auto 10px;
+  display: inline-block;
+  border: 1px solid #ffeeba;
+}
+
+/* أزرار الشراء الأساسية واضحة جداً أسفل السعر مباشرة */
+.v93-modal-cta-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 14px;
+  width: 100%;
+}
+.v93-modal-add-wrap {
+  display: block !important;
+  width: 100%;
+}
+.v93-modal-add-btn {
+  width: 100% !important;
+  padding: 13px 16px !important;
+  font-size: 1.05rem !important;
+  font-weight: 900 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #c59b27, #a37b16) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 16px rgba(197, 155, 39, 0.35) !important;
+  border: none !important;
+}
+.v93-buy-now-btn {
+  width: 100% !important;
+  padding: 12px 16px !important;
+  font-size: 0.98rem !important;
+  font-weight: 900 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #153422, #1f5135) !important;
+  color: #fff !important;
+  margin: 0 !important;
+}
+
+/* شريط الشراء الثابت أسفل صفحة المنتج — ظاهر فوق كل شيء */
+#product-modal .sticky-cart-bar {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  z-index: 6050 !important;
+  background: var(--panel-bg, #ffffff) !important;
+  border-top: 2px solid #c59b27 !important;
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.16) !important;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom)) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  box-sizing: border-box !important;
+  border-radius: 0 !important;
+}
+#product-modal .sticky-cart-bar #sticky-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 52vw;
+}
+#product-modal .v93-sticky-add-btn {
+  background: linear-gradient(135deg, #c59b27, #a37b16) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  padding: 10px 18px !important;
+  border-radius: 12px !important;
+  white-space: nowrap !important;
+  box-shadow: 0 4px 12px rgba(197, 155, 39, 0.35) !important;
+}
+
+/* إخفاء الشريط السفلي والأزرار العائمة عند فتح صفحة تفاصيل المنتج حتى لا تغطي أي زر */
+body.v93-product-modal-open #mobile-bottom-nav,
+body.v93-product-modal-open .bottom-nav,
+body.v93-product-modal-open #floating-menu-container,
+body.v93-product-modal-open #spin-wheel-fab,
+body.v93-product-modal-open #admin-floating-launcher-wrap,
+body.v93-product-modal-open #floating-bottom-cart-bar,
+body:has(#product-modal[style*="display: flex"]),
+body:has(#product-modal[style*="display:flex"]) {
+  overflow: hidden;
+}
+body:has(#product-modal[style*="display: flex"]) #mobile-bottom-nav,
+body:has(#product-modal[style*="display:flex"]) #mobile-bottom-nav,
+body:has(#product-modal[style*="display: flex"]) #floating-menu-container,
+body:has(#product-modal[style*="display:flex"]) #floating-menu-container,
+body:has(#product-modal[style*="display: flex"]) #spin-wheel-fab,
+body:has(#product-modal[style*="display:flex"]) #spin-wheel-fab,
+body:has(#product-modal[style*="display: flex"]) #admin-floating-launcher-wrap,
+body:has(#product-modal[style*="display:flex"]) #admin-floating-launcher-wrap,
+body:has(#product-modal[style*="display: flex"]) #floating-bottom-cart-bar,
+body:has(#product-modal[style*="display:flex"]) #floating-bottom-cart-bar {
+  display: none !important;
+}
