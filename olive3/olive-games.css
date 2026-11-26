@@ -1,0 +1,585 @@
+/* مركز ألعاب الشجرة المباركة V94 — تصميم عالمي فخم وسلس 60fps */
+#og-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99992;
+  background: rgba(8, 22, 14, 0.82);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  box-sizing: border-box;
+  direction: rtl;
+  font-family: inherit;
+}
+#og-modal-overlay.open {
+  display: flex !important;
+  animation: ogFadeIn 0.22s ease;
+}
+@keyframes ogFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.og-shell {
+  width: 100%;
+  max-width: 540px;
+  max-height: 94dvh;
+  background: var(--panel-bg, #fbfaf5);
+  color: var(--text-color, #153422);
+  border-radius: 22px;
+  border: 2px solid #c59b27;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+@media (max-width: 600px) {
+  #og-modal-overlay { padding: 0; }
+  .og-shell {
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border: none;
+  }
+}
+
+.og-topbar {
+  background: linear-gradient(135deg, #102a1b 0%, #1d4d31 60%, #153422 100%);
+  color: #fff;
+  padding: calc(12px + env(safe-area-inset-top)) 14px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 2px solid #c59b27;
+  flex-shrink: 0;
+}
+.og-topbar-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+  font-size: 1rem;
+  margin: 0;
+  line-height: 1.3;
+}
+.og-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.og-icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.og-icon-btn:hover { background: rgba(255, 255, 255, 0.22); transform: scale(1.06); }
+.og-icon-btn.close-btn { background: #dc2626; border-color: #fca5a5; }
+
+.og-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* شريط الحالة العلوي في صالة الألعاب */
+.og-hero-banner {
+  background: linear-gradient(135deg, #153422, #1f5135 65%, #3c521e);
+  color: #fff;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+  border: 1.5px solid #c59b27;
+  position: relative;
+  overflow: hidden;
+}
+.og-hero-banner h3 { margin: 0 0 4px; font-size: 1.05rem; color: #fde68a; }
+.og-hero-banner p { margin: 0; font-size: 0.82rem; opacity: 0.92; line-height: 1.55; }
+.og-status-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.og-pill {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(253, 230, 138, 0.4);
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+/* شبكة بطاقات الـ 5 ألعاب */
+.og-games-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.og-game-card {
+  background: var(--input-bg, #ffffff);
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  text-align: right;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  position: relative;
+}
+.og-game-card:hover {
+  transform: translateY(-2px);
+  border-color: #c59b27;
+  box-shadow: 0 8px 20px rgba(21, 52, 34, 0.12);
+}
+.og-game-card.locked {
+  opacity: 0.78;
+}
+.og-game-emoji {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  flex-shrink: 0;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.16);
+}
+.og-game-info {
+  flex: 1;
+  min-width: 0;
+}
+.og-game-info h4 {
+  margin: 0 0 3px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--primary, #153422);
+}
+.og-game-info p {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted, #64748b);
+  line-height: 1.4;
+}
+.og-reward-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(197, 155, 39, 0.16);
+  color: #926d0b;
+  border: 1px solid rgba(197, 155, 39, 0.45);
+}
+.og-reward-tag.done {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+  border-color: rgba(22, 163, 74, 0.35);
+}
+.og-play-arrow {
+  background: linear-gradient(135deg, #153422, #1f5135);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-weight: 900;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+
+/* شاشة اللعب الداخلية */
+.og-stage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.og-back-btn {
+  background: var(--input-bg, #f1f5f9);
+  color: var(--primary, #153422);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.og-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 8px;
+  background: linear-gradient(135deg, #153422, #1d4d31);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  font-size: 0.86rem;
+  font-weight: 900;
+  border: 1px solid #c59b27;
+}
+
+/* 1. لعبة قطف الزيتون Canvas */
+.og-canvas-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid #c59b27;
+  background: linear-gradient(180deg, #dff6ff 0%, #f4f9ec 75%, #84a957 100%);
+  touch-action: none;
+  user-select: none;
+}
+#og-catch-canvas {
+  display: block;
+  width: 100%;
+  height: 360px;
+  touch-action: none;
+}
+.og-touch-hint {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted, #64748b);
+  margin-top: 6px;
+  font-weight: 700;
+}
+
+/* 2. لعبة تحدي العصر على البارد */
+.og-press-arena {
+  background: linear-gradient(180deg, #f7f4ec, #e8f5e9);
+  border: 2px solid #c59b27;
+  border-radius: 18px;
+  padding: 16px;
+  text-align: center;
+}
+.og-press-visual {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 24px;
+  margin: 12px 0 16px;
+  height: 170px;
+}
+.og-bottle-shell {
+  width: 82px;
+  height: 155px;
+  border: 3px solid #153422;
+  border-radius: 18px 18px 14px 14px;
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.08);
+}
+.og-bottle-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0%;
+  background: linear-gradient(180deg, #d4af37, #8a9a18);
+  transition: height 0.12s ease;
+}
+.og-bottle-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1rem;
+  color: #153422;
+  text-shadow: 0 1px 4px rgba(255, 255, 255, 0.9);
+}
+.og-thermo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.og-thermo-bar {
+  width: 28px;
+  height: 130px;
+  border: 2.5px solid #334155;
+  border-radius: 999px;
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.og-thermo-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: #16a34a;
+  transition: height 0.1s ease, background 0.15s ease;
+}
+.og-thermo-limit {
+  position: absolute;
+  bottom: 72%;
+  left: 0;
+  right: 0;
+  border-top: 2px dashed #dc2626;
+}
+.og-press-btn {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.08rem;
+  font-weight: 900;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #15803d, #153422);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(21, 52, 34, 0.3);
+  transition: transform 0.08s ease;
+  font-family: inherit;
+  touch-action: manipulation;
+}
+.og-press-btn:active { transform: scale(0.96); }
+.og-press-btn.overheat {
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+}
+
+/* 3. كارت اكشط قطرة الذهب */
+.og-scratch-card-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  height: 195px;
+  margin: 14px auto;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 3px solid #c59b27;
+  box-shadow: 0 12px 30px rgba(197, 155, 39, 0.3);
+  user-select: none;
+  touch-action: none;
+}
+.og-scratch-under {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  text-align: center;
+  color: #153422;
+}
+#og-scratch-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  touch-action: none;
+}
+
+/* 4. مسابقة خبير زيت الزيتون */
+.og-quiz-card {
+  background: var(--input-bg, #fff);
+  border: 1.5px solid #c59b27;
+  border-radius: 16px;
+  padding: 16px;
+}
+.og-quiz-q {
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--primary, #153422);
+  margin: 0 0 14px;
+  line-height: 1.55;
+}
+.og-quiz-opt {
+  width: 100%;
+  text-align: right;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-color, #cbd5e1);
+  background: var(--panel-bg, #fff);
+  color: var(--text-color, #1e293b);
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.16s ease;
+}
+.og-quiz-opt:hover { border-color: #c59b27; }
+.og-quiz-opt.correct { background: #dcfce7; border-color: #16a34a; color: #166534; }
+.og-quiz-opt.wrong { background: #fee2e2; border-color: #dc2626; color: #991b1b; }
+.og-quiz-fact {
+  background: rgba(21, 128, 61, 0.09);
+  border-right: 4px solid #15803d;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-top: 10px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #153422;
+}
+
+/* 5. ذاكرة المزرعة 3D Cards */
+.og-mem-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  max-width: 380px;
+  margin: 10px auto;
+}
+.og-mem-card {
+  aspect-ratio: 1 / 1.15;
+  perspective: 700px;
+  cursor: pointer;
+}
+.og-mem-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.og-mem-card.flipped .og-mem-inner,
+.og-mem-card.matched .og-mem-inner {
+  transform: rotateY(180deg);
+}
+.og-mem-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+.og-mem-front {
+  background: linear-gradient(135deg, #153422, #1f5135);
+  border: 2px solid #c59b27;
+  color: #fde68a;
+  font-size: 1.45rem;
+}
+.og-mem-back {
+  background: #fffbeb;
+  border: 2px solid #15803d;
+  color: #153422;
+  transform: rotateY(180deg);
+  padding: 4px;
+  text-align: center;
+}
+.og-mem-card.matched .og-mem-back {
+  background: #dcfce7;
+  border-color: #16a34a;
+}
+
+/* شاشة الفوز والجائزة */
+.og-result-box {
+  background: linear-gradient(135deg, #fffbeb, #f0fdf4);
+  border: 2px solid #c59b27;
+  border-radius: 18px;
+  padding: 18px 16px;
+  text-align: center;
+  margin-top: 10px;
+}
+.og-coupon-box {
+  background: #153422;
+  color: #fde68a;
+  border: 2px dashed #c59b27;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  margin: 10px 0;
+  display: inline-block;
+}
+.og-primary-btn {
+  background: linear-gradient(135deg, #c59b27, #a37b16);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 11px 18px;
+  font-weight: 900;
+  font-size: 0.92rem;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 8px;
+  font-family: inherit;
+  box-shadow: 0 5px 14px rgba(197, 155, 39, 0.35);
+}
+.og-secondary-btn {
+  background: linear-gradient(135deg, #153422, #1f5135);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 800;
+  font-size: 0.88rem;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 8px;
+  font-family: inherit;
+}
+
+/* لوحة تحكم الألعاب للمدير */
+.og-adm-game-row {
+  background: var(--panel-bg, #fff);
+  border: 1.5px solid var(--border-color, #cbd5e1);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.og-adm-grid2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.og-adm-field label {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--text-muted, #475569);
+  margin-bottom: 3px;
+}
+.og-adm-field input,
+.og-adm-field select,
+.og-adm-field textarea {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 7px 9px !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--border-color, #cbd5e1) !important;
+  margin: 0 !important;
+  font-size: 0.84rem !important;
+}

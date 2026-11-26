@@ -1,6 +1,6 @@
 :root { --primary: #3c521e; --secondary: #c59b27; --danger: #e63946; --nav-bg: #2d3e15; --border-radius: 12px; --bg-color: #f8f9fa; --panel-bg: #ffffff; --text-color: #1a230d; --border-color: #eeeeee; --input-bg: #fafafa; --text-muted: #666666;}
 body.dark-mode { --bg-color: #121212; --panel-bg: #1e1e1e; --text-color: #e0e0e0; --border-color: #333333; --input-bg: #2a2a2a; --text-muted: #aaaaaa;}
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; transition: background-color 0.3s, color 0.3s; padding-bottom: 70px; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; min-height: 100vh; overflow-x: clip; transition: background-color 0.3s, color 0.3s; padding-bottom: 70px; }
 header { background: linear-gradient(135deg, var(--primary), var(--nav-bg)); color: white; padding: 6px 3%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
 header h1 { margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
 header h1 img { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid var(--secondary); background-color: white;}

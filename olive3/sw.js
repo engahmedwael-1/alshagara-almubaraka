@@ -1,12 +1,14 @@
-const SHELL_CACHE = 'zait-store-shell-v93';
-const IMG_CACHE = 'zait-store-images-v93';
+const SHELL_CACHE = 'zait-store-shell-v94';
+const IMG_CACHE = 'zait-store-images-v94';
 
 const STATIC_ASSETS = [
-  '/style.css?v=93',
-  '/v93-pro.css?v=93',
-  '/v93-pro.js?v=93',
-  '/script.js?v=93',
-  '/manifest.json?v=93',
+  '/style.css?v=94',
+  '/v94-pro.css?v=94',
+  '/olive-games.css?v=94',
+  '/v94-pro.js?v=94',
+  '/olive-games.js?v=94',
+  '/script.js?v=94',
+  '/manifest.json?v=94',
   '/icon-192.png',
   '/icon-512.png',
   '/1000392409.jpeg',

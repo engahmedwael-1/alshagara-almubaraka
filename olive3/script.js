@@ -530,8 +530,20 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
 
         window.initMagnifier = function() { const container = document.getElementById('magnifier-container'); const img = document.getElementById('modal-img-main'); if(!container || !img) return; container.addEventListener('mousemove', function(e) { const {left, top, width, height} = container.getBoundingClientRect(); const x = (e.clientX - left) / width * 100; const y = (e.clientY - top) / height * 100; img.style.transformOrigin = `${x}% ${y}%`; img.style.transform = 'scale(2)'; }); container.addEventListener('mouseleave', function() { img.style.transformOrigin = 'center center'; img.style.transform = 'scale(1)'; }); }
 
-        let lastScrollY = window.scrollY;
-        window.addEventListener('scroll', () => { const nav = document.getElementById('smart-nav'); if(nav) { if (window.scrollY > lastScrollY + 4 && window.scrollY > 70) nav.classList.add('hidden'); else if (window.scrollY < lastScrollY - 3 || window.scrollY <= 70) nav.classList.remove('hidden'); } lastScrollY = window.scrollY; let homePanel = document.getElementById('home-panel'); if (homePanel && homePanel.classList.contains('active')) { if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) { let totalFiltered = window.getFilteredProductsCount(); if(currentRenderedProducts < totalFiltered) { let indicator = document.getElementById('loading-more-indicator'); if(indicator) indicator.style.display = 'block'; setTimeout(() => { currentRenderedProducts += productsPerPage; window.renderProducts(false); window.renderVisualBar(); if(indicator) indicator.style.display = 'none'; }, 500); } } } });
+        let lastScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+        window.addEventListener('scroll', () => {
+            const curY = Math.max(0, window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0);
+            const nav = document.getElementById('smart-nav');
+            if (nav && !nav.classList.contains('manually-collapsed')) {
+                if (curY <= 55) {
+                    nav.classList.remove('hidden');
+                } else if (curY > lastScrollY + 6 && curY > 75) {
+                    nav.classList.add('hidden');
+                } else if (curY < lastScrollY - 2) {
+                    nav.classList.remove('hidden');
+                }
+            }
+            lastScrollY = curY; let homePanel = document.getElementById('home-panel'); if (homePanel && homePanel.classList.contains('active')) { if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) { let totalFiltered = window.getFilteredProductsCount(); if(currentRenderedProducts < totalFiltered) { let indicator = document.getElementById('loading-more-indicator'); if(indicator) indicator.style.display = 'block'; setTimeout(() => { currentRenderedProducts += productsPerPage; window.renderProducts(false); window.renderVisualBar(); if(indicator) indicator.style.display = 'none'; }, 500); } } } });
 
         window.updateOfferTimer = function() { let endTime = localStorage.getItem('offer_end_time'); let now = new Date().getTime(); if(!endTime || now > endTime) { endTime = now + (72 * 60 * 60 * 1000); localStorage.setItem('offer_end_time', endTime); } setInterval(() => { now = new Date().getTime(); let distance = endTime - now; if(distance < 0) { endTime = now + (72 * 60 * 60 * 1000); localStorage.setItem('offer_end_time', endTime); distance = endTime - now; } let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)); let seconds = Math.floor((distance % (1000 * 60)) / 1000); let tStr = (hours < 10 ? "0"+hours : hours) + ":" + (minutes < 10 ? "0"+minutes : minutes) + ":" + (seconds < 10 ? "0"+seconds : seconds); let timerEl = document.getElementById('offer-timer'); if(timerEl) timerEl.innerText = tStr; }, 1000); }
         window.updateOfferTimer();
@@ -642,6 +654,13 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             if(!currentBtns.find(b => b.link === '#support')) {
                 currentBtns.unshift({ id: 'btn_support', icon: '💬', link: '#support', color: '#007bff', isSystem: true, title: 'خدمة العملاء' });
             }
+            if (floatingContainer) {
+                const gCfg = (window.V94_getGamesConfig ? window.V94_getGamesConfig() : null) || storeSettings.oliveGamesConfig;
+                const gEnabled = !gCfg || gCfg.enabled !== false;
+                if (gEnabled) {
+                    floatingContainer.innerHTML += `<button type="button" id="home-games-fab" class="float-btn v94-games-mini-fab" title="ألعاب الشجرة المباركة — العب واكسب" onclick="window.openOliveGamesHub()">🎮</button>`;
+                }
+            }
             currentBtns.forEach((btn, index) => {
 
                 if(btn.link === '#support') { if(floatingContainer) floatingContainer.innerHTML += `<button type="button" class="float-btn" style="background-color: ${btn.color};" title="${btn.title}" onclick="window.showPanel('support')">${btn.icon}</button>`; } else { if(floatingContainer) floatingContainer.innerHTML += `<a href="${btn.link}" target="_blank" class="float-btn" style="background-color: ${btn.color};" title="${btn.title}">${btn.icon}</a>`; if(footerSocialContainer) footerSocialContainer.innerHTML += `<div>${btn.icon} <a href="${btn.link}" target="_blank" style="color:#ddd; text-decoration:none;">${btn.title}</a></div>`; }
@@ -712,6 +731,10 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             }
             if (!promo && inputCode === 'EARLY10' && storeSettings.enablePreorderHarvest !== false) {
                 promo = { code: 'EARLY10', discount: 10, singleUse: false };
+            }
+            if (!promo && typeof window.V94_findGameCoupon === 'function') {
+                const gPromo = window.V94_findGameCoupon(inputCode);
+                if (gPromo) promo = gPromo;
             }
             if (promo && promo.singleUse && promo.used) {
                 currentDiscountPercent = 0; appliedPromoCode = "";
@@ -19130,4 +19153,277 @@ window.showUserHistory = function(userId, userName) {
             }
         } catch (e) {}
     }, 60);
+})();
+
+// ============================================================================
+// V94 OLIVE GAMES BRIDGE (Firestore Config + Real Loyalty Points + Offline Sync)
+// ============================================================================
+(function () {
+    if (window.__V94_GAMES_BRIDGE__) return;
+    window.__V94_GAMES_BRIDGE__ = true;
+
+    const CFG_KEY = 'zait_v94_olive_games_config';
+    const PENDING_KEY = 'zait_v94_pending_game_rewards';
+
+    const DEFAULT_GAMES_CONFIG = {
+        enabled: true,
+        showHomeFab: true,
+        showSidebarBtn: true,
+        games: {
+            catch: {
+                enabled: true,
+                title: 'قطف الزيتون السيناوي',
+                rewardType: 'points',
+                points: 25,
+                couponCode: 'OLIVE5',
+                couponDiscount: 5,
+                cooldown: 'daily',
+                targetScore: 15
+            },
+            press: {
+                enabled: true,
+                title: 'تحدي العصر على البارد',
+                rewardType: 'coupon',
+                points: 30,
+                couponCode: 'COLD7',
+                couponDiscount: 7,
+                cooldown: 'daily'
+            },
+            scratch: {
+                enabled: true,
+                title: 'كارت اكشط قطرة الذهب',
+                rewardType: 'coupon',
+                points: 20,
+                couponCode: 'GOLD5',
+                couponDiscount: 5,
+                cooldown: 'daily',
+                prizesText: 'خصم 5% فوري (GOLD5) | 25 نقطة ولاء | خصم 7% (GOLD7) | 40 نقطة ولاء'
+            },
+            quiz: {
+                enabled: true,
+                title: 'تحدي خبير زيت الزيتون',
+                rewardType: 'points',
+                points: 35,
+                couponCode: 'EXPERT5',
+                couponDiscount: 5,
+                cooldown: 'weekly',
+                questions: [
+                    {
+                        q: 'ما هي أقصى درجة حرارة مسموحة في العصر على البارد للحفاظ على فوائد زيت الزيتون؟',
+                        options: ['أقل من 27 درجة مئوية', '60 درجة مئوية', '100 درجة مئوية'],
+                        correct: 0,
+                        fact: 'العصر على البارد تحت 27°م يحفظ مضادات الأكسدة والفيتامينات والنكهة السيناوية الأصيلة 🌿'
+                    },
+                    {
+                        q: 'ما هي نسبة الحموضة العالمية التي تثبت أن زيت الزيتون "بكر ممتاز"؟',
+                        options: ['أقل من 0.8%', 'أكثر من 3%', 'أكثر من 5%'],
+                        correct: 0,
+                        fact: 'كلما قلت الحموضة عن 0.8% زاد نقاء وجودة الزيت البكر الممتاز 🏅'
+                    },
+                    {
+                        q: 'ما هي أفضل طريقة لحفظ زيت الزيتون البكر الممتاز في المنزل؟',
+                        options: ['في عبوة داكنة بعيداً عن الحرارة والضوء', 'في زجاجة شفافة تحت الشمس', 'بجانب البوتاجاز مباشرة'],
+                        correct: 0,
+                        fact: 'الحرارة والضوء يأكسدان الزيت — لذلك نحفظه في عبوات داكنة محكمة الإغلاق 🫒'
+                    }
+                ]
+            },
+            memory: {
+                enabled: true,
+                title: 'ذاكرة مزرعة الشجرة المباركة',
+                rewardType: 'points',
+                points: 30,
+                couponCode: 'FARM5',
+                couponDiscount: 5,
+                cooldown: 'daily'
+            }
+        }
+    };
+
+    function deepMergeConfig(remote) {
+        const base = JSON.parse(JSON.stringify(DEFAULT_GAMES_CONFIG));
+        if (!remote || typeof remote !== 'object') return base;
+        if (typeof remote.enabled === 'boolean') base.enabled = remote.enabled;
+        if (typeof remote.showHomeFab === 'boolean') base.showHomeFab = remote.showHomeFab;
+        if (typeof remote.showSidebarBtn === 'boolean') base.showSidebarBtn = remote.showSidebarBtn;
+        if (remote.games && typeof remote.games === 'object') {
+            Object.keys(base.games).forEach(k => {
+                if (remote.games[k] && typeof remote.games[k] === 'object') {
+                    base.games[k] = Object.assign({}, base.games[k], remote.games[k]);
+                }
+            });
+        }
+        return base;
+    }
+
+    window.V94_getGamesConfig = function () {
+        try {
+            if (storeSettings && storeSettings.oliveGamesConfig) {
+                const merged = deepMergeConfig(storeSettings.oliveGamesConfig);
+                try { localStorage.setItem(CFG_KEY, JSON.stringify(merged)); } catch (e) {}
+                return merged;
+            }
+            const raw = localStorage.getItem(CFG_KEY);
+            if (raw) return deepMergeConfig(JSON.parse(raw));
+        } catch (e) {}
+        return deepMergeConfig(null);
+    };
+
+    window.V94_saveGamesConfig = async function (newCfg) {
+        const clean = deepMergeConfig(newCfg);
+        storeSettings.oliveGamesConfig = clean;
+        try { localStorage.setItem(CFG_KEY, JSON.stringify(clean)); } catch (e) {}
+        try {
+            await setDoc(doc(db, 'settings', 'main'), { oliveGamesConfig: clean }, { merge: true });
+            window.V94_syncGamesVisibility();
+            if (typeof window.applySettingsToUI === 'function') window.applySettingsToUI();
+            return true;
+        } catch (err) {
+            console.error('Save games config error:', err);
+            return false;
+        }
+    };
+
+    window.V94_syncGamesVisibility = function () {
+        try {
+            const cfg = window.V94_getGamesConfig();
+            const active = cfg.enabled !== false;
+            const sbBtn = document.getElementById('sidebar-olive-games-btn');
+            if (sbBtn) sbBtn.style.display = (active && cfg.showSidebarBtn !== false) ? 'block' : 'none';
+            const fab = document.getElementById('home-games-fab');
+            if (fab) {
+                const homeActive = document.getElementById('home-panel') && document.getElementById('home-panel').classList.contains('active');
+                fab.style.display = (active && cfg.showHomeFab !== false && homeActive) ? 'flex' : 'none';
+            }
+        } catch (e) {}
+    };
+
+    window.V94_findGameCoupon = function (codeUpper) {
+        try {
+            const code = String(codeUpper || '').trim().toUpperCase();
+            if (!code) return null;
+            const cfg = window.V94_getGamesConfig();
+            if (!cfg || cfg.enabled === false) return null;
+            const games = cfg.games || {};
+            for (const k of Object.keys(games)) {
+                const g = games[k];
+                if (!g || g.enabled === false) continue;
+                const gc = String(g.couponCode || '').trim().toUpperCase();
+                if (gc && gc === code) {
+                    return { code: gc, discount: Math.max(1, Math.min(50, Number(g.couponDiscount) || 5)), singleUse: false };
+                }
+            }
+            // Check custom scratch card codes like (GOLD7)
+            const pTxt = (games.scratch && games.scratch.prizesText) || '';
+            const mList = pTxt.match(/([A-Z0-9]{3,16})/gi) || [];
+            if (mList.map(x => x.toUpperCase()).includes(code)) {
+                const numM = code.match(/(\d{1,2})$/);
+                const disc = numM ? Math.max(1, Math.min(25, Number(numM[1]))) : (Number(games.scratch && games.scratch.couponDiscount) || 5);
+                return { code: code, discount: disc, singleUse: false };
+            }
+        } catch (e) {}
+        return null;
+    };
+
+    window.V94_applyGameCouponToCart = function (code) {
+        try {
+            const clean = String(code || '').trim().toUpperCase();
+            if (!clean) return;
+            const inp1 = document.getElementById('promo-code-input-cart');
+            const inp2 = document.getElementById('promo-code-input');
+            if (inp1) inp1.value = clean;
+            if (inp2) inp2.value = clean;
+            if (typeof window.executePromoLogic === 'function') {
+                window.executePromoLogic(clean, 'cart');
+            }
+        } catch (e) {}
+    };
+
+    window.V94_awardLoyaltyPoints = async function (pts, gameTitle, gameKey) {
+        const amount = Math.max(1, Math.min(500, Math.round(Number(pts) || 0)));
+        if (!amount) return { synced: false, reason: 'invalid' };
+        if (navigator.onLine && currentUser && currentUser.uid) {
+            try {
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    loyaltyPoints: increment(amount),
+                    unreadNotifs: increment(1),
+                    notifications: arrayUnion({
+                        title: '🎮 مكافأة ألعاب الشجرة المباركة!',
+                        message: `مبروك! ربحت ${amount} نقطة ولاء من لعبة (${gameTitle}) 🫒`,
+                        date: new Date().toISOString()
+                    })
+                }, { merge: true });
+                return { synced: true, amount };
+            } catch (e) {
+                // fallback to offline queue
+            }
+        }
+        try {
+            const q = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+            q.push({ amount, gameTitle, gameKey, ts: Date.now() });
+            localStorage.setItem(PENDING_KEY, JSON.stringify(q.slice(-20)));
+        } catch (e) {}
+        return { synced: false, queued: true, amount, needsLogin: !currentUser };
+    };
+
+    window.V94_flushPendingGameRewards = async function () {
+        try {
+            if (!navigator.onLine || !currentUser || !currentUser.uid) return;
+            const q = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+            if (!Array.isArray(q) || q.length === 0) return;
+            const totalPts = q.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+            if (totalPts <= 0) {
+                localStorage.removeItem(PENDING_KEY);
+                return;
+            }
+            localStorage.removeItem(PENDING_KEY);
+            await setDoc(doc(db, 'users', currentUser.uid), {
+                loyaltyPoints: increment(totalPts),
+                unreadNotifs: increment(1),
+                notifications: arrayUnion({
+                    title: '🎉 تمت مزامنة مكافآت الألعاب!',
+                    message: `تمت إضافة ${totalPts} نقطة ولاء كسبتها من ألعاب الشجرة المباركة أثناء وضع عدم الاتصال 🫒`,
+                    date: new Date().toISOString()
+                })
+            }, { merge: true });
+            if (typeof window.showToast === 'function') {
+                window.showToast(`🎉 تمت إضافة ${totalPts} نقطة ولاء كسبتها من الألعاب لحسابك!`, 'success');
+            }
+        } catch (e) {}
+    };
+
+    window.V94_getBridgeInfo = function () {
+        return {
+            isAdmin: !!isCurrentUserAdmin,
+            isLoggedIn: !!(currentUser && currentUser.uid),
+            userName: (currentUser && (currentUser.displayName || currentUser.email)) || ''
+        };
+    };
+
+    // Hook showPanel & applySettingsToUI & online events to keep Games FAB & pending rewards synced
+    if (typeof window.showPanel === 'function' && !window.__V94_SHOW_HOOKED__) {
+        window.__V94_SHOW_HOOKED__ = true;
+        const prevShow = window.showPanel;
+        window.showPanel = function (panelId) {
+            const out = prevShow.apply(this, arguments);
+            setTimeout(window.V94_syncGamesVisibility, 40);
+            return out;
+        };
+    }
+
+    if (typeof window.applySettingsToUI === 'function' && !window.__V94_SETTINGS_HOOKED__) {
+        window.__V94_SETTINGS_HOOKED__ = true;
+        const prevApply = window.applySettingsToUI;
+        window.applySettingsToUI = function () {
+            const out = prevApply.apply(this, arguments);
+            window.V94_syncGamesVisibility();
+            return out;
+        };
+    }
+
+    window.addEventListener('online', () => setTimeout(window.V94_flushPendingGameRewards, 1200));
+    setTimeout(() => {
+        window.V94_syncGamesVisibility();
+        window.V94_flushPendingGameRewards();
+    }, 1800);
 })();
