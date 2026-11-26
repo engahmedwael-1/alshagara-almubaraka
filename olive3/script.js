@@ -19510,3 +19510,15 @@ window.showUserHistory = function(userId, userName) {
         window.V94_flushPendingGameRewards();
     }, 1500);
 })();
+
+/* === ZAIT_V96_FS_HOOK_START === */
+try {
+  window.__V96_FS__ = {
+    db: typeof db !== 'undefined' ? db : window.db,
+    doc: typeof doc !== 'undefined' ? doc : null,
+    getDoc: typeof getDoc !== 'undefined' ? getDoc : null,
+    setDoc: typeof setDoc !== 'undefined' ? setDoc : null,
+    increment: typeof increment !== 'undefined' ? increment : null
+  };
+} catch (_e96) {}
+/* === ZAIT_V96_FS_HOOK_END === */

@@ -1,1579 +1,2231 @@
-/* مركز ألعاب الشجرة المباركة V95 Pro — 8 ألعاب عالمية + 10,800 سؤال + جوائز عشوائية بكوبونات فريدة + أوفلاين 100% */
+/* ============================================================================
+   Zait Store Olive Games Pro — V96 Master Engine (Part 1 + Part 2 Plugin Bridge)
+   ============================================================================ */
 (function () {
-  if (window.__OLIVE_GAMES_V95_READY__) return;
-  window.__OLIVE_GAMES_V95_READY__ = true;
-  window.__OLIVE_GAMES_ENGINE_READY__ = true;
+  "use strict";
+  if (window.__ZAIT_OLIVE_GAMES_V96__) return;
+  window.__ZAIT_OLIVE_GAMES_V96__ = true;
 
-  const DAILY_CAP_KEY = 'zait_v95_daily_rewards_log';
-  const SCRATCH_LOG_KEY = 'zait_v95_scratch_daily_log';
-  const DIFF_PREF_KEY = 'zait_v95_last_difficulty';
+  var CFG_STORAGE_KEY = "zait_v96_games_config";
+  var STATE_STORAGE_KEY = "zait_v96_player_state";
+  var ANALYTICS_STORAGE_KEY = "zait_v96_games_analytics";
+  var LEADERBOARD_KEY = "zait_v96_leaderboard_cache";
+  var CFG_DOC_PATH = ["settings", "olive_games_v96"];
+  var ANALYTICS_DOC_PATH = ["settings", "olive_games_analytics"];
 
-  let muted = localStorage.getItem('zait_v94_games_muted') === '1';
-  let activeCleanup = null;
-  let audioCtx = null;
+  // جسر جاهز لاستقبال الـ 5 ألعاب الجديدة في الجزء الثاني (زوما، تقطيع الزيتون، ثعبان، كاسر البراميل، حارس الشجرة)
+  window.ZaitGamesExtraRegistry = window.ZaitGamesExtraRegistry || {};
+  window.ZaitRegisterExtraGame = function (id, def) {
+    if (!id || !def) return;
+    window.ZaitGamesExtraRegistry[id] = def;
+    if (isOpen && currentView === "hub") renderHub();
+  };
+
+  // الإعدادات الافتراضية الشاملة — قابلة للتعديل 100% من لوحة المدير!
+  var DEFAULT_CONFIG = {
+    enabled: true,
+    showFloatBtn: true,
+    showSidebarBtn: true,
+    dailyPrizeCap: 3,
+    dailyScratchCap: 1,
+    couponExpiryHours: 24,
+    defaultMinOrder: 300,
+    quizQuestionCount: 7,
+    enableLeaderboard: true,
+    enableDailyMission: true,
+    dailyMissionBonus: 20,
+    enableWhatsappChallenge: true,
+    // سلسلة الهدايا اليومية (7 أيام) + الصندوق الكبير لليوم 7
+    dailyStreak: {
+      enabled: true,
+      days: [5, 10, 15, 20, 25, 30],
+      bigChestTitle: "الصندوق الذهبي الكبير 🎁",
+      bigChestPrizes: [
+        { id: "ch_pts", label: "60 نقطة ولاء ذهبية ⭐", type: "points", value: 60, weight: 45, minOrder: 0 },
+        { id: "ch_p10", label: "كوبون خصم 10% 🎟️", type: "percent", value: 10, weight: 30, minOrder: 400 },
+        { id: "ch_ship", label: "توصيل مجاني لطلبك 🚚", type: "free_shipping", value: 100, weight: 15, minOrder: 500 },
+        { id: "ch_p15", label: "كوبون خصم VIP 15% 👑", type: "percent", value: 15, weight: 10, minOrder: 800 }
+      ]
+    },
+    // سلة الجوائز العشوائية عند الفوز بأي لعبة مهارة
+    prizePool: [
+      { id: "pz1", label: "خصم 5% فوري 🎟️", type: "percent", value: 5, weight: 45, minOrder: 250 },
+      { id: "pz2", label: "20 نقطة ولاء ⭐", type: "points", value: 20, weight: 30, minOrder: 0 },
+      { id: "pz3", label: "خصم 10% مميز 🔥", type: "percent", value: 10, weight: 18, minOrder: 500 },
+      { id: "pz4", label: "توصيل مجاني 🚚", type: "free_shipping", value: 100, weight: 7, minOrder: 600 }
+    ],
+    // كارت الحظ (اكشط قطرة الذهب) — خارج حد الجوائز اليومية!
+    scratchPrizes: [
+      { id: "sc0", label: "حظ أوفر في المرة القادمة 🌿", type: "none", value: 0, weight: 90, minOrder: 0 },
+      { id: "sc1", label: "خصم 5% فوري 🎟️", type: "percent", value: 5, weight: 5, minOrder: 300 },
+      { id: "sc2", label: "توصيل مجاني 🚚", type: "free_shipping", value: 100, weight: 5, minOrder: 500 }
+    ],
+    // إعدادات كل لعبة: التفعيل + الوقت (ثانية) + نقاط المكسب المطلوبة (الهدف) لكل صعوبة!
+    games: {
+      catch:   { enabled: true, times: { easy: 25, medium: 24, hard: 22 }, targets: { easy: 30, medium: 48, hard: 70 } },
+      press:   { enabled: true, times: { easy: 24, medium: 21, hard: 18 }, targets: { easy: 100, medium: 120, hard: 145 } },
+      quiz:    { enabled: true, times: { easy: 14, medium: 10, hard: 7 },  targets: { easy: 5, medium: 6, hard: 7 } },
+      memory:  { enabled: true, times: { easy: 32, medium: 28, hard: 24 }, targets: { easy: 3, medium: 3, hard: 3 } },
+      truck:   { enabled: true, times: { easy: 28, medium: 26, hard: 24 }, targets: { easy: 32, medium: 52, hard: 76 } },
+      sorter:  { enabled: true, times: { easy: 26, medium: 24, hard: 22 }, targets: { easy: 26, medium: 42, hard: 62 } },
+      match:   { enabled: true, times: { easy: 34, medium: 30, hard: 26 }, targets: { easy: 180, medium: 290, hard: 420 } },
+      scratch: { enabled: true, times: { easy: 60, medium: 60, hard: 60 }, targets: { easy: 1, medium: 1, hard: 1 } },
+      // فتحات جاهزة للـ 5 ألعاب الجديدة في الجزء الثاني
+      zuma:    { enabled: true, times: { easy: 50, medium: 45, hard: 40 }, targets: { easy: 220, medium: 360, hard: 520 } },
+      slice:   { enabled: true, times: { easy: 30, medium: 28, hard: 25 }, targets: { easy: 45, medium: 75, hard: 110 } },
+      snake:   { enabled: true, times: { easy: 45, medium: 40, hard: 35 }, targets: { easy: 14, medium: 22, hard: 32 } },
+      breakout:{ enabled: true, times: { easy: 55, medium: 50, hard: 45 }, targets: { easy: 24, medium: 32, hard: 42 } },
+      reflex:  { enabled: true, times: { easy: 25, medium: 22, hard: 20 }, targets: { easy: 28, medium: 44, hard: 64 } }
+    }
+  };
+
+  var CORE_GAMES_META = [
+    { id: "catch",   icon: "🧺", name: "قطف الزيتون السيناوي", desc: "التقط الزيتون الذهبي وتفادَ القنابل والرياح!", cat: "speed", hardTag: "متحدٍ" },
+    { id: "press",   icon: "❄️", name: "تحدي العصر عالبارد", desc: "املأ الزجاجة وحافظ على الحرارة تحت 27°م!", cat: "speed", hardTag: "دقة عالية" },
+    { id: "quiz",    icon: "🧠", name: "خبير زيت الزيتون", desc: "+10,800 سؤال بمؤقت سريع ومنع تكرار!", cat: "brain", hardTag: "ذكاء" },
+    { id: "memory",  icon: "🌿", name: "ذاكرة المزرعة (3 مراحل)", desc: "مراحل تصاعدية بكروت أكثر ووقت أقل!", cat: "brain", hardTag: "3 مراحل" },
+    { id: "truck",   icon: "🚚", name: "شاحنة زيت سيناء", desc: "تجاوز العقبات السريعة واجمع جراكن الزيت!", cat: "speed", hardTag: "سريع" },
+    { id: "sorter",  icon: "🎯", name: "فرز حبات الزيتون", desc: "افرز الثمار الطازجة على سير المعصرة السريع!", cat: "speed", hardTag: "تركيز" },
+    { id: "match",   icon: "🫧", name: "مطابقة قطرات الذهب", desc: "فجّر مجموعات القطرات المتشابهة بكومبو!", cat: "brain", hardTag: "استراتيجي" },
+    { id: "scratch", icon: "🪙", name: "اكشط قطرة الذهب", desc: "كارت حظ يومي مستقل خارج حد الجوائز!", cat: "luck", hardTag: "حظ 🪙" }
+  ];
+
+  var RANKS = [
+    { min: 0,    title: "🌱 مبتدئ المزرعة" },
+    { min: 150,  title: "🧺 قاطف محترف" },
+    { min: 500,  title: "❄️ خبير المعصرة" },
+    { min: 1200, title: "🏆 فارس الزيتون" },
+    { min: 2500, title: "👑 شيخ الزيتون السيناوي" }
+  ];
+
+  var cfg = deepMergeConfig(DEFAULT_CONFIG, loadLocalJson(CFG_STORAGE_KEY, {}));
+  var pState = loadPlayerState();
+  var analytics = loadLocalJson(ANALYTICS_STORAGE_KEY, { plays: {}, couponsIssued: 0, couponsRedeemed: 0, revenueFromGames: 0 });
+
+  var isOpen = false;
+  var currentView = "hub";
+  var currentCategory = "all";
+  var soundOn = true;
+  var activeGameId = null;
+  var activeDiff = "medium";
+  var activeGameCleanup = null;
+  var gamePaused = false;
+  var pauseListeners = [];
+  var audioCtx = null;
 
   // =========================================================================
-  // نظام المؤثرات الصوتية الخفيف (WebAudio API بدون أي ملفات صوتية ثقيلة)
+  // HELPERS, SOUND & HAPTICS
   // =========================================================================
-  function playTone(freq, dur, type, vol) {
-    if (muted) return;
-    try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      if (!audioCtx) audioCtx = new AC();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = type || 'sine';
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      gain.gain.setValueAtTime(vol || 0.08, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (dur || 0.14));
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + (dur || 0.14));
-    } catch (e) {}
-  }
-  function sfxWin() {
-    [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => playTone(f, 0.18, 'triangle', 0.11), i * 95));
-  }
-  function sfxGood() { playTone(760, 0.08, 'sine', 0.07); }
-  function sfxGold() { playTone(980, 0.1, 'triangle', 0.09); setTimeout(() => playTone(1240, 0.12, 'triangle', 0.09), 70); }
-  function sfxBad() { playTone(170, 0.2, 'sawtooth', 0.08); }
-  function sfxStage() { [587, 740, 880].forEach((f, i) => setTimeout(() => playTone(f, 0.13, 'triangle', 0.09), i * 80)); }
-
-  function esc(s) {
-    return String(s || '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
-  }
   function todayKey() {
-    const d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
-
-  function getCfg() {
-    if (typeof window.V95_getGamesConfig === 'function') return window.V95_getGamesConfig();
+  function yesterdayKey() {
+    var d = new Date(Date.now() - 86400000);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function loadLocalJson(key, fallback) {
     try {
-      const raw = localStorage.getItem('zait_v95_olive_games_config');
+      var raw = localStorage.getItem(key);
       if (raw) return JSON.parse(raw);
     } catch (e) {}
-    return {
-      enabled: true, showHomeFab: true, showSidebarBtn: true, dailyRewardLimit: 3, quizQuestionCount: 5,
-      rewardPool: [
-        { id: 'r1', label: 'خصم 5% فوري', type: 'coupon', value: 5, weight: 35 },
-        { id: 'r2', label: '25 نقطة ولاء', type: 'points', value: 25, weight: 30 },
-        { id: 'r3', label: 'خصم 10% مميز', type: 'coupon', value: 10, weight: 15 },
-        { id: 'r4', label: '50 نقطة ولاء', type: 'points', value: 50, weight: 12 },
-        { id: 'r5', label: 'توصيل مجاني للطلب', type: 'free_shipping', value: 100, weight: 8 }
-      ],
-      scratchConfig: {
-        enabled: true, dailyLimit: 1,
-        outcomes: [
-          { id: 's1', label: 'حظ أوفر في المرة القادمة', type: 'none', value: 0, weight: 90 },
-          { id: 's2', label: 'خصم 5% فوري', type: 'coupon', value: 5, weight: 5 },
-          { id: 's3', label: 'توصيل مجاني', type: 'free_shipping', value: 100, weight: 5 }
-        ]
-      },
-      games: {
-        catch: { enabled: true, title: 'قطف الزيتون السيناوي', times: { easy: 30, medium: 25, hard: 20 } },
-        press: { enabled: true, title: 'تحدي العصر على البارد', times: { easy: 28, medium: 22, hard: 18 } },
-        quiz: { enabled: true, title: 'تحدي خبير زيت الزيتون', times: { easy: 90, medium: 65, hard: 45 }, customQuestions: [] },
-        memory: { enabled: true, title: 'ذاكرة مزرعة الشجرة المباركة', times: { easy: 45, medium: 35, hard: 28 } },
-        truck: { enabled: true, title: 'سائق شاحنة زيت سيناء', times: { easy: 28, medium: 24, hard: 20 } },
-        sorter: { enabled: true, title: 'فرز حبات الزيتون السريع', times: { easy: 30, medium: 24, hard: 18 } },
-        drops: { enabled: true, title: 'مطابقة قطرات الذهب', times: { easy: 45, medium: 35, hard: 26 } }
+    return JSON.parse(JSON.stringify(fallback));
+  }
+  function saveLocalJson(key, obj) {
+    try { localStorage.setItem(key, JSON.stringify(obj)); } catch (e) {}
+  }
+  function deepMergeConfig(base, over) {
+    var out = JSON.parse(JSON.stringify(base));
+    if (!over || typeof over !== "object") return out;
+    Object.keys(over).forEach(function (k) {
+      if (k === "games" && over.games && typeof over.games === "object") {
+        Object.keys(over.games).forEach(function (gid) {
+          var bg = out.games[gid] || { enabled: true, times: { easy: 30, medium: 25, hard: 20 }, targets: { easy: 20, medium: 35, hard: 50 } };
+          var og = over.games[gid] || {};
+          out.games[gid] = {
+            enabled: og.enabled !== undefined ? !!og.enabled : bg.enabled,
+            times: Object.assign({}, bg.times, og.times || {}),
+            targets: Object.assign({}, bg.targets, og.targets || {})
+          };
+        });
+      } else if (k === "dailyStreak" && over.dailyStreak && typeof over.dailyStreak === "object") {
+        out.dailyStreak = Object.assign({}, out.dailyStreak, over.dailyStreak);
+        if (!Array.isArray(out.dailyStreak.days) || out.dailyStreak.days.length !== 6) {
+          out.dailyStreak.days = base.dailyStreak.days.slice();
+        }
+      } else if (over[k] !== undefined) {
+        out[k] = over[k];
       }
+    });
+    return out;
+  }
+
+  function loadPlayerState() {
+    var def = {
+      totalScore: 0,
+      dailyDate: todayKey(),
+      dailyPrizesWon: 0,
+      dailyScratchesUsed: 0,
+      streakCount: 0,
+      lastStreakClaimDate: "",
+      missionDate: "",
+      missionDone: false,
+      bestScores: {},
+      coupons: [],
+      pendingPoints: 0,
+      seenQuizIds: []
     };
+    var st = Object.assign(def, loadLocalJson(STATE_STORAGE_KEY, {}));
+    if (st.dailyDate !== todayKey()) {
+      st.dailyDate = todayKey();
+      st.dailyPrizesWon = 0;
+      st.dailyScratchesUsed = 0;
+    }
+    if (!Array.isArray(st.coupons)) st.coupons = [];
+    return st;
+  }
+  function savePlayerState() {
+    saveLocalJson(STATE_STORAGE_KEY, pState);
+    if (typeof window.V96_refreshStoreCouponBar === "function") {
+      try { window.V96_refreshStoreCouponBar(); } catch (e) {}
+    }
   }
 
-  function getGameTime(gameKey, diff) {
-    const cfg = getCfg();
-    const g = (cfg.games && cfg.games[gameKey]) || {};
-    const t = g.times || {};
-    const defaults = { easy: 35, medium: 26, hard: 20 };
-    return Math.max(10, Number(t[diff]) || defaults[diff] || 25);
+  function haptic(ms) {
+    try { if (navigator.vibrate) navigator.vibrate(ms || 15); } catch (e) {}
   }
 
-  // إدارة الحد اليومي للجوائز (3 جوائز يومياً أو حسب المدير — باستثناء كارت الكشط!)
-  function getDailyCount() {
+  function playSfx(type) {
+    if (!soundOn) return;
     try {
-      const data = JSON.parse(localStorage.getItem(DAILY_CAP_KEY) || '{}');
-      return data.date === todayKey() ? (Number(data.count) || 0) : 0;
-    } catch (e) { return 0; }
-  }
-  function incDailyCount() {
-    const next = getDailyCount() + 1;
-    try { localStorage.setItem(DAILY_CAP_KEY, JSON.stringify({ date: todayKey(), count: next })); } catch (e) {}
-    return next;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      var now = audioCtx.currentTime;
+      var osc = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      osc.connect(g);
+      g.connect(audioCtx.destination);
+      if (type === "pop") {
+        osc.type = "sine"; osc.frequency.setValueAtTime(520, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+        g.gain.setValueAtTime(0.11, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.start(now); osc.stop(now + 0.1);
+      } else if (type === "gold") {
+        osc.type = "triangle"; osc.frequency.setValueAtTime(680, now); osc.frequency.setValueAtTime(980, now + 0.06); osc.frequency.setValueAtTime(1320, now + 0.12);
+        g.gain.setValueAtTime(0.13, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc.start(now); osc.stop(now + 0.22);
+      } else if (type === "bad") {
+        osc.type = "sawtooth"; osc.frequency.setValueAtTime(220, now); osc.frequency.linearRampToValueAtTime(110, now + 0.18);
+        g.gain.setValueAtTime(0.11, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+      } else if (type === "tick") {
+        osc.type = "square"; osc.frequency.setValueAtTime(760, now);
+        g.gain.setValueAtTime(0.05, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.start(now); osc.stop(now + 0.05);
+      } else if (type === "win") {
+        [523, 659, 784, 1046].forEach(function (f, idx) {
+          var o2 = audioCtx.createOscillator(), g2 = audioCtx.createGain();
+          o2.type = "triangle"; o2.frequency.setValueAtTime(f, now + idx * 0.09);
+          g2.gain.setValueAtTime(0.12, now + idx * 0.09); g2.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.24);
+          o2.connect(g2); g2.connect(audioCtx.destination);
+          o2.start(now + idx * 0.09); o2.stop(now + idx * 0.09 + 0.25);
+        });
+      }
+    } catch (e) {}
   }
 
-  // إدارة محاولات كارت الكشط المستقل
-  function getScratchUsedToday() {
+  function toast(msg, type) {
+    if (typeof window.showToast === "function") {
+      try { window.showToast(msg, type || "info"); return; } catch (e) {}
+    }
+    var d = document.createElement("div");
+    d.textContent = msg;
+    d.style.cssText = "position:fixed;bottom:84px;left:50%;transform:translateX(-50%);z-index:2147483647;background:#10321f;color:#fde68a;border:1.5px solid #d59e2a;padding:10px 18px;border-radius:14px;font-weight:800;font-size:13px;box-shadow:0 12px 30px rgba(0,0,0,.45)";
+    document.body.appendChild(d);
+    setTimeout(function () { d.remove(); }, 2800);
+  }
+
+  function getUserObj() {
+    return window.currentUser || (window.auth && window.auth.currentUser) || null;
+  }
+
+  function getRankTitle(pts) {
+    var t = RANKS[0].title;
+    RANKS.forEach(function (r) { if (pts >= r.min) t = r.title; });
+    return t;
+  }
+
+  function getGameConfig(gid) {
+    return (cfg.games && cfg.games[gid]) || { enabled: true, times: { easy: 30, medium: 25, hard: 20 }, targets: { easy: 25, medium: 40, hard: 60 } };
+  }
+
+  function getAllGamesMeta() {
+    var list = CORE_GAMES_META.slice();
+    Object.keys(window.ZaitGamesExtraRegistry || {}).forEach(function (id) {
+      var ex = window.ZaitGamesExtraRegistry[id];
+      if (ex && !list.some(function (m) { return m.id === id; })) {
+        list.push({
+          id: id,
+          icon: ex.icon || "🎮",
+          name: ex.name || id,
+          desc: ex.desc || "لعبة تحدٍ جديدة!",
+          cat: ex.cat || "speed",
+          hardTag: ex.hardTag || "جديد 🔥"
+        });
+      }
+    });
+    return list;
+  }
+
+  function setupHiDpiCanvas(canvas, cssW, cssH) {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    canvas.style.width = "100%";
+    canvas.style.aspectRatio = cssW + " / " + cssH;
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, w: cssW, h: cssH, dpr: dpr };
+  }
+
+  // =========================================================================
+  // FIREBASE SYNC (CONFIG, POINTS, SERVER-BACKED CAP, LEADERBOARD, ROI)
+  // =========================================================================
+  function getFsHelpers() {
+    var h = window.__V96_FS__ || {};
+    return (h.db && h.doc && h.setDoc && h.getDoc) ? h : null;
+  }
+
+  async function syncFromCloud() {
+    if (!navigator.onLine) return;
+    var fs = getFsHelpers();
+    if (!fs) return;
     try {
-      const data = JSON.parse(localStorage.getItem(SCRATCH_LOG_KEY) || '{}');
-      return data.date === todayKey() ? (Number(data.count) || 0) : 0;
-    } catch (e) { return 0; }
-  }
-  function incScratchUsedToday() {
-    const next = getScratchUsedToday() + 1;
-    try { localStorage.setItem(SCRATCH_LOG_KEY, JSON.stringify({ date: todayKey(), count: next })); } catch (e) {}
-    return next;
+      var cSnap = await fs.getDoc(fs.doc(fs.db, CFG_DOC_PATH[0], CFG_DOC_PATH[1]));
+      if (cSnap && cSnap.exists()) {
+        cfg = deepMergeConfig(DEFAULT_CONFIG, cSnap.data());
+        saveLocalJson(CFG_STORAGE_KEY, cfg);
+      }
+      var aSnap = await fs.getDoc(fs.doc(fs.db, ANALYTICS_DOC_PATH[0], ANALYTICS_DOC_PATH[1]));
+      if (aSnap && aSnap.exists()) {
+        analytics = Object.assign({ plays: {}, couponsIssued: 0, couponsRedeemed: 0, revenueFromGames: 0 }, aSnap.data());
+        saveLocalJson(ANALYTICS_STORAGE_KEY, analytics);
+      }
+      var u = getUserObj();
+      if (u && u.uid) {
+        var uSnap = await fs.getDoc(fs.doc(fs.db, "users", u.uid));
+        if (uSnap && uSnap.exists()) {
+          var ud = uSnap.data() || {};
+          // Server-backed daily cap sync (Anti-cheat against incognito/clear storage)
+          if (ud.gameDailyLog && ud.gameDailyLog.date === todayKey()) {
+            pState.dailyPrizesWon = Math.max(pState.dailyPrizesWon, Number(ud.gameDailyLog.prizesWon || 0));
+            pState.dailyScratchesUsed = Math.max(pState.dailyScratchesUsed, Number(ud.gameDailyLog.scratchesUsed || 0));
+          }
+          if (ud.gameStreak && ud.gameStreak.lastClaimDate) {
+            if (ud.gameStreak.lastClaimDate >= pState.lastStreakClaimDate) {
+              pState.streakCount = Number(ud.gameStreak.count || 0);
+              pState.lastStreakClaimDate = ud.gameStreak.lastClaimDate;
+            }
+          }
+          if (Array.isArray(ud.gameCoupons) && ud.gameCoupons.length) {
+            var map = {};
+            pState.coupons.concat(ud.gameCoupons).forEach(function (c) {
+              if (c && c.code) {
+                if (!map[c.code] || c.used) map[c.code] = c;
+              }
+            });
+            pState.coupons = Object.values(map);
+          }
+          // Flush offline pending loyalty points
+          if (pState.pendingPoints > 0) {
+            var addPts = pState.pendingPoints;
+            pState.pendingPoints = 0;
+            await awardLoyaltyPointsCloud(addPts);
+          }
+          savePlayerState();
+        }
+      }
+    } catch (e) {}
   }
 
-  // سحب عشوائي مرجّح بدقة حسب النسب المحددة من المدير
-  function weightedPick(list) {
-    const valid = (Array.isArray(list) ? list : []).filter(x => x && Number(x.weight) > 0);
-    if (valid.length === 0) return null;
-    const total = valid.reduce((s, x) => s + Number(x.weight), 0);
-    let r = Math.random() * total;
-    for (const item of valid) {
-      r -= Number(item.weight);
-      if (r <= 0) return item;
+  async function awardLoyaltyPointsCloud(pts) {
+    var num = Math.max(0, Math.round(Number(pts || 0)));
+    if (!num) return;
+    pState.totalScore += num;
+    var u = getUserObj();
+    var fs = getFsHelpers();
+    if (!navigator.onLine || !u || !u.uid || !fs) {
+      pState.pendingPoints = (pState.pendingPoints || 0) + num;
+      savePlayerState();
+      return;
+    }
+    try {
+      var ref = fs.doc(fs.db, "users", u.uid);
+      var curPts = fs.increment ? fs.increment(num) : num;
+      await fs.setDoc(ref, { loyaltyPoints: curPts, points: curPts }, { merge: true });
+      if (window.userProfile) {
+        window.userProfile.loyaltyPoints = Number(window.userProfile.loyaltyPoints || 0) + num;
+      }
+      savePlayerState();
+    } catch (e) {
+      pState.pendingPoints = (pState.pendingPoints || 0) + num;
+      savePlayerState();
+    }
+  }
+
+  async function syncPlayerCapsAndCouponsToCloud() {
+    savePlayerState();
+    var u = getUserObj();
+    var fs = getFsHelpers();
+    if (!navigator.onLine || !u || !u.uid || !fs) return;
+    try {
+      await fs.setDoc(fs.doc(fs.db, "users", u.uid), {
+        gameDailyLog: {
+          date: todayKey(),
+          prizesWon: pState.dailyPrizesWon,
+          scratchesUsed: pState.dailyScratchesUsed
+        },
+        gameStreak: {
+          count: pState.streakCount,
+          lastClaimDate: pState.lastStreakClaimDate
+        },
+        gameCoupons: pState.coupons.slice(-25)
+      }, { merge: true });
+    } catch (e) {}
+  }
+
+  async function recordPlayAnalytics(gid) {
+    analytics.plays = analytics.plays || {};
+    analytics.plays[gid] = Number(analytics.plays[gid] || 0) + 1;
+    saveLocalJson(ANALYTICS_STORAGE_KEY, analytics);
+    var fs = getFsHelpers();
+    if (navigator.onLine && fs) {
+      var upd = {};
+      upd["plays." + gid] = fs.increment ? fs.increment(1) : analytics.plays[gid];
+      fs.setDoc(fs.doc(fs.db, ANALYTICS_DOC_PATH[0], ANALYTICS_DOC_PATH[1]), { plays: analytics.plays }, { merge: true }).catch(function () {});
+    }
+  }
+
+  async function recordCouponIssuedAnalytics() {
+    analytics.couponsIssued = Number(analytics.couponsIssued || 0) + 1;
+    saveLocalJson(ANALYTICS_STORAGE_KEY, analytics);
+    var fs = getFsHelpers();
+    if (navigator.onLine && fs) {
+      fs.setDoc(fs.doc(fs.db, ANALYTICS_DOC_PATH[0], ANALYTICS_DOC_PATH[1]), { couponsIssued: analytics.couponsIssued }, { merge: true }).catch(function () {});
+    }
+  }
+
+  async function submitToLeaderboard(scoreGain) {
+    if (!cfg.enableLeaderboard || !scoreGain) return;
+    var u = getUserObj();
+    var name = (u && u.displayName) ? u.displayName.split(" ")[0] : "لاعب الشجرة";
+    var gov = (window.userProfile && window.userProfile.gov) ? window.userProfile.gov : "مصر";
+    var uid = (u && u.uid) ? u.uid : ("guest_" + (localStorage.getItem("zait_dev_fp") || "local"));
+    var lb = loadLocalJson(LEADERBOARD_KEY, []);
+    var ex = lb.find(function (x) { return x.uid === uid; });
+    if (ex) { ex.score = Math.max(ex.score, pState.totalScore); ex.name = name; }
+    else lb.push({ uid: uid, name: name, gov: gov, score: pState.totalScore });
+    lb.sort(function (a, b) { return b.score - a.score; });
+    saveLocalJson(LEADERBOARD_KEY, lb.slice(0, 15));
+
+    var fs = getFsHelpers();
+    if (navigator.onLine && fs && u && u.uid) {
+      try {
+        await fs.setDoc(fs.doc(fs.db, "settings", "olive_games_leaderboard"), { top: lb.slice(0, 15), updatedAt: new Date().toISOString() }, { merge: true });
+      } catch (e) {}
+    }
+  }
+
+  // =========================================================================
+  // PRIZE & UNIQUE EXPIRING COUPON ENGINE
+  // =========================================================================
+  function weightedDraw(list) {
+    var valid = (Array.isArray(list) ? list : []).filter(function (x) { return Number(x.weight || 0) > 0; });
+    if (!valid.length) return { label: "15 نقطة ولاء ⭐", type: "points", value: 15, minOrder: 0 };
+    var total = valid.reduce(function (s, x) { return s + Number(x.weight || 0); }, 0);
+    var r = Math.random() * total;
+    for (var i = 0; i < valid.length; i++) {
+      r -= Number(valid[i].weight || 0);
+      if (r <= 0) return valid[i];
     }
     return valid[valid.length - 1];
   }
 
-  function getSavedDiff(gameKey) {
-    try {
-      const map = JSON.parse(localStorage.getItem(DIFF_PREF_KEY) || '{}');
-      return map[gameKey] || 'medium';
-    } catch (e) { return 'medium'; }
-  }
-  function saveDiff(gameKey, diff) {
-    try {
-      const map = JSON.parse(localStorage.getItem(DIFF_PREF_KEY) || '{}');
-      map[gameKey] = diff;
-      localStorage.setItem(DIFF_PREF_KEY, JSON.stringify(map));
-    } catch (e) {}
+  function generateUniqueCouponCode() {
+    var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    var seg = function (n) {
+      var s = "";
+      for (var i = 0; i < n; i++) s += chars[Math.floor(Math.random() * chars.length)];
+      return s;
+    };
+    return "ZM-" + seg(4) + "-" + seg(4);
   }
 
-  function stopActiveGame() {
-    if (typeof activeCleanup === 'function') {
-      try { activeCleanup(); } catch (e) {}
+  async function issuePrize(prizeItem, sourceLabel) {
+    if (!prizeItem || prizeItem.type === "none") {
+      return { type: "none", label: (prizeItem && prizeItem.label) || "حظ أوفر في المرة القادمة 🌿" };
     }
-    activeCleanup = null;
-  }
-
-  // =========================================================================
-  // احتفال Confetti متحرك 60fps
-  // =========================================================================
-  function launchConfetti(canvasEl) {
-    if (!canvasEl) return;
-    const ctx = canvasEl.getContext('2d');
-    const W = canvasEl.width = canvasEl.offsetWidth || 360;
-    const H = canvasEl.height = canvasEl.offsetHeight || 280;
-    const colors = ['#c59b27', '#15803d', '#facc15', '#38bdf8', '#f43f5e', '#a855f7'];
-    const parts = Array.from({ length: 65 }, () => ({
-      x: Math.random() * W,
-      y: -10 - Math.random() * 80,
-      vx: (Math.random() - 0.5) * 140,
-      vy: 90 + Math.random() * 140,
-      size: 5 + Math.random() * 6,
-      rot: Math.random() * 360,
-      vrot: (Math.random() - 0.5) * 300,
-      color: colors[Math.floor(Math.random() * colors.length)]
-    }));
-    let alive = true, last = performance.now();
-    const stopPrev = activeCleanup;
-    activeCleanup = () => { alive = false; if (stopPrev) stopPrev(); };
-    function step(ts) {
-      if (!alive) return;
-      const dt = Math.min(0.05, (ts - last) / 1000);
-      last = ts;
-      ctx.clearRect(0, 0, W, H);
-      let any = false;
-      for (const p of parts) {
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.rot += p.vrot * dt;
-        if (p.y < H + 20) any = true;
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate((p.rot * Math.PI) / 180);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
-        ctx.restore();
-      }
-      if (any) requestAnimationFrame(step);
+    if (prizeItem.type === "points") {
+      var pts = Math.max(1, Number(prizeItem.value || 10));
+      await awardLoyaltyPointsCloud(pts);
+      await syncPlayerCapsAndCouponsToCloud();
+      return { type: "points", value: pts, label: prizeItem.label || (pts + " نقطة ولاء ⭐") };
     }
-    requestAnimationFrame(step);
+
+    // Unique single-use, user-bound, time-expiring coupon with Min Order Value
+    var u = getUserObj();
+    var code = generateUniqueCouponCode();
+    var expHrs = Math.max(1, Number(cfg.couponExpiryHours || 24));
+    var minOrd = Number(prizeItem.minOrder !== undefined ? prizeItem.minOrder : (cfg.defaultMinOrder || 0));
+    var couponObj = {
+      code: code,
+      type: prizeItem.type, // 'percent' or 'free_shipping'
+      value: Number(prizeItem.value || 5),
+      label: prizeItem.label || (prizeItem.type === "free_shipping" ? "توصيل مجاني 🚚" : ("خصم " + prizeItem.value + "%")),
+      minOrder: minOrd,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + expHrs * 3600 * 1000,
+      used: false,
+      ownerUid: (u && u.uid) ? u.uid : "guest",
+      ownerEmail: (u && u.email) ? u.email.toLowerCase() : "",
+      source: sourceLabel || "ألعاب الشجرة المباركة"
+    };
+    pState.coupons.unshift(couponObj);
+    await syncPlayerCapsAndCouponsToCloud();
+    await recordCouponIssuedAnalytics();
+
+    // Register in Firestore promoCodes if online so native checkout validates it too
+    var fs = getFsHelpers();
+    if (navigator.onLine && fs) {
+      try {
+        await fs.setDoc(fs.doc(fs.db, "promoCodes", code), {
+          code: code,
+          discount: couponObj.type === "free_shipping" ? 0 : couponObj.value,
+          freeShipping: couponObj.type === "free_shipping",
+          minOrder: couponObj.minOrder,
+          maxUses: 1,
+          usageCount: 0,
+          active: true,
+          ownerUid: couponObj.ownerUid,
+          ownerEmail: couponObj.ownerEmail,
+          expiresAt: couponObj.expiresAt,
+          fromGame: true
+        }, { merge: true });
+      } catch (e) {}
+    }
+    return couponObj;
   }
 
-  // =========================================================================
-  // نافذة مركز الألعاب + درج "كوبوناتي"
-  // =========================================================================
-  function ensureModal() {
-    let ov = document.getElementById('og-modal-overlay');
-    if (ov) return ov;
-    ov = document.createElement('div');
-    ov.id = 'og-modal-overlay';
-    ov.innerHTML = `
-      <div class="og-shell" role="dialog" aria-modal="true">
-        <div class="og-topbar">
-          <h3 class="og-topbar-title"><span>🎮</span><span>ألعاب الشجرة المباركة</span></h3>
-          <div class="og-topbar-actions">
-            <button type="button" class="og-icon-btn" id="og-my-coupons-btn" title="كوبوناتي المكتسبة">🎟️ كوبوناتي</button>
-            <button type="button" class="og-icon-btn" id="og-mute-btn" title="الصوت">${muted ? '🔇' : '🔊'}</button>
-            <button type="button" class="og-icon-btn close-btn" id="og-close-btn" aria-label="إغلاق">✕</button>
-          </div>
-        </div>
-        <div class="og-body" id="og-body"></div>
-      </div>
-    `;
-    document.body.appendChild(ov);
-    ov.addEventListener('click', (e) => { if (e.target === ov) closeHub(); });
-    document.getElementById('og-close-btn').addEventListener('click', closeHub);
-    document.getElementById('og-my-coupons-btn').addEventListener('click', renderMyCouponsView);
-    document.getElementById('og-mute-btn').addEventListener('click', () => {
-      muted = !muted;
-      localStorage.setItem('zait_v94_games_muted', muted ? '1' : '0');
-      const mb = document.getElementById('og-mute-btn');
-      if (mb) mb.textContent = muted ? '🔇' : '🔊';
+  function getActiveCoupons() {
+    var now = Date.now();
+    return (pState.coupons || []).filter(function (c) {
+      return c && !c.used && (!c.expiresAt || c.expiresAt > now);
     });
+  }
+
+  function formatCountdown(ms) {
+    var s = Math.max(0, Math.floor(ms / 1000));
+    var h = Math.floor(s / 3600);
+    var m = Math.floor((s % 3600) / 60);
+    var r = s % 60;
+    return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(r).padStart(2, "0");
+  }
+
+  // =========================================================================
+  // DAILY 7-DAY STREAK + BIG GOLDEN CHEST LOGIC
+  // =========================================================================
+  function getStreakStatus() {
+    var today = todayKey();
+    var yest = yesterdayKey();
+    var claimedToday = pState.lastStreakClaimDate === today;
+    var currentStreak = Number(pState.streakCount || 0);
+    if (!claimedToday && pState.lastStreakClaimDate && pState.lastStreakClaimDate !== yest) {
+      currentStreak = 0; // Missed a day -> starts fresh from Day 1
+    }
+    var nextDayIndex = claimedToday ? ((currentStreak - 1) % 7) : (currentStreak % 7); // 0..6
+    return {
+      claimedToday: claimedToday,
+      streakCount: currentStreak,
+      activeDayIndex: nextDayIndex // 0 = Day 1, ..., 6 = Day 7 Big Chest
+    };
+  }
+
+  async function claimDailyStreakReward() {
+    var st = getStreakStatus();
+    if (st.claimedToday) return toast("✅ لقد استلمت هدية اليوم بالفعل! عد غداً لإكمال السلسلة 🔥", "info");
+
+    var dayIdx = st.activeDayIndex; // 0..6
+    pState.streakCount = st.streakCount + 1;
+    pState.lastStreakClaimDate = todayKey();
+
+    if (dayIdx < 6) {
+      var pts = Number((cfg.dailyStreak && cfg.dailyStreak.days && cfg.dailyStreak.days[dayIdx]) || ((dayIdx + 1) * 5));
+      await awardLoyaltyPointsCloud(pts);
+      await syncPlayerCapsAndCouponsToCloud();
+      playSfx("win");
+      haptic(35);
+      toast("🔥 رائع! استلمت هدية اليوم " + (dayIdx + 1) + ": +" + pts + " نقطة ولاء!", "success");
+      renderHub();
+    } else {
+      // Day 7 -> BIG GOLDEN CHEST DRAW!
+      var chestList = (cfg.dailyStreak && cfg.dailyStreak.bigChestPrizes) || DEFAULT_CONFIG.dailyStreak.bigChestPrizes;
+      var drawn = weightedDraw(chestList);
+      var issued = await issuePrize(drawn, "الصندوق الذهبي (اليوم 7)");
+      playSfx("win");
+      haptic([30, 50, 80]);
+      showBigChestModal(issued);
+      renderHub();
+    }
+  }
+
+  function showBigChestModal(issued) {
+    var body = document.getElementById("og-body");
+    if (!body) return;
+    currentView = "chest";
+    var isCoupon = issued && (issued.type === "percent" || issued.type === "free_shipping");
+    body.innerHTML =
+      '<div class="og-card og-result-box">' +
+        '<canvas id="og-confetti-cv"></canvas>' +
+        '<div style="position:relative;z-index:3;">' +
+          '<div style="font-size:3.6rem;">🎁✨</div>' +
+          '<h2 style="margin:6px 0;font-weight:900;color:#d97706;">مبروك! فتحت الصندوق الذهبي لليوم السابع!</h2>' +
+          '<div class="og-prize-card">' +
+            '<div style="font-size:1.05rem;font-weight:900;color:#fde68a;">' + esc(issued.label) + '</div>' +
+            (isCoupon ? (
+              '<div class="og-code-box">' + esc(issued.code) + '</div>' +
+              '<div style="font-size:.76rem;color:#bbf7d0;margin-bottom:8px;">⏳ صالح لمدة ' + cfg.couponExpiryHours + ' ساعة' + (issued.minOrder > 0 ? (' • الحد الأدنى للطلب ' + issued.minOrder + ' ج') : '') + '</div>' +
+              '<button type="button" class="og-btn og-btn-gold" style="width:100%;" onclick="window.ZaitGamesV96.applyCouponAndShop(\'' + esc(issued.code) + '\')">🛒 تسوّق الآن بالخصم وتطبيق الكوبون</button>'
+            ) : '<div style="font-size:.86rem;color:#d1fae5;margin-top:6px;">تمت إضافة المكافأة لرصيدك بنجاح!</div>') +
+          '</div>' +
+          '<button type="button" class="og-btn og-btn-dark" style="margin-top:10px;" onclick="window.ZaitGamesV96.backToHub()">🏠 العودة لصالة الألعاب</button>' +
+        '</div>' +
+      '</div>';
+    launchConfetti();
+  }
+
+  // =========================================================================
+  // DAILY MISSION
+  // =========================================================================
+  function getTodayMission() {
+    var dayNum = Math.floor(Date.now() / 86400000);
+    var pool = [
+      { id: "m_any", text: "فُز بأي لعبة مهارة في المستوى المتوسط أو الصعب اليوم", check: function (g, d, w) { return w && (d === "medium" || d === "hard"); } },
+      { id: "m_catch", text: "فُز في لعبة قطف الزيتون السيناوي اليوم", check: function (g, d, w) { return w && g === "catch"; } },
+      { id: "m_quiz", text: "فُز في تحدي خبير زيت الزيتون اليوم", check: function (g, d, w) { return w && g === "quiz"; } },
+      { id: "m_hard", text: "حقق فوزاً في المستوى الصعب في أي لعبة اليوم", check: function (g, d, w) { return w && d === "hard"; } }
+    ];
+    return pool[dayNum % pool.length];
+  }
+
+  // =========================================================================
+  // MODAL SHELL & HUB UI
+  // =========================================================================
+  function ensureOverlay() {
+    var ov = document.getElementById("og-overlay");
+    if (ov) return ov;
+    ov = document.createElement("div");
+    ov.id = "og-overlay";
+    ov.innerHTML =
+      '<div class="og-shell" role="dialog" aria-modal="true">' +
+        '<div class="og-head">' +
+          '<div class="og-head-top">' +
+            '<div class="og-brand">' +
+              '<div class="og-brand-ic">🫒</div>' +
+              '<div><h2>مركز ألعاب الشجرة المباركة</h2><small id="og-rank-lbl">🌱 مبتدئ المزرعة</small></div>' +
+            '</div>' +
+            '<div class="og-head-btns">' +
+              '<button type="button" class="og-ic-btn" id="og-snd-btn" onclick="window.ZaitGamesV96.toggleSound()">🔊</button>' +
+              '<button type="button" class="og-ic-btn red" onclick="window.ZaitGamesV96.close()">✕</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="og-hud" id="og-hud-bar"></div>' +
+        '</div>' +
+        '<div class="og-body" id="og-body"></div>' +
+      '</div>';
+    ov.addEventListener("click", function (e) {
+      if (e.target === ov) closeGames();
+    });
+    document.body.appendChild(ov);
     return ov;
   }
 
-  function closeHub() {
-    stopActiveGame();
-    const ov = document.getElementById('og-modal-overlay');
-    if (ov) ov.classList.remove('open');
+  function renderHud() {
+    var hud = document.getElementById("og-hud-bar");
+    var rk = document.getElementById("og-rank-lbl");
+    if (!hud) return;
+    if (rk) rk.textContent = getRankTitle(pState.totalScore) + " • " + pState.totalScore + " نقطة";
+    var actCoups = getActiveCoupons().length;
+    var st = getStreakStatus();
+    var pts = (window.userProfile && Number(window.userProfile.loyaltyPoints)) || pState.totalScore;
+    hud.innerHTML =
+      '<div class="og-hud-pill" onclick="window.ZaitGamesV96.backToHub()">⭐ نقاطك<strong>' + pts + '</strong></div>' +
+      '<div class="og-hud-pill" onclick="window.ZaitGamesV96.openCoupons()">🎟️ كوبوناتي<strong>' + actCoups + '</strong></div>' +
+      '<div class="og-hud-pill" onclick="window.ZaitGamesV96.openLeaderboard()">🏆 المتصدرين<strong>🔥 ' + st.streakCount + '</strong></div>' +
+      '<div class="og-hud-pill" onclick="window.ZaitGamesV96.backToHub()">🎁 جوائز اليوم<strong>' + pState.dailyPrizesWon + '/' + cfg.dailyPrizeCap + '</strong></div>';
   }
 
-  function renderMyCouponsView() {
+  function renderHub() {
     stopActiveGame();
-    const body = document.getElementById('og-body');
+    currentView = "hub";
+    renderHud();
+    var body = document.getElementById("og-body");
     if (!body) return;
-    const list = typeof window.V95_getMyPersonalCoupons === 'function' ? window.V95_getMyPersonalCoupons() : [];
-    const cards = list.length === 0
-      ? '<div style="text-align:center;padding:28px;color:#64748b;font-weight:700;">لا توجد كوبونات مكتسبة بعد — العب واكسب كوبونك الشخصي الفريد! 🎮</div>'
-      : list.slice().reverse().map(c => `
-        <div style="background:var(--input-bg,#fff);border:1.5px solid ${c.used ? '#cbd5e1' : '#c59b27'};border-radius:14px;padding:12px;margin-bottom:8px;opacity:${c.used ? '0.65' : '1'};">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-            <strong style="color:#153422;font-size:1rem;letter-spacing:1.2px;">🎟️ ${esc(c.code)}</strong>
-            <span style="padding:2px 9px;border-radius:999px;font-size:0.74rem;font-weight:900;background:${c.used ? '#fee2e2;color:#991b1b' : '#dcfce7;color:#166534'};">${c.used ? 'تم استخدامه ✅' : (c.freeShipping ? '🚚 توصيل مجاني' : `خصم ${c.discount}%`)}</span>
-          </div>
-          <div style="font-size:0.76rem;color:#64748b;margin-top:4px;">${esc(c.label || '')} • استخدام مرة واحدة على حسابك فقط</div>
-          ${!c.used ? `<button type="button" class="og-primary-btn" style="padding:8px;font-size:0.82rem;margin-top:8px;" onclick="window.OliveGames_copyAndApply('${esc(c.code)}')">📋 نسخ وتطبيق الكوبون في السلة 🛒</button>` : ''}
-        </div>
-      `).join('');
 
-    body.innerHTML = `
-      <div class="og-stage-header">
-        <button type="button" class="og-back-btn" onclick="window.OliveGames_renderLobby()">◀ رجوع للألعاب</button>
-        <strong style="color:#153422;">🎟️ كوبوناتي الخاصة (${list.filter(x => !x.used).length} متاح)</strong>
-      </div>
-      ${cards}
-    `;
-  }
+    var html = "";
 
-  window.OliveGames_copyAndApply = function (code) {
-    try { navigator.clipboard.writeText(code); } catch (e) {}
-    if (typeof window.V94_applyGameCouponToCart === 'function') window.V94_applyGameCouponToCart(code);
-    if (typeof window.showToast === 'function') window.showToast(`✅ تم نسخ الكود (${code}) وتطبيقه في السلة!`, 'success');
-    else alert(`✅ تم نسخ الكود (${code}) وتجهيزه في السلة!`);
-  };
-
-  // =========================================================================
-  // شاشة نهاية اللعبة والاحتفال (مع العب تاني بنفس الصعوبة + تحديد الصعوبة + خروج)
-  // =========================================================================
-  async function showPostGameScreen(gameKey, diff, won, headline, isScratchCard, forcedOutcome) {
-    stopActiveGame();
-    const body = document.getElementById('og-body');
-    if (!body) return;
-    const cfg = getCfg();
-    const diffNames = { easy: '🟢 سهل', medium: '🟡 متوسط', hard: '🔴 صعب' };
-
-    if (!won) {
-      sfxBad();
-      body.innerHTML = `
-        <div class="og-celebration-wrap" style="background:linear-gradient(135deg,#fff1f2,#fffbeb); border-color:#f87171;">
-          <div class="og-celebration-inner">
-            <div style="font-size:3rem;">🫒</div>
-            <h3 style="margin:6px 0; color:#991b1b; font-size:1.2rem;">انتهت الجولة — حظ أوفر!</h3>
-            <p style="margin:0 0 12px; font-size:0.88rem; color:#475569; font-weight:700;">${esc(headline || 'حاول مرة أخرى بسرعة وتركيز أعلى!')}</p>
-            <div style="font-size:0.78rem; color:#64748b; margin-bottom:10px;">المستوى الحالي: <b>${diffNames[diff] || ''}</b></div>
-            <button type="button" class="og-primary-btn" onclick="window.OliveGames_playDirect('${gameKey}', '${diff}')">🔄 العب تاني (نفس الصعوبة)</button>
-            <div class="og-post-actions">
-              <button type="button" class="og-secondary-btn" onclick="window.OliveGames_pickDifficulty('${gameKey}')">🎚️ تحديد الصعوبة</button>
-              <button type="button" class="og-outline-btn" onclick="window.OliveGames_renderLobby()">🚪 خروج</button>
-            </div>
-          </div>
-        </div>
-      `;
-      return;
+    // 1. 7-Day Daily Streak Ladder + Day 7 Big Chest
+    if (cfg.dailyStreak && cfg.dailyStreak.enabled) {
+      var st = getStreakStatus();
+      var daysArr = cfg.dailyStreak.days || [5, 10, 15, 20, 25, 30];
+      var boxesHtml = "";
+      for (var i = 0; i < 7; i++) {
+        var isChest = i === 6;
+        var isClaimed = st.claimedToday ? (i <= st.activeDayIndex) : (i < st.activeDayIndex);
+        var isToday = !st.claimedToday && i === st.activeDayIndex;
+        var cls = "og-day-box" + (isChest ? " big-chest" : "") + (isClaimed ? " claimed" : "") + (isToday ? " today" : "");
+        boxesHtml +=
+          '<div class="' + cls + '" ' + (isToday ? 'onclick="window.ZaitGamesV96.claimStreak()"' : '') + '>' +
+            '<div class="og-day-num">يوم ' + (i + 1) + '</div>' +
+            '<div class="og-day-ic">' + (isClaimed ? "✅" : (isChest ? "🎁" : "⭐")) + '</div>' +
+            '<div class="og-day-val">' + (isChest ? "الصندوق!" : ("+" + daysArr[i] + " ن")) + '</div>' +
+          '</div>';
+      }
+      html +=
+        '<div class="og-card">' +
+          '<div class="og-streak-head">' +
+            '<div><strong style="font-size:.9rem;">🔥 هدايا الدخول اليومي (سلسلة 7 أيام)</strong><div style="font-size:.73rem;opacity:.8;">ادخل يومياً لتحصل على نقاطك وتفتح الصندوق الذهبي الكبير في اليوم 7!</div></div>' +
+            (!st.claimedToday
+              ? '<button type="button" class="og-btn og-btn-gold" style="padding:7px 12px;font-size:.78rem;" onclick="window.ZaitGamesV96.claimStreak()">🎁 استلم هدية اليوم ' + (st.activeDayIndex + 1) + '</button>'
+              : '<span style="font-size:.76rem;font-weight:900;color:#16a34a;">✅ تم الاستلام اليوم</span>') +
+          '</div>' +
+          '<div class="og-streak-grid">' + boxesHtml + '</div>' +
+        '</div>';
     }
 
-    // الفوز! هل يستحق جائزة؟
-    let prizeHtml = '';
-    let celebrationEmoji = '🏆🎉';
-    let titleText = 'مبروك! فوز رائع!';
+    // 2. Daily Mission Banner
+    if (cfg.enableDailyMission) {
+      var ms = getTodayMission();
+      var done = pState.missionDate === todayKey() && pState.missionDone;
+      html +=
+        '<div class="og-mission">' +
+          '<div style="min-width:0;flex:1;"><strong style="color:#fde68a;font-size:.82rem;">🎯 مهمة اليوم (+' + Number(cfg.dailyMissionBonus || 20) + ' نقطة ولاء):</strong><div style="font-size:.76rem;color:#e2f5e9;margin-top:2px;">' + esc(ms.text) + '</div></div>' +
+          '<span style="font-size:.76rem;font-weight:900;padding:4px 10px;border-radius:99px;background:' + (done ? '#16a34a' : 'rgba(244,207,109,.2)') + ';color:' + (done ? '#fff' : '#fde68a') + ';">' + (done ? '✅ مكتملة' : '🔥 جارية') + '</span>' +
+        '</div>';
+    }
 
-    if (isScratchCard) {
-      // كارت الكشط مستقل تماماً عن الجوائز اليومية الـ 3!
-      const out = forcedOutcome;
-      if (!out || out.type === 'none') {
-        sfxBad();
-        celebrationEmoji = '🍀';
-        titleText = esc((out && out.label) || 'حظ أوفر في المرة القادمة!');
-        prizeHtml = `<p style="margin:6px 0;color:#475569;font-size:0.88rem;font-weight:700;">لم يحالفك الحظ هذه المرة — يمكنك كسب جوائز مضمونة من الألعاب الأخرى أو المحاولة غداً! 🌿</p>`;
+    // 3. Category Filter Tabs
+    var cats = [
+      { id: "all", label: "🎮 كل الألعاب" },
+      { id: "speed", label: "⚡ سرعة وأكشن" },
+      { id: "brain", label: "🧠 ذكاء وتحدي" },
+      { id: "luck", label: "🪙 حظ يومي" }
+    ];
+    html += '<div class="og-tabs">' + cats.map(function (c) {
+      return '<button type="button" class="og-tab ' + (currentCategory === c.id ? "active" : "") + '" onclick="window.ZaitGamesV96.setCat(\'' + c.id + '\')">' + c.label + '</button>';
+    }).join("") + '</div>';
+
+    // 4. 2x2 / 3x3 Games Grid
+    var allGames = getAllGamesMeta().filter(function (g) {
+      var gc = getGameConfig(g.id);
+      if (gc.enabled === false) return false;
+      if (currentCategory !== "all" && g.cat !== currentCategory) return false;
+      return true;
+    });
+
+    html += '<div class="og-games-grid">' + allGames.map(function (g) {
+      var best = pState.bestScores[g.id] || 0;
+      var badgeCls = g.cat === "luck" ? "luck" : (g.cat === "speed" ? "hard" : "");
+      return (
+        '<div class="og-game-tile" onclick="window.ZaitGamesV96.openGame(\'' + esc(g.id) + '\')">' +
+          '<span class="og-game-badge ' + badgeCls + '">' + esc(g.hardTag) + '</span>' +
+          '<div class="og-game-ic">' + g.icon + '</div>' +
+          '<div>' +
+            '<div class="og-game-name">' + esc(g.name) + '</div>' +
+            '<div class="og-game-desc">' + esc(g.desc) + '</div>' +
+          '</div>' +
+          '<div>' +
+            '<div class="og-game-meta"><span>' + (g.id === "scratch" ? "خارج الحد اليومي" : (best > 0 ? ("🏆 أعلى رقم: " + best) : "3 مستويات")) + '</span></div>' +
+            '<button type="button" class="og-play-pill" style="margin-top:5px;">▶ العب الآن</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join("") + '</div>';
+
+    body.innerHTML = html;
+  }
+
+  // =========================================================================
+  // COUPONS DRAWER (WITH LIVE EXPIRY COUNTDOWN) & WEEKLY LEADERBOARD
+  // =========================================================================
+  var couponTick = null;
+  function openCouponsView() {
+    stopActiveGame();
+    currentView = "coupons";
+    renderHud();
+    var body = document.getElementById("og-body");
+    var list = pState.coupons || [];
+    var now = Date.now();
+
+    body.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+        '<strong style="font-size:1rem;">🎟️ كوبوناتي الخاصة</strong>' +
+        '<button type="button" class="og-btn og-btn-dark" style="padding:6px 12px;font-size:.78rem;" onclick="window.ZaitGamesV96.backToHub()">← رجوع</button>' +
+      '</div>' +
+      (list.length === 0
+        ? '<div class="og-card" style="text-align:center;padding:28px;">لا توجد كوبونات حالياً — العب واربح كوبونك الفوري الآن! 🎮</div>'
+        : list.map(function (c) {
+            var expired = c.expiresAt && c.expiresAt <= now;
+            var rem = c.expiresAt ? formatCountdown(c.expiresAt - now) : "مفتوح";
+            var badge = c.used ? "✅ مستخدم" : (expired ? "⌛ منتهي" : ("⏳ ينتهي خلال " + rem));
+            return (
+              '<div class="og-card" style="opacity:' + ((c.used || expired) ? "0.6" : "1") + ';">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">' +
+                  '<strong>' + esc(c.label) + '</strong>' +
+                  '<span class="og-cp-timer" data-exp="' + (c.expiresAt || 0) + '" style="font-size:.74rem;font-weight:900;color:' + ((c.used || expired) ? "#ef4444" : "#15803d") + ';">' + badge + '</span>' +
+                '</div>' +
+                '<div class="og-code-box" style="text-align:center;background:rgba(16,48,30,.92);">' + esc(c.code) + '</div>' +
+                '<div style="font-size:.75rem;opacity:.8;margin-bottom:8px;">' +
+                  (c.minOrder > 0 ? ('الحد الأدنى للطلب: ' + c.minOrder + ' ج • ') : '') +
+                  'استخدام مرة واحدة على حسابك فقط' +
+                '</div>' +
+                ((!c.used && !expired)
+                  ? '<button type="button" class="og-btn og-btn-gold" style="width:100%;" onclick="window.ZaitGamesV96.applyCouponAndShop(\'' + esc(c.code) + '\')">🛒 نسخ وتطبيق الكوبون والتسوق الآن</button>'
+                  : '') +
+              '</div>'
+            );
+          }).join(""));
+
+    couponTick = setInterval(function () {
+      if (currentView !== "coupons") { clearInterval(couponTick); return; }
+      var t = Date.now();
+      document.querySelectorAll(".og-cp-timer[data-exp]").forEach(function (el) {
+        var exp = Number(el.getAttribute("data-exp") || 0);
+        if (!exp) return;
+        if (exp <= t) el.textContent = "⌛ منتهي";
+        else if (el.textContent.indexOf("✅") === -1) el.textContent = "⏳ ينتهي خلال " + formatCountdown(exp - t);
+      });
+    }, 1000);
+  }
+
+  async function openLeaderboardView() {
+    stopActiveGame();
+    currentView = "leaderboard";
+    renderHud();
+    var body = document.getElementById("og-body");
+    var lb = loadLocalJson(LEADERBOARD_KEY, []);
+
+    var fs = getFsHelpers();
+    if (navigator.onLine && fs) {
+      try {
+        var snap = await fs.getDoc(fs.doc(fs.db, "settings", "olive_games_leaderboard"));
+        if (snap && snap.exists() && Array.isArray(snap.data().top)) {
+          lb = snap.data().top;
+          saveLocalJson(LEADERBOARD_KEY, lb);
+        }
+      } catch (e) {}
+    }
+
+    var medals = ["🥇", "🥈", "🥉"];
+    body.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+        '<strong style="font-size:1rem;">🏆 لوحة المتصدرين الأسبوعية</strong>' +
+        '<button type="button" class="og-btn og-btn-dark" style="padding:6px 12px;font-size:.78rem;" onclick="window.ZaitGamesV96.backToHub()">← رجوع</button>' +
+      '</div>' +
+      '<div class="og-card">' +
+        (lb.length === 0
+          ? '<div style="text-align:center;padding:24px;">كن أول متصدر هذا الأسبوع! العب الآن واجمع النقاط 🏆</div>'
+          : lb.slice(0, 10).map(function (row, idx) {
+              return (
+                '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border-bottom:1px dashed rgba(200,162,75,.28);">' +
+                  '<div><strong>' + (medals[idx] || ("#" + (idx + 1))) + ' ' + esc(row.name || "لاعب") + '</strong> <small style="opacity:.75;">(' + esc(row.gov || "مصر") + ')</small></div>' +
+                  '<strong style="color:#d97706;">' + Number(row.score || 0) + ' ⭐</strong>' +
+                '</div>'
+              );
+            }).join("")) +
+      '</div>';
+  }
+
+  // =========================================================================
+  // DIFFICULTY SELECTOR, COUNTDOWN (3-2-1), PAUSE & WIN/LOSE RESULT SCREEN
+  // =========================================================================
+  function openGameEntry(gid) {
+    stopActiveGame();
+    activeGameId = gid;
+    if (gid === "scratch") {
+      startGameRun("scratch", "easy");
+      return;
+    }
+    var meta = getAllGamesMeta().find(function (m) { return m.id === gid; }) || { name: gid, icon: "🎮", desc: "" };
+    var gc = getGameConfig(gid);
+    currentView = "diff";
+    var body = document.getElementById("og-body");
+    body.innerHTML =
+      '<div class="og-card">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+          '<strong style="font-size:1.05rem;">' + meta.icon + ' ' + esc(meta.name) + '</strong>' +
+          '<button type="button" class="og-btn og-btn-ghost" style="padding:6px 12px;font-size:.78rem;" onclick="window.ZaitGamesV96.backToHub()">← خروج</button>' +
+        '</div>' +
+        '<p style="font-size:.82rem;opacity:.85;margin:0 0 10px;">' + esc(meta.desc) + ' — اختر مستوى التحدي:</p>' +
+        '<div class="og-diff-grid">' +
+          '<button type="button" class="og-diff-btn easy" onclick="window.ZaitGamesV96.startGame(\'' + gid + '\',\'easy\')">' +
+            '<div><strong>🟢 مستوى سهل (تحدي متوازن)</strong><div style="font-size:.74rem;opacity:.8;">الهدف للفوز: ' + gc.targets.easy + ' • الوقت: ' + gc.times.easy + 'ث</div></div>' +
+            '<span style="font-size:1.2rem;">▶</span>' +
+          '</button>' +
+          '<button type="button" class="og-diff-btn medium" onclick="window.ZaitGamesV96.startGame(\'' + gid + '\',\'medium\')">' +
+            '<div><strong>🟡 مستوى متوسط (سرعة أعلى وعقبات أكثر)</strong><div style="font-size:.74rem;opacity:.8;">الهدف للفوز: ' + gc.targets.medium + ' • الوقت: ' + gc.times.medium + 'ث</div></div>' +
+            '<span style="font-size:1.2rem;">▶</span>' +
+          '</button>' +
+          '<button type="button" class="og-diff-btn hard" onclick="window.ZaitGamesV96.startGame(\'' + gid + '\',\'hard\')">' +
+            '<div><strong>🔴 مستوى صعب (للمحترفين فقط!)</strong><div style="font-size:.74rem;opacity:.8;">الهدف للفوز: ' + gc.targets.hard + ' • الوقت: ' + gc.times.hard + 'ث</div></div>' +
+            '<span style="font-size:1.2rem;">▶</span>' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function stopActiveGame() {
+    gamePaused = false;
+    pauseListeners = [];
+    if (couponTick) { clearInterval(couponTick); couponTick = null; }
+    if (typeof activeGameCleanup === "function") {
+      try { activeGameCleanup(); } catch (e) {}
+      activeGameCleanup = null;
+    }
+  }
+
+  function runCountdown(stageEl, onGo) {
+    var ov = document.createElement("div");
+    ov.className = "og-stage-overlay";
+    stageEl.appendChild(ov);
+    var steps = ["3", "2", "1", "انطلق! 🚀"];
+    var idx = 0;
+    function next() {
+      if (!ov.parentNode) return;
+      if (idx >= steps.length) { ov.remove(); onGo(); return; }
+      ov.innerHTML = '<div class="og-cd-num">' + steps[idx] + '</div>';
+      playSfx(idx === 3 ? "gold" : "tick");
+      idx++;
+      setTimeout(next, idx === 4 ? 420 : 580);
+    }
+    next();
+  }
+
+  function togglePause(stageEl) {
+    if (currentView !== "playing") return;
+    gamePaused = !gamePaused;
+    pauseListeners.forEach(function (fn) { try { fn(gamePaused); } catch (e) {} });
+    var old = stageEl.querySelector(".og-pause-ov");
+    if (gamePaused) {
+      if (old) return;
+      var ov = document.createElement("div");
+      ov.className = "og-stage-overlay og-pause-ov";
+      ov.innerHTML =
+        '<div style="font-size:2.4rem;">⏸️</div>' +
+        '<h3 style="margin:0;color:#fde68a;">اللعبة متوقفة مؤقتاً</h3>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">' +
+          '<button type="button" class="og-btn og-btn-gold" id="og-resume-btn">▶ استكمال اللعب</button>' +
+          '<button type="button" class="og-btn og-btn-ghost" onclick="window.ZaitGamesV96.backToHub()">🚪 خروج</button>' +
+        '</div>';
+      stageEl.appendChild(ov);
+      ov.querySelector("#og-resume-btn").onclick = function () { togglePause(stageEl); };
+    } else if (old) {
+      old.remove();
+    }
+  }
+
+  async function finishGame(opts) {
+    stopActiveGame();
+    currentView = "result";
+    var won = !!opts.won;
+    var score = Math.max(0, Math.round(Number(opts.score || 0)));
+    var gid = opts.gameId || activeGameId;
+    var diff = opts.diff || activeDiff;
+    var target = opts.target || 0;
+
+    if (score > Number(pState.bestScores[gid] || 0)) pState.bestScores[gid] = score;
+    if (won) {
+      pState.totalScore += Math.max(10, Math.min(score, 120));
+      submitToLeaderboard(score);
+    }
+
+    var prizeResult = null;
+    var capReached = false;
+    var missionBonus = 0;
+
+    if (won && opts.isScratch) {
+      prizeResult = opts.scratchIssued;
+    } else if (won) {
+      // Check Daily Mission
+      if (cfg.enableDailyMission && !(pState.missionDate === todayKey() && pState.missionDone)) {
+        var ms = getTodayMission();
+        if (ms.check(gid, diff, true)) {
+          pState.missionDate = todayKey();
+          pState.missionDone = true;
+          missionBonus = Number(cfg.dailyMissionBonus || 20);
+          await awardLoyaltyPointsCloud(missionBonus);
+        }
+      }
+      // Check Daily Prize Cap (default 3)
+      if (pState.dailyPrizesWon < Number(cfg.dailyPrizeCap || 3)) {
+        pState.dailyPrizesWon++;
+        var picked = weightedDraw(cfg.prizePool);
+        prizeResult = await issuePrize(picked, "فوز بلعبة " + gid);
       } else {
-        sfxWin();
-        prizeHtml = await issueActualRewardHtml(out, 'كارت قطرة الذهب', 'scratch');
+        capReached = true;
+        await syncPlayerCapsAndCouponsToCloud();
       }
     } else {
-      sfxWin();
-      const maxDaily = Math.max(0, Number(cfg.dailyRewardLimit) ?? 3);
-      const usedToday = getDailyCount();
-      if (usedToday < maxDaily) {
-        const pickedPrize = weightedPick(cfg.rewardPool);
-        if (pickedPrize && pickedPrize.type !== 'none') {
-          incDailyCount();
-          prizeHtml = await issueActualRewardHtml(pickedPrize, (cfg.games[gameKey] && cfg.games[gameKey].title) || gameKey, gameKey);
-        } else {
-          prizeHtml = `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:10px;font-weight:800;color:#166534;">أداء بطولي ممتاز! 🌿</div>`;
-        }
-      } else {
-        prizeHtml = `
-          <div style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:12px;padding:10px;font-size:0.84rem;font-weight:800;color:#92400e;margin-top:8px;">
-            🎁 وصلت للحد الأقصى لجوائز اليوم (${usedToday} / ${maxDaily})!<br>
-            <small>يمكنك الاستمرار في اللعب وتحدي أرقامك القياسية بحرية، وتعود جوائزك غداً 🌿</small>
-          </div>`;
-      }
+      savePlayerState();
     }
 
-    body.innerHTML = `
-      <div class="og-celebration-wrap">
-        <canvas class="og-confetti-canvas" id="og-confetti-cv"></canvas>
-        <div class="og-celebration-inner">
-          <div style="font-size:3.1rem;">${celebrationEmoji}</div>
-          <h3 style="margin:4px 0; color:#153422; font-size:1.22rem; font-weight:900;">${titleText}</h3>
-          <p style="margin:0 0 8px; font-size:0.86rem; color:#475569; font-weight:700;">${esc(headline || '')}</p>
-          ${prizeHtml}
-          ${isScratchCard ? `
-            <div style="margin-top:12px;">
-              <button type="button" class="og-secondary-btn" onclick="window.OliveGames_renderLobby()">🚪 خروج لصالة الألعاب</button>
-            </div>
-          ` : `
-            <div style="margin-top:12px;">
-              <button type="button" class="og-primary-btn" onclick="window.OliveGames_playDirect('${gameKey}', '${diff}')">🔄 العب تاني (${diffNames[diff] || ''})</button>
-              <div class="og-post-actions">
-                <button type="button" class="og-secondary-btn" onclick="window.OliveGames_pickDifficulty('${gameKey}')">🎚️ تحديد الصعوبة</button>
-                <button type="button" class="og-outline-btn" onclick="window.OliveGames_renderLobby()">🚪 خروج</button>
-              </div>
-            </div>
-          `}
-        </div>
-      </div>
-    `;
+    renderHud();
+    playSfx(won ? "win" : "bad");
+    haptic(won ? [25, 45, 75] : 50);
 
-    if (!isScratchCard || (forcedOutcome && forcedOutcome.type !== 'none')) {
-      setTimeout(() => launchConfetti(document.getElementById('og-confetti-cv')), 30);
+    var meta = getAllGamesMeta().find(function (m) { return m.id === gid; }) || { name: "اللعبة", icon: "🎮" };
+    var diffLbl = diff === "hard" ? "صعب 🔴" : (diff === "medium" ? "متوسط 🟡" : "سهل 🟢");
+    var waText = "🏆 جبت " + score + " نقطة في لعبة (" + meta.name + " - " + diffLbl + ") داخل متجر زيت الشجرة المباركة" +
+      (prizeResult && prizeResult.code ? " وكسبت خصم فوري!" : "!") +
+      "\nتقدر تكسر رقمي وتكسب جائزتك؟ 👇\n" + location.origin;
+
+    var prizeBoxHtml = "";
+    if (won && prizeResult && prizeResult.type !== "none") {
+      var isC = prizeResult.type === "percent" || prizeResult.type === "free_shipping";
+      prizeBoxHtml =
+        '<div class="og-prize-card">' +
+          '<div style="font-size:.78rem;color:#bbf7d0;font-weight:800;">🎉 مبروك جائزتك العشوائية!</div>' +
+          '<div style="font-size:1.1rem;font-weight:900;color:#fde68a;margin:4px 0;">' + esc(prizeResult.label) + '</div>' +
+          (isC ? (
+            '<div class="og-code-box">' + esc(prizeResult.code) + '</div>' +
+            '<div style="font-size:.74rem;color:#d1fae5;margin-bottom:9px;">⏳ صالح لمدة ' + cfg.couponExpiryHours + ' ساعة' + (prizeResult.minOrder > 0 ? (' • الحد الأدنى ' + prizeResult.minOrder + ' ج') : '') + ' • استخدام مرة واحدة</div>' +
+            '<button type="button" class="og-btn og-btn-gold" style="width:100%;" onclick="window.ZaitGamesV96.applyCouponAndShop(\'' + esc(prizeResult.code) + '\')">🛒 تسوّق الآن بالخصم (تطبيق فوري)</button>'
+          ) : '<div style="font-size:.82rem;color:#d1fae5;">تمت إضافة النقاط إلى حسابك بنجاح ⭐</div>') +
+        '</div>';
+    } else if (won && capReached) {
+      prizeBoxHtml = '<div class="og-card" style="background:rgba(245,158,11,.12);border-color:#f59e0b;font-size:.82rem;font-weight:800;">🏆 فوز رائع! وصلت للحد اليومي للجوائز (' + cfg.dailyPrizeCap + '/' + cfg.dailyPrizeCap + ') — استمر باللعب لتحطيم الأرقام القياسية وصدارة الأسبوع!</div>';
+    } else if (won && prizeResult && prizeResult.type === "none") {
+      prizeBoxHtml = '<div class="og-card" style="font-size:.9rem;font-weight:900;">' + esc(prizeResult.label) + '</div>';
     }
+
+    var body = document.getElementById("og-body");
+    body.innerHTML =
+      '<div class="og-card og-result-box">' +
+        (won ? '<canvas id="og-confetti-cv"></canvas>' : '') +
+        '<div style="position:relative;z-index:3;">' +
+          '<div style="font-size:3.2rem;">' + (won ? "🏆🎉" : "😅⏱️") + '</div>' +
+          '<h2 style="margin:6px 0;font-weight:900;color:' + (won ? "#15803d" : "#dc2626") + ';">' + (won ? "أحسنت! فزت بالتحدي!" : (opts.loseReason || "انتهى الوقت ولم تصل للهدف!")) + '</h2>' +
+          '<div style="font-size:.86rem;font-weight:800;margin-bottom:8px;">نتيجتك: <strong>' + score + '</strong>' + (target > 0 && !opts.isScratch ? (' / الهدف المطلوب: <strong>' + target + '</strong>') : '') + ' • ' + diffLbl + '</div>' +
+          (missionBonus > 0 ? '<div style="display:inline-block;background:#16a34a;color:#fff;padding:4px 12px;border-radius:99px;font-size:.76rem;font-weight:900;margin-bottom:8px;">🎯 أنجزت مهمة اليوم: +' + missionBonus + ' نقطة إضافية!</div>' : '') +
+          prizeBoxHtml +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px;">' +
+            '<button type="button" class="og-btn og-btn-gold" onclick="window.ZaitGamesV96.startGame(\'' + esc(gid) + '\',\'' + esc(diff) + '\')">🔄 العب تاني</button>' +
+            (gid !== "scratch" ? '<button type="button" class="og-btn og-btn-dark" onclick="window.ZaitGamesV96.openGame(\'' + esc(gid) + '\')">🎚️ تحديد الصعوبة</button>' : '') +
+            '<button type="button" class="og-btn og-btn-ghost" onclick="window.ZaitGamesV96.backToHub()">🚪 خروج</button>' +
+          '</div>' +
+          (won && cfg.enableWhatsappChallenge ? '<a href="https://wa.me/?text=' + encodeURIComponent(waText) + '" target="_blank" rel="noopener" class="og-btn og-btn-wa" style="width:100%;max-width:340px;margin-top:10px;text-decoration:none;">⚔️ تحدَّ صديقك على واتساب</a>' : '') +
+        '</div>' +
+      '</div>';
+
+    if (won) launchConfetti();
   }
 
-  async function issueActualRewardHtml(prize, gameTitle, gameKey) {
-    if (prize.type === 'points') {
-      const pts = Math.max(1, Number(prize.value) || 25);
-      let st = `✅ ربحت +${pts} نقطة ولاء!`;
-      if (typeof window.V94_awardLoyaltyPoints === 'function') {
-        const res = await window.V94_awardLoyaltyPoints(pts, gameTitle, gameKey);
-        if (res && res.synced) st = `✅ تمت إضافة +${pts} نقطة ولاء مباشرةً لرصيدك في المتجر!`;
-        else if (res && res.needsLogin) st = `💾 تم حفظ +${pts} نقطة — سجّل الدخول لتُضاف تلقائياً لحسابك!`;
-        else st = `📶 أوفلاين: تم حفظ +${pts} نقطة وستُضاف تلقائياً فور عودة الإنترنت!`;
-      }
-      return `
-        <div style="background:#dcfce7;border:1.5px solid #16a34a;border-radius:14px;padding:12px;margin:8px 0;">
-          <div style="font-size:1.15rem;font-weight:900;color:#153422;">⭐ جائزتك العشوائية: +${pts} نقطة ولاء</div>
-          <div style="font-size:0.8rem;color:#166534;font-weight:800;margin-top:4px;">${esc(st)}</div>
-        </div>`;
+  function launchConfetti() {
+    var cv = document.getElementById("og-confetti-cv");
+    if (!cv) return;
+    var r = cv.getBoundingClientRect();
+    var ctx = cv.getContext("2d");
+    cv.width = r.width || 360;
+    cv.height = r.height || 360;
+    var cols = ["#f4cf6d", "#22c55e", "#ef4444", "#38bdf8", "#f97316", "#a855f7"];
+    var parts = [];
+    for (var i = 0; i < 65; i++) {
+      parts.push({ x: Math.random() * cv.width, y: -Math.random() * 140, vx: (Math.random() - 0.5) * 3, vy: 2 + Math.random() * 3.5, sz: 5 + Math.random() * 6, c: cols[i % cols.length], rot: Math.random() * 6 });
     }
-
-    // Coupon OR Free Shipping — ALWAYS generates a unique, single-use, account-bound code!
-    const isShip = prize.type === 'free_shipping';
-    const disc = isShip ? 0 : Math.max(1, Math.min(50, Number(prize.value) || 5));
-    let couponObj = null;
-    if (typeof window.V95_issueUniquePersonalCoupon === 'function') {
-      couponObj = await window.V95_issueUniquePersonalCoupon({
-        discount: disc,
-        freeShipping: isShip,
-        label: prize.label || (isShip ? 'توصيل مجاني' : `خصم ${disc}%`),
-        gameKey
+    var frames = 0;
+    (function loop() {
+      if (!cv.parentNode || frames++ > 130) return;
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      parts.forEach(function (p) {
+        p.x += p.vx; p.y += p.vy; p.rot += 0.1;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.fillStyle = p.c; ctx.fillRect(-p.sz / 2, -p.sz / 2, p.sz, p.sz * 0.6);
+        ctx.restore();
       });
-    }
-    const code = (couponObj && couponObj.code) || ('ZM-' + Math.random().toString(36).slice(2, 6).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase());
-    return `
-      <div style="background:#fff;border:1.5px solid #c59b27;border-radius:14px;padding:12px;margin:8px 0;">
-        <div style="font-size:0.96rem;font-weight:900;color:#153422;">🎁 جائزتك: ${esc(prize.label || (isShip ? 'توصيل مجاني' : `خصم ${disc}%`))}</div>
-        <div class="og-coupon-box">${esc(code)}</div>
-        <div style="font-size:0.75rem;color:#15803d;font-weight:800;">🔒 كود فريد خاص بحسابك فقط • صالح لاستخدام مرة واحدة • محفوظ في "🎟️ كوبوناتي"</div>
-        <button type="button" class="og-primary-btn" style="margin-top:8px;padding:9px;" onclick="window.OliveGames_copyAndApply('${esc(code)}')">📋 نسخ وتطبيق الكوبون في السلة 🛒</button>
-      </div>`;
+      requestAnimationFrame(loop);
+    })();
   }
 
   // =========================================================================
-  // صالة الـ 8 ألعاب الاحترافية
+  // GAME RUNNER + SHARED HELPER API FOR PART-2 GAMES
   // =========================================================================
-  const SKILL_GAMES = [
-    { key: 'catch', icon: '🧺', bg: 'linear-gradient(135deg,#15803d,#166534)', desc: 'اجمع ثمار الزيتون الأخضر والذهبي وتجنب الحجارة بسرعة متصاعدة!' },
-    { key: 'press', icon: '❄️', bg: 'linear-gradient(135deg,#0284c7,#0369a1)', desc: 'اعصر الزيتون واملأ الزجاجة 100% مع إبقاء الحرارة تحت 27°م!' },
-    { key: 'quiz', icon: '🧠', bg: 'linear-gradient(135deg,#7c3aed,#5b21b6)', desc: 'بنك 10,800+ سؤال متجدد في 3 مستويات بدون تكرار!' },
-    { key: 'memory', icon: '🌿', bg: 'linear-gradient(135deg,#0d9488,#0f766e)', desc: 'مراحل متدرجة بكروت وأشكال متنوعة — كل مرحلة أصعب ووقتها أقل!' },
-    { key: 'truck', icon: '🚚', bg: 'linear-gradient(135deg,#b45309,#92400e)', desc: 'قد شاحنة زيت سيناء على الطريق السريع وتفادَ العقبات واجمع العبوات!' },
-    { key: 'sorter', icon: '🎯', bg: 'linear-gradient(135deg,#ea580c,#c2410c)', desc: 'سير الفرز الذكي: اقبل الزيتون الطازج واستبعد الحجارة والثمار التالفة!' },
-    { key: 'drops', icon: '🫧', bg: 'linear-gradient(135deg,#db2777,#9d174d)', desc: 'فجّر مجموعات قطرات الزيت والأعشاب المتشابهة بسلاسل كومبو مبهرة!' }
-  ];
+  function createStageShell(title, durationSec, targetLabel) {
+    var body = document.getElementById("og-body");
+    body.innerHTML =
+      '<div class="og-stage-bar">' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">' +
+          '<span class="og-stat-chip" id="og-st-score">⭐ 0</span>' +
+          (targetLabel ? '<span class="og-stat-chip" id="og-st-target">🎯 ' + esc(targetLabel) + '</span>' : '') +
+          '<span class="og-stat-chip" id="og-st-extra"></span>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;align-items:center;">' +
+          '<span class="og-stat-chip" id="og-st-time">⏱️ ' + durationSec + 'ث</span>' +
+          '<button type="button" class="og-ic-btn" id="og-pause-btn" title="إيقاف مؤقت">⏸️</button>' +
+          '<button type="button" class="og-ic-btn red" onclick="window.ZaitGamesV96.backToHub()">✕</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="og-time-track"><div class="og-time-fill" id="og-time-fill" style="width:100%;"></div></div>' +
+      '<div id="og-stage-host" style="position:relative;"></div>';
 
-  window.OliveGames_renderLobby = function () {
+    var host = document.getElementById("og-stage-host");
+    document.getElementById("og-pause-btn").onclick = function () { togglePause(host); };
+    return {
+      host: host,
+      setScore: function (t) { var e = document.getElementById("og-st-score"); if (e) e.textContent = t; },
+      setTarget: function (t) { var e = document.getElementById("og-st-target"); if (e) e.textContent = t; },
+      setExtra: function (t) { var e = document.getElementById("og-st-extra"); if (e) { e.textContent = t; e.style.display = t ? "" : "none"; } },
+      setTime: function (rem, total) {
+        var e = document.getElementById("og-st-time");
+        var f = document.getElementById("og-time-fill");
+        if (e) e.textContent = "⏱️ " + Math.max(0, Math.ceil(rem)) + "ث";
+        if (f) {
+          var pct = Math.max(0, Math.min(100, (rem / Math.max(1, total)) * 100));
+          f.style.width = pct + "%";
+          f.classList.toggle("danger", rem <= 5);
+        }
+      },
+      shake: function () {
+        host.classList.remove("og-shake");
+        void host.offsetWidth;
+        host.classList.add("og-shake");
+      },
+      onPauseChange: function (fn) { pauseListeners.push(fn); }
+    };
+  }
+
+  function startGameRun(gid, diff) {
     stopActiveGame();
-    const body = document.getElementById('og-body');
-    if (!body) return;
-    const cfg = getCfg();
-    if (!cfg.enabled) {
-      body.innerHTML = `<div class="og-celebration-wrap"><div style="font-size:2.8rem;">🎮</div><h3>مركز الألعاب متوقف مؤقتاً</h3></div>`;
+    currentView = "playing";
+    activeGameId = gid;
+    activeDiff = diff || "medium";
+    recordPlayAnalytics(gid);
+
+    var gc = getGameConfig(gid);
+    var duration = Number((gc.times && gc.times[activeDiff]) || 25);
+    var target = Number((gc.targets && gc.targets[activeDiff]) || 30);
+
+    // Check Part-2 Extra Games Registry first!
+    if (window.ZaitGamesExtraRegistry && window.ZaitGamesExtraRegistry[gid] && typeof window.ZaitGamesExtraRegistry[gid].launch === "function") {
+      var api = {
+        diff: activeDiff,
+        duration: duration,
+        target: target,
+        createStageShell: createStageShell,
+        setupHiDpiCanvas: setupHiDpiCanvas,
+        runCountdown: runCountdown,
+        playSfx: playSfx,
+        haptic: haptic,
+        isPaused: function () { return gamePaused; },
+        setCleanup: function (fn) { activeGameCleanup = fn; },
+        finish: function (won, score, loseReason) {
+          finishGame({ won: won, score: score, target: target, gameId: gid, diff: activeDiff, loseReason: loseReason });
+        }
+      };
+      window.ZaitGamesExtraRegistry[gid].launch(api);
       return;
     }
 
-    const maxDaily = Math.max(0, Number(cfg.dailyRewardLimit) ?? 3);
-    const usedToday = getDailyCount();
-    const remRewards = Math.max(0, maxDaily - usedToday);
-
-    const sc = cfg.scratchConfig || {};
-    const scMax = Math.max(1, Number(sc.dailyLimit) || 1);
-    const scUsed = getScratchUsedToday();
-    const scRem = Math.max(0, scMax - scUsed);
-
-    const scratchCardBanner = sc.enabled !== false ? `
-      <div class="og-scratch-banner-card" onclick="window.OliveGames_startScratch()">
-        <div style="font-size:2.4rem;flex-shrink:0;">🪙</div>
-        <div style="flex:1;text-align:right;">
-          <div style="font-weight:900;font-size:0.98rem;">كارت «اكشط قطرة الذهب» (خارج حد الجوائز اليومية!)</div>
-          <div style="font-size:0.78rem;opacity:0.93;margin-top:2px;">جرّب حظك اليومي بكارت الكشط الذهبي • المتبقي اليوم: <b>${scRem} / ${scMax}</b></div>
-        </div>
-        <span style="background:rgba(255,255,255,0.22);padding:6px 11px;border-radius:10px;font-weight:900;font-size:0.82rem;white-space:nowrap;">اكشط ✨</span>
-      </div>` : '';
-
-    const gameCards = SKILL_GAMES.filter(m => cfg.games && cfg.games[m.key] && cfg.games[m.key].enabled !== false).map(m => {
-      const g = cfg.games[m.key];
-      return `
-        <div class="og-game-card" onclick="window.OliveGames_pickDifficulty('${m.key}')">
-          <div class="og-game-emoji" style="background:${m.bg};">${m.icon}</div>
-          <div class="og-game-info">
-            <h4>${esc(g.title)}</h4>
-            <p>${esc(m.desc)}</p>
-            <span class="og-tag-mini">🎚️ سهل • متوسط • صعب</span>
-          </div>
-          <button type="button" class="og-play-arrow">العب ▶</button>
-        </div>`;
-    }).join('');
-
-    body.innerHTML = `
-      <div class="og-hero-banner">
-        <h3>🫒 العب واكسب كوبونات فريدة ونقاط ولاء!</h3>
-        <p>اربح في أي لعبة لتحصل على جائزة عشوائية بكوبون فريد خاص بحسابك فقط — كل الألعاب تعمل بدون إنترنت 100%!</p>
-        <div class="og-status-pills">
-          <span class="og-pill gold">🎁 جوائزك اليوم: ${usedToday} / ${maxDaily} (متبقي ${remRewards})</span>
-          <span class="og-pill">${navigator.onLine ? '🟢 أونلاين' : '📶 وضع أوفلاين (شغال 100%)'}</span>
-        </div>
-      </div>
-      ${scratchCardBanner}
-      <div class="og-games-grid">${gameCards}</div>
-    `;
-  };
+    if (gid === "catch") return playCatchGame(activeDiff, duration, target);
+    if (gid === "press") return playColdPressGame(activeDiff, duration, target);
+    if (gid === "quiz") return playQuizGame(activeDiff, duration, target);
+    if (gid === "memory") return playMemoryGame(activeDiff, duration, target);
+    if (gid === "truck") return playTruckGame(activeDiff, duration, target);
+    if (gid === "sorter") return playSorterGame(activeDiff, duration, target);
+    if (gid === "match") return playMatchGame(activeDiff, duration, target);
+    if (gid === "scratch") return playScratchCardGame();
+  }
 
   // =========================================================================
-  // شاشة اختيار مستوى الصعوبة (سهل / متوسط / صعب)
+  // GAME 1: 🧺 قطف الزيتون السيناوي (HARDER, RETINA CANVAS, WIND, BOMBS, LIVES)
   // =========================================================================
-  window.OliveGames_pickDifficulty = function (gameKey) {
-    stopActiveGame();
-    const body = document.getElementById('og-body');
-    if (!body) return;
-    const cfg = getCfg();
-    const meta = SKILL_GAMES.find(m => m.key === gameKey) || SKILL_GAMES[0];
-    const title = (cfg.games && cfg.games[gameKey] && cfg.games[gameKey].title) || gameKey;
-    const tE = getGameTime(gameKey, 'easy'), tM = getGameTime(gameKey, 'medium'), tH = getGameTime(gameKey, 'hard');
-    const qCnt = Math.max(1, Number(cfg.quizQuestionCount) || 5);
+  function playCatchGame(diff, duration, target) {
+    var st = createStageShell("قطف الزيتون", duration, "الهدف: " + target);
+    var lives = diff === "hard" ? 2 : 3;
+    st.setExtra("❤️".repeat(lives));
+    st.host.innerHTML = '<div class="og-canvas-wrap"><canvas id="og-cv-catch"></canvas></div>';
+    var cv = document.getElementById("og-cv-catch");
+    var g = setupHiDpiCanvas(cv, 360, 420);
+    var ctx = g.ctx, W = g.w, H = g.h;
 
-    const specs = {
-      catch: [`سرعة هادئة • هدف 14 ثمرة • ${tE}ث`, `سرعة متوازنة • هدف 22 ثمرة • ${tM}ث`, `سرعة صاروخية • هدف 30 ثمرة • ${tH}ث`],
-      press: [`تسخين بطيء وتبريد سريع • ${tE}ث`, `توازن متوسط • ${tM}ث`, `تسخين سريع وتحدي احترافي • ${tH}ث`],
-      quiz: [`${qCnt} أسئلة سهلة • ${tE}ث`, `${qCnt} أسئلة متوسطة • ${tM}ث`, `${qCnt} أسئلة خبراء صعبة • ${tH}ث`],
-      memory: [`3 مراحل: 8 ⬅️ 12 ⬅️ 16 كارت • ${tE}ث`, `3 مراحل: 12 ⬅️ 16 ⬅️ 20 كارت • ${tM}ث`, `3 مراحل: 16 ⬅️ 20 ⬅️ 24 كارت • ${tH}ث`],
-      truck: [`سرعة مريحة وعقبات قليلة • ${tE}ث`, `سرعة سريعة وحركة نشطة • ${tM}ث`, `طريق سيناوي ناري سريع • ${tH}ث`],
-      sorter: [`سير هادئ • هدف 15 حبة • ${tE}ث`, `سير سريع • هدف 22 حبة • ${tM}ث`, `سير فائق السرعة • هدف 30 حبة • ${tH}ث`],
-      drops: [`هدف 120 نقطة • 4 ألوان • ${tE}ث`, `هدف 220 نقطة • 5 ألوان • ${tM}ث`, `هدف 340 نقطة • 5 ألوان • ${tH}ث`]
-    }[gameKey] || [`${tE}ث`, `${tM}ث`, `${tH}ث`];
+    var basketX = W / 2, basketW = diff === "hard" ? 64 : (diff === "medium" ? 72 : 80);
+    var score = 0, rem = duration, running = false, ended = false;
+    var items = [], particles = [], raf = null, lastTs = 0, spawnAcc = 0, lastSecTick = duration;
 
-    body.innerHTML = `
-      <div class="og-stage-header">
-        <button type="button" class="og-back-btn" onclick="window.OliveGames_renderLobby()">◀ رجوع للألعاب</button>
-      </div>
-      <div class="og-diff-screen">
-        <div class="og-game-emoji" style="background:${meta.bg}; margin:0 auto 10px; width:68px; height:68px; font-size:2.2rem;">${meta.icon}</div>
-        <h3 style="margin:0 0 4px; color:#153422; font-size:1.15rem;">${esc(title)}</h3>
-        <p style="margin:0; font-size:0.84rem; color:#64748b;">اختر مستوى الصعوبة للبدء فوراً:</p>
-        <div class="og-diff-cards">
-          <button type="button" class="og-diff-btn easy" onclick="window.OliveGames_playDirect('${gameKey}','easy')">
-            <div><strong>🟢 مستوى سهل</strong><small>${esc(specs[0])}</small></div>
-            <span style="font-size:1.3rem;">▶</span>
-          </button>
-          <button type="button" class="og-diff-btn medium" onclick="window.OliveGames_playDirect('${gameKey}','medium')">
-            <div><strong>🟡 مستوى متوسط</strong><small>${esc(specs[1])}</small></div>
-            <span style="font-size:1.3rem;">▶</span>
-          </button>
-          <button type="button" class="og-diff-btn hard" onclick="window.OliveGames_playDirect('${gameKey}','hard')">
-            <div><strong>🔴 مستوى صعب (للمحترفين)</strong><small>${esc(specs[2])}</small></div>
-            <span style="font-size:1.3rem;">▶</span>
-          </button>
-        </div>
-      </div>
-    `;
-  };
+    var speedMul = diff === "hard" ? 1.65 : (diff === "medium" ? 1.3 : 1.0);
+    var spawnMs = diff === "hard" ? 310 : (diff === "medium" ? 410 : 520);
+    var bombRate = diff === "hard" ? 0.30 : (diff === "medium" ? 0.23 : 0.16);
+    var windAmp = diff === "hard" ? 1.6 : (diff === "medium" ? 0.85 : 0.25);
 
-  window.OliveGames_playDirect = function (gameKey, diff) {
-    const d = (diff === 'easy' || diff === 'hard') ? diff : (diff === 'medium' ? 'medium' : getSavedDiff(gameKey));
-    saveDiff(gameKey, d);
-    stopActiveGame();
-    const body = document.getElementById('og-body');
-    if (!body) return;
-    if (gameKey === 'catch') runCatchGame(body, d);
-    else if (gameKey === 'press') runColdPressGame(body, d);
-    else if (gameKey === 'quiz') runQuizGame(body, d);
-    else if (gameKey === 'memory') runMemoryStagesGame(body, d);
-    else if (gameKey === 'truck') runTruckGame(body, d);
-    else if (gameKey === 'sorter') runSorterGame(body, d);
-    else if (gameKey === 'drops') runDropsMatchGame(body, d);
-    else window.OliveGames_renderLobby();
-  };
-
-  // =========================================================================
-  // 1. 🧺 قطف الزيتون السيناوي (Canvas 60fps — سهل / متوسط / صعب)
-  // =========================================================================
-  function runCatchGame(body, diff) {
-    const P = {
-      easy: { target: 14, speedMin: 110, speedMax: 170, spawnEvery: 0.62, rockRate: 0.16, basketW: 86 },
-      medium: { target: 22, speedMin: 165, speedMax: 245, spawnEvery: 0.44, rockRate: 0.24, basketW: 74 },
-      hard: { target: 30, speedMin: 230, speedMax: 340, spawnEvery: 0.31, rockRate: 0.33, basketW: 64 }
-    }[diff];
-    let timeLeft = getGameTime('catch', diff);
-
-    body.innerHTML = `
-      <div class="og-stage-header">
-        <button type="button" class="og-back-btn" onclick="window.OliveGames_renderLobby()">◀ خروج</button>
-        <strong style="color:#153422;font-size:0.86rem;">الهدف: ${P.target} نقطة 🫒</strong>
-      </div>
-      <div class="og-hud">
-        <span>🫒 <b id="og-c-score">0</b>/${P.target}</span>
-        <span>🔥 كومبو: <b id="og-c-combo">0</b></span>
-        <span>⏱️ <b id="og-c-time">${timeLeft}</b>ث</span>
-        <span id="og-c-hearts">❤️❤️❤️</span>
-      </div>
-      <div class="og-canvas-wrap">
-        <canvas id="og-catch-cv" class="og-game-canvas" width="380" height="365"></canvas>
-      </div>
-      <div class="og-touch-hint">👆 اسحب بإصبعك يميناً ويساراً: زيتون أخضر (+1) • ذهبي (+3) • قلب (+❤️) • تجنب الحجارة 🪨</div>
-    `;
-
-    const cv = document.getElementById('og-catch-cv');
-    const ctx = cv.getContext('2d');
-    const W = cv.width, H = cv.height;
-    let basketX = W / 2, basketW = P.basketW, basketH = 34;
-    let score = 0, combo = 0, hearts = 3, running = true;
-    const items = [], pops = [];
-    let lastTs = performance.now(), spawnAcc = 0, secAcc = 0, rafId = 0;
-
-    function moveTo(cx) {
-      const r = cv.getBoundingClientRect();
-      basketX = Math.max(basketW / 2, Math.min(W - basketW / 2, ((cx - r.left) / r.width) * W));
+    function setPos(clientX) {
+      var rect = cv.getBoundingClientRect();
+      var nx = ((clientX - rect.left) / rect.width) * W;
+      basketX = Math.max(basketW / 2, Math.min(W - basketW / 2, nx));
     }
-    const onPtr = (e) => {
-      if (!running) return;
-      if (e.touches && e.touches[0]) { e.preventDefault(); moveTo(e.touches[0].clientX); }
-      else moveTo(e.clientX);
-    };
-    const onKey = (e) => {
-      if (!running) return;
-      if (e.key === 'ArrowLeft') basketX = Math.max(basketW / 2, basketX - 30);
-      if (e.key === 'ArrowRight') basketX = Math.min(W - basketW / 2, basketX + 30);
-    };
-    cv.addEventListener('pointermove', onPtr);
-    cv.addEventListener('touchstart', onPtr, { passive: false });
-    cv.addEventListener('touchmove', onPtr, { passive: false });
-    window.addEventListener('keydown', onKey);
-    activeCleanup = () => { running = false; cancelAnimationFrame(rafId); cv.removeEventListener('pointermove', onPtr); cv.removeEventListener('touchstart', onPtr); cv.removeEventListener('touchmove', onPtr); window.removeEventListener('keydown', onKey); };
+    var onMove = function (e) { if (e.touches && e.touches[0]) setPos(e.touches[0].clientX); else setPos(e.clientX); };
+    cv.addEventListener("pointermove", onMove);
+    cv.addEventListener("pointerdown", onMove);
+    cv.addEventListener("touchmove", onMove, { passive: true });
 
-    function spawn() {
-      const r = Math.random();
-      let kind = 'olive', pts = 1, vy = P.speedMin + Math.random() * (P.speedMax - P.speedMin);
-      if (r < P.rockRate) { kind = 'rock'; pts = 0; }
-      else if (r < P.rockRate + 0.05 && hearts < 3) { kind = 'heart'; pts = 0; }
-      else if (r > 0.82) { kind = 'gold'; pts = 3; vy *= 1.15; }
-      items.push({ x: 24 + Math.random() * (W - 48), y: -20, vy, kind, pts });
+    function spawnItem() {
+      var r = Math.random();
+      var kind = r < bombRate ? "bomb" : (r < bombRate + 0.14 ? "rotten" : (r > 0.84 ? "gold" : "olive"));
+      items.push({
+        x: 24 + Math.random() * (W - 48),
+        y: -20,
+        vy: (155 + Math.random() * 115) * speedMul,
+        vx: (Math.random() - 0.5) * 70 * windAmp,
+        kind: kind,
+        rad: kind === "gold" ? 15 : 14
+      });
+    }
+
+    function burst(x, y, col) {
+      for (var i = 0; i < 10; i++) {
+        particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 180, vy: (Math.random() - 0.7) * 180, life: 0.45, c: col });
+      }
+    }
+
+    function drawBasket() {
+      var bx = basketX - basketW / 2, by = H - 46;
+      var grad = ctx.createLinearGradient(bx, by, bx, by + 30);
+      grad.addColorStop(0, "#e5b84b"); grad.addColorStop(1, "#9a6b14");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(bx, by); ctx.lineTo(bx + basketW, by);
+      ctx.lineTo(bx + basketW - 10, by + 28); ctx.lineTo(bx + 10, by + 28);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = "#fde68a"; ctx.lineWidth = 2; ctx.stroke();
     }
 
     function loop(ts) {
-      if (!running) return;
-      const dt = Math.min(0.05, (ts - lastTs) / 1000);
+      if (ended) return;
+      raf = requestAnimationFrame(loop);
+      if (!running || gamePaused) { lastTs = ts; return; }
+      var dt = Math.min(0.05, (ts - lastTs) / 1000 || 0.016);
       lastTs = ts;
-      spawnAcc += dt; secAcc += dt;
-      if (spawnAcc >= P.spawnEvery) { spawnAcc = 0; spawn(); }
-      if (secAcc >= 1) {
-        secAcc -= 1; timeLeft--;
-        const tEl = document.getElementById('og-c-time'); if (tEl) tEl.textContent = Math.max(0, timeLeft);
-        if (timeLeft <= 0) {
-          running = false;
-          showPostGameScreen('catch', diff, score >= P.target, `جمعت ${score} نقطة من أصل ${P.target}!`);
-          return;
-        }
+      rem -= dt;
+      if (rem <= 5 && Math.ceil(rem) < lastSecTick) { lastSecTick = Math.ceil(rem); playSfx("tick"); }
+      st.setTime(rem, duration);
+      if (rem <= 0) {
+        ended = true;
+        finishGame({ won: score >= target, score: score, target: target, gameId: "catch", diff: diff });
+        return;
       }
 
-      // Sinai sunset/day sky + hills + olive canopy
-      const sky = ctx.createLinearGradient(0, 0, 0, H);
-      sky.addColorStop(0, '#bae6fd'); sky.addColorStop(0.68, '#f0fdf4'); sky.addColorStop(1, '#86efac');
-      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
-      // Hills
-      ctx.fillStyle = '#4d7c0f';
-      ctx.beginPath(); ctx.ellipse(90, H, 160, 58, 0, Math.PI, 0); ctx.fill();
-      ctx.fillStyle = '#3f6212';
-      ctx.beginPath(); ctx.ellipse(295, H, 175, 65, 0, Math.PI, 0); ctx.fill();
-      // Tree canopy
-      ctx.fillStyle = '#15803d';
-      for (let i = 0; i < 7; i++) { ctx.beginPath(); ctx.arc(28 + i * 56, 6, 33, 0, Math.PI * 2); ctx.fill(); }
+      spawnAcc += dt * 1000;
+      if (spawnAcc >= spawnMs) { spawnAcc = 0; spawnItem(); }
 
-      const bTop = H - 56;
-      for (let i = items.length - 1; i >= 0; i--) {
-        const it = items[i];
+      // Background
+      var bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, "#0b2416"); bg.addColorStop(1, "#163d27");
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+      // Update items
+      for (var i = items.length - 1; i >= 0; i--) {
+        var it = items[i];
         it.y += it.vy * dt;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        if (it.kind === 'gold') {
-          ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(it.x, it.y, 16, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = '#fef3c7'; ctx.lineWidth = 2.5; ctx.stroke();
-          ctx.font = '18px sans-serif'; ctx.fillText('🫒', it.x, it.y + 1);
-        } else {
-          ctx.font = '26px sans-serif';
-          ctx.fillText(it.kind === 'rock' ? '🪨' : (it.kind === 'heart' ? '❤️' : '🫒'), it.x, it.y);
-        }
+        it.x += it.vx * dt;
+        if (it.x < 16 || it.x > W - 16) it.vx *= -1;
 
-        if (it.y + 12 >= bTop && it.y <= bTop + basketH && Math.abs(it.x - basketX) <= basketW / 2 + 10) {
-          items.splice(i, 1);
-          if (it.kind === 'rock') {
-            hearts--; combo = 0; sfxBad();
-            pops.push({ x: it.x, y: bTop - 8, txt: '💥 -❤️', c: '#dc2626', l: 0.7 });
-            const hEl = document.getElementById('og-c-hearts'); if (hEl) hEl.textContent = '❤️'.repeat(Math.max(0, hearts)) + '🖤'.repeat(Math.max(0, 3 - hearts));
-            const cbEl = document.getElementById('og-c-combo'); if (cbEl) cbEl.textContent = combo;
-            if (hearts <= 0) {
-              running = false;
-              showPostGameScreen('catch', diff, false, `اصطدمت السلة بالحجارة! جمعت ${score} من ${P.target}.`);
-              return;
-            }
-          } else if (it.kind === 'heart') {
-            hearts = Math.min(3, hearts + 1); sfxGold();
-            pops.push({ x: it.x, y: bTop - 8, txt: '+❤️', c: '#e11d48', l: 0.7 });
-            const hEl = document.getElementById('og-c-hearts'); if (hEl) hEl.textContent = '❤️'.repeat(hearts) + '🖤'.repeat(3 - hearts);
-          } else {
-            combo++;
-            const bonus = combo >= 5 ? 1 : 0;
-            score += it.pts + bonus;
-            it.kind === 'gold' ? sfxGold() : sfxGood();
-            pops.push({ x: it.x, y: bTop - 8, txt: it.kind === 'gold' ? '+3 ذهبي!' : (bonus ? '+2 كومبو!' : '+1'), c: it.kind === 'gold' ? '#b45309' : '#15803d', l: 0.65 });
-            const sEl = document.getElementById('og-c-score'); if (sEl) sEl.textContent = score;
-            const cbEl = document.getElementById('og-c-combo'); if (cbEl) cbEl.textContent = combo;
-            if (score >= P.target) {
-              running = false;
-              showPostGameScreen('catch', diff, true, `أحسنت! قطفت ${score} ثمرة سيناوية ممتازة وتبقّى ${timeLeft} ثانية! 🫒`);
+        // Draw vector item
+        ctx.save();
+        ctx.translate(it.x, it.y);
+        if (it.kind === "olive" || it.kind === "gold") {
+          ctx.fillStyle = it.kind === "gold" ? "#facc15" : "#4ade80";
+          ctx.beginPath(); ctx.ellipse(0, 0, it.rad * 0.85, it.rad, 0.25, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "rgba(255,255,255,0.45)";
+          ctx.beginPath(); ctx.arc(-4, -4, 3.5, 0, Math.PI * 2); ctx.fill();
+        } else if (it.kind === "rotten") {
+          ctx.fillStyle = "#78716c";
+          ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#fff"; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center"; ctx.fillText("✕", 0, 4);
+        } else {
+          ctx.fillStyle = "#dc2626";
+          ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#fde68a"; ctx.font = "bold 13px sans-serif"; ctx.textAlign = "center"; ctx.fillText("💣", 0, 5);
+        }
+        ctx.restore();
+
+        // Catch collision
+        if (it.y >= H - 52 && it.y <= H - 16 && Math.abs(it.x - basketX) <= basketW / 2 + 10) {
+          if (it.kind === "olive") { score += 2; playSfx("pop"); haptic(10); burst(it.x, it.y, "#4ade80"); }
+          else if (it.kind === "gold") { score += 5; playSfx("gold"); haptic(20); burst(it.x, it.y, "#facc15"); }
+          else if (it.kind === "rotten") { score = Math.max(0, score - 4); playSfx("bad"); st.shake(); burst(it.x, it.y, "#a8a29e"); }
+          else {
+            lives--; score = Math.max(0, score - 6);
+            st.setExtra("❤️".repeat(Math.max(0, lives)));
+            playSfx("bad"); haptic(45); st.shake(); burst(it.x, it.y, "#ef4444");
+            if (lives <= 0) {
+              ended = true;
+              finishGame({ won: false, score: score, target: target, gameId: "catch", diff: diff, loseReason: "💥 نفدت محاولاتك بسبب القنابل!" });
               return;
             }
           }
-          continue;
+          st.setScore("⭐ " + score);
+          items.splice(i, 1);
+          if (score >= target) {
+            ended = true;
+            finishGame({ won: true, score: score, target: target, gameId: "catch", diff: diff });
+            return;
+          }
+        } else if (it.y > H + 25) {
+          items.splice(i, 1);
         }
-        if (it.y > H + 25) items.splice(i, 1);
       }
 
-      // Draw basket
-      const bx = basketX - basketW / 2;
-      ctx.fillStyle = '#92400e'; ctx.strokeStyle = '#c59b27'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(bx, bTop); ctx.lineTo(bx + basketW, bTop); ctx.lineTo(bx + basketW - 8, bTop + basketH); ctx.lineTo(bx + 8, bTop + basketH); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.font = '18px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🧺', basketX, bTop + 17);
-
-      for (let i = pops.length - 1; i >= 0; i--) {
-        const p = pops[i]; p.y -= 45 * dt; p.l -= dt;
-        ctx.save(); ctx.globalAlpha = Math.max(0, p.l / 0.7); ctx.fillStyle = p.c; ctx.font = 'bold 15px sans-serif'; ctx.fillText(p.txt, p.x, p.y); ctx.restore();
-        if (p.l <= 0) pops.splice(i, 1);
+      // Particles
+      for (var p = particles.length - 1; p >= 0; p--) {
+        var pt = particles[p];
+        pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt;
+        if (pt.life <= 0) { particles.splice(p, 1); continue; }
+        ctx.globalAlpha = Math.max(0, pt.life * 2);
+        ctx.fillStyle = pt.c; ctx.beginPath(); ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
       }
-      rafId = requestAnimationFrame(loop);
+
+      drawBasket();
     }
-    rafId = requestAnimationFrame(loop);
+
+    activeGameCleanup = function () {
+      ended = true;
+      if (raf) cancelAnimationFrame(raf);
+      cv.removeEventListener("pointermove", onMove);
+      cv.removeEventListener("pointerdown", onMove);
+      cv.removeEventListener("touchmove", onMove);
+    };
+    runCountdown(st.host, function () { running = true; lastTs = performance.now(); raf = requestAnimationFrame(loop); });
   }
 
   // =========================================================================
-  // 2. ❄️ تحدي العصر على البارد (سهل / متوسط / صعب)
+  // GAME 2: ❄️ تحدي العصر عالبارد (STRICT 27°C LIMIT + OVERHEAT PENALTY!)
   // =========================================================================
-  function runColdPressGame(body, diff) {
-    const P = {
-      easy: { fillStep: 4.8, heatStep: 1.25, coolStep: 0.44, lockout: 1000 },
-      medium: { fillStep: 4.1, heatStep: 1.65, coolStep: 0.37, lockout: 1350 },
-      hard: { fillStep: 3.5, heatStep: 2.05, coolStep: 0.32, lockout: 1650 }
-    }[diff];
-    let timeLeft = getGameTime('press', diff);
+  function playColdPressGame(diff, duration, target) {
+    var st = createStageShell("العصر عالبارد", duration, "الهدف: " + target + " نقطة");
+    st.setExtra("🌡️ 18.0°م");
+    st.host.innerHTML =
+      '<div class="og-card" style="text-align:center;">' +
+        '<div style="display:flex;justify-content:center;align-items:flex-end;gap:24px;margin:10px 0 14px;">' +
+          '<div>' +
+            '<div style="width:74px;height:175px;border:3px solid #d59e2a;border-radius:16px 16px 22px 22px;background:#0a1d13;position:relative;overflow:hidden;margin:0 auto;">' +
+              '<div id="og-oil-fill" style="position:absolute;bottom:0;left:0;right:0;height:0%;background:linear-gradient(180deg,#facc15,#a16207);transition:height .1s;"></div>' +
+            '</div>' +
+            '<div id="og-oil-pct" style="font-weight:900;margin-top:6px;">0 / ' + target + '</div>' +
+          '</div>' +
+          '<div>' +
+            '<div style="width:28px;height:175px;border:2px solid #94a3b8;border-radius:99px;background:#0f172a;position:relative;overflow:hidden;margin:0 auto;">' +
+              '<div style="position:absolute;bottom:68%;left:0;right:0;height:2px;background:#ef4444;z-index:3;"></div>' +
+              '<div id="og-temp-fill" style="position:absolute;bottom:0;left:0;right:0;height:20%;background:#22c55e;transition:height .08s;"></div>' +
+            '</div>' +
+            '<div id="og-temp-lbl" style="font-weight:900;margin-top:6px;font-size:.82rem;">18.0°م</div>' +
+          '</div>' +
+        '</div>' +
+        '<div id="og-press-msg" style="font-size:.78rem;font-weight:800;margin-bottom:10px;min-height:20px;">اضغط بسرعة لعصر الزيتون دون تجاوز 27°م!</div>' +
+        '<button type="button" id="og-press-btn" class="og-btn og-btn-gold" style="width:100%;max-width:300px;padding:15px;font-size:1rem;">🫒 اعصر على البارد الآن!</button>' +
+      '</div>';
 
-    body.innerHTML = `
-      <div class="og-stage-header">
-        <button type="button" class="og-back-btn" onclick="window.OliveGames_renderLobby()">◀ خروج</button>
-        <strong style="color:#0369a1;font-size:0.86rem;">حافظ على الحرارة &lt; 27°م ❄️</strong>
-      </div>
-      <div class="og-hud">
-        <span>🏺 التعبئة: <b id="og-p-pct">0</b>%</span>
-        <span>🌡️ الحرارة: <b id="og-p-temp">18.0</b>°م</span>
-        <span>⏱️ <b id="og-p-time">${timeLeft}</b>ث</span>
-      </div>
-      <div class="og-press-arena">
-        <div style="font-size:0.82rem;font-weight:800;color:#153422;">املأ زجاجة الزيت السيناوي 100% بإيقاع متزن قبل انتهاء الوقت بدون أن تتخطى الحرارة 27°م!</div>
-        <div class="og-press-visual">
-          <div class="og-bottle-shell">
-            <div class="og-bottle-fill" id="og-bottle-fill"></div>
-            <div class="og-bottle-label" id="og-bottle-lbl">0%</div>
-          </div>
-          <div class="og-thermo-wrap">
-            <div class="og-thermo-bar">
-              <div class="og-thermo-fill" id="og-thermo-fill"></div>
-              <div class="og-thermo-limit"></div>
-            </div>
-            <span style="font-size:0.74rem;font-weight:900;color:#dc2626;">حد 27°م</span>
-          </div>
-        </div>
-        <button type="button" class="og-press-btn" id="og-press-tap-btn">🫒 اضغط للعصر على البارد!</button>
-      </div>
-    `;
+    var oil = 0, temp = 18, lockedUntil = 0, rem = duration, running = false, ended = false;
+    var heatPerTap = diff === "hard" ? 2.55 : (diff === "medium" ? 2.05 : 1.55);
+    var oilPerTap = diff === "hard" ? 2.3 : (diff === "medium" ? 2.6 : 3.0);
+    var coolPerSec = diff === "hard" ? 5.6 : (diff === "medium" ? 6.4 : 7.4);
 
-    let fill = 0, temp = 18, cooledUntil = 0, running = true;
-    const btn = document.getElementById('og-press-tap-btn');
-    function updateUI() {
-      const f = Math.min(100, Math.round(fill));
-      const fe = document.getElementById('og-bottle-fill'); if (fe) fe.style.height = f + '%';
-      const le = document.getElementById('og-bottle-lbl'); if (le) le.textContent = f + '%';
-      const pe = document.getElementById('og-p-pct'); if (pe) pe.textContent = f;
-      const te = document.getElementById('og-p-temp'); if (te) te.textContent = temp.toFixed(1);
-      const th = document.getElementById('og-thermo-fill');
-      if (th) {
-        th.style.height = Math.max(8, Math.min(100, ((temp - 14) / 18) * 100)) + '%';
-        th.style.background = temp >= 26.5 ? '#dc2626' : (temp >= 23.5 ? '#f59e0b' : '#16a34a');
+    var btn = document.getElementById("og-press-btn");
+    btn.onclick = function () {
+      if (!running || gamePaused || ended) return;
+      if (Date.now() < lockedUntil) { playSfx("bad"); return; }
+      temp += heatPerTap;
+      var bonus = (temp >= 22 && temp <= 26.2) ? 1.35 : 1;
+      oil = Math.min(target, oil + oilPerTap * bonus);
+      playSfx(bonus > 1 ? "gold" : "pop");
+      haptic(12);
+      if (temp > 27) {
+        lockedUntil = Date.now() + (diff === "hard" ? 2100 : 1600);
+        oil = Math.max(0, oil - (diff === "hard" ? 14 : 9));
+        playSfx("bad"); haptic(50); st.shake();
+        document.getElementById("og-press-msg").textContent = "🔥 ارتفعت الحرارة فوق 27°م! توقف للتبريد (-" + (diff === "hard" ? 14 : 9) + " نقطة)";
       }
-      const hot = Date.now() < cooledUntil;
-      if (btn) {
-        btn.classList.toggle('overheat', hot);
-        btn.textContent = hot ? '🔥 ساخن! استنى لحظة تبرد المعصرة...' : '🫒 اضغط للعصر على البارد!';
-      }
-    }
-
-    btn.addEventListener('click', () => {
-      if (!running) return;
-      if (Date.now() < cooledUntil) { sfxBad(); return; }
-      const sweetBonus = (temp >= 20 && temp <= 25) ? 1.18 : 1;
-      fill = Math.min(100, fill + P.fillStep * sweetBonus);
-      temp = Math.min(31, temp + P.heatStep);
-      sfxGood();
-      if (temp >= 27) { cooledUntil = Date.now() + P.lockout; sfxBad(); }
       updateUI();
-      if (fill >= 100) {
-        running = false;
-        showPostGameScreen('press', diff, true, `عصرت زجاجة زيت بكر ممتاز 100% على البارد وتبقّى ${timeLeft} ثانية! ❄️`);
+      if (oil >= target) {
+        ended = true;
+        finishGame({ won: true, score: Math.round(oil), target: target, gameId: "press", diff: diff });
       }
-    });
+    };
 
-    const tick = setInterval(() => { if (!running) return; temp = Math.max(18, temp - P.coolStep); updateUI(); }, 100);
-    const secT = setInterval(() => {
-      if (!running) return;
-      timeLeft--;
-      const tEl = document.getElementById('og-p-time'); if (tEl) tEl.textContent = Math.max(0, timeLeft);
-      if (timeLeft <= 0) {
-        running = false;
-        showPostGameScreen('press', diff, false, `انتهى الوقت عند ${Math.round(fill)}% فقط — جرّب إيقاع أسرع بدون تخطي 27°م!`);
+    function updateUI() {
+      var of = document.getElementById("og-oil-fill");
+      var op = document.getElementById("og-oil-pct");
+      var tf = document.getElementById("og-temp-fill");
+      var tl = document.getElementById("og-temp-lbl");
+      if (of) of.style.height = Math.min(100, (oil / target) * 100) + "%";
+      if (op) op.textContent = Math.round(oil) + " / " + target;
+      var tPct = Math.min(100, Math.max(5, ((temp - 15) / 17) * 100));
+      if (tf) { tf.style.height = tPct + "%"; tf.style.background = temp >= 25.5 ? "#ef4444" : (temp >= 22 ? "#f59e0b" : "#22c55e"); }
+      if (tl) tl.textContent = temp.toFixed(1) + "°م";
+      st.setScore("⭐ " + Math.round(oil));
+      st.setExtra("🌡️ " + temp.toFixed(1) + "°م");
+    }
+
+    var iv = setInterval(function () {
+      if (!running || gamePaused || ended) return;
+      rem -= 0.1;
+      temp = Math.max(17.5, temp - coolPerSec * 0.1);
+      if (Date.now() >= lockedUntil && document.getElementById("og-press-msg")) {
+        document.getElementById("og-press-msg").textContent = temp >= 22 && temp <= 26.2 ? "⚡ منطقة مثالية! عصر مضاعف!" : "حافظ على الحرارة تحت 27°م!";
       }
-    }, 1000);
-    activeCleanup = () => { running = false; clearInterval(tick); clearInterval(secT); };
-    updateUI();
+      st.setTime(rem, duration);
+      updateUI();
+      if (rem <= 0) {
+        ended = true; clearInterval(iv);
+        finishGame({ won: oil >= target, score: Math.round(oil), target: target, gameId: "press", diff: diff });
+      }
+    }, 100);
+
+    activeGameCleanup = function () { ended = true; clearInterval(iv); };
+    runCountdown(st.host, function () { running = true; });
   }
 
   // =========================================================================
-  // 3. 🧠 تحدي خبير زيت الزيتون (10,800 سؤال فريد • عدد أسئلة ثابت حسب المدير • مؤقت)
+  // GAME 3: 🧠 تحدي خبير زيت الزيتون (10,800+ QUESTIONS + STRICT PER-Q TIMER)
   // =========================================================================
-  function runQuizGame(body, diff) {
-    const cfg = getCfg();
-    const count = Math.max(1, Math.min(25, Number(cfg.quizQuestionCount) || 5));
-    const customQs = (cfg.games && cfg.games.quiz && cfg.games.quiz.customQuestions) || [];
-    const questions = window.OliveQuizBank
-      ? window.OliveQuizBank.getRoundQuestions(diff, count, customQs)
-      : [{ q: 'ما أقصى درجة حرارة للعصر على البارد؟', options: ['أقل من 27°م', '60°م', '100°م'], correct: 0, fact: 'أقل من 27°م يحفظ الفوائد 🌿' }];
-
-    let idx = 0, rightCount = 0, timeLeft = getGameTime('quiz', diff), running = true;
-    const passNeed = Math.max(1, Math.ceil(questions.length * 0.7));
-
-    const timer = setInterval(() => {
-      if (!running) return;
-      timeLeft--;
-      const tEl = document.getElementById('og-q-time'); if (tEl) tEl.textContent = Math.max(0, timeLeft);
-      if (timeLeft <= 0) {
-        running = false;
-        showPostGameScreen('quiz', diff, false, `انتهى الوقت! أجبت ${rightCount} من ${questions.length}.`);
+  function getQuizQuestions(diff, count) {
+    var bank = window.ZAIT_QUIZ_BANK;
+    if (bank && typeof bank.getRound === "function") {
+      try {
+        var qs = bank.getRound(diff, count, pState.seenQuizIds || []);
+        if (Array.isArray(qs) && qs.length >= count) return qs;
+      } catch (e) {}
+    }
+    if (bank && Array.isArray(bank[diff]) && bank[diff].length >= count) {
+      var copy = bank[diff].slice();
+      for (var i = copy.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = copy[i]; copy[i] = copy[j]; copy[j] = tmp;
       }
-    }, 1000);
-    activeCleanup = () => { running = false; clearInterval(timer); };
+      return copy.slice(0, count);
+    }
+    return [
+      { q: "ما هي الدرجة القصوى لعصر زيت الزيتون على البارد؟", options: ["27 درجة مئوية", "55 درجة مئوية", "80 درجة مئوية", "100 درجة مئوية"], ans: 0 },
+      { q: "ما الحد الأقصى لحموضة زيت الزيتون البكر الممتاز؟", options: ["0.8%", "2.5%", "4%", "6%"], ans: 0 },
+      { q: "ما أفضل طريقة لحفظ زيت الزيتون البكر؟", options: ["زجاجة داكنة بعيداً عن الضوء والحرارة", "تحت الشمس المباشرة", "في وعاء مكشوف", "بجوار البوتاجاز"], ans: 0 },
+      { q: "أين تشتهر أجود مزارع الزيتون البكر في مصر؟", options: ["شمال سيناء وسيوة", "وسط القاهرة", "الأقصر فقط", "أسوان فقط"], ans: 0 },
+      { q: "ما سبب اللذعة الخفيفة في الحلق عند تذوق الزيت الأصلي؟", options: ["غناه بمضادات الأكسدة (البوليفينول)", "تلف الزيت", "إضافة ملح", "خلطه بالماء"], ans: 0 },
+      { q: "أي فيتامين يتوفر بكثرة في زيت الزيتون البكر؟", options: ["فيتامين E و K", "فيتامين C", "فيتامين B12", "فيتامين D"], ans: 0 },
+      { q: "هل تجمّد زيت الزيتون في الثلاجة وحده يثبت نقاءه؟", options: ["لا، التحليل المعملي والتذوق أدق", "نعم دائماً بنسبة 100%", "الزيت الأصلي لا يبرد", "لا علاقة له بدرجة الحرارة"], ans: 0 }
+    ].slice(0, count);
+  }
+
+  function playQuizGame(diff, secPerQ, targetCorrect) {
+    var totalQ = Math.max(3, Number(cfg.quizQuestionCount || 7));
+    var need = Math.min(totalQ, Math.max(1, targetCorrect));
+    var questions = getQuizQuestions(diff, totalQ);
+    var st = createStageShell("خبير زيت الزيتون", secPerQ, "للفوز: " + need + "/" + totalQ);
+    var qIdx = 0, correct = 0, rem = secPerQ, locked = false, ended = false;
 
     function renderQ() {
-      const qObj = questions[idx];
-      body.innerHTML = `
-        <div class="og-stage-header">
-          <button type="button" class="og-back-btn" onclick="window.OliveGames_renderLobby()">◀ خروج</button>
-          <strong style="color:#6d28d9;font-size:0.86rem;">سؤال ${idx + 1} من ${questions.length} (للفوز: ${passNeed})</strong>
-        </div>
-        <div class="og-hud">
-          <span>✅ صحيحة: <b>${rightCount}</b></span>
-          <span>⏱️ <b id="og-q-time">${timeLeft}</b>ث</span>
-          <span>📚 بنك 10,800+</span>
-        </div>
-        <div class="og-quiz-card">
-          <div class="og-quiz-q">${esc(qObj.q)}</div>
-          <div>${(qObj.options || []).map((o, i) => `<button type="button" class="og-quiz-opt" data-i="${i}">${esc(o)}</button>`).join('')}</div>
-          <div id="og-quiz-fb"></div>
-        </div>
-      `;
-      let answered = false;
-      body.querySelectorAll('.og-quiz-opt').forEach(btn => {
-        btn.addEventListener('click', () => {
-          if (!running || answered) return;
-          answered = true;
-          const pick = Number(btn.getAttribute('data-i'));
-          const corr = Number(qObj.correct) || 0;
-          body.querySelectorAll('.og-quiz-opt').forEach((b, bi) => {
-            if (bi === corr) b.classList.add('correct');
-            else if (bi === pick) b.classList.add('wrong');
-          });
-          if (pick === corr) { rightCount++; sfxGood(); } else sfxBad();
-          const fb = document.getElementById('og-quiz-fb');
-          if (fb) {
-            fb.innerHTML = `
-              <div class="og-quiz-fact">${pick === corr ? '✅ ممتاز! ' : '❌ معلومة: '}${esc(qObj.fact || '')}</div>
-              <button type="button" class="og-primary-btn" style="margin-top:8px;" id="og-q-next">${idx + 1 < questions.length ? 'السؤال التالي ◀' : 'عرض النتيجة 🏆'}</button>
-            `;
-            document.getElementById('og-q-next').addEventListener('click', () => {
-              idx++;
-              if (idx < questions.length) renderQ();
-              else {
-                running = false;
-                const won = rightCount >= passNeed;
-                showPostGameScreen('quiz', diff, won, `أجبت ${rightCount} من ${questions.length} إجابات صحيحة! (المطلوب ${passNeed})`);
-              }
-            });
-          }
+      if (qIdx >= questions.length) {
+        ended = true;
+        finishGame({
+          won: correct >= need,
+          score: correct,
+          target: need,
+          gameId: "quiz",
+          diff: diff,
+          loseReason: "أجبت على " + correct + " من " + totalQ + " (المطلوب للفوز " + need + ")"
         });
+        return;
+      }
+      locked = false;
+      rem = secPerQ;
+      var q = questions[qIdx];
+      st.setExtra("سؤال " + (qIdx + 1) + "/" + totalQ);
+      st.setScore("✅ " + correct);
+      st.setTime(rem, secPerQ);
+
+      var opts = q.options || q.o || [];
+      var ansIdx = typeof q.ans === "number" ? q.ans : Number(q.a || 0);
+      st.host.innerHTML =
+        '<div class="og-card">' +
+          '<h3 style="margin:0 0 12px;font-size:.98rem;line-height:1.55;">' + esc(q.q || q.question) + '</h3>' +
+          opts.map(function (op, i) {
+            return '<button type="button" class="og-quiz-opt" data-idx="' + i + '">' + esc(op) + '</button>';
+          }).join("") +
+        '</div>';
+
+      st.host.querySelectorAll(".og-quiz-opt").forEach(function (b) {
+        b.onclick = function () {
+          if (locked || gamePaused) return;
+          locked = true;
+          var chosen = Number(b.getAttribute("data-idx"));
+          if (chosen === ansIdx) {
+            correct++; b.classList.add("correct"); playSfx("gold"); haptic(15);
+          } else {
+            b.classList.add("wrong");
+            var rightBtn = st.host.querySelector('.og-quiz-opt[data-idx="' + ansIdx + '"]');
+            if (rightBtn) rightBtn.classList.add("correct");
+            playSfx("bad"); haptic(40); st.shake();
+          }
+          st.setScore("✅ " + correct);
+          setTimeout(function () { if (!ended) { qIdx++; renderQ(); } }, 780);
+        };
       });
     }
+
+    var iv = setInterval(function () {
+      if (ended || locked || gamePaused) return;
+      rem -= 0.1;
+      st.setTime(rem, secPerQ);
+      if (rem <= 0) {
+        locked = true; playSfx("bad"); st.shake();
+        setTimeout(function () { if (!ended) { qIdx++; renderQ(); } }, 500);
+      }
+    }, 100);
+
+    activeGameCleanup = function () { ended = true; clearInterval(iv); };
     renderQ();
   }
 
   // =========================================================================
-  // 4. 🌿 ذاكرة مزرعة الشجرة المباركة (3 مراحل تصاعدية: كروت أكثر + وقت أقل + أشكال مختلفة!)
+  // GAME 4: 🌿 ذاكرة المزرعة (3 ESCALATING STAGES WITH TIGHTER TIMERS!)
   // =========================================================================
-  function runMemoryStagesGame(body, diff) {
-    const ALL_ICONS = [
-      { id: 'olive', ic: '🫒', lb: 'زيتون' }, { id: 'bottle', ic: '🏺', lb: 'عصرة أولى' },
-      { id: 'herb', ic: '🌿', lb: 'زعتر' }, { id: 'cert', ic: '🏅', lb: 'جودة' },
-      { id: 'sun', ic: '☀️', lb: 'سيناء' }, { id: 'honey', ic: '🍯', lb: 'عسل' },
-      { id: 'truck', ic: '🚚', lb: 'توصيل' }, { id: 'gift', ic: '🎁', lb: 'هدية' },
-      { id: 'drop', ic: '💧', lb: 'قطرة' }, { id: 'basket', ic: '🧺', lb: 'قطف' },
-      { id: 'cold', ic: '❄️', lb: 'ع البارد' }, { id: 'heart', ic: '💚', lb: 'صحة' }
-    ];
-    const baseTime = getGameTime('memory', diff);
-    const STAGES = {
-      easy: [
-        { pairs: 4, cols: 4, time: baseTime, shape: '' },
-        { pairs: 6, cols: 4, time: Math.max(18, baseTime - 6), shape: 'shape-arch' },
-        { pairs: 8, cols: 4, time: Math.max(20, baseTime - 10), shape: 'shape-diamond' }
-      ],
-      medium: [
-        { pairs: 6, cols: 4, time: baseTime, shape: 'shape-arch' },
-        { pairs: 8, cols: 4, time: Math.max(20, baseTime - 5), shape: 'shape-circle' },
-        { pairs: 10, cols: 4, time: Math.max(24, baseTime - 7), shape: 'shape-diamond' }
-      ],
-      hard: [
-        { pairs: 8, cols: 4, time: baseTime, shape: 'shape-diamond' },
-        { pairs: 10, cols: 5, time: Math.max(22, baseTime - 4), shape: 'shape-circle' },
-        { pairs: 12, cols: 4, time: Math.max(25, baseTime - 6), shape: 'shape-arch' }
-      ]
-    }[diff];
+  function playMemoryGame(diff, baseSec, stagesCount) {
+    var totalStages = Math.max(1, Math.min(4, stagesCount || 3));
+    var stagePairs = diff === "hard" ? [6, 8, 10] : (diff === "medium" ? [5, 7, 9] : [4, 6, 8]);
+    var symbols = ["🫒", "🏺", "🌿", "🌳", "🧴", "💧", "🌞", "🏜️", "🥗", "🍯", "✨", "🏆"];
+    var curStage = 0, totalScore = 0, ended = false, iv = null;
 
-    let stageIdx = 0, totalMoves = 0, timerId = null, running = true;
+    var st = createStageShell("ذاكرة المزرعة", baseSec, "3 مراحل");
 
     function startStage() {
-      if (timerId) clearInterval(timerId);
-      const st = STAGES[stageIdx];
-      let timeLeft = st.time, matched = 0, locked = false, flipped = [];
-      const chosen = ALL_ICONS.slice(0, st.pairs);
-      const deck = [...chosen, ...chosen].sort(() => Math.random() - 0.5);
+      if (iv) clearInterval(iv);
+      var pairs = stagePairs[Math.min(curStage, stagePairs.length - 1)];
+      var stageTime = Math.max(14, baseSec - curStage * (diff === "hard" ? 4 : 2));
+      var rem = stageTime;
+      st.setExtra("المرحلة " + (curStage + 1) + "/" + totalStages);
+      st.setTarget("🎯 " + pairs + " أزواج");
+      st.setTime(rem, stageTime);
 
-      body.innerHTML = `
-        <div class="og-stage-header">
-          <button type="button" class="og-back-btn" onclick="window.OliveGames_renderLobby()">◀ خروج</button>
-          <strong style="color:#0f766e;font-size:0.86rem;">المرحلة ${stageIdx + 1} من ${STAGES.length} (${st.pairs * 2} كارت)</strong>
-        </div>
-        <div class="og-hud">
-          <span>✅ متطابقة: <b id="og-m-mat">0</b>/${st.pairs}</span>
-          <span>🔄 حركات: <b id="og-m-mv">${totalMoves}</b></span>
-          <span>⏱️ <b id="og-m-tm">${timeLeft}</b>ث</span>
-        </div>
-        <div class="og-mem-grid" style="grid-template-columns:repeat(${st.cols}, 1fr);">
-          ${deck.map((c, i) => `
-            <div class="og-mem-card ${st.shape}" data-id="${c.id}" data-i="${i}">
-              <div class="og-mem-inner">
-                <div class="og-mem-face og-mem-front">🫒</div>
-                <div class="og-mem-face og-mem-back">
-                  <div style="font-size:${st.pairs >= 10 ? '1.3rem' : '1.65rem'};">${c.ic}</div>
-                  <div style="font-size:0.62rem;">${c.lb}</div>
-                </div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `;
+      var deck = [];
+      for (var i = 0; i < pairs; i++) { deck.push(symbols[i % symbols.length], symbols[i % symbols.length]); }
+      for (var k = deck.length - 1; k > 0; k--) {
+        var r = Math.floor(Math.random() * (k + 1));
+        var t = deck[k]; deck[k] = deck[r]; deck[r] = t;
+      }
 
-      timerId = setInterval(() => {
-        if (!running) return;
-        timeLeft--;
-        const tEl = document.getElementById('og-m-tm'); if (tEl) tEl.textContent = Math.max(0, timeLeft);
-        if (timeLeft <= 0) {
-          running = false; clearInterval(timerId);
-          showPostGameScreen('memory', diff, false, `انتهى الوقت في المرحلة ${stageIdx + 1}! (تطابق ${matched} من ${st.pairs})`);
-        }
-      }, 1000);
-      activeCleanup = () => { running = false; clearInterval(timerId); };
+      var cols = pairs >= 8 ? 4 : (pairs >= 6 ? 4 : 4);
+      st.host.innerHTML =
+        '<div class="og-card"><div class="og-mem-grid" style="grid-template-columns:repeat(' + cols + ',1fr);">' +
+          deck.map(function (sym, idx) {
+            return '<button type="button" class="og-mem-card" data-i="' + idx + '" data-s="' + sym + '">?</button>';
+          }).join("") +
+        '</div></div>';
 
-      body.querySelectorAll('.og-mem-card').forEach(card => {
-        card.addEventListener('click', () => {
-          if (!running || locked || card.classList.contains('flipped') || card.classList.contains('matched')) return;
-          card.classList.add('flipped');
-          playTone(540, 0.05, 'sine', 0.05);
-          flipped.push(card);
-          if (flipped.length === 2) {
-            totalMoves++;
-            const mv = document.getElementById('og-m-mv'); if (mv) mv.textContent = totalMoves;
-            const [a, b] = flipped;
-            if (a.getAttribute('data-id') === b.getAttribute('data-id')) {
-              a.classList.add('matched'); b.classList.add('matched');
-              flipped = []; matched++; sfxGood();
-              const mt = document.getElementById('og-m-mat'); if (mt) mt.textContent = matched;
-              if (matched === st.pairs) {
-                clearInterval(timerId);
-                if (stageIdx + 1 < STAGES.length) {
-                  sfxStage();
-                  stageIdx++;
-                  setTimeout(() => { if (running) startStage(); }, 550);
+      var open = [], matched = 0, lock = false;
+      st.host.querySelectorAll(".og-mem-card").forEach(function (card) {
+        card.onclick = function () {
+          if (lock || gamePaused || card.classList.contains("open") || card.classList.contains("matched")) return;
+          card.classList.add("open");
+          card.textContent = card.getAttribute("data-s");
+          playSfx("pop");
+          open.push(card);
+          if (open.length === 2) {
+            lock = true;
+            var a = open[0], b = open[1];
+            if (a.getAttribute("data-s") === b.getAttribute("data-s")) {
+              a.classList.add("matched"); b.classList.add("matched");
+              matched++; totalScore += 15;
+              st.setScore("⭐ " + totalScore);
+              playSfx("gold"); haptic(15);
+              open = []; lock = false;
+              if (matched >= pairs) {
+                clearInterval(iv);
+                curStage++;
+                if (curStage >= totalStages) {
+                  ended = true;
+                  finishGame({ won: true, score: totalScore + Math.round(rem * 2), target: totalStages, gameId: "memory", diff: diff });
                 } else {
-                  running = false;
-                  showPostGameScreen('memory', diff, true, `بطل الذاكرة! أنهيت المراحل الثلاث بالكامل في ${totalMoves} حركة! 🌿🏆`);
+                  toast("🔥 ممتاز! الانتقال للمرحلة " + (curStage + 1) + " الأصعب!", "success");
+                  setTimeout(startStage, 650);
                 }
               }
             } else {
-              locked = true;
-              setTimeout(() => {
-                a.classList.remove('flipped'); b.classList.remove('flipped');
-                flipped = []; locked = false;
-              }, 520);
+              setTimeout(function () {
+                a.classList.remove("open"); b.classList.remove("open");
+                a.textContent = "?"; b.textContent = "?";
+                open = []; lock = false;
+              }, diff === "hard" ? 420 : 560);
             }
           }
-        });
+        };
       });
+
+      iv = setInterval(function () {
+        if (ended || gamePaused) return;
+        rem -= 0.1;
+        st.setTime(rem, stageTime);
+        if (rem <= 0) {
+          ended = true; clearInterval(iv);
+          finishGame({ won: false, score: totalScore, target: totalStages, gameId: "memory", diff: diff, loseReason: "انتهى الوقت في المرحلة " + (curStage + 1) + "!" });
+        }
+      }, 100);
     }
+
+    activeGameCleanup = function () { ended = true; if (iv) clearInterval(iv); };
     startStage();
   }
 
   // =========================================================================
-  // 5. 🚚 سائق شاحنة زيت سيناء (لعبة جديدة — 3 حارات سريعة 60fps!)
+  // GAME 5: 🚚 شاحنة زيت سيناء (3 LANES, FAST TRAFFIC, HIGHER TARGET)
   // =========================================================================
-  function runTruckGame(body, diff) {
-    const P = {
-      easy: { speed: 210, spawnEvery: 0.82, obsRate: 0.45, targetCans: 10 },
-      medium: { speed: 285, spawnEvery: 0.62, obsRate: 0.55, targetCans: 14 },
-      hard: { speed: 365, spawnEvery: 0.48, obsRate: 0.62, targetCans: 18 }
-    }[diff];
-    let timeLeft = getGameTime('truck', diff);
+  function playTruckGame(diff, duration, target) {
+    var st = createStageShell("شاحنة زيت سيناء", duration, "الهدف: " + target);
+    var lives = diff === "hard" ? 2 : 3;
+    st.setExtra("❤️".repeat(lives));
+    st.host.innerHTML =
+      '<div class="og-canvas-wrap"><canvas id="og-cv-truck"></canvas></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">' +
+        '<button type="button" class="og-btn og-btn-dark" id="og-tr-right">➡️ يمين</button>' +
+        '<button type="button" class="og-btn og-btn-dark" id="og-tr-left">⬅️ يسار</button>' +
+      '</div>';
 
-    body.innerHTML = `
-      <div class="og-stage-header">
-        <button type="button" class="og-back-btn" onclick="window.OliveGames_renderLobby()">◀ خروج</button>
-        <strong style="color:#92400e;font-size:0.86rem;">اجمع ${P.targetCans} عبوة زيت أو صِل لنهاية الطريق! 🚚</strong>
-      </div>
-      <div class="og-hud">
-        <span>🏺 العبوات: <b id="og-t-cans">0</b>/${P.targetCans}</span>
-        <span>⏱️ <b id="og-t-time">${timeLeft}</b>ث</span>
-        <span id="og-t-hearts">❤️❤️❤️</span>
-      </div>
-      <div class="og-canvas-wrap">
-        <canvas id="og-truck-cv" class="og-game-canvas" width="360" height="340"></canvas>
-      </div>
-      <div class="og-lane-controls">
-        <button type="button" class="og-ctrl-btn" id="og-t-right">يمين ➡️</button>
-        <button type="button" class="og-ctrl-btn" id="og-t-left">⬅️ يسار</button>
-      </div>
-    `;
+    var cv = document.getElementById("og-cv-truck");
+    var g = setupHiDpiCanvas(cv, 360, 400);
+    var ctx = g.ctx, W = g.w, H = g.h;
+    var lanes = [W * 0.22, W * 0.5, W * 0.78];
+    var lane = 1, score = 0, rem = duration, running = false, ended = false, raf = null, lastTs = 0, spawnAcc = 0, dashY = 0;
+    var objs = [];
+    var spd = diff === "hard" ? 310 : (diff === "medium" ? 245 : 190);
+    var spawnMs = diff === "hard" ? 440 : (diff === "medium" ? 560 : 690);
+    var obsRate = diff === "hard" ? 0.56 : (diff === "medium" ? 0.46 : 0.36);
 
-    const cv = document.getElementById('og-truck-cv');
-    const ctx = cv.getContext('2d');
-    const W = cv.width, H = cv.height;
-    const laneXs = [W * 0.22, W * 0.5, W * 0.78];
-    let lane = 1, truckX = laneXs[1], cans = 0, hearts = 3, running = true;
-    const objs = [];
-    let lastTs = performance.now(), spawnAcc = 0, secAcc = 0, stripeY = 0, rafId = 0;
-
-    function goLeft() { if (lane > 0) { lane--; playTone(420, 0.05, 'sine', 0.05); } }
-    function goRight() { if (lane < 2) { lane++; playTone(480, 0.05, 'sine', 0.05); } }
-
-    document.getElementById('og-t-left').addEventListener('click', goLeft);
-    document.getElementById('og-t-right').addEventListener('click', goRight);
-    const onKey = (e) => { if (e.key === 'ArrowLeft') goLeft(); if (e.key === 'ArrowRight') goRight(); };
-    let touchStartX = null;
-    const onTS = (e) => { if (e.touches[0]) touchStartX = e.touches[0].clientX; };
-    const onTE = (e) => {
-      if (touchStartX === null || !e.changedTouches[0]) return;
-      const dx = e.changedTouches[0].clientX - touchStartX;
-      if (dx > 22) goRight(); else if (dx < -22) goLeft();
-      touchStartX = null;
-    };
-    window.addEventListener('keydown', onKey);
-    cv.addEventListener('touchstart', onTS, { passive: true });
-    cv.addEventListener('touchend', onTE, { passive: true });
-    activeCleanup = () => { running = false; cancelAnimationFrame(rafId); window.removeEventListener('keydown', onKey); };
+    function moveLane(dir) {
+      if (!running || gamePaused) return;
+      lane = Math.max(0, Math.min(2, lane + dir));
+      haptic(8);
+    }
+    document.getElementById("og-tr-left").onclick = function () { moveLane(-1); };
+    document.getElementById("og-tr-right").onclick = function () { moveLane(1); };
+    var touchX = 0;
+    cv.addEventListener("pointerdown", function (e) { touchX = e.clientX; });
+    cv.addEventListener("pointerup", function (e) {
+      var dx = e.clientX - touchX;
+      if (Math.abs(dx) > 22) moveLane(dx > 0 ? 1 : -1);
+      else {
+        var r = cv.getBoundingClientRect();
+        var rel = (e.clientX - r.left) / r.width;
+        lane = rel < 0.33 ? 0 : (rel > 0.66 ? 2 : 1);
+      }
+    });
 
     function loop(ts) {
-      if (!running) return;
-      const dt = Math.min(0.05, (ts - lastTs) / 1000);
+      if (ended) return;
+      raf = requestAnimationFrame(loop);
+      if (!running || gamePaused) { lastTs = ts; return; }
+      var dt = Math.min(0.05, (ts - lastTs) / 1000 || 0.016);
       lastTs = ts;
-      spawnAcc += dt; secAcc += dt;
-      stripeY = (stripeY + P.speed * dt) % 44;
+      rem -= dt;
+      st.setTime(rem, duration);
+      if (rem <= 0) {
+        ended = true;
+        finishGame({ won: score >= target, score: score, target: target, gameId: "truck", diff: diff });
+        return;
+      }
 
-      if (spawnAcc >= P.spawnEvery) {
+      spawnAcc += dt * 1000;
+      if (spawnAcc >= spawnMs) {
         spawnAcc = 0;
-        const ln = Math.floor(Math.random() * 3);
-        const isObs = Math.random() < P.obsRate;
-        objs.push({ lane: ln, x: laneXs[ln], y: -25, isObs, ic: isObs ? (Math.random() < 0.5 ? '🚧' : '🪨') : '🏺' });
-      }
-      if (secAcc >= 1) {
-        secAcc -= 1; timeLeft--;
-        const tEl = document.getElementById('og-t-time'); if (tEl) tEl.textContent = Math.max(0, timeLeft);
-        if (timeLeft <= 0) {
-          running = false;
-          showPostGameScreen('truck', diff, cans >= Math.ceil(P.targetCans * 0.7), `أوصلت الشحنة وجمعت ${cans} عبوة زيت زيتون! 🚚`);
-          return;
-        }
+        var ln = Math.floor(Math.random() * 3);
+        var isRock = Math.random() < obsRate;
+        objs.push({ lane: ln, y: -30, kind: isRock ? "rock" : (Math.random() > 0.78 ? "gold" : "oil") });
       }
 
-      // Draw Sinai desert borders + asphalt road
-      ctx.fillStyle = '#d9b97e'; ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = '#334155'; ctx.fillRect(W * 0.08, 0, W * 0.84, H);
-      ctx.fillStyle = '#c59b27'; ctx.fillRect(W * 0.08, 0, 5, H); ctx.fillRect(W * 0.92 - 5, 0, 5, H);
-      // Dashed lane dividers
-      ctx.fillStyle = 'rgba(255,255,255,0.65)';
-      for (let y = -44 + stripeY; y < H; y += 44) {
-        ctx.fillRect(W * 0.36 - 2, y, 4, 22);
-        ctx.fillRect(W * 0.64 - 2, y, 4, 22);
-      }
+      // Draw Sinai desert + road
+      ctx.fillStyle = "#926239"; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#1f2937"; ctx.fillRect(W * 0.08, 0, W * 0.84, H);
+      ctx.strokeStyle = "#fde68a"; ctx.lineWidth = 3; ctx.setLineDash([18, 16]);
+      dashY = (dashY + spd * dt) % 34;
+      ctx.lineDashOffset = -dashY;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.36, 0); ctx.lineTo(W * 0.36, H);
+      ctx.moveTo(W * 0.64, 0); ctx.lineTo(W * 0.64, H);
+      ctx.stroke(); ctx.setLineDash([]);
 
-      // Smooth truck slide
-      truckX += (laneXs[lane] - truckX) * Math.min(1, dt * 16);
-      const ty = H - 62;
+      // Draw player truck
+      var px = lanes[lane], py = H - 62;
+      ctx.fillStyle = "#15803d"; ctx.fillRect(px - 22, py - 28, 44, 56);
+      ctx.fillStyle = "#f4cf6d"; ctx.fillRect(px - 16, py - 18, 32, 24);
+      ctx.fillStyle = "#0f172a"; ctx.fillRect(px - 14, py - 26, 28, 8);
 
-      // Update objects
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      for (let i = objs.length - 1; i >= 0; i--) {
-        const o = objs[i];
-        o.y += P.speed * dt;
-        ctx.font = '28px sans-serif';
-        ctx.fillText(o.ic, o.x, o.y);
+      for (var i = objs.length - 1; i >= 0; i--) {
+        var o = objs[i];
+        o.y += spd * dt;
+        var ox = lanes[o.lane];
+        ctx.font = "26px sans-serif"; ctx.textAlign = "center";
+        ctx.fillText(o.kind === "rock" ? "🚧" : (o.kind === "gold" ? "🏆" : "🏺"), ox, o.y);
 
-        if (Math.abs(o.y - ty) < 30 && Math.abs(o.x - truckX) < 34) {
-          objs.splice(i, 1);
-          if (o.isObs) {
-            hearts--; sfxBad();
-            const hEl = document.getElementById('og-t-hearts'); if (hEl) hEl.textContent = '❤️'.repeat(Math.max(0, hearts)) + '🖤'.repeat(Math.max(0, 3 - hearts));
-            if (hearts <= 0) {
-              running = false;
-              showPostGameScreen('truck', diff, false, `تعطلت الشاحنة بعد اصطدامات متكررة! جمعت ${cans} عبوة.`);
+        if (o.lane === lane && Math.abs(o.y - py) < 34) {
+          if (o.kind === "rock") {
+            lives--; score = Math.max(0, score - 5);
+            st.setExtra("❤️".repeat(Math.max(0, lives)));
+            playSfx("bad"); haptic(45); st.shake();
+            if (lives <= 0) {
+              ended = true;
+              finishGame({ won: false, score: score, target: target, gameId: "truck", diff: diff, loseReason: "🚧 اصطدمت الشاحنة بالعقبات!" });
               return;
             }
           } else {
-            cans++; sfxGood();
-            const cEl = document.getElementById('og-t-cans'); if (cEl) cEl.textContent = cans;
-            if (cans >= P.targetCans) {
-              running = false;
-              showPostGameScreen('truck', diff, true, `سائق محترف! وصلت شحنة ${cans} عبوة زيت سيناوي بأمان تام! 🚚🫒`);
+            score += o.kind === "gold" ? 7 : 3;
+            playSfx(o.kind === "gold" ? "gold" : "pop"); haptic(12);
+          }
+          st.setScore("⭐ " + score);
+          objs.splice(i, 1);
+          if (score >= target) {
+            ended = true;
+            finishGame({ won: true, score: score, target: target, gameId: "truck", diff: diff });
+            return;
+          }
+        } else if (o.y > H + 35) {
+          objs.splice(i, 1);
+        }
+      }
+    }
+
+    activeGameCleanup = function () { ended = true; if (raf) cancelAnimationFrame(raf); };
+    runCountdown(st.host, function () { running = true; lastTs = performance.now(); raf = requestAnimationFrame(loop); });
+  }
+
+  // =========================================================================
+  // GAME 6: 🎯 فرز حبات الزيتون السريع (FAST CONVEYOR BELT)
+  // =========================================================================
+  function playSorterGame(diff, duration, target) {
+    var st = createStageShell("فرز الزيتون", duration, "الهدف: " + target);
+    var lives = diff === "hard" ? 2 : 3;
+    st.setExtra("❤️".repeat(lives));
+    st.host.innerHTML = '<div class="og-canvas-wrap"><canvas id="og-cv-sort"></canvas></div>';
+    var cv = document.getElementById("og-cv-sort");
+    var g = setupHiDpiCanvas(cv, 360, 360);
+    var ctx = g.ctx, W = g.w, H = g.h;
+
+    var items = [], score = 0, rem = duration, running = false, ended = false, raf = null, lastTs = 0, acc = 0;
+    var spd = diff === "hard" ? 215 : (diff === "medium" ? 165 : 125);
+    var spawnMs = diff === "hard" ? 390 : (diff === "medium" ? 500 : 620);
+
+    cv.addEventListener("pointerdown", function (e) {
+      if (!running || gamePaused || ended) return;
+      var r = cv.getBoundingClientRect();
+      var x = ((e.clientX - r.left) / r.width) * W;
+      var y = ((e.clientY - r.top) / r.height) * H;
+      for (var i = items.length - 1; i >= 0; i--) {
+        var it = items[i];
+        if (Math.hypot(it.x - x, it.y - y) <= 30) {
+          if (it.good) {
+            score += it.gold ? 5 : 2;
+            playSfx(it.gold ? "gold" : "pop"); haptic(12);
+          } else {
+            lives--; score = Math.max(0, score - 4);
+            st.setExtra("❤️".repeat(Math.max(0, lives)));
+            playSfx("bad"); haptic(45); st.shake();
+            if (lives <= 0) {
+              ended = true;
+              finishGame({ won: false, score: score, target: target, gameId: "sorter", diff: diff, loseReason: "اخترت حبات تالفة أو أحجار!" });
               return;
             }
           }
-          continue;
-        }
-        if (o.y > H + 30) objs.splice(i, 1);
-      }
-
-      // Draw Blessed Tree Truck
-      ctx.fillStyle = '#153422'; ctx.strokeStyle = '#c59b27'; ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.roundRect(truckX - 24, ty - 28, 48, 56, 10); ctx.fill(); ctx.stroke();
-      ctx.font = '28px sans-serif'; ctx.fillText('🚚', truckX, ty);
-
-      rafId = requestAnimationFrame(loop);
-    }
-    rafId = requestAnimationFrame(loop);
-  }
-
-  // =========================================================================
-  // 6. 🎯 فرز حبات الزيتون السريع (لعبة جديدة — سير الفرز الاحترافي!)
-  // =========================================================================
-  function runSorterGame(body, diff) {
-    const P = { easy: { target: 15 }, medium: { target: 22 }, hard: { target: 30 } }[diff];
-    let timeLeft = getGameTime('sorter', diff);
-    let score = 0, hearts = 3, running = true;
-
-    const GOOD_ITEMS = [
-      { ic: '🫒', name: 'زيتون سيناوي طازج', good: true },
-      { ic: '✨🫒', name: 'زيتون ذهبي ممتاز', good: true },
-      { ic: '🌿', name: 'ورق زيتون أخضر نقي', good: true }
-    ];
-    const BAD_ITEMS = [
-      { ic: '🪨', name: 'حجر صغير (استبعده!)', good: false },
-      { ic: '🍂', name: 'ورقة جافة تالفة', good: false },
-      { ic: '🐛', name: 'ثمرة تالفة (استبعدها!)', good: false }
-    ];
-    let cur = null;
-
-    function nextItem() {
-      const pool = Math.random() < 0.56 ? GOOD_ITEMS : BAD_ITEMS;
-      cur = pool[Math.floor(Math.random() * pool.length)];
-      const icEl = document.getElementById('og-s-ic');
-      const nmEl = document.getElementById('og-s-nm');
-      if (icEl) icEl.textContent = cur.ic;
-      if (nmEl) nmEl.textContent = cur.name;
-    }
-
-    body.innerHTML = `
-      <div class="og-stage-header">
-        <button type="button" class="og-back-btn" onclick="window.OliveGames_renderLobby()">◀ خروج</button>
-        <strong style="color:#c2410c;font-size:0.86rem;">افرز ${P.target} قطعة بدقة وسرعة! 🎯</strong>
-      </div>
-      <div class="og-hud">
-        <span>✅ صحيح: <b id="og-s-sc">0</b>/${P.target}</span>
-        <span>⏱️ <b id="og-s-tm">${timeLeft}</b>ث</span>
-        <span id="og-s-ht">❤️❤️❤️</span>
-      </div>
-      <div style="background:linear-gradient(135deg,#f7f4ec,#fef3c7);border:2px solid #c59b27;border-radius:20px;padding:24px 16px;text-align:center;min-height:175px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-        <div id="og-s-ic" style="font-size:4.2rem;line-height:1.1;">🫒</div>
-        <div id="og-s-nm" style="font-size:1.05rem;font-weight:900;color:#153422;margin-top:8px;">...</div>
-      </div>
-      <div class="og-lane-controls">
-        <button type="button" class="og-ctrl-btn accept" id="og-s-good">✅ عصرة أولى (اقبل)</button>
-        <button type="button" class="og-ctrl-btn reject" id="og-s-bad">❌ استبعاد (ارفض)</button>
-      </div>
-    `;
-
-    function answer(choseGood) {
-      if (!running || !cur) return;
-      if (choseGood === cur.good) {
-        score++; sfxGood();
-        const sc = document.getElementById('og-s-sc'); if (sc) sc.textContent = score;
-        if (score >= P.target) {
-          running = false;
-          showPostGameScreen('sorter', diff, true, `خبير فرز المعصرة! فرزت ${score} حبة بدقة عالية وتبقّى ${timeLeft}ث! 🎯`);
-          return;
-        }
-      } else {
-        hearts--; sfxBad();
-        const ht = document.getElementById('og-s-ht'); if (ht) ht.textContent = '❤️'.repeat(Math.max(0, hearts)) + '🖤'.repeat(Math.max(0, 3 - hearts));
-        if (hearts <= 0) {
-          running = false;
-          showPostGameScreen('sorter', diff, false, `حدثت 3 أخطاء في الفرز! وصلت لـ ${score} من ${P.target}.`);
-          return;
-        }
-      }
-      nextItem();
-    }
-
-    document.getElementById('og-s-good').addEventListener('click', () => answer(true));
-    document.getElementById('og-s-bad').addEventListener('click', () => answer(false));
-    const timer = setInterval(() => {
-      if (!running) return;
-      timeLeft--;
-      const tm = document.getElementById('og-s-tm'); if (tm) tm.textContent = Math.max(0, timeLeft);
-      if (timeLeft <= 0) {
-        running = false;
-        showPostGameScreen('sorter', diff, false, `انتهى الوقت عند ${score} من ${P.target} — أسرع قليلاً في الجولة القادمة!`);
-      }
-    }, 1000);
-    activeCleanup = () => { running = false; clearInterval(timer); };
-    nextItem();
-  }
-
-  // =========================================================================
-  // 7. 🫧 مطابقة قطرات الذهب (لعبة جديدة — Match/Burst Puzzle 6×6!)
-  // =========================================================================
-  function runDropsMatchGame(body, diff) {
-    const P = {
-      easy: { target: 120, colors: 4 },
-      medium: { target: 220, colors: 5 },
-      hard: { target: 340, colors: 5 }
-    }[diff];
-    const ICONS = ['🫒', '✨', '💧', '🌺', '🌿'];
-    const R = 6, C = 6;
-    let grid = Array.from({ length: R }, () => Array.from({ length: C }, () => Math.floor(Math.random() * P.colors)));
-    let score = 0, timeLeft = getGameTime('drops', diff), running = true;
-
-    body.innerHTML = `
-      <div class="og-stage-header">
-        <button type="button" class="og-back-btn" onclick="window.OliveGames_renderLobby()">◀ خروج</button>
-        <strong style="color:#9d174d;font-size:0.86rem;">اضغط أي 2+ متشابهين متجاورين! الهدف: ${P.target}</strong>
-      </div>
-      <div class="og-hud">
-        <span>🫧 النقاط: <b id="og-d-sc">0</b>/${P.target}</span>
-        <span>⏱️ <b id="og-d-tm">${timeLeft}</b>ث</span>
-      </div>
-      <div class="og-drops-grid" id="og-drops-grid"></div>
-      <div class="og-touch-hint">💡 كلما كانت المجموعة أكبر زادت نقاط الكومبو أضعافاً!</div>
-    `;
-
-    function findCluster(r0, c0) {
-      const color = grid[r0][c0];
-      const visited = new Set(), q = [[r0, c0]], res = [];
-      visited.add(r0 + ',' + c0);
-      while (q.length) {
-        const [r, c] = q.shift();
-        res.push([r, c]);
-        for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-          const nr = r + dr, nc = c + dc, key = nr + ',' + nc;
-          if (nr >= 0 && nr < R && nc >= 0 && nc < C && !visited.has(key) && grid[nr][nc] === color) {
-            visited.add(key); q.push([nr, nc]);
+          st.setScore("⭐ " + score);
+          items.splice(i, 1);
+          if (score >= target) {
+            ended = true;
+            finishGame({ won: true, score: score, target: target, gameId: "sorter", diff: diff });
           }
+          break;
         }
       }
-      return res;
+    });
+
+    function loop(ts) {
+      if (ended) return;
+      raf = requestAnimationFrame(loop);
+      if (!running || gamePaused) { lastTs = ts; return; }
+      var dt = Math.min(0.05, (ts - lastTs) / 1000 || 0.016);
+      lastTs = ts; rem -= dt;
+      st.setTime(rem, duration);
+      if (rem <= 0) {
+        ended = true;
+        finishGame({ won: score >= target, score: score, target: target, gameId: "sorter", diff: diff });
+        return;
+      }
+
+      acc += dt * 1000;
+      if (acc >= spawnMs) {
+        acc = 0;
+        var row = Math.floor(Math.random() * 3);
+        var good = Math.random() > (diff === "hard" ? 0.42 : 0.34);
+        var gold = good && Math.random() > 0.8;
+        items.push({ x: -24, y: 75 + row * 100, good: good, gold: gold });
+      }
+
+      ctx.fillStyle = "#0b1f14"; ctx.fillRect(0, 0, W, H);
+      for (var b = 0; b < 3; b++) {
+        ctx.fillStyle = "#1a3827"; ctx.fillRect(0, 42 + b * 100, W, 66);
+      }
+
+      for (var i = items.length - 1; i >= 0; i--) {
+        var it = items[i];
+        it.x += spd * dt;
+        ctx.font = "30px sans-serif"; ctx.textAlign = "center";
+        ctx.fillText(it.good ? (it.gold ? "✨" : "🫒") : "🪨", it.x, it.y + 10);
+        if (it.x > W + 30) items.splice(i, 1);
+      }
     }
+
+    activeGameCleanup = function () { ended = true; if (raf) cancelAnimationFrame(raf); };
+    runCountdown(st.host, function () { running = true; lastTs = performance.now(); raf = requestAnimationFrame(loop); });
+  }
+
+  // =========================================================================
+  // GAME 7: 🫧 مطابقة قطرات الذهب (6x6 CHAIN POP GRID)
+  // =========================================================================
+  function playMatchGame(diff, duration, target) {
+    var st = createStageShell("مطابقة القطرات", duration, "الهدف: " + target);
+    var icons = diff === "hard" ? ["🫒", "💧", "🌿", "🍯", "🏺"] : ["🫒", "💧", "🌿", "🍯"];
+    var grid = [], score = 0, rem = duration, ended = false;
+    for (var i = 0; i < 36; i++) grid.push(icons[Math.floor(Math.random() * icons.length)]);
 
     function renderGrid() {
-      const box = document.getElementById('og-drops-grid');
-      if (!box) return;
-      let html = '';
-      for (let r = 0; r < R; r++) {
-        for (let c = 0; c < C; c++) {
-          const v = grid[r][c];
-          html += `<button type="button" class="og-drop-cell og-drop-${v}" data-r="${r}" data-c="${c}">${ICONS[v]}</button>`;
-        }
-      }
-      box.innerHTML = html;
-      box.querySelectorAll('.og-drop-cell').forEach(btn => {
-        btn.addEventListener('click', () => {
-          if (!running) return;
-          const r = Number(btn.getAttribute('data-r')), c = Number(btn.getAttribute('data-c'));
-          const cluster = findCluster(r, c);
-          if (cluster.length < 2) { sfxBad(); return; }
-          const gained = cluster.length * cluster.length * 3;
-          score += gained;
-          cluster.length >= 4 ? sfxGold() : sfxGood();
-          for (const [cr, cc] of cluster) grid[cr][cc] = -1;
-          // Gravity refill
-          for (let col = 0; col < C; col++) {
-            const vals = [];
-            for (let row = R - 1; row >= 0; row--) if (grid[row][col] !== -1) vals.push(grid[row][col]);
-            while (vals.length < R) vals.push(Math.floor(Math.random() * P.colors));
-            for (let row = R - 1, idx = 0; row >= 0; row--, idx++) grid[row][col] = vals[idx];
+      st.host.innerHTML =
+        '<div class="og-card"><div class="og-match-grid">' +
+          grid.map(function (ic, idx) {
+            return '<button type="button" class="og-match-cell" data-i="' + idx + '">' + ic + '</button>';
+          }).join("") +
+        '</div><div style="text-align:center;font-size:.75rem;opacity:.8;margin-top:6px;">اضغط على أي مجموعة من ' + (diff === "hard" ? "3" : "2") + ' رموز متجاورة أو أكثر لتفجيرها!</div></div>';
+
+      st.host.querySelectorAll(".og-match-cell").forEach(function (btn) {
+        btn.onclick = function () {
+          if (ended || gamePaused) return;
+          var start = Number(btn.getAttribute("data-i"));
+          var sym = grid[start];
+          var visited = {}, queue = [start], group = [];
+          visited[start] = true;
+          while (queue.length) {
+            var c = queue.shift();
+            group.push(c);
+            var r = Math.floor(c / 6), col = c % 6;
+            [[r - 1, col], [r + 1, col], [r, col - 1], [r, col + 1]].forEach(function (nb) {
+              if (nb[0] >= 0 && nb[0] < 6 && nb[1] >= 0 && nb[1] < 6) {
+                var ni = nb[0] * 6 + nb[1];
+                if (!visited[ni] && grid[ni] === sym) { visited[ni] = true; queue.push(ni); }
+              }
+            });
           }
-          const scEl = document.getElementById('og-d-sc'); if (scEl) scEl.textContent = score;
-          if (score >= P.target) {
-            running = false;
-            showPostGameScreen('drops', diff, true, `انفجار كومبو رائع! حققت ${score} نقطة وتبقّى ${timeLeft}ث! 🫧✨`);
+          var minGrp = diff === "hard" ? 3 : 2;
+          if (group.length < minGrp) { playSfx("bad"); return; }
+          var pts = group.length * group.length * 4;
+          score += pts;
+          st.setScore("⭐ " + score);
+          playSfx(group.length >= 4 ? "gold" : "pop");
+          haptic(14);
+          group.forEach(function (idx) { grid[idx] = icons[Math.floor(Math.random() * icons.length)]; });
+          if (score >= target) {
+            ended = true; clearInterval(iv);
+            finishGame({ won: true, score: score, target: target, gameId: "match", diff: diff });
             return;
           }
           renderGrid();
-        });
+        };
       });
     }
 
-    const timer = setInterval(() => {
-      if (!running) return;
-      timeLeft--;
-      const tm = document.getElementById('og-d-tm'); if (tm) tm.textContent = Math.max(0, timeLeft);
-      if (timeLeft <= 0) {
-        running = false;
-        showPostGameScreen('drops', diff, false, `انتهى الوقت عند ${score} من ${P.target} — ابحث عن المجموعات الكبيرة!`);
+    var iv = setInterval(function () {
+      if (ended || gamePaused) return;
+      rem -= 0.1;
+      st.setTime(rem, duration);
+      if (rem <= 0) {
+        ended = true; clearInterval(iv);
+        finishGame({ won: score >= target, score: score, target: target, gameId: "match", diff: diff });
       }
-    }, 1000);
-    activeCleanup = () => { running = false; clearInterval(timer); };
+    }, 100);
+
+    activeGameCleanup = function () { ended = true; clearInterval(iv); };
     renderGrid();
   }
 
   // =========================================================================
-  // 8. 🪙 كارت «اكشط قطرة الذهب» (خارج حد الـ 3 جوائز • نسب حظ محددة 100% من المدير!)
+  // GAME 8: 🪙 كارت الحظ «اكشط قطرة الذهب» (OUTSIDE DAILY PRIZE CAP!)
   // =========================================================================
-  window.OliveGames_startScratch = function () {
-    stopActiveGame();
-    const body = document.getElementById('og-body');
-    if (!body) return;
-    const cfg = getCfg();
-    const sc = cfg.scratchConfig || {};
-    const maxTries = Math.max(1, Number(sc.dailyLimit) || 1);
-    const used = getScratchUsedToday();
-
-    if (used >= maxTries) {
-      body.innerHTML = `
-        <div class="og-celebration-wrap">
-          <div style="font-size:2.8rem;">🪙</div>
-          <h3 style="margin:6px 0;color:#92400e;">استخدمت كارت الكشط اليومي (${used}/${maxTries})</h3>
-          <p style="font-size:0.86rem;color:#475569;">ارجع بكرة لكارت حظ جديد! ويمكنك الآن اللعب والفوز في باقي الـ 7 ألعاب 🎮</p>
-          <button type="button" class="og-secondary-btn" onclick="window.OliveGames_renderLobby()">◀ العودة للألعاب</button>
-        </div>`;
+  function playScratchCardGame() {
+    var body = document.getElementById("og-body");
+    var maxSc = Math.max(1, Number(cfg.dailyScratchCap || 1));
+    if (pState.dailyScratchesUsed >= maxSc) {
+      body.innerHTML =
+        '<div class="og-card" style="text-align:center;padding:24px;">' +
+          '<div style="font-size:3rem;">🪙</div>' +
+          '<h3 style="margin:8px 0;">استخدمت محاولات الكشط اليوم (' + maxSc + '/' + maxSc + ')</h3>' +
+          '<p style="font-size:.82rem;opacity:.8;">عد غداً لكارت حظ جديد، وجرّب باقي ألعاب المهارة الآن!</p>' +
+          '<button type="button" class="og-btn og-btn-gold" onclick="window.ZaitGamesV96.backToHub()">🏠 رجوع للألعاب</button>' +
+        '</div>';
       return;
     }
 
-    const outcome = weightedPick(sc.outcomes) || { label: 'حظ أوفر في المرة القادمة', type: 'none', value: 0 };
-    const underEmoji = outcome.type === 'none' ? '🍀' : '🎁✨';
-    const underText = outcome.label || (outcome.type === 'free_shipping' ? '🚚 توصيل مجاني!' : outcome.type === 'coupon' ? `خصم ${outcome.value}%` : outcome.type === 'points' ? `+${outcome.value} نقطة` : 'حظ أوفر في المرة القادمة');
+    var drawn = weightedDraw(cfg.scratchPrizes);
+    var revealed = false;
 
-    body.innerHTML = `
-      <div class="og-stage-header">
-        <button type="button" class="og-back-btn" onclick="window.OliveGames_renderLobby()">◀ خروج</button>
-        <strong style="color:#b45309;font-size:0.88rem;">🪙 كارت قطرة الذهب (خارج الحد اليومي)</strong>
-      </div>
-      <div style="text-align:center;font-size:0.86rem;font-weight:800;color:#475569;margin-bottom:6px;">امسح الطبقة الذهبية بإصبعك لتكشف حظك اليوم!</div>
-      <div class="og-scratch-card-wrap">
-        <div class="og-scratch-under">
-          <div style="font-size:2.4rem;">${underEmoji}</div>
-          <div style="font-size:1.12rem;font-weight:900;color:#153422;margin-top:4px;">${esc(underText)}</div>
-        </div>
-        <canvas id="og-scratch-canvas" width="340" height="200"></canvas>
-      </div>
-      <button type="button" class="og-secondary-btn" id="og-sc-auto" style="max-width:340px;margin:8px auto 0;display:block;">✨ اكشط الكارت تلقائياً</button>
-    `;
+    body.innerHTML =
+      '<div class="og-card" style="text-align:center;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+          '<strong>🪙 كارت الحظ اليومي (خارج حد الـ ' + cfg.dailyPrizeCap + ' جوائز)</strong>' +
+          '<button type="button" class="og-btn og-btn-ghost" style="padding:5px 10px;font-size:.76rem;" onclick="window.ZaitGamesV96.backToHub()">✕</button>' +
+        '</div>' +
+        '<p style="font-size:.8rem;opacity:.82;margin-bottom:10px;">امسح البطاقة الذهبية بإصبعك لاكتشاف حظك اليوم!</p>' +
+        '<div style="position:relative;width:100%;max-width:340px;height:175px;margin:0 auto 12px;border-radius:18px;overflow:hidden;border:2px solid #d59e2a;background:linear-gradient(135deg,#0f2e1d,#1e5436);display:flex;align-items:center;justify-content:center;color:#fde68a;font-size:1.15rem;font-weight:900;padding:12px;">' +
+          '<div>' + esc(drawn.label) + '</div>' +
+          '<canvas id="og-scratch-cv" width="340" height="175" style="position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:pointer;"></canvas>' +
+        '</div>' +
+        '<button type="button" class="og-btn og-btn-gold" id="og-auto-scratch">✨ كشط سريع</button>' +
+      '</div>';
 
-    const cv = document.getElementById('og-scratch-canvas');
-    const ctx = cv.getContext('2d');
-    const W = cv.width, H = cv.height;
-    let drawing = false, done = false, strokes = 0;
-    const grd = ctx.createLinearGradient(0, 0, W, H);
-    grd.addColorStop(0, '#d4af37'); grd.addColorStop(0.5, '#fde68a'); grd.addColorStop(1, '#b45309');
-    ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#153422'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('🪙 امسح هنا بإصبعك', W / 2, H / 2 - 8);
-    ctx.font = 'bold 14px sans-serif';
-    ctx.fillText('كارت حظ الشجرة المباركة ✨', W / 2, H / 2 + 22);
+    var cv = document.getElementById("og-scratch-cv");
+    var ctx = cv.getContext("2d");
+    var gr = ctx.createLinearGradient(0, 0, 340, 175);
+    gr.addColorStop(0, "#f5d376"); gr.addColorStop(0.5, "#c99220"); gr.addColorStop(1, "#f2cc63");
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, 340, 175);
+    ctx.fillStyle = "#102819"; ctx.font = "900 20px Cairo,sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("🪙 امسح هنا لاكتشاف هديتك 🪙", 170, 95);
 
-    function reveal() {
-      if (done) return;
-      done = true;
-      incScratchUsedToday();
-      ctx.clearRect(0, 0, W, H);
-      setTimeout(() => showPostGameScreen('scratch', 'medium', true, '', true, outcome), 450);
+    var strokes = 0, down = false;
+    async function completeScratch() {
+      if (revealed) return;
+      revealed = true;
+      pState.dailyScratchesUsed++;
+      var issued = await issuePrize(drawn, "كارت اكشط قطرة الذهب");
+      await syncPlayerCapsAndCouponsToCloud();
+      finishGame({ won: true, isScratch: true, scratchIssued: issued, score: issued.type === "none" ? 0 : 100, gameId: "scratch", diff: "easy" });
     }
-    function scratch(cx, cy) {
-      if (done) return;
-      const r = cv.getBoundingClientRect();
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath(); ctx.arc(((cx - r.left) / r.width) * W, ((cy - r.top) / r.height) * H, 26, 0, Math.PI * 2); ctx.fill();
+
+    function scratchAt(ev) {
+      if (revealed) return;
+      var r = cv.getBoundingClientRect();
+      var x = ((ev.clientX - r.left) / r.width) * 340;
+      var y = ((ev.clientY - r.top) / r.height) * 175;
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath(); ctx.arc(x, y, 26, 0, Math.PI * 2); ctx.fill();
       strokes++;
-      if (strokes % 9 === 0) {
-        const d = ctx.getImageData(0, 0, W, H).data;
-        let cleared = 0, tot = 0;
-        for (let i = 3; i < d.length; i += 32) { tot++; if (d[i] < 40) cleared++; }
-        if (cleared / tot > 0.4) reveal();
-      }
+      if (strokes > 24) completeScratch();
     }
-    cv.addEventListener('pointerdown', (e) => { drawing = true; scratch(e.clientX, e.clientY); });
-    cv.addEventListener('pointermove', (e) => { if (drawing) scratch(e.clientX, e.clientY); });
-    window.addEventListener('pointerup', () => { drawing = false; });
-    cv.addEventListener('touchstart', (e) => { e.preventDefault(); drawing = true; if (e.touches[0]) scratch(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-    cv.addEventListener('touchmove', (e) => { e.preventDefault(); if (e.touches[0]) scratch(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-    document.getElementById('og-sc-auto').addEventListener('click', reveal);
-  };
+    cv.addEventListener("pointerdown", function (e) { down = true; scratchAt(e); });
+    cv.addEventListener("pointermove", function (e) { if (down) scratchAt(e); });
+    window.addEventListener("pointerup", function () { down = false; });
+    document.getElementById("og-auto-scratch").onclick = function () {
+      ctx.clearRect(0, 0, 340, 175);
+      completeScratch();
+    };
+  }
 
   // =========================================================================
-  // لوحة تحكم المدير الشاملة (جوائز عشوائية + حد يومي + كارت حظ بالنسب + أوقات كل لعبة + عدد الأسئلة)
+  // COMPLETE ADMIN CONTROL PANEL (EVERY SINGLE PARAMETER + ROI ANALYTICS)
   // =========================================================================
-  window.OliveGames_renderAdminEditor = function () {
-    const mount = document.getElementById('admin-olive-games-editor-mount');
-    if (!mount) return;
-    const cfg = getCfg();
-    let pool = JSON.parse(JSON.stringify(cfg.rewardPool || []));
-    let scOutcomes = JSON.parse(JSON.stringify((cfg.scratchConfig && cfg.scratchConfig.outcomes) || []));
+  var adminSubTab = "general";
 
-    function renderPoolRows(targetId, arr, allowNone, sumId) {
-      const el = document.getElementById(targetId);
-      if (!el) return;
-      el.innerHTML = arr.map((item, idx) => `
-        <div class="og-pool-row">
-          <input type="text" placeholder="اسم الجائزة / النص" value="${esc(item.label || '')}" data-k="label" data-i="${idx}">
-          <select data-k="type" data-i="${idx}">
-            ${allowNone ? `<option value="none" ${item.type === 'none' ? 'selected' : ''}>🍀 حظ أوفر (بدون جائزة)</option>` : ''}
-            <option value="coupon" ${item.type === 'coupon' ? 'selected' : ''}>🎟️ كوبون خصم (%)</option>
-            <option value="free_shipping" ${item.type === 'free_shipping' ? 'selected' : ''}>🚚 كوبون توصيل مجاني</option>
-            <option value="points" ${item.type === 'points' ? 'selected' : ''}>⭐ نقاط ولاء</option>
-          </select>
-          <input type="number" placeholder="القيمة" title="نسبة الخصم أو النقاط" value="${Number(item.value) || 0}" min="0" max="500" data-k="value" data-i="${idx}">
-          <input type="number" placeholder="النسبة %" title="نسبة الظهور %" value="${Number(item.weight) || 0}" min="0" max="1000" data-k="weight" data-i="${idx}">
-          <button type="button" class="btn btn-danger" style="padding:5px 9px;font-size:0.78rem;" data-del="${idx}">🗑️</button>
-        </div>
-      `).join('');
+  function renderAdminControlPanel(hostEl) {
+    if (!hostEl) return;
+    var tabs = [
+      { id: "general", label: "⚙️ عام والكوبونات" },
+      { id: "streak",  label: "🔥 سلسلة 7 أيام والصندوق" },
+      { id: "prizes",  label: "🎁 الجوائز والكشط" },
+      { id: "games",   label: "🎮 الألعاب والصعوبة والنقاط" },
+      { id: "roi",     label: "📊 إحصائيات ROI" }
+    ];
 
-      const updateSum = () => {
-        const s = arr.reduce((acc, x) => acc + (Number(x.weight) || 0), 0);
-        const sEl = document.getElementById(sumId);
-        if (sEl) sEl.innerHTML = `إجمالي النسب الحالية: <b style="color:${s === 100 ? '#15803d' : '#b45309'};">${s}%</b> ${s === 100 ? '✅ مثالي' : '(يُحسب نسبياً تلقائياً)'}`;
-      };
-      updateSum();
+    var html =
+      '<div style="border:2px solid #d59e2a;border-radius:18px;padding:14px;margin:14px 0;background:var(--panel-bg,#fff);">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">' +
+          '<strong style="font-size:1rem;color:var(--primary,#153422);">🎮 لوحة التحكم الشاملة بمركز الألعاب V96 Pro</strong>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+            '<button type="button" class="og-btn og-btn-gold" style="padding:7px 14px;font-size:.8rem;" onclick="window.ZaitGamesV96.adminSaveConfig()">💾 حفظ ونشر التعديلات</button>' +
+            '<button type="button" class="og-btn og-btn-ghost" style="padding:7px 10px;font-size:.78rem;" onclick="window.ZaitGamesV96.adminResetMyTries()">🔄 تصفير محاولاتي للتجربة</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="og-adm-tabs">' + tabs.map(function (t) {
+          return '<button type="button" class="og-adm-tab ' + (adminSubTab === t.id ? "active" : "") + '" onclick="window.ZaitGamesV96.adminSetTab(\'' + t.id + '\')">' + t.label + '</button>';
+        }).join("") + '</div>';
 
-      el.querySelectorAll('input, select').forEach(inp => {
-        inp.addEventListener('change', () => {
-          const i = Number(inp.getAttribute('data-i')), k = inp.getAttribute('data-k');
-          arr[i][k] = (k === 'value' || k === 'weight') ? Number(inp.value) || 0 : inp.value;
-          updateSum();
-        });
-      });
-      el.querySelectorAll('[data-del]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          arr.splice(Number(btn.getAttribute('data-del')), 1);
-          renderPoolRows(targetId, arr, allowNone, sumId);
-        });
-      });
+    if (adminSubTab === "general") {
+      html +=
+        '<div class="og-adm-row"><label><input type="checkbox" id="og-c-en" ' + (cfg.enabled ? "checked" : "") + '> تشغيل مركز الألعاب بالكامل</label><label><input type="checkbox" id="og-c-flt" ' + (cfg.showFloatBtn ? "checked" : "") + '> زر الصفحة الرئيسية العائم</label><label><input type="checkbox" id="og-c-sb" ' + (cfg.showSidebarBtn ? "checked" : "") + '> زر القائمة الجانبية</label></div>' +
+        '<div class="og-adm-row"><span>🎁 الحد اليومي للجوائز لكل عميل:</span><input type="number" class="og-adm-inp" id="og-c-cap" min="1" max="50" value="' + cfg.dailyPrizeCap + '" style="width:76px;"></div>' +
+        '<div class="og-adm-row"><span>🪙 محاولات كارت الكشط اليومية (خارج الحد):</span><input type="number" class="og-adm-inp" id="og-c-scap" min="1" max="20" value="' + cfg.dailyScratchCap + '" style="width:76px;"></div>' +
+        '<div class="og-adm-row"><span>⏳ مدة صلاحية الكوبون (بالساعات):</span><input type="number" class="og-adm-inp" id="og-c-exp" min="1" max="720" value="' + cfg.couponExpiryHours + '" style="width:80px;"></div>' +
+        '<div class="og-adm-row"><span>🛒 الحد الأدنى الافتراضي للطلب (جنيه):</span><input type="number" class="og-adm-inp" id="og-c-min" min="0" max="10000" value="' + cfg.defaultMinOrder + '" style="width:90px;"></div>' +
+        '<div class="og-adm-row"><span>🧠 عدد أسئلة مسابقة خبير الزيتون:</span><input type="number" class="og-adm-inp" id="og-c-qcnt" min="3" max="30" value="' + cfg.quizQuestionCount + '" style="width:76px;"></div>' +
+        '<div class="og-adm-row"><label><input type="checkbox" id="og-c-lb" ' + (cfg.enableLeaderboard ? "checked" : "") + '> تفعيل لوحة المتصدرين</label><label><input type="checkbox" id="og-c-ms" ' + (cfg.enableDailyMission ? "checked" : "") + '> المهمة اليومية</label><span>مكافأة المهمة:</span><input type="number" class="og-adm-inp" id="og-c-mbon" value="' + cfg.dailyMissionBonus + '" style="width:70px;"></div>';
+    } else if (adminSubTab === "streak") {
+      var days = (cfg.dailyStreak && cfg.dailyStreak.days) || [5, 10, 15, 20, 25, 30];
+      var chest = (cfg.dailyStreak && cfg.dailyStreak.bigChestPrizes) || [];
+      var chestSum = chest.reduce(function (s, x) { return s + Number(x.weight || 0); }, 0);
+      html +=
+        '<div class="og-adm-row"><label><input type="checkbox" id="og-st-en" ' + (cfg.dailyStreak.enabled ? "checked" : "") + '> 🔥 تفعيل سلسلة هدايا الدخول اليومي (7 أيام)</label></div>' +
+        '<div class="og-adm-row"><strong style="width:100%;">⭐ نقاط الولاء للأيام (1 إلى 6):</strong>' +
+          '<div class="og-adm-grid3">' +
+            days.map(function (val, idx) {
+              return '<label style="font-size:.76rem;">يوم ' + (idx + 1) + ':<input type="number" class="og-adm-inp" id="og-st-d' + idx + '" value="' + val + '" style="width:100%;margin-top:3px;"></label>';
+            }).join("") +
+          '</div>' +
+        '</div>' +
+        '<div class="og-adm-row"><strong style="color:#d97706;">🎁 هدايا ونسب الصندوق الكبير (اليوم 7) — مجموع النسب: ' + chestSum + '%</strong>' +
+          '<button type="button" class="og-btn og-btn-green" style="padding:5px 10px;font-size:.75rem;" onclick="window.ZaitGamesV96.adminAddPrize(\'chest\')">+ إضافة هدية للصندوق</button></div>' +
+        renderPrizeListEditor("chest", chest);
+    } else if (adminSubTab === "prizes") {
+      var pSum = (cfg.prizePool || []).reduce(function (s, x) { return s + Number(x.weight || 0); }, 0);
+      var sSum = (cfg.scratchPrizes || []).reduce(function (s, x) { return s + Number(x.weight || 0); }, 0);
+      html +=
+        '<div class="og-adm-row"><strong>🎁 سلة الجوائز العشوائية للفوز — المجموع: ' + pSum + '%</strong><button type="button" class="og-btn og-btn-green" style="padding:5px 10px;font-size:.75rem;" onclick="window.ZaitGamesV96.adminAddPrize(\'pool\')">+ إضافة جائزة</button></div>' +
+        renderPrizeListEditor("pool", cfg.prizePool || []) +
+        '<div class="og-adm-row" style="margin-top:12px;"><strong>🪙 عناصر ونسب كارت الكشط — المجموع: ' + sSum + '%</strong><button type="button" class="og-btn og-btn-green" style="padding:5px 10px;font-size:.75rem;" onclick="window.ZaitGamesV96.adminAddPrize(\'scratch\')">+ إضافة عنصر</button></div>' +
+        renderPrizeListEditor("scratch", cfg.scratchPrizes || []);
+    } else if (adminSubTab === "games") {
+      html += '<div style="font-size:.76rem;opacity:.8;margin-bottom:8px;">تحكم في تفعيل كل لعبة + <b>الوقت (ث)</b> + <b>نقاط المكسب المطلوبة (الهدف)</b> لكل مستوى صعوبة:</div>';
+      html += getAllGamesMeta().map(function (gm) {
+        var gc = getGameConfig(gm.id);
+        return (
+          '<div class="og-adm-row" style="flex-direction:column;align-items:stretch;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+              '<strong>' + gm.icon + ' ' + esc(gm.name) + '</strong>' +
+              '<label><input type="checkbox" class="og-g-en" data-gid="' + gm.id + '" ' + (gc.enabled !== false ? "checked" : "") + '> مفعّلة</label>' +
+            '</div>' +
+            (gm.id !== "scratch" ? (
+              '<div class="og-adm-grid3">' +
+                ['easy', 'medium', 'hard'].map(function (df) {
+                  var dName = df === 'easy' ? '🟢 سهل' : (df === 'medium' ? '🟡 متوسط' : '🔴 صعب');
+                  return (
+                    '<div style="background:rgba(0,0,0,.04);padding:6px;border-radius:9px;">' +
+                      '<div style="font-weight:800;font-size:.74rem;margin-bottom:4px;">' + dName + '</div>' +
+                      '<label style="display:block;font-size:.7rem;">الوقت (ث):<input type="number" class="og-adm-inp og-g-time" data-gid="' + gm.id + '" data-df="' + df + '" value="' + gc.times[df] + '" style="width:100%;"></label>' +
+                      '<label style="display:block;font-size:.7rem;margin-top:3px;">نقاط المكسب:<input type="number" class="og-adm-inp og-g-targ" data-gid="' + gm.id + '" data-df="' + df + '" value="' + gc.targets[df] + '" style="width:100%;"></label>' +
+                    '</div>'
+                  );
+                }).join("") +
+              '</div>'
+            ) : '<div style="font-size:.74rem;opacity:.75;">كارت حظ يومي — يتم تعديل نسبه من تبويب (الجوائز والكشط).</div>') +
+          '</div>'
+        );
+      }).join("");
+    } else if (adminSubTab === "roi") {
+      var plays = analytics.plays || {};
+      var totalPlays = Object.values(plays).reduce(function (s, n) { return s + Number(n || 0); }, 0);
+      html +=
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px;">' +
+          '<div class="og-adm-row" style="flex-direction:column;text-align:center;"><span>🎮 إجمالي مرات اللعب</span><strong style="font-size:1.25rem;color:#15803d;">' + totalPlays + '</strong></div>' +
+          '<div class="og-adm-row" style="flex-direction:column;text-align:center;"><span>🎟️ كوبونات صادرة</span><strong style="font-size:1.25rem;color:#d97706;">' + Number(analytics.couponsIssued || 0) + '</strong></div>' +
+          '<div class="og-adm-row" style="flex-direction:column;text-align:center;"><span>✅ كوبونات استُخدمت</span><strong style="font-size:1.25rem;color:#0284c7;">' + Number(analytics.couponsRedeemed || 0) + '</strong></div>' +
+          '<div class="og-adm-row" style="flex-direction:column;text-align:center;"><span>💰 مبيعات عبر الألعاب</span><strong style="font-size:1.25rem;color:#15803d;">' + Number(analytics.revenueFromGames || 0).toLocaleString("ar-EG") + ' ج</strong></div>' +
+        '</div>' +
+        '<div class="og-adm-row" style="flex-direction:column;align-items:stretch;"><strong>📈 الأكثر لعباً:</strong>' +
+          getAllGamesMeta().map(function (gm) {
+            return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed rgba(0,0,0,.08);"><span>' + gm.icon + ' ' + esc(gm.name) + '</span><strong>' + Number(plays[gm.id] || 0) + ' مرة</strong></div>';
+          }).join("") +
+        '</div>';
     }
 
-    const gamesRows = SKILL_GAMES.map(m => {
-      const g = (cfg.games && cfg.games[m.key]) || { enabled: true, title: m.key, times: { easy: 30, medium: 24, hard: 18 } };
-      const t = g.times || { easy: 30, medium: 24, hard: 18 };
-      return `
-        <div class="og-adm-box">
-          <label style="display:flex;align-items:center;gap:8px;font-weight:900;color:#153422;cursor:pointer;margin:0;">
-            <input type="checkbox" id="og95-en-${m.key}" ${g.enabled !== false ? 'checked' : ''} style="width:18px;height:18px;margin:0;accent-color:#15803d;">
-            <span>${m.icon} ${esc(g.title)}</span>
-          </label>
-          <div class="og-adm-grid">
-            <div class="og-adm-field"><label>⏱️ وقت السهل (ثانية)</label><input type="number" id="og95-te-${m.key}" value="${Number(t.easy) || 30}" min="10" max="300"></div>
-            <div class="og-adm-field"><label>⏱️ وقت المتوسط (ثانية)</label><input type="number" id="og95-tm-${m.key}" value="${Number(t.medium) || 24}" min="10" max="300"></div>
-            <div class="og-adm-field"><label>⏱️ وقت الصعب (ثانية)</label><input type="number" id="og95-th-${m.key}" value="${Number(t.hard) || 18}" min="10" max="300"></div>
-          </div>
-        </div>`;
-    }).join('');
+    html += '</div>';
+    hostEl.innerHTML = html;
+  }
 
-    const customQsText = ((cfg.games && cfg.games.quiz && cfg.games.quiz.customQuestions) || []).map(q => {
-      const opts = q.options || [];
-      return [q.q, opts[0] || '', opts[1] || '', opts[2] || '', q.fact || ''].join(' | ');
-    }).join('\n');
+  function renderPrizeListEditor(kind, list) {
+    return list.map(function (p, i) {
+      return (
+        '<div class="og-adm-row" data-pkind="' + kind + '" data-pidx="' + i + '">' +
+          '<input type="text" class="og-adm-inp og-p-lbl" value="' + esc(p.label) + '" placeholder="اسم الهدية" style="flex:1;min-width:130px;">' +
+          '<select class="og-adm-inp og-p-type">' +
+            '<option value="points" ' + (p.type === "points" ? "selected" : "") + '>⭐ نقاط</option>' +
+            '<option value="percent" ' + (p.type === "percent" ? "selected" : "") + '>🎟️ خصم %</option>' +
+            '<option value="free_shipping" ' + (p.type === "free_shipping" ? "selected" : "") + '>🚚 شحن مجاني</option>' +
+            '<option value="none" ' + (p.type === "none" ? "selected" : "") + '>🌿 حظ أوفر</option>' +
+          '</select>' +
+          '<label style="font-size:.72rem;">القيمة:<input type="number" class="og-adm-inp og-p-val" value="' + Number(p.value || 0) + '" style="width:58px;"></label>' +
+          '<label style="font-size:.72rem;">حد طلب:<input type="number" class="og-adm-inp og-p-min" value="' + Number(p.minOrder || 0) + '" style="width:66px;"></label>' +
+          '<label style="font-size:.72rem;">النسبة%:<input type="number" class="og-adm-inp og-p-wgt" value="' + Number(p.weight || 0) + '" style="width:56px;"></label>' +
+          '<button type="button" class="og-ic-btn red" onclick="window.ZaitGamesV96.adminDelPrize(\'' + kind + '\',' + i + ')">🗑️</button>' +
+        '</div>'
+      );
+    }).join("");
+  }
 
-    mount.innerHTML = `
-      <div class="og-adm-box" style="border-color:#c59b27;background:rgba(197,155,39,0.08);">
-        <h4>⚙️ الإعدادات العامة وحد الجوائز اليومية</h4>
-        <label style="display:flex;align-items:center;gap:8px;font-weight:900;cursor:pointer;margin:0 0 8px;">
-          <input type="checkbox" id="og95-master" ${cfg.enabled !== false ? 'checked' : ''} style="width:18px;height:18px;margin:0;accent-color:#15803d;">
-          <span>✅ تشغيل مركز الألعاب بالكامل في المتجر</span>
-        </label>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;">
-          <label style="display:flex;align-items:center;gap:6px;font-weight:700;margin:0;"><input type="checkbox" id="og95-fab" ${cfg.showHomeFab !== false ? 'checked' : ''} style="width:16px;height:16px;margin:0;"> زر الرئيسية فوق خدمة العملاء</label>
-          <label style="display:flex;align-items:center;gap:6px;font-weight:700;margin:0;"><input type="checkbox" id="og95-sb" ${cfg.showSidebarBtn !== false ? 'checked' : ''} style="width:16px;height:16px;margin:0;"> زر القائمة الجانبية</label>
-        </div>
-        <div class="og-adm-grid">
-          <div class="og-adm-field"><label>🎁 الحد الأقصى للجوائز يومياً للعميل</label><input type="number" id="og95-daily-cap" value="${Number(cfg.dailyRewardLimit) ?? 3}" min="0" max="50"></div>
-          <div class="og-adm-field"><label>🧠 عدد أسئلة مسابقة الخبير (ثابت بكل المستويات)</label><input type="number" id="og95-quiz-cnt" value="${Number(cfg.quizQuestionCount) || 5}" min="1" max="25"></div>
-        </div>
-      </div>
+  function readAdminDomIntoConfig() {
+    var valNum = function (id, def) { var e = document.getElementById(id); return e ? Number(e.value || def) : def; };
+    var valChk = function (id, def) { var e = document.getElementById(id); return e ? !!e.checked : def; };
 
-      <div class="og-adm-box" style="border-color:#15803d;">
-        <h4>🎲 سلة الجوائز العشوائية للألعاب (كوبون فريد مختلف لكل فوز وحساب!)</h4>
-        <div style="font-size:0.76rem;color:#475569;margin-bottom:8px;">عند فوز العميل في أي لعبة، يسحب النظام عشوائياً من هذه القائمة حسب النسبة % (الكوبونات تصدر فريدة لمرة واحدة وعلى حساب الفائز فقط):</div>
-        <div id="og95-pool-wrap"></div>
-        <div id="og95-pool-sum" style="font-size:0.8rem;margin:4px 0 8px;"></div>
-        <button type="button" class="btn btn-outline" style="width:100%;font-size:0.82rem;border-color:#15803d;color:#15803d;" id="og95-add-pool">➕ إضافة جائزة عشوائية جديدة</button>
-      </div>
-
-      <div class="og-adm-box" style="border-color:#d97706;background:rgba(217,119,6,0.06);">
-        <h4>🪙 كارت الحظ «اكشط قطرة الذهب» (مستقل تماماً عن حد الـ 3 جوائز اليومية!)</h4>
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-          <label style="display:flex;align-items:center;gap:6px;font-weight:800;margin:0;"><input type="checkbox" id="og95-sc-en" ${(cfg.scratchConfig && cfg.scratchConfig.enabled !== false) ? 'checked' : ''} style="width:17px;height:17px;margin:0;"> تفعيل كارت الكشط</label>
-          <div class="og-adm-field" style="width:160px;"><label>محاولات الكشط يومياً</label><input type="number" id="og95-sc-lim" value="${Number(cfg.scratchConfig && cfg.scratchConfig.dailyLimit) || 1}" min="1" max="20"></div>
-        </div>
-        <div style="font-size:0.76rem;color:#92400e;margin-bottom:6px;">حدد العناصر ونسبة ظهور كل عنصر (مثلاً: حظ أوفر 90% • خصم 5% بنسبة 5% • توصيل مجاني 5%):</div>
-        <div id="og95-sc-wrap"></div>
-        <div id="og95-sc-sum" style="font-size:0.8rem;margin:4px 0 8px;"></div>
-        <button type="button" class="btn btn-outline" style="width:100%;font-size:0.82rem;border-color:#d97706;color:#b45309;" id="og95-add-sc">➕ إضافة عنصر حظ جديد لكارت الكشط</button>
-      </div>
-
-      <div class="og-adm-box">
-        <h4>🧠 أسئلة إضافية مخصصة للمدير (بجانب بنك الـ 10,800+ سؤال الجاهز)</h4>
-        <div class="og-adm-field">
-          <label>اختياري — كل سطر: السؤال | الإجابة الصحيحة | خطأ 1 | خطأ 2 | المعلومة</label>
-          <textarea id="og95-custom-qs" rows="3">${esc(customQsText)}</textarea>
-        </div>
-      </div>
-
-      <h4 style="margin:12px 0 8px;color:#153422;">🎮 تشغيل/إيقاف والتحكم في وقت كل لعبة (سهل / متوسط / صعب):</h4>
-      ${gamesRows}
-
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-        <button type="button" class="btn" style="flex:2;min-width:190px;background:#15803d;color:#fff;font-weight:900;" id="og95-save-btn">💾 حفظ كل إعدادات الألعاب والجوائز</button>
-        <button type="button" class="btn btn-outline" style="flex:1;min-width:140px;border-color:#c59b27;color:#926d0b;" id="og95-open-btn">🎮 تجربة الألعاب الآن</button>
-        <button type="button" class="btn btn-outline" style="flex:1;min-width:140px;border-color:#028090;color:#028090;" id="og95-reset-btn">🔄 تصفير جوائز اليوم للتجربة</button>
-      </div>
-    `;
-
-    renderPoolRows('og95-pool-wrap', pool, false, 'og95-pool-sum');
-    renderPoolRows('og95-sc-wrap', scOutcomes, true, 'og95-sc-sum');
-
-    document.getElementById('og95-add-pool').addEventListener('click', () => {
-      pool.push({ id: 'r_' + Date.now(), label: 'خصم 7% هدية', type: 'coupon', value: 7, weight: 10 });
-      renderPoolRows('og95-pool-wrap', pool, false, 'og95-pool-sum');
-    });
-    document.getElementById('og95-add-sc').addEventListener('click', () => {
-      scOutcomes.push({ id: 's_' + Date.now(), label: 'خصم 5% فوري', type: 'coupon', value: 5, weight: 5 });
-      renderPoolRows('og95-sc-wrap', scOutcomes, true, 'og95-sc-sum');
-    });
-    document.getElementById('og95-open-btn').addEventListener('click', () => window.OliveGames_open());
-    document.getElementById('og95-reset-btn').addEventListener('click', () => {
-      localStorage.removeItem(DAILY_CAP_KEY);
-      localStorage.removeItem(SCRATCH_LOG_KEY);
-      if (typeof window.showToast === 'function') window.showToast('✅ تم تصفير عداد الجوائز اليومي وكارت الكشط للتجربة!', 'success');
-    });
-
-    document.getElementById('og95-save-btn').addEventListener('click', async () => {
-      const next = getCfg();
-      next.enabled = !!document.getElementById('og95-master').checked;
-      next.showHomeFab = !!document.getElementById('og95-fab').checked;
-      next.showSidebarBtn = !!document.getElementById('og95-sb').checked;
-      next.dailyRewardLimit = Math.max(0, Number(document.getElementById('og95-daily-cap').value) || 0);
-      next.quizQuestionCount = Math.max(1, Math.min(25, Number(document.getElementById('og95-quiz-cnt').value) || 5));
-      next.rewardPool = pool;
-      next.scratchConfig = {
-        enabled: !!document.getElementById('og95-sc-en').checked,
-        dailyLimit: Math.max(1, Number(document.getElementById('og95-sc-lim').value) || 1),
-        outcomes: scOutcomes
-      };
-      SKILL_GAMES.forEach(m => {
-        if (!next.games[m.key]) next.games[m.key] = { title: m.key };
-        next.games[m.key].enabled = !!document.getElementById('og95-en-' + m.key).checked;
-        next.games[m.key].times = {
-          easy: Math.max(10, Number(document.getElementById('og95-te-' + m.key).value) || 30),
-          medium: Math.max(10, Number(document.getElementById('og95-tm-' + m.key).value) || 24),
-          hard: Math.max(10, Number(document.getElementById('og95-th-' + m.key).value) || 18)
-        };
+    if (adminSubTab === "general") {
+      cfg.enabled = valChk("og-c-en", cfg.enabled);
+      cfg.showFloatBtn = valChk("og-c-flt", cfg.showFloatBtn);
+      cfg.showSidebarBtn = valChk("og-c-sb", cfg.showSidebarBtn);
+      cfg.dailyPrizeCap = Math.max(1, valNum("og-c-cap", cfg.dailyPrizeCap));
+      cfg.dailyScratchCap = Math.max(1, valNum("og-c-scap", cfg.dailyScratchCap));
+      cfg.couponExpiryHours = Math.max(1, valNum("og-c-exp", cfg.couponExpiryHours));
+      cfg.defaultMinOrder = Math.max(0, valNum("og-c-min", cfg.defaultMinOrder));
+      cfg.quizQuestionCount = Math.max(3, valNum("og-c-qcnt", cfg.quizQuestionCount));
+      cfg.enableLeaderboard = valChk("og-c-lb", cfg.enableLeaderboard);
+      cfg.enableDailyMission = valChk("og-c-ms", cfg.enableDailyMission);
+      cfg.dailyMissionBonus = Math.max(0, valNum("og-c-mbon", cfg.dailyMissionBonus));
+    } else if (adminSubTab === "streak") {
+      cfg.dailyStreak.enabled = valChk("og-st-en", cfg.dailyStreak.enabled);
+      for (var i = 0; i < 6; i++) cfg.dailyStreak.days[i] = Math.max(1, valNum("og-st-d" + i, (i + 1) * 5));
+      cfg.dailyStreak.bigChestPrizes = readPrizeRows("chest");
+    } else if (adminSubTab === "prizes") {
+      cfg.prizePool = readPrizeRows("pool");
+      cfg.scratchPrizes = readPrizeRows("scratch");
+    } else if (adminSubTab === "games") {
+      document.querySelectorAll(".og-g-en[data-gid]").forEach(function (el) {
+        var gid = el.getAttribute("data-gid");
+        cfg.games[gid] = getGameConfig(gid);
+        cfg.games[gid].enabled = !!el.checked;
       });
-      const cText = (document.getElementById('og95-custom-qs') || {}).value || '';
-      next.games.quiz.customQuestions = cText.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-        const p = l.split('|').map(x => x.trim());
-        return p.length >= 3 ? { q: p[0], options: [p[1], p[2], p[3] || 'خيار آخر'], correct: 0, fact: p[4] || '' } : null;
-      }).filter(Boolean);
+      document.querySelectorAll(".og-g-time[data-gid]").forEach(function (el) {
+        var gid = el.getAttribute("data-gid"), df = el.getAttribute("data-df");
+        cfg.games[gid] = getGameConfig(gid);
+        cfg.games[gid].times[df] = Math.max(5, Number(el.value || 25));
+      });
+      document.querySelectorAll(".og-g-targ[data-gid]").forEach(function (el) {
+        var gid = el.getAttribute("data-gid"), df = el.getAttribute("data-df");
+        cfg.games[gid] = getGameConfig(gid);
+        cfg.games[gid].targets[df] = Math.max(1, Number(el.value || 20));
+      });
+    }
+  }
 
-      const btn = document.getElementById('og95-save-btn');
-      btn.disabled = true; btn.textContent = '⏳ جاري الحفظ...';
-      const ok = typeof window.V95_saveGamesConfig === 'function' ? await window.V95_saveGamesConfig(next) : false;
-      btn.disabled = false; btn.textContent = '💾 حفظ كل إعدادات الألعاب والجوائز';
-      if (typeof window.showToast === 'function') {
-        window.showToast(ok ? '✅ تم حفظ إعدادات الـ 8 ألعاب والجوائز العشوائية بنجاح!' : '⚠️ تم الحفظ محلياً — اتصل بالإنترنت للمزامنة', ok ? 'success' : 'info');
-      }
+  function readPrizeRows(kind) {
+    var out = [];
+    document.querySelectorAll('.og-adm-row[data-pkind="' + kind + '"]').forEach(function (row, idx) {
+      out.push({
+        id: kind + "_" + idx + "_" + Date.now(),
+        label: (row.querySelector(".og-p-lbl").value || "هدية").trim(),
+        type: row.querySelector(".og-p-type").value,
+        value: Number(row.querySelector(".og-p-val").value || 0),
+        minOrder: Number(row.querySelector(".og-p-min").value || 0),
+        weight: Math.max(0, Number(row.querySelector(".og-p-wgt").value || 0))
+      });
     });
+    return out;
+  }
+
+  // =========================================================================
+  // PUBLIC API & LIFECYCLE
+  // =========================================================================
+  function openGames(directGameId) {
+    if (!cfg.enabled) return toast("مركز الألعاب متوقف مؤقتاً من الإدارة", "info");
+    var ov = ensureOverlay();
+    ov.classList.add("open");
+    isOpen = true;
+    syncFromCloud();
+    if (directGameId) openGameEntry(directGameId);
+    else renderHub();
+  }
+
+  function closeGames() {
+    stopActiveGame();
+    isOpen = false;
+    var ov = document.getElementById("og-overlay");
+    if (ov) ov.classList.remove("open");
+  }
+
+  window.ZaitGamesV96 = {
+    open: openGames,
+    close: closeGames,
+    backToHub: renderHub,
+    openGame: openGameEntry,
+    startGame: startGameRun,
+    openCoupons: openCouponsView,
+    openLeaderboard: openLeaderboardView,
+    claimStreak: claimDailyStreakReward,
+    setCat: function (c) { currentCategory = c; renderHub(); },
+    toggleSound: function () {
+      soundOn = !soundOn;
+      var b = document.getElementById("og-snd-btn");
+      if (b) b.textContent = soundOn ? "🔊" : "🔇";
+    },
+    getConfig: function () { return cfg; },
+    getActiveCoupons: getActiveCoupons,
+    applyCouponAndShop: function (code) {
+      try {
+        navigator.clipboard && navigator.clipboard.writeText(code).catch(function () {});
+        localStorage.setItem("zait_v96_active_promo", code);
+      } catch (e) {}
+      closeGames();
+      var inp = document.getElementById("promo-code-input") || document.getElementById("coupon-input") || document.querySelector('input[placeholder*="كوبون"], input[placeholder*="خصم"]');
+      if (inp) {
+        inp.value = code;
+        inp.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      if (typeof window.applyPromoCode === "function") {
+        try { window.applyPromoCode(); } catch (e) {}
+      }
+      toast("✅ تم نسخ الكود (" + code + ") وتجهيزه في السلة! تسوّق الآن 🛒", "success");
+    },
+    mountAdminPanel: function (el) {
+      window.__V96_ADMIN_HOST__ = el;
+      renderAdminControlPanel(el);
+    },
+    adminSetTab: function (t) {
+      readAdminDomIntoConfig();
+      adminSubTab = t;
+      renderAdminControlPanel(window.__V96_ADMIN_HOST__);
+    },
+    adminAddPrize: function (kind) {
+      readAdminDomIntoConfig();
+      var fresh = { id: "nw_" + Date.now(), label: "هدية جديدة 🎁", type: "points", value: 15, minOrder: 0, weight: 10 };
+      if (kind === "chest") cfg.dailyStreak.bigChestPrizes.push(fresh);
+      else if (kind === "pool") cfg.prizePool.push(fresh);
+      else cfg.scratchPrizes.push(fresh);
+      renderAdminControlPanel(window.__V96_ADMIN_HOST__);
+    },
+    adminDelPrize: function (kind, idx) {
+      readAdminDomIntoConfig();
+      if (kind === "chest") cfg.dailyStreak.bigChestPrizes.splice(idx, 1);
+      else if (kind === "pool") cfg.prizePool.splice(idx, 1);
+      else cfg.scratchPrizes.splice(idx, 1);
+      renderAdminControlPanel(window.__V96_ADMIN_HOST__);
+    },
+    adminSaveConfig: async function () {
+      readAdminDomIntoConfig();
+      saveLocalJson(CFG_STORAGE_KEY, cfg);
+      var fs = getFsHelpers();
+      if (navigator.onLine && fs) {
+        try {
+          await fs.setDoc(fs.doc(fs.db, CFG_DOC_PATH[0], CFG_DOC_PATH[1]), cfg, { merge: true });
+          toast("✅ تم حفظ ونشر إعدادات الألعاب V96 لكل العملاء!", "success");
+        } catch (e) {
+          toast("✅ تم الحفظ محلياً (تحقق من قواعد Firestore للمزامنة)", "info");
+        }
+      } else {
+        toast("✅ تم حفظ الإعدادات محلياً!", "success");
+      }
+      if (typeof window.V96_syncButtonsVisibility === "function") window.V96_syncButtonsVisibility();
+    },
+    adminResetMyTries: async function () {
+      pState.dailyPrizesWon = 0;
+      pState.dailyScratchesUsed = 0;
+      pState.lastStreakClaimDate = "";
+      pState.missionDone = false;
+      await syncPlayerCapsAndCouponsToCloud();
+      toast("🔄 تم تصفير محاولاتك وهدية اليوم للتجربة الفورية!", "success");
+    }
   };
 
-  window.OliveGames_open = function (initialKey) {
-    const ov = ensureModal();
-    ov.classList.add('open');
-    if (initialKey === 'scratch') window.OliveGames_startScratch();
-    else if (initialKey) window.OliveGames_pickDifficulty(initialKey);
-    else window.OliveGames_renderLobby();
-  };
+  // Compatibility alias with existing V94/V95 buttons across the store
+  window.ZaitOliveGames = window.ZaitGamesV96;
+  window.openOliveGamesHub = openGames;
+  window.openGamesHub = openGames;
+
+  syncFromCloud();
 })();
