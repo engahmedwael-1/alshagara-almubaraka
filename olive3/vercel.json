@@ -1,15 +1,11 @@
 {
   "headers": [
     {
-      "source": "/sw.js",
+      "source": "/(index\\.html|sw\\.js|manifest\\.json|v92-pro\\.js|v92-pro\\.css)",
       "headers": [
         {
           "key": "Cache-Control",
           "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key": "Service-Worker-Allowed",
-          "value": "/"
         }
       ]
     },
@@ -23,7 +19,7 @@
       ]
     },
     {
-      "source": "/(icon-.*\\.png|favicon\\.ico|apple-touch-icon\\.png|og-share\\.jpg)",
+      "source": "/(icon-.*\\.png|favicon\\.ico|apple-touch-icon\\.png|og-share\\.jpg|1000392409\\.jpeg)",
       "headers": [
         {
           "key": "Cache-Control",
