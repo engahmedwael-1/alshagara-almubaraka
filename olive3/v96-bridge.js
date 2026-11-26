@@ -7,10 +7,10 @@
   var VAULT_DB = "zait_v96_games_vault";
   var VAULT_STORE = "assets";
   var FILES_TO_VAULT = [
-    "./olive-games.css?v=96",
-    "./olive-games.js?v=96",
-    "./olive-quiz-bank.js?v=96",
-    "./olive-games-extra.js?v=96"
+    "./olive-games.css?v=97",
+    "./olive-games.js?v=97",
+    "./olive-quiz-bank.js?v=97",
+    "./olive-games-extra.js?v=97"
   ];
   var loadedPromise = null;
 
@@ -92,13 +92,13 @@
     }
     if (!loadedPromise) {
       loadedPromise = (async function () {
-        var css = await fetchOrVault("./olive-games.css?v=96");
+        var css = await fetchOrVault("./olive-games.css?v=97");
         injectCssText(css);
-        var quiz = await fetchOrVault("./olive-quiz-bank.js?v=96");
+        var quiz = await fetchOrVault("./olive-quiz-bank.js?v=97");
         runJsText(quiz, "zait-v96-quiz-run");
-        var core = await fetchOrVault("./olive-games.js?v=96");
+        var core = await fetchOrVault("./olive-games.js?v=97");
         runJsText(core, "zait-v96-core-run");
-        var extra = await fetchOrVault("./olive-games-extra.js?v=96");
+        var extra = await fetchOrVault("./olive-games-extra.js?v=97");
         if (extra) runJsText(extra, "zait-v96-extra-run");
       })();
     }
@@ -202,7 +202,7 @@
     setTimeout(mountCartNudgeAndAdminBox, 1200);
     setInterval(mountCartNudgeAndAdminBox, 5000);
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=96", { scope: "/" }).catch(function () {});
+      navigator.serviceWorker.register("./sw.js?v=97", { scope: "/" }).catch(function () {});
     }
   }
 

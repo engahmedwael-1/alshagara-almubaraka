@@ -1,13 +1,13 @@
-const SHELL_CACHE = 'zait-store-v96';
-const IMG_CACHE = 'zait-store-v96';
+const SHELL_CACHE = 'zait-store-v97';
+const IMG_CACHE = 'zait-store-v97';
 
 const STATIC_ASSETS = [
   '/style.css?v=96',
-  '/v95-pro.css?v=96',
+  '/v97-pro.css?v=96',
   '/olive-games.css?v=96',
-  '/v95-pro.js?v=96',
+  '/v97-pro.js?v=96',
   '/olive-quiz-bank.js?v=96',
-  '/olive-games.js?v=96', '/v96-bridge.js?v=96', '/olive-games-extra.js?v=96',
+  '/olive-games.js?v=96', '/v97-bridge.js?v=96', '/olive-games-extra.js?v=96',
   '/script.js?v=96',
   '/manifest.json?v=96',
   '/icon-192.png',
