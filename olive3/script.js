@@ -732,9 +732,19 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
             if (!promo && inputCode === 'EARLY10' && storeSettings.enablePreorderHarvest !== false) {
                 promo = { code: 'EARLY10', discount: 10, singleUse: false };
             }
-            if (!promo && typeof window.V94_findGameCoupon === 'function') {
-                const gPromo = window.V94_findGameCoupon(inputCode);
-                if (gPromo) promo = gPromo;
+            if (!promo && typeof window.V95_findPersonalGameCoupon === 'function') {
+                const resC = window.V95_findPersonalGameCoupon(inputCode);
+                if (resC && resC.error) {
+                    currentDiscountPercent = 0; appliedPromoCode = ""; window.__v95FreeShippingCoupon = false;
+                    let pMsg1 = document.getElementById('promo-msg-cart'); if(pMsg1) { pMsg1.textContent = resC.error; pMsg1.style.color = 'var(--danger)'; }
+                    let pMsg2 = document.getElementById('promo-msg'); if(pMsg2) { pMsg2.textContent = resC.error; pMsg2.style.color = 'var(--danger)'; }
+                    window.updateInvoiceUI();
+                    window.showToast(resC.error, 'error');
+                    return;
+                }
+                if (resC && resC.promo) {
+                    promo = resC.promo;
+                }
             }
             if (promo && promo.singleUse && promo.used) {
                 currentDiscountPercent = 0; appliedPromoCode = "";
@@ -746,7 +756,7 @@ let products = [], currentUser = null, isLoginMode = true, isCurrentUserAdmin = 
                 return;
             }
             if(promo) { 
-                currentDiscountPercent = promo.discount; appliedPromoCode = promo.code; 
+                currentDiscountPercent = Number(promo.discount) || 0; appliedPromoCode = promo.code; window.__v95FreeShippingCoupon = !!promo.freeShipping; 
                 let pMsg1 = document.getElementById('promo-msg-cart'); if(pMsg1) { pMsg1.textContent = `✅ تم تفعيل خصم ${promo.discount}%`; pMsg1.style.color = '#2a9d8f'; } 
                 let pMsg2 = document.getElementById('promo-msg'); if(pMsg2) { pMsg2.textContent = `✅ تم تفعيل خصم ${promo.discount}%`; pMsg2.style.color = '#2a9d8f'; } 
                 
@@ -1103,6 +1113,7 @@ try {
                         let oname = document.getElementById('order-name'); if(oname) oname.value = data.name || ''; let ophone = document.getElementById('order-phone1'); if(ophone) ophone.value = data.phone1 || user.phoneNumber || ''; let ophone2 = document.getElementById('order-phone2'); if(ophone2) ophone2.value = data.phone2 || ''; let oaddr = document.getElementById('order-address'); if(oaddr) oaddr.value = data.address || ''; if(data.gov) { let og = document.getElementById('order-gov'); if(og) { og.value = data.gov; og.dispatchEvent(new Event('change')); setTimeout(() => { let oc = document.getElementById('order-city'); if(oc && data.city) oc.value = data.city; }, 100); } } 
                         if(data.cart && data.cart.length > 0) { cart = data.cart; localStorage.setItem('cart', JSON.stringify(cart)); if(typeof window.V92_pruneUnavailableCartItems === 'function') window.V92_pruneUnavailableCartItems(false); }
                         if(data.savedForLater && data.savedForLater.length > 0) { savedForLater = data.savedForLater; localStorage.setItem('savedForLater', JSON.stringify(savedForLater)); }
+                        if(typeof window.V95_mergeCloudCouponsOnLogin === 'function') { window.V95_mergeCloudCouponsOnLogin(data.gameCoupons || [], user); }
                     } 
                     await setDoc(doc(db, 'users', user.uid), { email: user.email || user.phoneNumber || 'غير مسجل', name: user.displayName || (userDoc.exists() ? userDoc.data().name : ''), lastLogin: new Date().toISOString() }, { merge: true });
                 } catch(err) {}
@@ -1510,7 +1521,7 @@ try {
                 let enableFreeShip = storeSettings.enableFreeShipping !== false;
                 let targetAmount = (storeSettings && storeSettings.freeShippingThreshold) ? Number(storeSettings.freeShippingThreshold) : 1000;
                 if (gov && window.getShippingCostForGov) currentShippingCost = window.getShippingCostForGov(gov);
-                let finalShippingCost = (enableFreeShip && currentSubtotal >= targetAmount) ? 0 : currentShippingCost;
+                let finalShippingCost = ((enableFreeShip && currentSubtotal >= targetAmount) || window.__v95FreeShippingCoupon) ? 0 : currentShippingCost;
                 let finalTotal = (currentSubtotal - discountVal) + finalShippingCost; 
                 if(finalTotal < 0) finalTotal = 0; 
                 const mapLink = `https://www.google.com/maps?q=${lat},${lng}`; 
@@ -1528,10 +1539,15 @@ try {
                 giftWrapInfo: (storeSettings.enableGiftWrap !== false && document.getElementById('order-gift-wrap-cb') && document.getElementById('order-gift-wrap-cb').checked) ? (document.getElementById('order-gift-wrap-msg').value.trim() || 'تغليف كهدية فاخرة 🎀') : '', paymentMethod: payMethod || "", receiptUrl: receiptUrl || "", status: "قيد المراجعة", orderDate: new Date().toISOString() };
                 await addDoc(collection(db, 'orders'), orderPayload);
                 if (appliedPromoCode) {
-                    let usedPromoObj = promoCodesList.find(p => p.code === String(appliedPromoCode).split(' ')[0].trim());
+                    const cleanCodeUsed = String(appliedPromoCode).split(' ')[0].trim().toUpperCase();
+                    let usedPromoObj = promoCodesList.find(p => p.code === cleanCodeUsed);
                     if (usedPromoObj && usedPromoObj.id && usedPromoObj.singleUse) {
                         try { await deleteDoc(doc(db, 'promoCodes', usedPromoObj.id)); } catch(e) {}
                     }
+                    if (typeof window.V95_markPersonalCouponUsed === 'function') {
+                        try { await window.V95_markPersonalCouponUsed(cleanCodeUsed); } catch(e) {}
+                    }
+                    window.__v95FreeShippingCoupon = false;
                 }
                 if(currentUser) { await setDoc(doc(db, 'users', currentUser.uid), { name: name||"", phone1: phone1||"", phone2: phone2||"", gov: gov||"", city: city||"", address: addressDetails||"" }, { merge: true }); }
                 window.trackEvent('Purchase', { value: finalTotal, currency: 'EGP', content_type: 'product_group' });
@@ -19156,173 +19172,256 @@ window.showUserHistory = function(userId, userName) {
 })();
 
 // ============================================================================
-// V94 OLIVE GAMES BRIDGE (Firestore Config + Real Loyalty Points + Offline Sync)
+// V95 PRO OLIVE GAMES BRIDGE (Random Reward Pool + Weighted Scratch + Unique Per-Account Single-Use Coupons)
 // ============================================================================
 (function () {
-    if (window.__V94_GAMES_BRIDGE__) return;
-    window.__V94_GAMES_BRIDGE__ = true;
+    if (window.__V95_GAMES_BRIDGE__) return;
+    window.__V95_GAMES_BRIDGE__ = true;
 
-    const CFG_KEY = 'zait_v94_olive_games_config';
+    const CFG_KEY = 'zait_v95_olive_games_config';
     const PENDING_KEY = 'zait_v94_pending_game_rewards';
+    const COUPONS_KEY = 'zait_v95_my_personal_coupons';
 
-    const DEFAULT_GAMES_CONFIG = {
+    const DEFAULT_V95_CONFIG = {
         enabled: true,
         showHomeFab: true,
         showSidebarBtn: true,
+        dailyRewardLimit: 3,
+        quizQuestionCount: 5,
+        rewardPool: [
+            { id: 'r1', label: 'خصم 5% فوري', type: 'coupon', value: 5, weight: 35 },
+            { id: 'r2', label: '25 نقطة ولاء', type: 'points', value: 25, weight: 30 },
+            { id: 'r3', label: 'خصم 10% مميز', type: 'coupon', value: 10, weight: 15 },
+            { id: 'r4', label: '50 نقطة ولاء', type: 'points', value: 50, weight: 12 },
+            { id: 'r5', label: 'توصيل مجاني للطلب', type: 'free_shipping', value: 100, weight: 8 }
+        ],
+        scratchConfig: {
+            enabled: true,
+            dailyLimit: 1,
+            outcomes: [
+                { id: 's1', label: 'حظ أوفر في المرة القادمة', type: 'none', value: 0, weight: 90 },
+                { id: 's2', label: 'خصم 5% فوري', type: 'coupon', value: 5, weight: 5 },
+                { id: 's3', label: 'توصيل مجاني', type: 'free_shipping', value: 100, weight: 5 }
+            ]
+        },
         games: {
-            catch: {
-                enabled: true,
-                title: 'قطف الزيتون السيناوي',
-                rewardType: 'points',
-                points: 25,
-                couponCode: 'OLIVE5',
-                couponDiscount: 5,
-                cooldown: 'daily',
-                targetScore: 15
-            },
-            press: {
-                enabled: true,
-                title: 'تحدي العصر على البارد',
-                rewardType: 'coupon',
-                points: 30,
-                couponCode: 'COLD7',
-                couponDiscount: 7,
-                cooldown: 'daily'
-            },
-            scratch: {
-                enabled: true,
-                title: 'كارت اكشط قطرة الذهب',
-                rewardType: 'coupon',
-                points: 20,
-                couponCode: 'GOLD5',
-                couponDiscount: 5,
-                cooldown: 'daily',
-                prizesText: 'خصم 5% فوري (GOLD5) | 25 نقطة ولاء | خصم 7% (GOLD7) | 40 نقطة ولاء'
-            },
-            quiz: {
-                enabled: true,
-                title: 'تحدي خبير زيت الزيتون',
-                rewardType: 'points',
-                points: 35,
-                couponCode: 'EXPERT5',
-                couponDiscount: 5,
-                cooldown: 'weekly',
-                questions: [
-                    {
-                        q: 'ما هي أقصى درجة حرارة مسموحة في العصر على البارد للحفاظ على فوائد زيت الزيتون؟',
-                        options: ['أقل من 27 درجة مئوية', '60 درجة مئوية', '100 درجة مئوية'],
-                        correct: 0,
-                        fact: 'العصر على البارد تحت 27°م يحفظ مضادات الأكسدة والفيتامينات والنكهة السيناوية الأصيلة 🌿'
-                    },
-                    {
-                        q: 'ما هي نسبة الحموضة العالمية التي تثبت أن زيت الزيتون "بكر ممتاز"؟',
-                        options: ['أقل من 0.8%', 'أكثر من 3%', 'أكثر من 5%'],
-                        correct: 0,
-                        fact: 'كلما قلت الحموضة عن 0.8% زاد نقاء وجودة الزيت البكر الممتاز 🏅'
-                    },
-                    {
-                        q: 'ما هي أفضل طريقة لحفظ زيت الزيتون البكر الممتاز في المنزل؟',
-                        options: ['في عبوة داكنة بعيداً عن الحرارة والضوء', 'في زجاجة شفافة تحت الشمس', 'بجانب البوتاجاز مباشرة'],
-                        correct: 0,
-                        fact: 'الحرارة والضوء يأكسدان الزيت — لذلك نحفظه في عبوات داكنة محكمة الإغلاق 🫒'
-                    }
-                ]
-            },
-            memory: {
-                enabled: true,
-                title: 'ذاكرة مزرعة الشجرة المباركة',
-                rewardType: 'points',
-                points: 30,
-                couponCode: 'FARM5',
-                couponDiscount: 5,
-                cooldown: 'daily'
-            }
+            catch:  { enabled: true, title: 'قطف الزيتون السيناوي',       times: { easy: 30, medium: 25, hard: 20 } },
+            press:  { enabled: true, title: 'تحدي العصر على البارد',       times: { easy: 28, medium: 22, hard: 18 } },
+            quiz:   { enabled: true, title: 'تحدي خبير زيت الزيتون',       times: { easy: 90, medium: 65, hard: 45 }, customQuestions: [] },
+            memory: { enabled: true, title: 'ذاكرة مزرعة الشجرة المباركة', times: { easy: 45, medium: 35, hard: 28 } },
+            truck:  { enabled: true, title: 'سائق شاحنة زيت سيناء',        times: { easy: 28, medium: 24, hard: 20 } },
+            sorter: { enabled: true, title: 'فرز حبات الزيتون السريع',     times: { easy: 30, medium: 24, hard: 18 } },
+            drops:  { enabled: true, title: 'مطابقة قطرات الذهب',          times: { easy: 45, medium: 35, hard: 26 } }
         }
     };
 
-    function deepMergeConfig(remote) {
-        const base = JSON.parse(JSON.stringify(DEFAULT_GAMES_CONFIG));
+    function mergeV95(remote) {
+        const base = JSON.parse(JSON.stringify(DEFAULT_V95_CONFIG));
         if (!remote || typeof remote !== 'object') return base;
-        if (typeof remote.enabled === 'boolean') base.enabled = remote.enabled;
-        if (typeof remote.showHomeFab === 'boolean') base.showHomeFab = remote.showHomeFab;
-        if (typeof remote.showSidebarBtn === 'boolean') base.showSidebarBtn = remote.showSidebarBtn;
+        ['enabled', 'showHomeFab', 'showSidebarBtn'].forEach(k => { if (typeof remote[k] === 'boolean') base[k] = remote[k]; });
+        if (remote.dailyRewardLimit !== undefined) base.dailyRewardLimit = Math.max(0, Number(remote.dailyRewardLimit) || 0);
+        if (remote.quizQuestionCount !== undefined) base.quizQuestionCount = Math.max(1, Math.min(25, Number(remote.quizQuestionCount) || 5));
+        if (Array.isArray(remote.rewardPool) && remote.rewardPool.length > 0) base.rewardPool = remote.rewardPool;
+        if (remote.scratchConfig && typeof remote.scratchConfig === 'object') {
+            base.scratchConfig = Object.assign({}, base.scratchConfig, remote.scratchConfig);
+            if (!Array.isArray(base.scratchConfig.outcomes) || base.scratchConfig.outcomes.length === 0) {
+                base.scratchConfig.outcomes = DEFAULT_V95_CONFIG.scratchConfig.outcomes;
+            }
+        }
         if (remote.games && typeof remote.games === 'object') {
             Object.keys(base.games).forEach(k => {
                 if (remote.games[k] && typeof remote.games[k] === 'object') {
                     base.games[k] = Object.assign({}, base.games[k], remote.games[k]);
+                    if (remote.games[k].times) {
+                        base.games[k].times = Object.assign({}, DEFAULT_V95_CONFIG.games[k].times, remote.games[k].times);
+                    }
                 }
             });
         }
         return base;
     }
 
-    window.V94_getGamesConfig = function () {
+    window.V95_getGamesConfig = window.V94_getGamesConfig = function () {
         try {
-            if (storeSettings && storeSettings.oliveGamesConfig) {
-                const merged = deepMergeConfig(storeSettings.oliveGamesConfig);
-                try { localStorage.setItem(CFG_KEY, JSON.stringify(merged)); } catch (e) {}
-                return merged;
+            if (storeSettings && storeSettings.oliveGamesConfigV95) {
+                const m = mergeV95(storeSettings.oliveGamesConfigV95);
+                try { localStorage.setItem(CFG_KEY, JSON.stringify(m)); } catch (e) {}
+                return m;
             }
             const raw = localStorage.getItem(CFG_KEY);
-            if (raw) return deepMergeConfig(JSON.parse(raw));
+            if (raw) return mergeV95(JSON.parse(raw));
         } catch (e) {}
-        return deepMergeConfig(null);
+        return mergeV95(null);
     };
 
-    window.V94_saveGamesConfig = async function (newCfg) {
-        const clean = deepMergeConfig(newCfg);
-        storeSettings.oliveGamesConfig = clean;
+    window.V95_saveGamesConfig = window.V94_saveGamesConfig = async function (newCfg) {
+        const clean = mergeV95(newCfg);
+        storeSettings.oliveGamesConfigV95 = clean;
         try { localStorage.setItem(CFG_KEY, JSON.stringify(clean)); } catch (e) {}
         try {
-            await setDoc(doc(db, 'settings', 'main'), { oliveGamesConfig: clean }, { merge: true });
+            await setDoc(doc(db, 'settings', 'main'), { oliveGamesConfigV95: clean }, { merge: true });
             window.V94_syncGamesVisibility();
             if (typeof window.applySettingsToUI === 'function') window.applySettingsToUI();
             return true;
-        } catch (err) {
-            console.error('Save games config error:', err);
+        } catch (e) {
             return false;
+        }
+    };
+
+    // =========================================================================
+    // نظام الكوبونات الشخصية الفريدة (كوبون مختلف كل مرة + استخدام مرة واحدة + خاص بالحساب فقط)
+    // =========================================================================
+    function generateUniqueCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const randBlock = (len) => {
+            const arr = new Uint8Array(len);
+            if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(arr);
+            else for (let i = 0; i < len; i++) arr[i] = Math.floor(Math.random() * 256);
+            return Array.from(arr).map(b => chars[b % chars.length]).join('');
+        };
+        return 'ZM-' + randBlock(4) + '-' + randBlock(4);
+    }
+
+    function readLocalCoupons() {
+        try {
+            const arr = JSON.parse(localStorage.getItem(COUPONS_KEY) || '[]');
+            return Array.isArray(arr) ? arr : [];
+        } catch (e) { return []; }
+    }
+    function writeLocalCoupons(arr) {
+        try { localStorage.setItem(COUPONS_KEY, JSON.stringify((arr || []).slice(-60))); } catch (e) {}
+    }
+
+    async function syncCouponsToUserDoc(arr) {
+        if (!navigator.onLine || !currentUser || !currentUser.uid) return;
+        try {
+            const mine = arr.filter(c => !c.ownerUid || c.ownerUid === currentUser.uid).map(c => Object.assign({}, c, {
+                ownerUid: currentUser.uid,
+                ownerEmail: (currentUser.email || '').toLowerCase()
+            }));
+            await setDoc(doc(db, 'users', currentUser.uid), { gameCoupons: mine.slice(-60) }, { merge: true });
+        } catch (e) {}
+    }
+
+    window.V95_getMyPersonalCoupons = function () {
+        const all = readLocalCoupons();
+        if (currentUser && currentUser.uid) {
+            return all.filter(c => !c.ownerUid || c.ownerUid === currentUser.uid);
+        }
+        return all.filter(c => !c.ownerUid);
+    };
+
+    window.V95_issueUniquePersonalCoupon = async function (opts) {
+        const all = readLocalCoupons();
+        let code = generateUniqueCode();
+        while (all.some(c => c.code === code)) code = generateUniqueCode();
+        const coupon = {
+            code: code,
+            discount: opts.freeShipping ? 0 : Math.max(1, Math.min(50, Number(opts.discount) || 5)),
+            freeShipping: !!opts.freeShipping,
+            label: opts.label || (opts.freeShipping ? 'توصيل مجاني' : `خصم ${opts.discount || 5}%`),
+            singleUse: true,
+            used: false,
+            ownerUid: (currentUser && currentUser.uid) ? currentUser.uid : '',
+            ownerEmail: (currentUser && currentUser.email) ? currentUser.email.toLowerCase() : '',
+            gameKey: opts.gameKey || '',
+            createdAt: new Date().toISOString()
+        };
+        all.push(coupon);
+        writeLocalCoupons(all);
+        await syncCouponsToUserDoc(all);
+        return coupon;
+    };
+
+    window.V95_mergeCloudCouponsOnLogin = async function (cloudArr, user) {
+        if (!user || !user.uid) return;
+        const local = readLocalCoupons();
+        const byCode = new Map();
+        (Array.isArray(cloudArr) ? cloudArr : []).forEach(c => {
+            if (c && c.code) byCode.set(String(c.code).toUpperCase(), c);
+        });
+        local.forEach(c => {
+            if (!c || !c.code) return;
+            const k = String(c.code).toUpperCase();
+            // Bind guest-offline coupons to this logged-in account
+            if (!c.ownerUid || c.ownerUid === user.uid) {
+                const existing = byCode.get(k);
+                const merged = Object.assign({}, c, {
+                    ownerUid: user.uid,
+                    ownerEmail: (user.email || '').toLowerCase(),
+                    used: !!(c.used || (existing && existing.used))
+                });
+                byCode.set(k, merged);
+            }
+        });
+        const mergedList = Array.from(byCode.values()).slice(-60);
+        // Keep coupons from other local accounts isolated, update current user's coupons
+        const others = local.filter(c => c.ownerUid && c.ownerUid !== user.uid);
+        writeLocalCoupons(others.concat(mergedList));
+        await syncCouponsToUserDoc(mergedList);
+    };
+
+    window.V95_findPersonalGameCoupon = function (codeUpper) {
+        const code = String(codeUpper || '').trim().toUpperCase();
+        if (!code || !code.startsWith('ZM-')) return null;
+        const all = readLocalCoupons();
+        const found = all.find(c => String(c.code || '').toUpperCase() === code);
+        if (!found) {
+            return { error: '❌ هذا الكوبون خاص بحساب عميل آخر أو غير مسجل على حسابك!' };
+        }
+        if (found.ownerUid) {
+            if (!currentUser || !currentUser.uid) {
+                return { error: '🔒 يرجى تسجيل الدخول بنفس الحساب الذي ربح هذا الكوبون لاستخدامه!' };
+            }
+            if (found.ownerUid !== currentUser.uid) {
+                return { error: '❌ هذا الكوبون مخصص لحساب آخر فقط ولا يمكن استخدامه هنا!' };
+            }
+        }
+        if (found.used) {
+            return { error: '❌ تم استخدام هذا الكوبون مسبقاً (مخصص لاستخدام مرة واحدة فقط)!' };
+        }
+        return {
+            promo: {
+                code: found.code,
+                discount: found.freeShipping ? 0 : (Number(found.discount) || 5),
+                freeShipping: !!found.freeShipping,
+                singleUse: true,
+                used: false
+            }
+        };
+    };
+
+    window.V95_markPersonalCouponUsed = async function (codeUpper) {
+        const code = String(codeUpper || '').trim().toUpperCase();
+        if (!code) return;
+        const all = readLocalCoupons();
+        let changed = false;
+        all.forEach(c => {
+            if (String(c.code || '').toUpperCase() === code) {
+                c.used = true;
+                c.usedAt = new Date().toISOString();
+                changed = true;
+            }
+        });
+        if (changed) {
+            writeLocalCoupons(all);
+            await syncCouponsToUserDoc(all);
         }
     };
 
     window.V94_syncGamesVisibility = function () {
         try {
-            const cfg = window.V94_getGamesConfig();
+            const cfg = window.V95_getGamesConfig();
             const active = cfg.enabled !== false;
             const sbBtn = document.getElementById('sidebar-olive-games-btn');
             if (sbBtn) sbBtn.style.display = (active && cfg.showSidebarBtn !== false) ? 'block' : 'none';
             const fab = document.getElementById('home-games-fab');
             if (fab) {
-                const homeActive = document.getElementById('home-panel') && document.getElementById('home-panel').classList.contains('active');
+                const homeEl = document.getElementById('home-panel');
+                const homeActive = !homeEl || homeEl.classList.contains('active');
                 fab.style.display = (active && cfg.showHomeFab !== false && homeActive) ? 'flex' : 'none';
             }
         } catch (e) {}
-    };
-
-    window.V94_findGameCoupon = function (codeUpper) {
-        try {
-            const code = String(codeUpper || '').trim().toUpperCase();
-            if (!code) return null;
-            const cfg = window.V94_getGamesConfig();
-            if (!cfg || cfg.enabled === false) return null;
-            const games = cfg.games || {};
-            for (const k of Object.keys(games)) {
-                const g = games[k];
-                if (!g || g.enabled === false) continue;
-                const gc = String(g.couponCode || '').trim().toUpperCase();
-                if (gc && gc === code) {
-                    return { code: gc, discount: Math.max(1, Math.min(50, Number(g.couponDiscount) || 5)), singleUse: false };
-                }
-            }
-            // Check custom scratch card codes like (GOLD7)
-            const pTxt = (games.scratch && games.scratch.prizesText) || '';
-            const mList = pTxt.match(/([A-Z0-9]{3,16})/gi) || [];
-            if (mList.map(x => x.toUpperCase()).includes(code)) {
-                const numM = code.match(/(\d{1,2})$/);
-                const disc = numM ? Math.max(1, Math.min(25, Number(numM[1]))) : (Number(games.scratch && games.scratch.couponDiscount) || 5);
-                return { code: code, discount: disc, singleUse: false };
-            }
-        } catch (e) {}
-        return null;
     };
 
     window.V94_applyGameCouponToCart = function (code) {
@@ -19333,15 +19432,13 @@ window.showUserHistory = function(userId, userName) {
             const inp2 = document.getElementById('promo-code-input');
             if (inp1) inp1.value = clean;
             if (inp2) inp2.value = clean;
-            if (typeof window.executePromoLogic === 'function') {
-                window.executePromoLogic(clean, 'cart');
-            }
+            if (typeof window.executePromoLogic === 'function') window.executePromoLogic(clean, 'cart');
         } catch (e) {}
     };
 
     window.V94_awardLoyaltyPoints = async function (pts, gameTitle, gameKey) {
         const amount = Math.max(1, Math.min(500, Math.round(Number(pts) || 0)));
-        if (!amount) return { synced: false, reason: 'invalid' };
+        if (!amount) return { synced: false };
         if (navigator.onLine && currentUser && currentUser.uid) {
             try {
                 await setDoc(doc(db, 'users', currentUser.uid), {
@@ -19349,19 +19446,17 @@ window.showUserHistory = function(userId, userName) {
                     unreadNotifs: increment(1),
                     notifications: arrayUnion({
                         title: '🎮 مكافأة ألعاب الشجرة المباركة!',
-                        message: `مبروك! ربحت ${amount} نقطة ولاء من لعبة (${gameTitle}) 🫒`,
+                        message: `مبروك! ربحت ${amount} نقطة ولاء من (${gameTitle}) 🫒`,
                         date: new Date().toISOString()
                     })
                 }, { merge: true });
                 return { synced: true, amount };
-            } catch (e) {
-                // fallback to offline queue
-            }
+            } catch (e) {}
         }
         try {
             const q = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
             q.push({ amount, gameTitle, gameKey, ts: Date.now() });
-            localStorage.setItem(PENDING_KEY, JSON.stringify(q.slice(-20)));
+            localStorage.setItem(PENDING_KEY, JSON.stringify(q.slice(-25)));
         } catch (e) {}
         return { synced: false, queued: true, amount, needsLogin: !currentUser };
     };
@@ -19370,49 +19465,37 @@ window.showUserHistory = function(userId, userName) {
         try {
             if (!navigator.onLine || !currentUser || !currentUser.uid) return;
             const q = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
-            if (!Array.isArray(q) || q.length === 0) return;
-            const totalPts = q.reduce((s, r) => s + (Number(r.amount) || 0), 0);
-            if (totalPts <= 0) {
+            if (Array.isArray(q) && q.length > 0) {
+                const totalPts = q.reduce((s, r) => s + (Number(r.amount) || 0), 0);
                 localStorage.removeItem(PENDING_KEY);
-                return;
+                if (totalPts > 0) {
+                    await setDoc(doc(db, 'users', currentUser.uid), {
+                        loyaltyPoints: increment(totalPts),
+                        unreadNotifs: increment(1),
+                        notifications: arrayUnion({
+                            title: '🎉 تمت مزامنة مكافآت الألعاب!',
+                            message: `تمت إضافة ${totalPts} نقطة ولاء كسبتها من الألعاب أثناء عدم الاتصال 🫒`,
+                            date: new Date().toISOString()
+                        })
+                    }, { merge: true });
+                    if (typeof window.showToast === 'function') window.showToast(`🎉 تمت إضافة ${totalPts} نقطة ولاء كسبتها من الألعاب!`, 'success');
+                }
             }
-            localStorage.removeItem(PENDING_KEY);
-            await setDoc(doc(db, 'users', currentUser.uid), {
-                loyaltyPoints: increment(totalPts),
-                unreadNotifs: increment(1),
-                notifications: arrayUnion({
-                    title: '🎉 تمت مزامنة مكافآت الألعاب!',
-                    message: `تمت إضافة ${totalPts} نقطة ولاء كسبتها من ألعاب الشجرة المباركة أثناء وضع عدم الاتصال 🫒`,
-                    date: new Date().toISOString()
-                })
-            }, { merge: true });
-            if (typeof window.showToast === 'function') {
-                window.showToast(`🎉 تمت إضافة ${totalPts} نقطة ولاء كسبتها من الألعاب لحسابك!`, 'success');
-            }
+            await syncCouponsToUserDoc(readLocalCoupons());
         } catch (e) {}
     };
 
-    window.V94_getBridgeInfo = function () {
-        return {
-            isAdmin: !!isCurrentUserAdmin,
-            isLoggedIn: !!(currentUser && currentUser.uid),
-            userName: (currentUser && (currentUser.displayName || currentUser.email)) || ''
-        };
-    };
-
-    // Hook showPanel & applySettingsToUI & online events to keep Games FAB & pending rewards synced
-    if (typeof window.showPanel === 'function' && !window.__V94_SHOW_HOOKED__) {
-        window.__V94_SHOW_HOOKED__ = true;
+    if (typeof window.showPanel === 'function' && !window.__V95_SHOW_HOOKED__) {
+        window.__V95_SHOW_HOOKED__ = true;
         const prevShow = window.showPanel;
-        window.showPanel = function (panelId) {
+        window.showPanel = function () {
             const out = prevShow.apply(this, arguments);
             setTimeout(window.V94_syncGamesVisibility, 40);
             return out;
         };
     }
-
-    if (typeof window.applySettingsToUI === 'function' && !window.__V94_SETTINGS_HOOKED__) {
-        window.__V94_SETTINGS_HOOKED__ = true;
+    if (typeof window.applySettingsToUI === 'function' && !window.__V95_SET_HOOKED__) {
+        window.__V95_SET_HOOKED__ = true;
         const prevApply = window.applySettingsToUI;
         window.applySettingsToUI = function () {
             const out = prevApply.apply(this, arguments);
@@ -19425,5 +19508,5 @@ window.showUserHistory = function(userId, userName) {
     setTimeout(() => {
         window.V94_syncGamesVisibility();
         window.V94_flushPendingGameRewards();
-    }, 1800);
+    }, 1500);
 })();

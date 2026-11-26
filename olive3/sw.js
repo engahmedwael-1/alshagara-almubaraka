@@ -1,14 +1,15 @@
-const SHELL_CACHE = 'zait-store-shell-v94';
-const IMG_CACHE = 'zait-store-images-v94';
+const SHELL_CACHE = 'zait-store-shell-v95';
+const IMG_CACHE = 'zait-store-images-v95';
 
 const STATIC_ASSETS = [
-  '/style.css?v=94',
-  '/v94-pro.css?v=94',
-  '/olive-games.css?v=94',
-  '/v94-pro.js?v=94',
-  '/olive-games.js?v=94',
-  '/script.js?v=94',
-  '/manifest.json?v=94',
+  '/style.css?v=95',
+  '/v95-pro.css?v=95',
+  '/olive-games.css?v=95',
+  '/v95-pro.js?v=95',
+  '/olive-quiz-bank.js?v=95',
+  '/olive-games.js?v=95',
+  '/script.js?v=95',
+  '/manifest.json?v=95',
   '/icon-192.png',
   '/icon-512.png',
   '/1000392409.jpeg',
@@ -240,6 +241,6 @@ self.addEventListener('fetch', (event) => {
     } catch (e) {}
     const cached = (await cache.match(req)) || (await cache.match(req, { ignoreSearch: true }));
     if (cached) return cached;
-    return new Response('', { status: 200 });
+    return new Response('', { status: 503, statusText: 'Offline Miss' });
   })());
 });

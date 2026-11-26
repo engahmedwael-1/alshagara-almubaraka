@@ -1,7 +1,7 @@
 {
   "headers": [
     {
-      "source": "/(index\\.html|sw\\.js|manifest\\.json|v94-pro\\.js|v94-pro\\.css|olive-games\\.js|olive-games\\.css)",
+      "source": "/(index\\.html|sw\\.js|manifest\\.json|v95-pro\\.js|v95-pro\\.css|olive-games\\.js|olive-games\\.css|olive-quiz-bank\\.js)",
       "headers": [
         {
           "key": "Cache-Control",
