@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://alshagara-almubaraka.vercel.app/sitemap.xml
