@@ -1,9 +1,9 @@
-const SHELL_CACHE = 'zait-v98-shell';
-const IMG_CACHE = 'zait-v98-imgs';
-const GAMES_CACHE = 'zait-v98-games';
+const SHELL_CACHE = 'zait-v99-shell';
+const IMG_CACHE = 'zait-v99-imgs';
+const GAMES_CACHE = 'zait-v99-games';
 
 const SHELL_URLS = ['/', '/index.html', '/style.css', '/script.js', '/v98-bridge.js', '/manifest.json', '/offline.html', '/icon-192.png', '/1000392409.jpeg'];
-const GAMES_URLS = ['/olive-games.css', '/olive-games.js', '/olive-games-pack2.js', '/olive-games-pack3.js', '/olive-quiz-bank.js'];
+const GAMES_URLS = ['/olive-games.css', '/olive-games.js', '/olive-games-pack2.js', '/olive-games-pack3.js', '/olive-v99-engine.js', '/olive-games-pack4.js', '/olive-games-pack5.js', '/olive-quiz-bank.js'];
 
 async function cleanRes(res) {
   if (!res) return null;
@@ -91,7 +91,7 @@ self.addEventListener('fetch', (e) => {
   }
 
   // 3. Games & Static JS/CSS: Instant Cache-First + silent background refresh (100% offline guaranteed!)
-  const isGameFile = /olive-games|olive-quiz-bank|v98-bridge/.test(url.pathname);
+  const isGameFile = /olive-games|olive-v99|olive-quiz-bank|v98-bridge/.test(url.pathname);
   e.respondWith((async () => {
     const cache = await caches.open(isGameFile ? GAMES_CACHE : SHELL_CACHE);
     const hit = (await cache.match(req, { ignoreSearch: true })) || (await caches.match(req, { ignoreSearch: true }));

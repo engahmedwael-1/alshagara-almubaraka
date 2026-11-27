@@ -9,11 +9,14 @@
   var VAULT_DB = "zait_v98_offline_vault";
   var VAULT_STORE = "files";
   var ASSET_LIST = [
-    { key: "olive-games.css", url: "/olive-games.css?v=98", required: true },
-    { key: "olive-games.js", url: "/olive-games.js?v=98", required: true },
-    { key: "olive-games-pack2.js", url: "/olive-games-pack2.js?v=98", required: false },
-    { key: "olive-games-pack3.js", url: "/olive-games-pack3.js?v=98", required: false },
-    { key: "olive-quiz-bank.js", url: "/olive-quiz-bank.js?v=98", required: false }
+    { key: "olive-games.css", url: "/olive-games.css?v=99", required: true },
+    { key: "olive-games.js", url: "/olive-games.js?v=99", required: true },
+    { key: "olive-games-pack2.js", url: "/olive-games-pack2.js?v=99", required: false },
+    { key: "olive-games-pack3.js", url: "/olive-games-pack3.js?v=99", required: false },
+    { key: "olive-v99-engine.js", url: "/olive-v99-engine.js?v=99", required: false },
+    { key: "olive-games-pack4.js", url: "/olive-games-pack4.js?v=99", required: false },
+    { key: "olive-games-pack5.js", url: "/olive-games-pack5.js?v=99", required: false },
+    { key: "olive-quiz-bank.js", url: "/olive-quiz-bank.js?v=99", required: false }
   ];
 
   var enginePromise = null;
@@ -160,7 +163,7 @@
       enginePromise = (async function () {
         var css = await fetchAssetOfflineSafe(ASSET_LIST[0]);
         injectCss(css);
-        var quiz = await fetchAssetOfflineSafe(ASSET_LIST[4]);
+        var quiz = await fetchAssetOfflineSafe({ key: "olive-quiz-bank.js", url: "/olive-quiz-bank.js?v=99" });
         if (quiz) await executeJsReliable(quiz, "zait-v98-quiz-js");
         var core = await fetchAssetOfflineSafe(ASSET_LIST[1]);
         if (core) await executeJsReliable(core, "zait-v98-core-js");
@@ -168,6 +171,12 @@
         if (pack2) await executeJsReliable(pack2, "zait-v98-pack2-js");
         var pack3 = await fetchAssetOfflineSafe(ASSET_LIST[3]);
         if (pack3) await executeJsReliable(pack3, "zait-v98-pack3-js");
+        var v99Eng = await fetchAssetOfflineSafe({ key: "olive-v99-engine.js", url: "/olive-v99-engine.js?v=99" });
+        if (v99Eng) await executeJsReliable(v99Eng, "zait-v99-engine-js");
+        var pack4 = await fetchAssetOfflineSafe({ key: "olive-games-pack4.js", url: "/olive-games-pack4.js?v=99" });
+        if (pack4) await executeJsReliable(pack4, "zait-v99-pack4-js");
+        var pack5 = await fetchAssetOfflineSafe({ key: "olive-games-pack5.js", url: "/olive-games-pack5.js?v=99" });
+        if (pack5) await executeJsReliable(pack5, "zait-v99-pack5-js");
         if (!window.ZaitGamesV98) enginePromise = null; // Allow retry if failed
         return window.ZaitGamesV98 || null;
       })();
@@ -359,7 +368,7 @@
 
     // Force-register upgraded V98 Service Worker
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js?v=98", { scope: "/" }).catch(function () {});
+      navigator.serviceWorker.register("/sw.js?v=99", { scope: "/" }).catch(function () {});
     }
   }
 
