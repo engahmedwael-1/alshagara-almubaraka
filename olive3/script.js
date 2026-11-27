@@ -19520,5 +19520,5 @@ try {
     setDoc: typeof setDoc !== 'undefined' ? setDoc : null,
     increment: typeof increment !== 'undefined' ? increment : null
   };
-} catch (_e96) {}
+} catch (_e98) {}
 /* === ZAIT_V96_FS_HOOK_END === */
